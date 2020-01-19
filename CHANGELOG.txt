@@ -1,0 +1,17 @@
+'vs_library' changes, in reverse chronological order.
+
+--------------------------------
+
+2020-01-19 [v2.32.3]
+- Changed license to MIT
+- Removed VS.Storage
+
+.
+.
+.
+
+2019-01-26 []
+- Initial public release
+
+2017..2018 []
+- Private development
