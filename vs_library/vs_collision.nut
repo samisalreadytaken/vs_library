@@ -37,9 +37,9 @@ function VS::ComputeBoxOffset( ray )
 		return 1.e-3;
 
 	// Find the projection of the box diagonal along the ray...
-	local offset = fabs(ray.m_Extents.x * ray.m_Delta.x) +
-	               fabs(ray.m_Extents.y * ray.m_Delta.y) +
-	               fabs(ray.m_Extents.z * ray.m_Delta.z);
+	local offset = ::fabs(ray.m_Extents.x * ray.m_Delta.x) +
+	               ::fabs(ray.m_Extents.y * ray.m_Delta.y) +
+	               ::fabs(ray.m_Extents.z * ray.m_Delta.z);
 
 	// We need to divide twice: Once to normalize the computation above
 	// so we get something in units of extents, and the second to normalize
@@ -242,7 +242,7 @@ function VS::_IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flToleranc
 	      tmax = FLT_MAX;
 
 	// Parallel case...
-	if( fabs(vecDelta.x) < 1.e-8 )
+	if( ::fabs(vecDelta.x) < 1.e-8 )
 	{
 		// Check that origin is in the box
 		// if not, then it doesn't intersect..
@@ -280,7 +280,7 @@ function VS::_IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flToleranc
 	};
 
 	// other points:
-	if( fabs(vecDelta.y) < 1.e-8 )
+	if( ::fabs(vecDelta.y) < 1.e-8 )
 	{
 		if( (origin.y < boxMin.y - flTolerance) || (origin.y > boxMax.y + flTolerance) )
 			return false;
@@ -308,7 +308,7 @@ function VS::_IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flToleranc
 			return false;
 	};
 
-	if( fabs(vecDelta.z) < 1.e-8 )
+	if( ::fabs(vecDelta.z) < 1.e-8 )
 	{
 		if( (origin.z < boxMin.z - flTolerance) || (origin.z > boxMax.z + flTolerance) )
 			return false;
@@ -417,14 +417,14 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs, flTolerance )
 
 	if( ray.m_IsRay )
 	{
-		local worldToBox = matrix3x4();
+		local worldToBox = ::matrix3x4();
 		AngleIMatrix( angles, org, worldToBox );
 
 		local rotatedRay = TraceLine().Ray();
-		rotatedRay.m_Start = VectorTransform( ray.m_Start, worldToBox, Vector() );
-		rotatedRay.m_Delta = VectorRotate( ray.m_Delta, worldToBox, Vector() );
-		rotatedRay.m_StartOffset = Vector();
-		rotatedRay.m_Extents = Vector();
+		rotatedRay.m_Start = VectorTransform( ray.m_Start, worldToBox, ::Vector() );
+		rotatedRay.m_Delta = VectorRotate( ray.m_Delta, worldToBox, ::Vector() );
+		rotatedRay.m_StartOffset = ::Vector();
+		rotatedRay.m_Extents = ::Vector();
 		rotatedRay.m_IsRay = ray.m_IsRay;
 		rotatedRay.m_IsSwept = ray.m_IsSwept;
 
@@ -433,7 +433,7 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs, flTolerance )
 
 	if( !ray.m_IsSwept )
 	{
-		return ComputeSeparatingPlane2( ray.m_Start, Vector(), -ray.m_Extents, ray.m_Extents,
+		return ComputeSeparatingPlane2( ray.m_Start, ::Vector(), -ray.m_Extents, ray.m_Extents,
 			org, angles, mins, maxs, 0.0 ) == false;
 	};
 
@@ -441,8 +441,8 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs, flTolerance )
 
 	// First, compute the basis of box in the space of the ray
 	// NOTE: These basis place the origin at the centroid of each box!
-	local worldToBox1 = matrix3x4(),
-	      box2ToWorld = matrix3x4();
+	local worldToBox1 = ::matrix3x4(),
+	      box2ToWorld = ::matrix3x4();
 	ComputeCenterMatrix( org, angles, mins, maxs, box2ToWorld );
 
 	// Find the center + extents of an AABB surrounding the ray
@@ -451,28 +451,28 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs, flTolerance )
 	SetIdentityMatrix( worldToBox1 );
 	MatrixSetColumn( vecRayCenter, 3, worldToBox1 );
 
-	local box1Size = Vector( ray.m_Extents.x + fabs( ray.m_Delta.x ) * 0.5,
-	                         ray.m_Extents.y + fabs( ray.m_Delta.y ) * 0.5,
-	                         ray.m_Extents.z + fabs( ray.m_Delta.z ) * 0.5 );
+	local box1Size = ::Vector( ray.m_Extents.x + ::fabs( ray.m_Delta.x ) * 0.5,
+	                           ray.m_Extents.y + ::fabs( ray.m_Delta.y ) * 0.5,
+	                           ray.m_Extents.z + ::fabs( ray.m_Delta.z ) * 0.5 );
 
 	// Then compute the size of the box
 	local box2Size = (maxs - mins)*0.5;
 
 	// Do an OBB test of the box with the AABB surrounding the ray
-	if( ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, 0.0, Vector() ) )
+	if( ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, 0.0, ::Vector() ) )
 		return false;
 
 	// Now deal with the planes which are the cross products of the ray sweep direction vs box edges
-	local vecRayDirection = VectorCopy(ray.m_Delta,Vector());
+	local vecRayDirection = VectorCopy(ray.m_Delta,::Vector());
 	VectorNormalize( vecRayDirection );
 
 	// Need a vector between ray center vs box center measured in the space of the ray (world)
-	local vecCenterDelta = Vector( box2ToWorld[0][3] - ray.m_Start.x,
-	                               box2ToWorld[1][3] - ray.m_Start.y,
-	                               box2ToWorld[2][3] - ray.m_Start.z );
+	local vecCenterDelta = ::Vector( box2ToWorld[0][3] - ray.m_Start.x,
+	                                 box2ToWorld[1][3] - ray.m_Start.y,
+	                                 box2ToWorld[2][3] - ray.m_Start.z );
 
 	// Rotate the ray direction into the space of the OBB
-	local vecAbsRayDirBox2 = VectorIRotate( vecRayDirection, box2ToWorld, Vector() );
+	local vecAbsRayDirBox2 = VectorIRotate( vecRayDirection, box2ToWorld, ::Vector() );
 
 	// Make abs versions of the ray in world space + ray in box2 space
 	VectorAbs( vecAbsRayDirBox2 );
@@ -501,8 +501,8 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs, flTolerance )
 	local vecPlaneNormal, flBoxProjectionSum, flCenterDeltaProjection;
 
 	// box x x ray delta
-	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[0][0], box2ToWorld[1][0], box2ToWorld[2][0] ) );
-	flCenterDeltaProjection = fabs( vecPlaneNormal.Dot(vecCenterDelta) );
+	vecPlaneNormal = vecRayDirection.Cross( ::Vector( box2ToWorld[0][0], box2ToWorld[1][0], box2ToWorld[2][0] ) );
+	flCenterDeltaProjection = ::fabs( vecPlaneNormal.Dot(vecCenterDelta) );
 	flBoxProjectionSum =
 		vecAbsRayDirBox2.z * box2Size.y + vecAbsRayDirBox2.y * box2Size.z +
 		DotProductAbs( vecPlaneNormal, ray.m_Extents );
@@ -510,8 +510,8 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs, flTolerance )
 		return false;
 
 	// box y x ray delta
-	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[0][1], box2ToWorld[1][1], box2ToWorld[2][1] ) );
-	flCenterDeltaProjection = fabs( vecPlaneNormal.Dot(vecCenterDelta) );
+	vecPlaneNormal = vecRayDirection.Cross( ::Vector( box2ToWorld[0][1], box2ToWorld[1][1], box2ToWorld[2][1] ) );
+	flCenterDeltaProjection = ::fabs( vecPlaneNormal.Dot(vecCenterDelta) );
 	flBoxProjectionSum =
 		vecAbsRayDirBox2.z * box2Size.x + vecAbsRayDirBox2.x * box2Size.z +
 		DotProductAbs( vecPlaneNormal, ray.m_Extents );
@@ -519,8 +519,8 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs, flTolerance )
 		return false;
 
 	// box z x ray delta
-	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[0][2], box2ToWorld[1][2], box2ToWorld[2][2] ) );
-	flCenterDeltaProjection = fabs( vecPlaneNormal.Dot(vecCenterDelta) );
+	vecPlaneNormal = vecRayDirection.Cross( ::Vector( box2ToWorld[0][2], box2ToWorld[1][2], box2ToWorld[2][2] ) );
+	flCenterDeltaProjection = ::fabs( vecPlaneNormal.Dot(vecCenterDelta) );
 	flBoxProjectionSum =
 		vecAbsRayDirBox2.y * box2Size.x + vecAbsRayDirBox2.x * box2Size.y +
 		DotProductAbs( vecPlaneNormal, ray.m_Extents );
@@ -542,16 +542,16 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 
 	// First, compute the basis of second box in the space of the first box
 	// NOTE: These basis place the origin at the centroid of each box!
-	local box2ToBox1 = matrix3x4();
+	local box2ToBox1 = ::matrix3x4();
 	ConcatTransforms( worldToBox1, box2ToWorld, box2ToBox1 );
 
 	// We're going to be using the origin of box2 in the space of box1 alot,
 	// lets extract it from the matrix....
-	local box2Origin = Vector();
+	local box2Origin = ::Vector();
 	MatrixGetColumn( box2ToBox1, 3, box2Origin );
 
 	// Next get the absolute values of these entries and store in absbox2ToBox1.
-	local absBox2ToBox1 = matrix3x4();
+	local absBox2ToBox1 = ::matrix3x4();
 	ComputeAbsMatrix( box2ToBox1, absBox2ToBox1 );
 
 	// There are 15 tests to make.  The first 3 involve trying planes parallel
@@ -566,7 +566,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	// onto the line, and add them up. We compare the sum with the projection
 	// of the relative center of box2 onto the same line.
 
-	// local tmp = Vector();
+	// local tmp = ::Vector();
 	local boxProjectionSum, originProjection;
 
 	// NOTE: For these guys, we're taking advantage of the fact that the ith
@@ -575,7 +575,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 
 	// First side of box 1
 	boxProjectionSum = box1Size.x + MatrixRowDotProduct( absBox2ToBox1, 0, box2Size );
-	originProjection = fabs( box2Origin.x ) + tolerance;
+	originProjection = ::fabs( box2Origin.x ) + tolerance;
 	if( (originProjection) > (boxProjectionSum) )
 	{
 		// VectorCopy( worldToBox1[0], pNormalOut );
@@ -584,7 +584,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 
 	// Second side of box 1
 	boxProjectionSum = box1Size.y + MatrixRowDotProduct( absBox2ToBox1, 1, box2Size );
-	originProjection = fabs( box2Origin.y ) + tolerance;
+	originProjection = ::fabs( box2Origin.y ) + tolerance;
 	if( (originProjection) > (boxProjectionSum) )
 	{
 		// VectorCopy( worldToBox1[1], pNormalOut );
@@ -593,7 +593,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 
 	// Third side of box 1
 	boxProjectionSum = box1Size.z + MatrixRowDotProduct( absBox2ToBox1, 2, box2Size );
-	originProjection = fabs( box2Origin.z ) + tolerance;
+	originProjection = ::fabs( box2Origin.z ) + tolerance;
 	if( (originProjection) > (boxProjectionSum) )
 	{
 		// VectorCopy( worldToBox1[2], pNormalOut );
@@ -611,7 +611,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 
 	// First side of box 2
 	boxProjectionSum = box2Size.x +	MatrixColumnDotProduct( absBox2ToBox1, 0, box1Size );
-	originProjection = fabs( MatrixColumnDotProduct( box2ToBox1, 0, box2Origin ) ) + tolerance;
+	originProjection = ::fabs( MatrixColumnDotProduct( box2ToBox1, 0, box2Origin ) ) + tolerance;
 	if( (originProjection) > (boxProjectionSum) )
 	{
 		// MatrixGetColumn( box2ToWorld, 0, pNormalOut );
@@ -620,7 +620,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 
 	// Second side of box 2
 	boxProjectionSum = box2Size.y +	MatrixColumnDotProduct( absBox2ToBox1, 1, box1Size );
-	originProjection = fabs( MatrixColumnDotProduct( box2ToBox1, 1, box2Origin ) ) + tolerance;
+	originProjection = ::fabs( MatrixColumnDotProduct( box2ToBox1, 1, box2Origin ) ) + tolerance;
 	if( (originProjection) > (boxProjectionSum) )
 	{
 		// MatrixGetColumn( box2ToWorld, 1, pNormalOut );
@@ -629,7 +629,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 
 	// Third side of box 2
 	boxProjectionSum = box2Size.z +	MatrixColumnDotProduct( absBox2ToBox1, 2, box1Size );
-	originProjection = fabs( MatrixColumnDotProduct( box2ToBox1, 2, box2Origin ) ) + tolerance;
+	originProjection = ::fabs( MatrixColumnDotProduct( box2ToBox1, 2, box2Origin ) ) + tolerance;
 	if( (originProjection) > (boxProjectionSum) )
 	{
 		// MatrixGetColumn( box2ToWorld, 2, pNormalOut );
@@ -686,7 +686,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 		boxProjectionSum =
 			box1Size.y * absBox2ToBox1[2][0] + box1Size.z * absBox2ToBox1[1][0] +
 			box2Size.y * absBox2ToBox1[0][2] + box2Size.z * absBox2ToBox1[0][1];
-		originProjection = fabs( -box2Origin.y * box2ToBox1[2][0] + box2Origin.z * box2ToBox1[1][0] ) + tolerance;
+		originProjection = ::fabs( -box2Origin.y * box2ToBox1[2][0] + box2Origin.z * box2ToBox1[1][0] ) + tolerance;
 		if( (originProjection) > (boxProjectionSum) )
 		{
 			// MatrixGetColumn( box2ToWorld, 0, tmp );
@@ -701,7 +701,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 		boxProjectionSum =
 			box1Size.y * absBox2ToBox1[2][1] + box1Size.z * absBox2ToBox1[1][1] +
 			box2Size.x * absBox2ToBox1[0][2] + box2Size.z * absBox2ToBox1[0][0];
-		originProjection = fabs( -box2Origin.y * box2ToBox1[2][1] + box2Origin.z * box2ToBox1[1][1] ) + tolerance;
+		originProjection = ::fabs( -box2Origin.y * box2ToBox1[2][1] + box2Origin.z * box2ToBox1[1][1] ) + tolerance;
 		if( (originProjection) > (boxProjectionSum) )
 		{
 			// MatrixGetColumn( box2ToWorld, 1, tmp );
@@ -716,7 +716,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 		boxProjectionSum =
 			box1Size.y * absBox2ToBox1[2][2] + box1Size.z * absBox2ToBox1[1][2] +
 			box2Size.x * absBox2ToBox1[0][1] + box2Size.y * absBox2ToBox1[0][0];
-		originProjection = fabs( -box2Origin.y * box2ToBox1[2][2] + box2Origin.z * box2ToBox1[1][2] ) + tolerance;
+		originProjection = ::fabs( -box2Origin.y * box2ToBox1[2][2] + box2Origin.z * box2ToBox1[1][2] ) + tolerance;
 		if( (originProjection) > (boxProjectionSum) )
 		{
 			// MatrixGetColumn( box2ToWorld, 2, tmp );
@@ -731,7 +731,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 		boxProjectionSum =
 			box1Size.x * absBox2ToBox1[2][0] + box1Size.z * absBox2ToBox1[0][0] +
 			box2Size.y * absBox2ToBox1[1][2] + box2Size.z * absBox2ToBox1[1][1];
-		originProjection = fabs( box2Origin.x * box2ToBox1[2][0] - box2Origin.z * box2ToBox1[0][0] ) + tolerance;
+		originProjection = ::fabs( box2Origin.x * box2ToBox1[2][0] - box2Origin.z * box2ToBox1[0][0] ) + tolerance;
 		if( (originProjection) > (boxProjectionSum) )
 		{
 			// MatrixGetColumn( box2ToWorld, 0, tmp );
@@ -746,7 +746,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 		boxProjectionSum =
 			box1Size.x * absBox2ToBox1[2][1] + box1Size.z * absBox2ToBox1[0][1] +
 			box2Size.x * absBox2ToBox1[1][2] + box2Size.z * absBox2ToBox1[1][0];
-		originProjection = fabs( box2Origin.x * box2ToBox1[2][1] - box2Origin.z * box2ToBox1[0][1] ) + tolerance;
+		originProjection = ::fabs( box2Origin.x * box2ToBox1[2][1] - box2Origin.z * box2ToBox1[0][1] ) + tolerance;
 		if( (originProjection) > (boxProjectionSum) )
 		{
 			// MatrixGetColumn( box2ToWorld, 1, tmp );
@@ -761,7 +761,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 		boxProjectionSum =
 			box1Size.x * absBox2ToBox1[2][2] + box1Size.z * absBox2ToBox1[0][2] +
 			box2Size.x * absBox2ToBox1[1][1] + box2Size.y * absBox2ToBox1[1][0];
-		originProjection = fabs( box2Origin.x * box2ToBox1[2][2] - box2Origin.z * box2ToBox1[0][2] ) + tolerance;
+		originProjection = ::fabs( box2Origin.x * box2ToBox1[2][2] - box2Origin.z * box2ToBox1[0][2] ) + tolerance;
 		if( (originProjection) > (boxProjectionSum) )
 		{
 			// MatrixGetColumn( box2ToWorld, 2, tmp );
@@ -776,7 +776,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 		boxProjectionSum =
 			box1Size.x * absBox2ToBox1[1][0] + box1Size.y * absBox2ToBox1[0][0] +
 			box2Size.y * absBox2ToBox1[2][2] + box2Size.z * absBox2ToBox1[2][1];
-		originProjection = fabs( -box2Origin.x * box2ToBox1[1][0] + box2Origin.y * box2ToBox1[0][0] ) + tolerance;
+		originProjection = ::fabs( -box2Origin.x * box2ToBox1[1][0] + box2Origin.y * box2ToBox1[0][0] ) + tolerance;
 		if( (originProjection) > (boxProjectionSum) )
 		{
 			// MatrixGetColumn( box2ToWorld, 0, tmp );
@@ -791,7 +791,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 		boxProjectionSum =
 			box1Size.x * absBox2ToBox1[1][1] + box1Size.y * absBox2ToBox1[0][1] +
 			box2Size.x * absBox2ToBox1[2][2] + box2Size.z * absBox2ToBox1[2][0];
-		originProjection = fabs( -box2Origin.x * box2ToBox1[1][1] + box2Origin.y * box2ToBox1[0][1] ) + tolerance;
+		originProjection = ::fabs( -box2Origin.x * box2ToBox1[1][1] + box2Origin.y * box2ToBox1[0][1] ) + tolerance;
 		if( (originProjection) > (boxProjectionSum) )
 		{
 			// MatrixGetColumn( box2ToWorld, 1, tmp );
@@ -806,7 +806,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 		boxProjectionSum =
 			box1Size.x * absBox2ToBox1[1][2] + box1Size.y * absBox2ToBox1[0][2] +
 			box2Size.x * absBox2ToBox1[2][1] + box2Size.y * absBox2ToBox1[2][0];
-		originProjection = fabs( -box2Origin.x * box2ToBox1[1][2] + box2Origin.y * box2ToBox1[0][2] ) + tolerance;
+		originProjection = ::fabs( -box2Origin.x * box2ToBox1[1][2] + box2Origin.y * box2ToBox1[0][2] ) + tolerance;
 		if( originProjection > boxProjectionSum )
 		{
 			// MatrixGetColumn( box2ToWorld, 2, tmp );
@@ -823,8 +823,8 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 //-----------------------------------------------------------------------------
 function VS::ComputeSeparatingPlane2( org1, angles1, min1, max1, org2, angles2, min2, max2, tolerance/* , pNormalOut */ )
 {
-	local worldToBox1 = matrix3x4(),
-	      box2ToWorld = matrix3x4();
+	local worldToBox1 = ::matrix3x4(),
+	      box2ToWorld = ::matrix3x4();
 
 	ComputeCenterIMatrix( org1, angles1, min1, max1, worldToBox1 );
 	ComputeCenterMatrix( org2, angles2, min2, max2, box2ToWorld );

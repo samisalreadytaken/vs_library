@@ -19,26 +19,26 @@
 //-----------------------------------------------------------------------
 function VS::DrawEntityBBox( time, ent, r = 255, g = 138, b = 0, a = 0 )
 {
-	DebugDrawBox(ent.GetOrigin(),ent.GetBoundingMins(),ent.GetBoundingMaxs(),r,g,b,a,time)
+	::DebugDrawBox(ent.GetOrigin(),ent.GetBoundingMins(),ent.GetBoundingMaxs(),r,g,b,a,time)
 }
 
-::Ent  <- function( s, i = null ){ return::Entities.FindByName(i,s) }
-::Entc <- function( s, i = null ){ return::Entities.FindByClassname(i,s) }
+::Ent  <- function( s, i = null ){ return Entities.FindByName(i,s) }
+::Entc <- function( s, i = null ){ return Entities.FindByClassname(i,s) }
 
 //-----------------------------------------------------------------------
 // Input  : int / float
 // Output : string - .tointeger() or .tofloat() can be used on the result
 //-----------------------------------------------------------------------
-function VS::FormatPrecision( f, n = 2 ){ return format("%." +n+"f",f) }
-function VS::FormatHex( i, n = 4 )      { return format("%#0"+n+"x",i) }
-function VS::FormatExp( i, n = 1 )      { return format("%." +n+"e",i) }
+function VS::FormatPrecision( f, n = 2 ){ return::format("%." +n+"f",f) }
+function VS::FormatHex( i, n = 4 )      { return::format("%#0"+n+"x",i) }
+function VS::FormatExp( i, n = 1 )      { return::format("%." +n+"e",i) }
 
 //-----------------------------------------------------------------------
 // Input  : 0 or " "
 //          str/int/float
 // Output : string
 //-----------------------------------------------------------------------
-function VS::FormatWidth( s, i, n = 4 ) { return format("%"+s+""+n+"s",i.tostring()) }
+function VS::FormatWidth( s, i, n = 4 ) { return::format("%"+s+""+n+"s",i.tostring()) }
 
 //-----------------------------------------------------------------------
 // Input  : vector instance
@@ -229,7 +229,7 @@ fT2 <- FrameTime() * 2
 //-----------------------------------------------------------------------
 function VS::TraceDir( v1, vDir, f = 6144, hEnt = null )
 {
-	return TraceLine( v1, v1 + ( vDir * ( f ? f : MAX_TRACE_LENGTH ) ), hEnt )
+	return TraceLine( v1, v1 + ( vDir * ( f ? f : ::MAX_TRACE_LENGTH ) ), hEnt )
 }
 
 //-----------------------------------------------------------------------
@@ -294,7 +294,7 @@ function VS::arrayApply( arr, func )
 //-----------------------------------------------------------------------
 function VS::arrayMap( arr, func )
 {
-	local new = array(arr.len())
+	local new =::array(arr.len())
 
 	foreach( i, v in arr )
 		new[i] = func( v )
@@ -313,8 +313,8 @@ function VS::arrayMap( arr, func )
 //-----------------------------------------------------------------------
 function VS::DumpScope( table, printall = false, deepprint = true, guides = true, depth = 0 )
 {
-	local indent = function( count ){ for( local i = 0; i < count; i++ ) print("   ") }
-	if( guides ) print(" ------------------------------\n")
+	local indent = function( count ){ for( local i = 0; i < count; i++ ) ::print("   ") }
+	if( guides ) ::print(" ------------------------------\n")
 	if( table )
 	{
 		foreach( key, val in table )
@@ -325,44 +325,44 @@ function VS::DumpScope( table, printall = false, deepprint = true, guides = true
 			if( !isdefault )
 			{
 				indent(depth)
-				print(key)
+				::print(key)
 				switch( typeof val )
 				{
 					case "table":
-						print("(TABLE) : "+val.len())
+						::print("(TABLE) : "+val.len())
 						if(!deepprint) break
-						print("\n")
+						::print("\n")
 						indent(depth)
-						print("{\n")
+						::print("{\n")
 						DumpScope( val, printall, deepprint, false, depth + 1 )
 						indent(depth)
-						print("}")
+						::print("}")
 						break
 					case "array":
-						print("(ARRAY) : "+val.len())
+						::print("(ARRAY) : "+val.len())
 						if(!deepprint) break
-						print("\n")
+						::print("\n")
 						indent(depth)
-						print("[\n")
+						::print("[\n")
 						DumpScope( val, printall, deepprint, false, depth + 1 )
 						indent(depth)
-						print("]")
+						::print("]")
 						break
 					case "string":
-						print(" = \""+val+"\"")
+						::print(" = \""+val+"\"")
 						break
 					case "Vector":
-						print(" = "+VecToString(val))
+						::print(" = "+::VecToString(val))
 						break
 					default:
-						print(" = "+val)
+						::print(" = "+val)
 				}
-				print("\n")
+				::print("\n")
 			}
 		}
 	}
-	else print("null")
-	if( guides ) print(" ------------------------------\n")
+	else ::print("null")
+	if( guides ) ::print(" ------------------------------\n")
 }
 
 //-----------------------------------------------------------------------
@@ -405,12 +405,12 @@ Engine function calls are done through Call(...), that's why these 2 stacks are 
 //-----------------------------------------------------------------------
 function VS::GetStackInfo( deepprint = false )
 {
-	print(" --- STACKINFO ----------------\n")
+	::print(" --- STACKINFO ----------------\n")
 	local s, j = 2
-	while( s = getstackinfos(j) )
+	while( s =::getstackinfos(j) )
 	{
 		if( s.func == "pcall" && s.src == "NATIVE" ) break
-		print(" ("+j+++")\n")
+		::print(" ("+j+++")\n")
 		local w, m = s.locals
 		if( "this" in m && typeof m["this"] == "table" )
 		{
@@ -419,21 +419,21 @@ function VS::GetStackInfo( deepprint = false )
 		}
 		if( w == "roottable" ) DumpScope( s, 1, 0, 0 )
 		else DumpScope( s, 1, deepprint, 0 )
-		if(w) print("scope = \""+w+"\"\n")
+		if(w)::print("scope = \""+w+"\"\n")
 	}
-	print(" --- STACKINFO ----------------\n")
+	::print(" --- STACKINFO ----------------\n")
 }
 
 // (DEBUG) return caller function as string
 function VS::GetCallerFunc()
 {
-	return compilestring("return(getstackinfos(3)[\"func\"])")()
+	return::compilestring("return(getstackinfos(3)[\"func\"])")()
 }
 
 // return caller table
 function VS::GetCaller()
 {
-	return compilestring("return(getstackinfos(3)[\"locals\"][\"this\"])")()
+	return::compilestring("return(getstackinfos(3)[\"locals\"][\"this\"])")()
 }
 
 // dump function infos
@@ -457,7 +457,7 @@ function VS::GetInfo( func )
 // Output : string [ table name ]
 //-----------------------------------------------------------------------
 function VS::GetTableName( table )
-{if(typeof table!="table")throw("Invalid input type '"+(typeof table)+"' ; expected: 'table'");local r=_fb3k551r91t7(table);if(r)return r;return "roottable"}function VS::_fb3k551r91t7(t,l=getroottable()){foreach(v,u in l)if(typeof u=="table")if(v!="VS"&&v!="Documentation")if(u!=t){local r=_fb3k551r91t7(t,u);if(r)return r}else return v}
+{if(typeof table!="table")throw("Invalid input type '"+(typeof table)+"' ; expected: 'table'");local r=_fb3k551r91t7(table);if(r)return r;return "roottable"}function VS::_fb3k551r91t7(t,l=::getroottable()){foreach(v,u in l)if(typeof u=="table")if(v!="VS"&&v!="Documentation")if(u!=t){local r=_fb3k551r91t7(t,u);if(r)return r}else return v}
 
 //-----------------------------------------------------------------------
 // To use this function with a string input, you can combine it with VS.FindTableByName.
@@ -473,7 +473,7 @@ function VS::GetTableName( table )
 // Output : array containing the input's directory
 //-----------------------------------------------------------------------
 function VS::GetTableDir( table )
-{if(typeof table!="table")throw("Invalid input type '"+(typeof table)+"' ; expected: 'table'");bF.clear();local r=_f627f40d21a6(table);if(r)r.append("roottable");else r=["roottable"];r.reverse();return r}function VS::_f627f40d21a6(t,l=getroottable()){foreach(v,u in l)if(typeof u=="table")if(v!="VS"&&v!="Documentation")if(u!=t){local r=_f627f40d21a6(t,u);if(r){bF.append(v);return r}}else{bF.append(v);return bF}}
+{if(typeof table!="table")throw("Invalid input type '"+(typeof table)+"' ; expected: 'table'");bF.clear();local r=_f627f40d21a6(table);if(r)r.append("roottable");else r=["roottable"];r.reverse();return r}function VS::_f627f40d21a6(t,l=::getroottable()){foreach(v,u in l)if(typeof u=="table")if(v!="VS"&&v!="Documentation")if(u!=t){local r=_f627f40d21a6(t,u);if(r){bF.append(v);return r}}else{bF.append(v);return bF}}
 
 //-----------------------------------------------------------------------
 // Example:
@@ -485,7 +485,7 @@ function VS::GetTableDir( table )
 // Output : table
 //-----------------------------------------------------------------------
 function VS::FindTableByName( str )
-{if(typeof str!="string")throw("Invalid input type '"+(typeof str)+"' ; expected: 'string'");local r=_fb3k55Ir91t7(str);if(r)return r;return getroottable()}function VS::_fb3k55Ir91t7(t,l=getroottable()){foreach(v,u in l)if(typeof u=="table")if(v!="VS"&&v!="Documentation")if(v!=t){local r=_fb3k55Ir91t7(t,u);if(r)return r}else return u}
+{if(typeof str!="string")throw("Invalid input type '"+(typeof str)+"' ; expected: 'string'");local r=_fb3k55Ir91t7(str);if(r)return r;return::getroottable()}function VS::_fb3k55Ir91t7(t,l=::getroottable()){foreach(v,u in l)if(typeof u=="table")if(v!="VS"&&v!="Documentation")if(v!=t){local r=_fb3k55Ir91t7(t,u);if(r)return r}else return u}
 
 //-----------------------------------------------------------------------
 // Used to get the variable names of parameters passed into functions
@@ -516,7 +516,7 @@ test( somefunc )
 
 */
 //-----------------------------------------------------------------------
-function VS::GetVarName(v){local r=_fb3k5S1r91t7(typeof v,v);if(r)return r;return"null"}function VS::_fb3k5S1r91t7(t,i,s=getroottable()){foreach(k,v in s){local y=typeof v;if(y==t){if(v==i)return k}else if(y=="table"){if(k!="VS"&&k!="Documentation"){local r=_fb3k5S1r91t7(t,i,v);if(r)return r}}}}
+function VS::GetVarName(v){local r=_fb3k5S1r91t7(typeof v,v);if(r)return r;return"null"}function VS::_fb3k5S1r91t7(t,i,s=::getroottable()){foreach(k,v in s){local y=typeof v;if(y==t){if(v==i)return k}else if(y=="table"){if(k!="VS"&&k!="Documentation"){local r=_fb3k5S1r91t7(t,i,v);if(r)return r}}}}
 
 function VS::GetFuncName(f){return f.getinfos().name}
 
@@ -530,7 +530,7 @@ function VS::GetFuncName(f){return f.getinfos().name}
 */
 function VS::GetTickrate()
 {
-	return 1.0 / FrameTime()
+	return 1.0 / ::FrameTime()
 }
 
 //-----------------------------------------------------------------------
@@ -545,10 +545,10 @@ function VS::GetTickrate()
 //
 // You can use activators and callers to easily access entity handles
 //-----------------------------------------------------------------------
-::delay     <- function( f, t = 0.0, e = ENT_SCRIPT, a = null, c = null ){ EntFireByHandle( e, "runscriptcode", ""+f, t, a, c ) }
+::delay     <- function( f, t = 0.0, e = ::ENT_SCRIPT, a = null, c = null ){ DoEntFireByInstanceHandle( e, "runscriptcode", ""+f, t, a, c ) }
 
 ::Chat      <- function(s){ScriptPrintMessageChatAll(" "+s)}
-::ChatTeam  <- function(s){ScriptPrintMessageChatTeam(" "+s)}
+::ChatTeam  <- function(i,s){ScriptPrintMessageChatTeam(i," "+s)}
 ::Alert     <- ::ScriptPrintMessageCenterAll
 ::AlertTeam <- ::ScriptPrintMessageCenterTeam
 ::ClearChat <- function(){ for( local i = 0; i < 9; i++ ) Chat("") }

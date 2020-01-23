@@ -2,6 +2,9 @@
 
 --------------------------------
 
+2020-01-24 [v2.33.1]
+- Cleanup, better performance
+
 2020-01-23 [v2.33.0]
 - Implemented auto userid validation. VS.ValidateUserid functions are removed.
 - ChatTeam bugfix

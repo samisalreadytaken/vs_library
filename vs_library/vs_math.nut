@@ -31,7 +31,7 @@
 
 // VS.IsInteger(1.0) is true
 // VS.IsInteger(1.1) is false
-function VS::IsInteger( f ){ return floor(f) == f }
+function VS::IsInteger( f ){ return::floor(f) == f }
 
 //-----------------------------------------------------------------------
 // IsLookingAt with tolerance
@@ -83,10 +83,10 @@ function VS::PointOnLineNearestPoint( vStartPos, vEndPos, vPoint )
 function VS::GetAngle( vFrom, vTo )
 {
 	local d     = vFrom - vTo,
-	      pitch = RAD2DEG*atan2( d.z, d.Length2D() ),
-	      yaw   = RAD2DEG*(atan2( d.y, d.x ) + PI)
+	      pitch = ::RAD2DEG*::atan2( d.z, d.Length2D() ),
+	      yaw   = ::RAD2DEG*(::atan2( d.y, d.x ) + ::PI)
 
-	return Vector(pitch,yaw,0)
+	return::Vector(pitch,yaw,0)
 }
 
 //-----------------------------------------------------------------------
@@ -97,7 +97,7 @@ function VS::GetAngle( vFrom, vTo )
 function VS::GetAngle2D( vFrom, vTo )
 {
 	local d   = vTo - vFrom,
-	      yaw = RAD2DEG*atan2( d.y, d.x )
+	      yaw = ::RAD2DEG*::atan2( d.y, d.x )
 
 	return yaw
 }
@@ -174,7 +174,7 @@ function VS::VectorVectors( forward, right, up )
 	}
 	else
 	{
-		local R = forward.Cross( Vector(0,0,1) )
+		local R = forward.Cross( ::Vector(0,0,1) )
 		right.x = R.x; right.y = R.y; right.z = R.z
 		right.Norm()
 
@@ -192,19 +192,19 @@ function VS::AngleVectors( vAng, vFwd, vRg = null, vUp = null )
 {
 	local sr, cr, rr,
 
-	      yr = DEG2RAD*vAng.y,
-	      sy = sin(yr),
-	      cy = cos(yr),
+	      yr = ::DEG2RAD*vAng.y,
+	      sy = ::sin(yr),
+	      cy = ::cos(yr),
 
-	      pr = DEG2RAD*vAng.x,
-	      sp = sin(pr),
-	      cp = cos(pr)
+	      pr = ::DEG2RAD*vAng.x,
+	      sp = ::sin(pr),
+	      cp = ::cos(pr)
 
 	if( vAng.z )
 	{
-		rr = DEG2RAD*vAng.z
-		sr = sin(rr)
-		cr = cos(rr)
+		rr = ::DEG2RAD*vAng.z
+		sr = ::sin(rr)
+		cr = ::cos(rr)
 	}
 	else
 	{
@@ -251,17 +251,17 @@ function VS::VectorAngles( vFwd )
 	}
 	else
 	{
-		yaw = RAD2DEG*atan2(vFwd.y, vFwd.x)
+		yaw = ::RAD2DEG*::atan2(vFwd.y, vFwd.x)
 		if( yaw < 0 )
 			yaw += 360
 
-		tmp = sqrt(vFwd.x*vFwd.x + vFwd.y*vFwd.y)
-		pitch = RAD2DEG*atan2(-vFwd.z, tmp)
+		tmp = ::sqrt(vFwd.x*vFwd.x + vFwd.y*vFwd.y)
+		pitch = ::RAD2DEG*::atan2(-vFwd.z, tmp)
 		if( pitch < 0 )
 			pitch += 360
 	}
 
-	return Vector(pitch,yaw,0)
+	return::Vector(pitch,yaw,0)
 }
 
 //-----------------------------------------------------------------------
@@ -269,9 +269,9 @@ function VS::VectorAngles( vFwd )
 //-----------------------------------------------------------------------
 function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC )
 {
-	local rad = DEG2RAD*fYaw,
-	      sy  = sin(rad),
-	      cy  = cos(rad)
+	local rad = ::DEG2RAD*fYaw,
+	      sy  = ::sin(rad),
+	      cy  = ::cos(rad)
 
 	vOut.x = vIn.x * cy - vIn.y * sy
 	vOut.y = vIn.x * sy + vIn.y * cy
@@ -282,8 +282,8 @@ function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC )
 
 function VS::YawToVector( yaw )
 {
-	local ang = DEG2RAD*yaw
-	return Vector( cos(ang), sin(ang), 0 )
+	local ang = ::DEG2RAD*yaw
+	return::Vector( ::cos(ang), ::sin(ang), 0 )
 }
 
 function VS::VecToYaw( vec )
@@ -291,7 +291,7 @@ function VS::VecToYaw( vec )
 	if( vec.y == 0 && vec.x == 0 )
 		return 0
 
-	local yaw = RAD2DEG*atan2(vec.y, vec.x)
+	local yaw = ::RAD2DEG*::atan2(vec.y, vec.x)
 
 	if( yaw < 0 )
 		yaw += 360
@@ -309,7 +309,7 @@ function VS::VecToPitch( vec )
 			return -180.0
 	}
 
-	return RAD2DEG*atan2(-vec.z, vec.Length2D())
+	return::RAD2DEG*::atan2(-vec.z, vec.Length2D())
 }
 
 function VS::VectorIsZero(v)
@@ -322,9 +322,9 @@ function VS::VectorIsZero(v)
 //-----------------------------------------------------------------------
 function VS::VectorsAreEqual( a, b, tolerance = 0.0 )
 {
-	return ( fabs(a.x - b.x) <= tolerance &&
-	         fabs(a.y - b.y) <= tolerance &&
-	         fabs(a.z - b.z) <= tolerance )
+	return ( ::fabs(a.x - b.x) <= tolerance &&
+	         ::fabs(a.y - b.y) <= tolerance &&
+	         ::fabs(a.z - b.z) <= tolerance )
 }
 
 //-----------------------------------------------------------------------
@@ -332,7 +332,7 @@ function VS::VectorsAreEqual( a, b, tolerance = 0.0 )
 //-----------------------------------------------------------------------
 function VS::AnglesAreEqual( a, b, tolerance = 0.0 )
 {
-	return ( fabs(AngleDiff(a, b)) <= tolerance )
+	return ( ::fabs(AngleDiff(a, b)) <= tolerance )
 }
 
 //-----------------------------------------------------------------------
@@ -340,7 +340,7 @@ function VS::AnglesAreEqual( a, b, tolerance = 0.0 )
 //-----------------------------------------------------------------------
 function VS::CloseEnough( a, b, e )
 {
-	return ( fabs(a - b) <= e )
+	return ( ::fabs(a - b) <= e )
 }
 
 function VS::Approach( target, value, speed )
@@ -364,7 +364,7 @@ function VS::ApproachAngle( target, value, speed )
 
 	local delta = AngleDiff( target, value )
 
-	speed = fabs(speed)
+	speed = ::fabs(speed)
 
 	if( delta > speed )
 		value += speed
@@ -442,7 +442,7 @@ function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 )
 {
 	local proj = 1 - epsilon
 
-	if( fabs(v.x) > proj )
+	if( ::fabs(v.x) > proj )
 	{
 		if( vDirection.x < 0 )
 			vDirection.x = -1.0
@@ -454,7 +454,7 @@ function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 )
 		return vDirection
 	}
 
-	if( fabs(v.y) > proj )
+	if( ::fabs(v.y) > proj )
 	{
 		if( vDirection.y < 0 )
 			vDirection.y = -1.0
@@ -466,7 +466,7 @@ function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 )
 		return vDirection
 	}
 
-	if( fabs(v.z) > proj )
+	if( ::fabs(v.z) > proj )
 	{
 		if( vDirection.z < 0 )
 			vDirection.z = -1.0
@@ -512,18 +512,18 @@ function VS::VectorCopy( src, dst )
 //-----------------------------------------------------------------------------
 function VS::VectorMin( a, b, o = _VEC )
 {
-	o.x = min(a.x,b.x)
-	o.y = min(a.y,b.y)
-	o.z = min(a.z,b.z)
+	o.x = ::min(a.x,b.x)
+	o.y = ::min(a.y,b.y)
+	o.z = ::min(a.z,b.z)
 
 	return o
 }
 
 function VS::VectorMax( a, b, o = _VEC )
 {
-	o.x = max(a.x,b.x)
-	o.y = max(a.y,b.y)
-	o.z = max(a.z,b.z)
+	o.x = ::max(a.x,b.x)
+	o.y = ::max(a.y,b.y)
+	o.z = ::max(a.z,b.z)
 
 	return o
 }
@@ -531,9 +531,9 @@ function VS::VectorMax( a, b, o = _VEC )
 // input vector pointer
 function VS::VectorAbs( v )
 {
-	v.x = fabs(v.x)
-	v.y = fabs(v.y)
-	v.z = fabs(v.z)
+	v.x = ::fabs(v.x)
+	v.y = ::fabs(v.y)
+	v.z = ::fabs(v.z)
 	return v
 }
 
@@ -651,7 +651,7 @@ function VS::ComputeVolume( vecMins, vecMaxs )
 //-----------------------------------------------------------------------------
 function VS::RandomVector( minVal = -RAND_MAX, maxVal = RAND_MAX )
 {
-	return Vector( RandomFloat( minVal, maxVal ), RandomFloat( minVal, maxVal ), RandomFloat( minVal, maxVal ) )
+	return::Vector( ::RandomFloat( minVal, maxVal ), ::RandomFloat( minVal, maxVal ), ::RandomFloat( minVal, maxVal ) )
 }
 
 // For predetermined values, multiply the value yourself, instead of making the calculation in runtime
@@ -707,9 +707,9 @@ function VS::CalcSqrDistanceToAABB( mins, maxs, point )
 
 function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut = _VEC )
 {
-	closestOut.x = clamp( point.x, mins.x, maxs.x )
-	closestOut.y = clamp( point.y, mins.y, maxs.y )
-	closestOut.z = clamp( point.z, mins.z, maxs.z )
+	closestOut.x = ::clamp( point.x, mins.x, maxs.x )
+	closestOut.y = ::clamp( point.y, mins.y, maxs.y )
+	closestOut.z = ::clamp( point.z, mins.z, maxs.z )
 
 	return closestOut
 }
@@ -723,14 +723,14 @@ function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut = _VEC )
 // decayTo is factor the value should decay to in decayTime
 function VS::ExponentialDecay( decayTo, decayTime, dt )
 {
-	return exp( log(decayTo) / decayTime * dt )
+	return::exp( ::log(decayTo) / decayTime * dt )
 }
 
 // halflife is time for value to reach 50%
 function VS::ExponentialDecay2( halflife, dt )
 {
 	// log(0.5) == -0.69314718055994530941723212145818
-	return exp( -0.69314718 / halflife * dt )
+	return::exp( -0.69314718 / halflife * dt )
 }
 
 // Get the integrated distanced traveled
@@ -738,7 +738,7 @@ function VS::ExponentialDecay2( halflife, dt )
 // dt is the time relative to the last velocity update
 function VS::ExponentialDecayIntegral( decayTo, decayTime, dt )
 {
-	return ( pow(decayTo, dt / decayTime) * decayTime - decayTime ) / log(decayTo)
+	return ( ::pow(decayTo, dt / decayTime) * decayTime - decayTime ) / ::log(decayTo)
 }
 
 // hermite basis function for smooth interpolation
@@ -767,7 +767,7 @@ function VS::SimpleSplineRemapValClamped( val, A, B, C, D )
 {
 	if( A == B ) return val >= B ? D : C
 	local cVal = (val - A) / (B - A)
-	cVal = clamp( cVal, 0.0, 1.0 )
+	cVal = ::clamp( cVal, 0.0, 1.0 )
 	return C + (D - C) * SimpleSpline( cVal )
 }
 
@@ -782,7 +782,7 @@ function VS::RemapValClamped( val, A, B, C, D )
 {
 	if( A == B ) return val >= B ? D : C
 	local cVal = (val - A) / (B - A)
-	cVal = clamp( cVal, 0.0, 1.0 )
+	cVal = ::clamp( cVal, 0.0, 1.0 )
 	return C + (D - C) * cVal
 }
 
@@ -825,8 +825,8 @@ function VS::Bias( x, biasAmt )
 	local lastAmt = -1,
 	      lastExponent = 0
 	if( lastAmt != biasAmt )
-		lastExponent = log(biasAmt) * -1.4427; // (-1.4427 = 1 / log(0.5))
-	return pow(x, lastExponent)
+		lastExponent = ::log(biasAmt) * -1.4427; // (-1.4427 = 1 / log(0.5))
+	return::pow(x, lastExponent)
 }
 
 //
@@ -888,7 +888,7 @@ function VS::Gain( x, biasAmt )
 //
 function VS::SmoothCurve( x )
 {
-	return (1 - cos(x * PI)) * 0.5
+	return (1 - ::cos(x * ::PI)) * 0.5
 }
 
 function VS::MovePeak( x, flPeakPos )

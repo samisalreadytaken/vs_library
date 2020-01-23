@@ -44,7 +44,7 @@
 // If you'd like to get the userid, networkid (steamID32) and name of players,
 // add the following outputs on your player_connect and player_spawn event listeners
 //  	OnEventFired @event_connect RunScriptCode VS.Events.player_connect(event_data)
-//  	OnEventFired @event_spawn RunScriptCode VS.Events.player_spawn(event_data)
+//  	OnEventFired @event_spawn   RunScriptCode VS.Events.player_spawn(event_data)
 //
 // You can still execute your arbitrary code on these events by
 // simply creating the ::OnGameEvent_player_spawn(data) functions
@@ -59,7 +59,7 @@ function VS::GetPlayerByUserid( userid )
 {
 	local ent
 
-	while( ent = Entities.Next(ent) ) if( ent.GetClassname() == "player" )
+	while( ent =::Entities.Next(ent) ) if( ent.GetClassname() == "player" )
 	{
 		local s = ent.GetScriptScope()
 		if( s && s.userid == userid )
@@ -80,7 +80,7 @@ function VS::Events::player_connect(data)
 {
 	if(::_xa9b2dfB7ffe.len()>512)for(local i=0;i<8;i++)::_xa9b2dfB7ffe.remove(0);::_xa9b2dfB7ffe.append(data)
 
-	::OnGameEvent_player_connect(data)
+	return::OnGameEvent_player_connect(data)
 }
 
 // OnEvent player_spawn
@@ -89,18 +89,18 @@ function VS::Events::player_spawn(data)
 {
 	if( ::_xa9b2dfB7ffe.len() ) foreach( i, d in ::_xa9b2dfB7ffe ) if( d.userid == data.userid )
 	{
-		local scope, player = ::VS.GetPlayerByIndex(d.index+1)
+		local player = ::VS.GetPlayerByIndex(d.index+1)
 
 		if( !player.ValidateScriptScope() )
-			return printl("[player_connect]: Invalid player entity.")
+			return::printl("[player_connect]: Invalid player entity.")
 
-		scope = player.GetScriptScope()
+		local scope = player.GetScriptScope()
 
 		if( "userid" in scope )
 			return::OnGameEvent_player_spawn(data)
 
 		if( !d.networkid.len() )
-			printl("[player_connect]: could not get event data.")
+			::printl("[player_connect]: could not get event data.")
 
 		scope.userid <- d.userid
 		scope.name <- d.name
@@ -109,5 +109,5 @@ function VS::Events::player_spawn(data)
 		return::OnGameEvent_player_spawn(data)
 	}
 
-	::OnGameEvent_player_spawn(data)
+	return::OnGameEvent_player_spawn(data)
 }

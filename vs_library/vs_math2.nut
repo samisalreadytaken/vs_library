@@ -83,7 +83,7 @@ local _QUAT =::Quaternion();
 
 function VS::InvRSquared( v )
 {
-	return 1.0 / max( 1.0, v.LengthSqr() );
+	return 1.0 / ::max( 1.0, v.LengthSqr() );
 }
 
 function VS::a_swap( a1, i1, a2, i2 )
@@ -108,7 +108,7 @@ function VS::MatrixColumnDotProduct( in1, col, in2 )
 
 function VS::DotProductAbs( in1, in2 )
 {
-	return fabs(in1.x*in2.x) + fabs(in1.y*in2.y) + fabs(in1.z*in2.z);
+	return ::fabs(in1.x*in2.x) + ::fabs(in1.y*in2.y) + ::fabs(in1.z*in2.z);
 }
 /*
 function VS::DotProductAbsV()
@@ -173,7 +173,7 @@ function VS::VectorRotate( in1, in2, out = _VEC )
 // assume in2 is a rotation (QAngle) and rotate the input vector
 function VS::VectorRotate2( in1, in2, out = _VEC )
 {
-	local matRotate = matrix3x4();
+	local matRotate = ::matrix3x4();
 	AngleMatrix2( in2, matRotate );
 	VectorRotate( in1, matRotate, out );
 
@@ -183,7 +183,7 @@ function VS::VectorRotate2( in1, in2, out = _VEC )
 // assume in2 is a rotation (Quaternion) and rotate the input vector
 function VS::VectorRotate3( in1, in2, out = _VEC )
 {
-	local matRotate = matrix3x4();
+	local matRotate = ::matrix3x4();
 	QuaternionMatrix2( in2, matRotate );
 	VectorRotate( in1, matRotate, out );
 
@@ -223,10 +223,10 @@ function VS::VectorNegate( vec )
 
 function VS::QuaternionsAreEqual( a, b, tolerance = 0.0 )
 {
-	return ( fabs( a.x - b.x ) <= tolerance &&
-	         fabs( a.y - b.y ) <= tolerance &&
-	         fabs( a.z - b.z ) <= tolerance &&
-	         fabs( a.w - b.w ) <= tolerance );
+	return ( ::fabs( a.x - b.x ) <= tolerance &&
+	         ::fabs( a.y - b.y ) <= tolerance &&
+	         ::fabs( a.z - b.z ) <= tolerance &&
+	         ::fabs( a.w - b.w ) <= tolerance );
 }
 
 //-----------------------------------------------------------------------------
@@ -236,7 +236,7 @@ function VS::QuaternionMA( p, s, q, qt = _QUAT )
 {
 	// QuaternionScale( q, s, q1 );
 	local q1 = q * s;
-	local p1 = QuaternionMult( p, q1, Quaternion() );;
+	local p1 = QuaternionMult( p, q1, ::Quaternion() );;
 	QuaternionNormalize( p1 );
 
 	qt.x = p1.x;
@@ -250,7 +250,7 @@ function VS::QuaternionMA( p, s, q, qt = _QUAT )
 function VS::QuaternionAdd( p, q, qt = _QUAT )
 {
 	// decide if one of the quaternions is backwards
-	local q2 = QuaternionAlign( p, q, Quaternion() );
+	local q2 = QuaternionAlign( p, q, ::Quaternion() );
 
 	// is this right???
 	qt.x = p.x + q2.x;
@@ -279,7 +279,7 @@ function VS::QuaternionMult( p, q, qt = _QUAT )
 	};
 
 	// decide if one of the quaternions is backwards
-	local q2 = QuaternionAlign( p, q, Quaternion() );
+	local q2 = QuaternionAlign( p, q, ::Quaternion() );
 
 	qt.x =  p.x * q2.w + p.y * q2.z - p.z * q2.y + p.w * q2.x;
 	qt.y = -p.x * q2.z + p.y * q2.w + p.z * q2.x + p.w * q2.y;
@@ -337,7 +337,7 @@ function VS::QuaternionAlign( p, q, qt = _QUAT )
 function VS::QuaternionBlend( p, q, t, qt = _QUAT )
 {
 	// decide if one of the quaternions is backwards
-	local q2 = QuaternionAlign( p, q, Quaternion() );
+	local q2 = QuaternionAlign( p, q, ::Quaternion() );
 	QuaternionBlendNoAlign( p, q2, t, qt );
 	return qt;
 }
@@ -389,7 +389,7 @@ function VS::QuaternionSlerp( p, q, t, qt = _QUAT )
 	// 0.0 returns p, 1.0 return q.
 
 	// decide if one of the quaternions is backwards
-	local q2 = QuaternionAlign( p, q, Quaternion() );
+	local q2 = QuaternionAlign( p, q, ::Quaternion() );
 
 	QuaternionSlerpNoAlign( p, q2, t, qt );
 
@@ -409,10 +409,10 @@ function VS::QuaternionSlerpNoAlign( p, q, t, qt = _QUAT )
 	{
 		if( (1.0 - cosom) > 0.000001 )
 		{
-			omega = acos( cosom );
-			sinom = sin( omega );
-			sclp = sin( (1.0 - t)*omega ) / sinom;
-			sclq = sin( t*omega ) / sinom;
+			omega = ::acos( cosom );
+			sinom = ::sin( omega );
+			sclp = ::sin( (1.0 - t)*omega ) / sinom;
+			sclq = ::sin( t*omega ) / sinom;
 		}
 		else
 		{
@@ -434,8 +434,8 @@ function VS::QuaternionSlerpNoAlign( p, q, t, qt = _QUAT )
 		// qt.y = q.x;
 		// qt.z = -q.w;
 		// qt.w = q.z;
-		sclp = sin( (1.0 - t) * 1.5708 );
-		sclq = sin( t * 1.5708 );
+		sclp = ::sin( (1.0 - t) * 1.5708 );
+		sclq = ::sin( t * 1.5708 );
 
 		qt.x = sclp * p.x + sclq * qt.x;
 		qt.y = sclp * p.y + sclq * qt.y;
@@ -457,26 +457,26 @@ function VS::QuaternionAngleDiff( p, q )
 	//     this means that in floats, anything below ~0.05 degrees truncates to 0
 	// 2 - normalized quaternions are frequently slightly non-normalized due to float precision issues,
 	//     and the epsilon off of normalized can be several percents of a degree
-	local qInv = Quaternion(),
-	      diff = Quaternion();
+	local qInv = ::Quaternion(),
+	      diff = ::Quaternion();
 	QuaternionConjugate( q, qInv );
 	QuaternionMult( p, qInv, diff );
 
 	// Note if the quaternion is slightly non-normalized the square root below may be more than 1,
-	// the value is clamped to one otherwise it may result in asin() returning an undefined result.
-	local sinang = min( 1.0, sqrt( diff.x * diff.x + diff.y * diff.y + diff.z * diff.z ) );
-	local angle = RAD2DEG* 2 * asin( sinang );
+	// the value is clamped to one otherwise it may result in ::asin() returning an undefined result.
+	local sinang = ::min( 1.0, ::sqrt( diff.x * diff.x + diff.y * diff.y + diff.z * diff.z ) );
+	local angle = ::RAD2DEG* 2 * ::asin( sinang );
 	return angle;
 /* #}else{
-	local q2 = Quaternion();
+	local q2 = ::Quaternion();
 	QuaternionAlign( p, q, q2 );
 	local cosom = p.x * q2.x + p.y * q2.y + p.z * q2.z + p.w * q2.w;
 	if( cosom > -1.0 )
 	{
 		if( cosom < 1.0 )
 		{
-			local omega = 2 * fabs( acos( cosom ) );
-			return RAD2DEG*omega;
+			local omega = 2 * ::fabs( ::acos( cosom ) );
+			return ::RAD2DEG*omega;
 		}
 		return 0.0;
 	}
@@ -522,7 +522,7 @@ function VS::QuaternionNormalize( q )
 
 	if( radius ) // > FLT_EPSILON && ((radius < 1.0 - 4*FLT_EPSILON) || (radius > 1.0 + 4*FLT_EPSILON))
 	{
-		radius = sqrt(radius);
+		radius = ::sqrt(radius);
 		iradius = 1.0/radius;
 		q.w *= iradius;
 		q.z *= iradius;
@@ -538,12 +538,12 @@ function VS::QuaternionNormalize( q )
 function VS::QuaternionScale( p, t, q )
 {
 if(0){
-	local p0 = Quaternion();
-	local q = Quaternion();
+	local p0 = ::Quaternion();
+	local q = ::Quaternion();
 	p0.Init( 0.0, 0.0, 0.0, 1.0 );
 
 	// slerp in "reverse order" so that p doesn't get realigned
-	QuaternionSlerp( p, p0, 1.0 - fabs( t ), q );
+	QuaternionSlerp( p, p0, 1.0 - ::fabs( t ), q );
 	if(t < 0.0)
 	{
 		q.w = -q.w;
@@ -552,11 +552,11 @@ if(0){
 	local r;
 
 	// FIXME: this isn't overly sensitive to accuracy, and it may be faster to
-	// use the cos part (w) of the quaternion (sin(omega)*N,cos(omega)) to figure the new scale.
-	local sinom = sqrt( DotProduct( &p.x, &p.x ) );
-	sinom = min( sinom, 1.0 );
+	// use the cos part (w) of the quaternion (::sin(omega)*N,::cos(omega)) to figure the new scale.
+	local sinom = ::sqrt( DotProduct( &p.x, &p.x ) );
+	sinom = ::min( sinom, 1.0 );
 
-	local sinsom = sin( asin( sinom ) * t );
+	local sinsom = ::sin( ::asin( sinom ) * t );
 
 	t = sinsom / (sinom + FLT_EPSILON);
 	q.x = VectorMultiply( &p.x, t );
@@ -567,7 +567,7 @@ if(0){
 	// Assert( r >= 0 );
 	if(r < 0.0)
 		r = 0.0;
-	r = sqrt( r );
+	r = ::sqrt( r );
 
 	// keep sign of rotation
 	if(p.w < 0)
@@ -580,10 +580,10 @@ if(0){
 // QAngle , QAngle , Vector, float
 function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis, deltaAngle )
 {
-	local srcQuat = Quaternion(),
-	      destQuat = Quaternion(),
-	      srcQuatInv = Quaternion(),
-	      out = Quaternion();
+	local srcQuat = ::Quaternion(),
+	      destQuat = ::Quaternion(),
+	      srcQuatInv = ::Quaternion(),
+	      out = ::Quaternion();
 	AngleQuaternion( srcAngles, srcQuat );
 	AngleQuaternion( destAngles, destQuat );
 	QuaternionScale( srcQuat, -1, srcQuatInv );
@@ -596,9 +596,9 @@ function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis, deltaAngl
 // QAngle , QAngle , Vector, float
 function VS::RotationDelta( srcAngles, destAngles, out )
 {
-	local src = matrix3x4(),
-	      srcInv = matrix3x4(),
-	      dest = matrix3x4();
+	local src = ::matrix3x4(),
+	      srcInv = ::matrix3x4(),
+	      dest = ::matrix3x4();
 
 	AngleMatrix2( srcAngles, src );
 	AngleMatrix2( destAngles, dest );
@@ -688,7 +688,7 @@ function VS::QuaternionAngles( q, angles = _VEC )
 {
 /*# if(1){
 	// FIXME: doing it this way calculates too much data, needs to do an optimized version...
-	local matrix = matrix3x4();
+	local matrix = ::matrix3x4();
 	QuaternionMatrix2( q, matrix );
 	MatrixAngles( matrix, angles );
 #}else{ */
@@ -698,9 +698,9 @@ function VS::QuaternionAngles( q, angles = _VEC )
 	      m23 = ( 2.0 * q.y * q.z ) + ( 2.0 * q.w * q.x ),
 	      m33 = ( 2.0 * q.w * q.w ) + ( 2.0 * q.z * q.z ) - 1.0;
 	// FIXME: this code has a singularity near PITCH +-90
-	angles.y = RAD2DEG*atan2(m12, m11);
-	angles.x = RAD2DEG*asin(-m13);
-	angles.z = RAD2DEG*atan2(m23, m33);
+	angles.y = ::RAD2DEG*::atan2(m12, m11);
+	angles.x = ::RAD2DEG*::asin(-m13);
+	angles.z = ::RAD2DEG*::atan2(m23, m33);
 //#}
 	return angles;
 }
@@ -711,7 +711,7 @@ function VS::QuaternionAngles( q, angles = _VEC )
 //-----------------------------------------------------------------------------
 function VS::QuaternionAxisAngle( q, axis )
 {
-	local angle = RAD2DEG*2*acos(q.w);
+	local angle = ::RAD2DEG*2*::acos(q.w);
 
 	// AngleNormalize
 	if( angle > 180 )
@@ -730,10 +730,10 @@ function VS::QuaternionAxisAngle( q, axis )
 //-----------------------------------------------------------------------------
 function VS::AxisAngleQuaternion( axis, angle, q = _QUAT )
 {
-	angle = DEG2RAD* angle * 0.5;
+	angle = ::DEG2RAD* angle * 0.5;
 
-	local sa = sin(angle),
-	      ca = cos(angle);
+	local sa = ::sin(angle),
+	      ca = ::cos(angle);
 
 	q.x = axis.x * sa;
 	q.y = axis.y * sa;
@@ -753,18 +753,18 @@ function VS::AxisAngleQuaternion( axis, angle, q = _QUAT )
 //-----------------------------------------------------------------------------
 function VS::AngleQuaternion( angles, outQuat = _QUAT )
 {
-	local ay = DEG2RAD* angles.y * 0.5,
-	      ax = DEG2RAD* angles.x * 0.5,
-	      az = DEG2RAD* angles.z * 0.5;
+	local ay = ::DEG2RAD* angles.y * 0.5,
+	      ax = ::DEG2RAD* angles.x * 0.5,
+	      az = ::DEG2RAD* angles.z * 0.5;
 
-	local sy = sin(ay),
-	      cy = cos(ay),
+	local sy = ::sin(ay),
+	      cy = ::cos(ay),
 
-	      sp = sin(ax),
-	      cp = cos(ax),
+	      sp = ::sin(ax),
+	      cp = ::cos(ax),
 
-	      sr = sin(az),
-	      cr = cos(az);
+	      sr = ::sin(az),
+	      cr = ::cos(az);
 
 	local srXcp = sr * cp, crXsp = cr * sp;
 	outQuat.x = srXcp*cy-crXsp*sy; // X
@@ -789,9 +789,9 @@ function VS::MatrixQuaternion( mat, q = _QUAT )
 //-----------------------------------------------------------------------------
 function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT )
 {
-	Assert( fabs( vecForward.LengthSqr() - 1.0 ) < 1.e-3 );
-	Assert( fabs( vecRight.LengthSqr() - 1.0 ) < 1.e-3 );
-	Assert( fabs( vecUp.LengthSqr() - 1.0 ) < 1.e-3 );
+	Assert( ::fabs( vecForward.LengthSqr() - 1.0 ) < 1.e-3 );
+	Assert( ::fabs( vecRight.LengthSqr() - 1.0 ) < 1.e-3 );
+	Assert( ::fabs( vecUp.LengthSqr() - 1.0 ) < 1.e-3 );
 
 	// local vecLeft = vecRight;
 	local vecLeft = vecRight * -1.0;
@@ -803,7 +803,7 @@ function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT )
 	local flTrace = vecForward.x + vecLeft.y + vecUp.z + 1.0;
 	if( flTrace > 1.e-6 )
 	{
-		float flSqrtTrace = sqrt( flTrace );
+		float flSqrtTrace = ::sqrt( flTrace );
 		float s = 0.5 / flSqrtTrace;
 		q.x = ( vecUp.y - vecLeft.z ) * s;
 		q.y = ( vecForward.z - vecUp.x ) * s;
@@ -814,7 +814,7 @@ function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT )
 	{
 		if(( vecForward.x > vecLeft.y ) && ( vecForward.x > vecUp.z ) )
 		{
-			float flSqrtTrace = sqrt( 1.0 + vecForward.x - vecLeft.y - vecUp.z );
+			float flSqrtTrace = ::sqrt( 1.0 + vecForward.x - vecLeft.y - vecUp.z );
 			float s = 0.5 / flSqrtTrace;
 			q.x = 0.5 * flSqrtTrace;
 			q.y = ( vecForward.y + vecLeft.x ) * s;
@@ -823,7 +823,7 @@ function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT )
 		}
 		else if( vecLeft.y > vecUp.z )
 		{
-			float flSqrtTrace = sqrt( 1.0 + vecLeft.y - vecForward.x - vecUp.z );
+			float flSqrtTrace = ::sqrt( 1.0 + vecLeft.y - vecForward.x - vecUp.z );
 			float s = 0.5 / flSqrtTrace;
 			q.x = ( vecForward.y + vecLeft.x ) * s;
 			q.y = 0.5 * flSqrtTrace;
@@ -832,7 +832,7 @@ function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT )
 		}
 		else
 		{
-			float flSqrtTrace = sqrt( 1.0 + vecUp.z - vecForward.x - vecLeft.y );
+			float flSqrtTrace = ::sqrt( 1.0 + vecUp.z - vecForward.x - vecLeft.y );
 			float s = 0.5 / flSqrtTrace;
 			q.x = ( vecUp.x + vecForward.z ) * s;
 			q.y = ( vecUp.y + vecLeft.z ) * s;
@@ -854,10 +854,10 @@ function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT )
 
 	VS.MatrixAnglesQ( mat, q );
 
-	// Assert( fabs(q.x - q2.x) < 1.e-3 );
-	// Assert( fabs(q.y - q2.y) < 1.e-3 );
-	// Assert( fabs(q.z - q2.z) < 1.e-3 );
-	// Assert( fabs(q.w - q2.w) < 1.e-3 );
+	// Assert( ::fabs(q.x - q2.x) < 1.e-3 );
+	// Assert( ::fabs(q.y - q2.y) < 1.e-3 );
+	// Assert( ::fabs(q.z - q2.z) < 1.e-3 );
+	// Assert( ::fabs(q.w - q2.w) < 1.e-3 );
 
 	return q;
 }
@@ -901,27 +901,27 @@ function VS::MatrixAngles( matrix, angles = _VEC, position = null )
 	left[2] = matrix[2][1];
 	up[2] = matrix[2][2];
 */
-	local xyDist = sqrt( forward[0] * forward[0] + forward[1] * forward[1] );
+	local xyDist = ::sqrt( forward[0] * forward[0] + forward[1] * forward[1] );
 
 	// enough here to get angles?
 	if( xyDist > 0.001 )
 	{
 		// (yaw)	y = ATAN( forward[1], forward[0] );		-- in our space, forward is the X axis
-		angles.y = RAD2DEG*atan2( forward[1], forward[0] );
+		angles.y = ::RAD2DEG*::atan2( forward[1], forward[0] );
 
-		// (pitch)	x = ATAN( -forward[2], sqrt(forward[0]*forward[0]+forward[1]*forward[1]) );
-		angles.x = RAD2DEG*atan2( -forward[2], xyDist );
+		// (pitch)	x = ATAN( -forward[2], ::sqrt(forward[0]*forward[0]+forward[1]*forward[1]) );
+		angles.x = ::RAD2DEG*::atan2( -forward[2], xyDist );
 
 		// (roll)	z = ATAN( left[2], up[2] );
-		angles.z = RAD2DEG*atan2( left[2], up[2] );
+		angles.z = ::RAD2DEG*::atan2( left[2], up[2] );
 	}
 	else	// forward is mostly Z, gimbal lock-
 	{
 		// (yaw)	y = ATAN( -left[0], left[1] );			-- forward is mostly z, so use right for yaw
-		angles.y = RAD2DEG*atan2( -left[0], left[1] );
+		angles.y = ::RAD2DEG*::atan2( -left[0], left[1] );
 
-		// (pitch)	x = ATAN( -forward[2], sqrt(forward[0]*forward[0]+forward[1]*forward[1]) );
-		angles.x = RAD2DEG*atan2( -forward[2], xyDist );
+		// (pitch)	x = ATAN( -forward[2], ::sqrt(forward[0]*forward[0]+forward[1]*forward[1]) );
+		angles.x = ::RAD2DEG*::atan2( -forward[2], xyDist );
 
 		// Assume no roll in this case as one degree of freedom has been lost (i.e. yaw == roll)
 		angles.z = 0;
@@ -994,18 +994,18 @@ function VS::AngleMatrix( angles, position, matrix )
 
 function VS::AngleMatrix2( angles, matrix )
 {
-	local ay = DEG2RAD*angles.y,
-	      ax = DEG2RAD*angles.x,
-	      az = DEG2RAD*angles.z;
+	local ay = ::DEG2RAD*angles.y,
+	      ax = ::DEG2RAD*angles.x,
+	      az = ::DEG2RAD*angles.z;
 
-	local sy = sin(ay),
-	      cy = cos(ay),
+	local sy = ::sin(ay),
+	      cy = ::cos(ay),
 
-	      sp = sin(ax),
-	      cp = cos(ax),
+	      sp = ::sin(ax),
+	      cp = ::cos(ax),
 
-	      sr = sin(az),
-	      cr = cos(az);
+	      sr = ::sin(az),
+	      cr = ::cos(az);
 
 	matrix = matrix.m_flMatVal;
 	// matrix = (YAW * PITCH) * ROLL
@@ -1040,18 +1040,18 @@ function VS::AngleIMatrix( angles, position, mat )
 
 function VS::AngleIMatrix2( angles, matrix )
 {
-	local ay = DEG2RAD*angles.y,
-	      ax = DEG2RAD*angles.x,
-	      az = DEG2RAD*angles.z;
+	local ay = ::DEG2RAD*angles.y,
+	      ax = ::DEG2RAD*angles.x,
+	      az = ::DEG2RAD*angles.z;
 
-	local sy = sin(ay),
-	      cy = cos(ay),
+	local sy = ::sin(ay),
+	      cy = ::cos(ay),
 
-	      sp = sin(ax),
-	      cp = cos(ax),
+	      sp = ::sin(ax),
+	      cp = ::cos(ax),
 
-	      sr = sin(az),
-	      cr = cos(az);
+	      sr = ::sin(az),
+	      cr = ::cos(az);
 
 	matrix = matrix.m_flMatVal;
 	// matrix = (YAW * PITCH) * ROLL
@@ -1090,7 +1090,7 @@ function VS::MatricesAreEqual( src1, src2, flTolerance )
 	{
 		for( local j = 0; j < 4; ++j )
 		{
-			if( fabs( src1[i][j] - src2[i][j] ) > flTolerance )
+			if( ::fabs( src1[i][j] - src2[i][j] ) > flTolerance )
 				return false;
 		}
 	}
@@ -1250,15 +1250,15 @@ function VS::ComputeAbsMatrix( in1, out )
 	in1 = in1.m_flMatVal;
 	out = out.m_flMatVal;
 
-	out[0][0] = fabs(in1[0][0]);
-	out[0][1] = fabs(in1[0][1]);
-	out[0][2] = fabs(in1[0][2]);
-	out[1][0] = fabs(in1[1][0]);
-	out[1][1] = fabs(in1[1][1]);
-	out[1][2] = fabs(in1[1][2]);
-	out[2][0] = fabs(in1[2][0]);
-	out[2][1] = fabs(in1[2][1]);
-	out[2][2] = fabs(in1[2][2]);
+	out[0][0] = ::fabs(in1[0][0]);
+	out[0][1] = ::fabs(in1[0][1]);
+	out[0][2] = ::fabs(in1[0][2]);
+	out[1][0] = ::fabs(in1[1][0]);
+	out[1][1] = ::fabs(in1[1][1]);
+	out[1][2] = ::fabs(in1[1][2]);
+	out[2][0] = ::fabs(in1[2][0]);
+	out[2][1] = ::fabs(in1[2][1]);
+	out[2][2] = ::fabs(in1[2][2]);
 }
 
 function VS::ConcatRotations( in1, in2, out )
@@ -1339,9 +1339,9 @@ function VS::ConcatTransforms( in1, in2, out )
 //-----------------------------------------------------------------------------
 function VS::MatrixBuildRotationAboutAxis( vAxisOfRot, angleDegrees, dst )
 {
-	local radians = angleDegrees * DEG2RAD;
-	local fSin = sin( radians ),
-	      fCos = cos( radians );
+	local radians = angleDegrees * ::DEG2RAD;
+	local fSin = ::sin( radians ),
+	      fCos = ::cos( radians );
 
 	local axisXSquared = vAxisOfRot[0] * vAxisOfRot[0],
 	      axisYSquared = vAxisOfRot[1] * vAxisOfRot[1],
@@ -1396,9 +1396,9 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection )
 		// as an initial guess, then subtract out the component which is
 		// parallel to the final direction
 		local idx = "x";
-		if( fabs(finalDirection.y) < fabs(finalDirection[idx]) )
+		if( ::fabs(finalDirection.y) < ::fabs(finalDirection[idx]) )
 			idx = "y";
-		if( fabs(finalDirection.z) < fabs(finalDirection[idx]) )
+		if( ::fabs(finalDirection.z) < ::fabs(finalDirection[idx]) )
 			idx = "z";
 
 		axis[idx] = 1.0;
@@ -1411,7 +1411,7 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection )
 	{
 		axis = initialDirection.Cross(finalDirection);
 		axis.Norm();
-		angle = acos(angle) * RAD2DEG;
+		angle = ::acos(angle) * ::RAD2DEG;
 	}
 
 	MatrixBuildRotationAboutAxis( axis, angle, dst );
@@ -1540,17 +1540,17 @@ function VS::TransformAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxs
 
 	transform = transform.m_flMatVal;
 
-	local worldExtents = Vector( fabs(localExtents.x*transform[0][0]) +
-	                             fabs(localExtents.y*transform[0][1]) +
-	                             fabs(localExtents.z*transform[0][2]),
+	local worldExtents = ::Vector( ::fabs(localExtents.x*transform[0][0]) +
+	                               ::fabs(localExtents.y*transform[0][1]) +
+	                               ::fabs(localExtents.z*transform[0][2]),
 
-	                             fabs(localExtents.x*transform[1][0]) +
-	                             fabs(localExtents.y*transform[1][1]) +
-	                             fabs(localExtents.z*transform[1][2]),
+	                               ::fabs(localExtents.x*transform[1][0]) +
+	                               ::fabs(localExtents.y*transform[1][1]) +
+	                               ::fabs(localExtents.z*transform[1][2]),
 
-	                             fabs(localExtents.x*transform[2][0]) +
-	                             fabs(localExtents.y*transform[2][1]) +
-	                             fabs(localExtents.z*transform[2][2]) );
+	                               ::fabs(localExtents.x*transform[2][0]) +
+	                               ::fabs(localExtents.y*transform[2][1]) +
+	                               ::fabs(localExtents.z*transform[2][2]) );
 
 	VectorSubtract( worldCenter, worldExtents, vecMinsOut );
 	VectorAdd( worldCenter, worldExtents, vecMaxsOut );
@@ -1569,17 +1569,17 @@ function VS::ITransformAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMax
 
 	transform = transform.m_flMatVal;
 
-	local localExtents = Vector( fabs( worldExtents.x * transform[0][0] ) +
-	                             fabs( worldExtents.y * transform[1][0] ) +
-	                             fabs( worldExtents.z * transform[2][0] ),
+	local localExtents = ::Vector( ::fabs( worldExtents.x * transform[0][0] ) +
+	                               ::fabs( worldExtents.y * transform[1][0] ) +
+	                               ::fabs( worldExtents.z * transform[2][0] ),
 
-	                             fabs( worldExtents.x * transform[0][1] ) +
-	                             fabs( worldExtents.y * transform[1][1] ) +
-	                             fabs( worldExtents.z * transform[2][1] ),
+	                               ::fabs( worldExtents.x * transform[0][1] ) +
+	                               ::fabs( worldExtents.y * transform[1][1] ) +
+	                               ::fabs( worldExtents.z * transform[2][1] ),
 
-	                             fabs( worldExtents.x * transform[0][2] ) +
-	                             fabs( worldExtents.y * transform[1][2] ) +
-	                             fabs( worldExtents.z * transform[2][2] ) );
+	                               ::fabs( worldExtents.x * transform[0][2] ) +
+	                               ::fabs( worldExtents.y * transform[1][2] ) +
+	                               ::fabs( worldExtents.z * transform[2][2] ) );
 
 	VectorSubtract( localCenter, localExtents, vecMinsOut );
 	VectorAdd( localCenter, localExtents, vecMaxsOut );
@@ -1599,17 +1599,17 @@ function VS::RotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOut
 
 	transform = transform.m_flMatVal;
 
-	local newExtents = Vector( fabs(localExtents.x*transform[0][0]) +
-	                           fabs(localExtents.y*transform[0][1]) +
-	                           fabs(localExtents.z*transform[0][2]),
+	local newExtents = ::Vector( ::fabs(localExtents.x*transform[0][0]) +
+	                             ::fabs(localExtents.y*transform[0][1]) +
+	                             ::fabs(localExtents.z*transform[0][2]),
 
-	                           fabs(localExtents.x*transform[1][0]) +
-	                           fabs(localExtents.y*transform[1][1]) +
-	                           fabs(localExtents.z*transform[1][2]),
+	                             ::fabs(localExtents.x*transform[1][0]) +
+	                             ::fabs(localExtents.y*transform[1][1]) +
+	                             ::fabs(localExtents.z*transform[1][2]),
 
-	                           fabs(localExtents.x*transform[2][0]) +
-	                           fabs(localExtents.y*transform[2][1]) +
-	                           fabs(localExtents.z*transform[2][2]) );
+	                             ::fabs(localExtents.x*transform[2][0]) +
+	                             ::fabs(localExtents.y*transform[2][1]) +
+	                             ::fabs(localExtents.z*transform[2][2]) );
 
 	VectorSubtract( newCenter, newExtents, vecMinsOut );
 	VectorAdd( newCenter, newExtents, vecMaxsOut );
@@ -1628,17 +1628,17 @@ function VS::IRotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOu
 
 	transform = transform.m_flMatVal;
 
-	local newExtents = Vector( fabs( oldExtents.x * transform[0][0] ) +
-	                           fabs( oldExtents.y * transform[1][0] ) +
-	                           fabs( oldExtents.z * transform[2][0] ),
+	local newExtents = ::Vector( ::fabs( oldExtents.x * transform[0][0] ) +
+	                             ::fabs( oldExtents.y * transform[1][0] ) +
+	                             ::fabs( oldExtents.z * transform[2][0] ),
 
-	                           fabs( oldExtents.x * transform[0][1] ) +
-	                           fabs( oldExtents.y * transform[1][1] ) +
-	                           fabs( oldExtents.z * transform[2][1] ),
+	                             ::fabs( oldExtents.x * transform[0][1] ) +
+	                             ::fabs( oldExtents.y * transform[1][1] ) +
+	                             ::fabs( oldExtents.z * transform[2][1] ),
 
-	                           fabs( oldExtents.x * transform[0][2] ) +
-	                           fabs( oldExtents.y * transform[1][2] ) +
-	                           fabs( oldExtents.z * transform[2][2] ) );
+	                             ::fabs( oldExtents.x * transform[0][2] ) +
+	                             ::fabs( oldExtents.y * transform[1][2] ) +
+	                             ::fabs( oldExtents.z * transform[2][2] ) );
 
 	VectorSubtract( newCenter, newExtents, vecMinsOut );
 	VectorAdd( newCenter, newExtents, vecMaxsOut );

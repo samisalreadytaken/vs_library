@@ -35,7 +35,7 @@ enum INTERPOLATE
 	HOLD
 }
 
-local _VEC = Vector();
+local _VEC = ::Vector();
 
 function VS::Interpolator_GetKochanekBartelsParams( interpolationType, tbc )
 {
@@ -117,14 +117,14 @@ function VS::Interpolator_CurveInterpolate( interpolationType, vPre, vStart, vEn
 			break;
 		case INTERPOLATE.EASE_IN:
 			{
-				f = sin( f * 1.5708 );
+				f = ::sin( f * 1.5708 );
 				// ignores vPre and vNext
 				VectorLerp( vStart, vEnd, f, vOut );
 			}
 			break;
 		case INTERPOLATE.EASE_OUT:
 			{
-				f = 1.0 - sin( f * 1.5708 + 1.5708 );
+				f = 1.0 - ::sin( f * 1.5708 + 1.5708 );
 				// ignores vPre and vNext
 				VectorLerp( vStart, vEnd, f, vOut );
 			}
@@ -228,14 +228,14 @@ function VS::Interpolator_CurveInterpolate_NonNormalized( interpolationType, vPr
 			break;
 		case INTERPOLATE.EASE_IN:
 			{
-				f = sin( f * 1.5708 );
+				f = ::sin( f * 1.5708 );
 				// ignores vPre and vNext
 				VectorLerp( vStart, vEnd, f, vOut );
 			}
 			break;
 		case INTERPOLATE.EASE_OUT:
 			{
-				f = 1.0 - sin( f * 1.5708 + 1.5708 );
+				f = 1.0 - ::sin( f * 1.5708 + 1.5708 );
 				// ignores vPre and vNext
 				VectorLerp( vStart, vEnd, f, vOut );
 			}
@@ -516,7 +516,7 @@ function VS::Catmull_Rom_Spline_Integral_Normalize( p1, p2, p3, p4, t, output = 
 // Normalize p2.x->p1.x and p3.x->p4.x to be the same length as p2.x->p3.x
 function VS::Catmull_Rom_Spline_NormalizeX( p1, p2, p3, p4, t, output )
 {
-	local p1n = Vector(), p4n = Vector();
+	local p1n = ::Vector(), p4n = ::Vector();
 	Spline_Normalize( p1, p2, p3, p4, p1n, p4n );
 	return Catmull_Rom_Spline( p1n, p2, p3, p4n, t, output );
 }
@@ -605,11 +605,11 @@ function VS::Hermite_Spline3F( p0, p1, p2, t )
 }
 
 // input Quaternion
-function VS::Hermite_Spline3Q( q0, q1, q2, t, output = Quaternion() )
+function VS::Hermite_Spline3Q( q0, q1, q2, t, output = ::Quaternion() )
 {
 	// cheap, hacked version of quaternions
-	local q0a = Quaternion(),
-	      q1a = Quaternion();
+	local q0a = ::Quaternion(),
+	      q1a = ::Quaternion();
 
 	QuaternionAlign( q2, q0, q0a );
 	QuaternionAlign( q2, q1, q1a );
@@ -703,7 +703,7 @@ function VS::Kochanek_Bartels_Spline( tension, bias, continuity, p1, p2, p3, p4,
 
 function VS::Kochanek_Bartels_Spline_NormalizeX( tension, bias, continuity, p1, p2, p3, p4, t, output = _VEC )
 {
-	local p1n = Vector(), p4n = Vector();
+	local p1n = ::Vector(), p4n = ::Vector();
 	Spline_Normalize( p1, p2, p3, p4, p1n, p4n );
 	return Kochanek_Bartels_Spline( tension, bias, continuity, p1n, p2, p3, p4n, t, output );
 }
@@ -752,7 +752,7 @@ function VS::Cubic_Spline( p1, p2, p3, p4, t, output = _VEC )
 
 function VS::Cubic_Spline_NormalizeX( p1, p2, p3, p4, t, output = _VEC )
 {
-	local p1n = Vector(), p4n = Vector();
+	local p1n = ::Vector(), p4n = ::Vector();
 	Spline_Normalize( p1, p2, p3, p4, p1n, p4n );
 	return Cubic_Spline( p1n, p2, p3, p4n, t, output );
 }
@@ -820,7 +820,7 @@ function VS::BSpline( p1, p2, p3, p4, t, output = _VEC )
 
 function VS::BSpline_NormalizeX( p1, p2, p3, p4, t, output = _VEC )
 {
-	local p1n = Vector(), p4n = Vector();
+	local p1n = ::Vector(), p4n = ::Vector();
 	Spline_Normalize( p1, p2, p3, p4, p1n, p4n );
 	return BSpline( p1n, p2, p3, p4n, t, output );
 }
@@ -875,7 +875,7 @@ function VS::Parabolic_Spline( p1, p2, p3, p4, t, output = _VEC )
 
 function VS::Parabolic_Spline_NormalizeX( p1, p2, p3, p4, t, output = _VEC )
 {
-	local p1n = Vector(), p4n = Vector();
+	local p1n = ::Vector(), p4n = ::Vector();
 	Spline_Normalize( p1, p2, p3, p4, p1n, p4n );
 	return Parabolic_Spline( p1n, p2, p3, p4n, t, output );
 }
@@ -898,9 +898,9 @@ function VS::RangeCompressor( flValue, flMin, flMax, flBase )
 	// convert to -1 to 1 value
 	local flTarget = flMid * 2 - 1;
 
-	if( fabs(flTarget) > 0.75 )
+	if( ::fabs(flTarget) > 0.75 )
 	{
-		local t = (fabs(flTarget) - 0.75) / (1.25);
+		local t = (::fabs(flTarget) - 0.75) / (1.25);
 		if( t < 1.0 )
 		{
 			if( flTarget > 0 )
@@ -933,14 +933,14 @@ function VS::QAngleLerp( v1, v2, flPercent )
 		return v1;
 
 	// Convert to quaternions
-	local src  = AngleQuaternion( v1, Quaternion() );
-	local dest = AngleQuaternion( v2, Quaternion() );
+	local src  = AngleQuaternion( v1, ::Quaternion() );
+	local dest = AngleQuaternion( v2, ::Quaternion() );
 
 	// Slerp
 	local result = QuaternionSlerp( src, dest, flPercent );
 
 	// Convert to euler
-	local output = QuaternionAngles( result, Vector() );
+	local output = QuaternionAngles( result, ::Vector() );
 
 	return output;
 }

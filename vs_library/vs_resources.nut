@@ -13,7 +13,7 @@
 */
 
 // Don't load if the library is already loaded
-if("VS"in::getroottable()&&typeof::VS=="table"&&"_xa9b2dfB7ffe"in::getroottable()&&!::VS._reload&&::ENT_SCRIPT.IsValid())return/*::printl("vs_library is already loaded.")*/;;local _v2=function(){}local _f=_v2.getinfos().src;for(local j=_f.len()-1;j>=0;--j)if(_f[j]==46){_f=_f.slice(0,j);break};;if(this!=::getroottable())return::DoIncludeScript(_f,::getroottable());;if(_f!="vs_library")printl("Loading vs_library...")
+if("VS"in::getroottable()&&typeof::VS=="table"&&"_xa9b2dfB7ffe"in::getroottable()&&!::VS._reload&&::ENT_SCRIPT.IsValid())return/*::printl("vs_library is already loaded.")*/;;local _v2=function(){}local _f=_v2.getinfos().src;for(local j=_f.len()-1;j>=0;--j)if(_f[j]==46){_f=_f.slice(0,j);break};;if(this!=::getroottable())return::DoIncludeScript(_f,::getroottable());;if(_f!="vs_library")::printl("Loading vs_library...")
 
 ::VS<-{Events={},Log={}}
 
@@ -55,7 +55,6 @@ VS.Log.L <- []
 VS.Log.filter <- "VFLTR"
 VS.Log.conn <- " "
 VS.Log.devlvl <- 0
-VS.Log.fT4 <- FrameTime() * 4
 
 if( !("_xa9b2dfB7ffe" in getroottable()) ) ::_xa9b2dfB7ffe <- []
 if( !("_xa9b2df87ffe" in getroottable()) ) ::_xa9b2df87ffe <- null
@@ -78,11 +77,10 @@ local _v0 = function()
 	}
 	else
 	{
-		(::ENT_SCRIPT<-::Entities.CreateByClassname("soundent")).ValidateScriptScope()
-		::ENT_SCRIPT.__KeyValueFromString("targetname","vs_script")
+		(::ENT_SCRIPT<-VS.CreateEntity("soundent","vs_script")).ValidateScriptScope()
 		printl("ERROR: Could not find worldspawn")
 	}
-}()
+}
 
 local _VEC = Vector()
 local _FN1 = function(d){}
@@ -91,7 +89,7 @@ VS._reload <- false
 
 function VS::ForceReload(f=_f)
 {
-	VS._reload = true
-	printl("Reloading vs_library...")
-	DoIncludeScript(f,getroottable())
+	_reload = true
+	::printl("Reloading vs_library...")
+	::DoIncludeScript(f,::getroottable())
 }

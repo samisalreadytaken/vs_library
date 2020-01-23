@@ -54,8 +54,8 @@ function VS::MakePermanent( handle )
 //-----------------------------------------------------------------------
 function VS::SetParent( hChild, hParent )
 {
-	if( !hParent ) return EntFireHandle( hChild, "setparent", "" )
-	return EntFireHandle( hChild, "setparent", "!activator", 0.0, hParent )
+	if( !hParent ) return::EntFireHandle( hChild, "setparent", "" )
+	return::EntFireHandle( hChild, "setparent", "!activator", 0.0, hParent )
 }
 
 //-----------------------------------------------------------------------
@@ -113,7 +113,7 @@ function VS::CreateHudHint( targetname = "", msg = "" )
 function VS::ShowHudHint( hEnt, hTarget, msg = null, delay = 0.0 )
 {
 	if( msg ) SetKeyString( hEnt, "message", msg )
-	EntFireHandle( hEnt, "ShowHudHint", "", delay, hTarget )
+	::EntFireHandle( hEnt, "ShowHudHint", "", delay, hTarget )
 }
 
 //-----------------------------------------------------------------------
@@ -121,7 +121,7 @@ function VS::ShowHudHint( hEnt, hTarget, msg = null, delay = 0.0 )
 //-----------------------------------------------------------------------
 function VS::HideHudHint( hEnt, hTarget, delay = 0.0 )
 {
-	EntFireHandle( hEnt, "HideHudHint", "", delay, hTarget )
+	::EntFireHandle( hEnt, "HideHudHint", "", delay, hTarget )
 }
 
 //-----------------------------------------------------------------------
@@ -162,14 +162,13 @@ function VS::CreateMeasure(g,n=null)
 	                          measurereference = "",
 	                          targetreference = r,
 	                          target = r,
-	                          measureretarget = "" }
-	                      )
+	                          measureretarget = "" } )
 
-	EntFireHandle(e,"setmeasurereference",r)
+	::EntFireHandle(e,"setmeasurereference",r)
 
-	EntFireHandle(e,"setmeasuretarget",g)
+	::EntFireHandle(e,"setmeasuretarget",g)
 
-	EntFireHandle(e,"enable")
+	::EntFireHandle(e,"enable")
 
 	return[t,e]
 }
@@ -182,7 +181,7 @@ function VS::CreateMeasure(g,n=null)
 //-----------------------------------------------------------------------
 function VS::SetMeasure(h,s)
 {
-	EntFireHandle(h,"setmeasuretarget",s)
+	::EntFireHandle(h,"setmeasuretarget",s)
 }
 
 //-----------------------------------------------------------------------
@@ -200,8 +199,7 @@ function VS::CreateTimer( targetname = "", refire = 1, lower = 1, upper = 5, osc
 	                          _GUN( targetname, "timer" ),
 	                          { UseRandomTime = 0,
 	                            LowerRandomBound = lower,
-	                            UpperRandomBound = upper }
-	                        )
+	                            UpperRandomBound = upper } )
 
 	if( !refire )
 	{
@@ -210,7 +208,7 @@ function VS::CreateTimer( targetname = "", refire = 1, lower = 1, upper = 5, osc
 	}
 	else SetKeyFloat( ent, "RefireTime", refire.tofloat() )
 
-	EntFireHandle( ent, disabled ? "disable" : "enable" )
+	::EntFireHandle( ent, disabled ? "disable" : "enable" )
 
 	return ent
 }
@@ -279,18 +277,18 @@ function VS::AddOutput( hEnt, sOutput, sFunc, tScope = null, bExecInEnt = false 
 
 	if( !tScope ) tScope = GetCaller()
 
-	if( "self" in tScope && tScope.self.IsValid() ) skope = getroottable()[tScope.__vname]
+	if( "self" in tScope && tScope.self.IsValid() ) skope = ::getroottable()[tScope.__vname]
 	else
 	{
 		local d = GetTableDir(tScope), l = d.len()
-		if( l == 1 ) skope = getroottable()
-		else if( l == 2 ) skope = getroottable()[d[1]]
-		else if( l == 3 ) skope = getroottable()[d[1]][d[2]]
-		else if( l == 4 ) skope = getroottable()[d[1]][d[2]][d[3]]
-		else if( l == 5 ) skope = getroottable()[d[1]][d[2]][d[3]][d[4]]
-		else if( l == 6 ) skope = getroottable()[d[1]][d[2]][d[3]][d[4]][d[5]]
-		else if( l == 7 ) skope = getroottable()[d[1]][d[2]][d[3]][d[4]][d[5]][d[6]]
-		else if( l == 8 ) skope = getroottable()[d[1]][d[2]][d[3]][d[4]][d[5]][d[6]][d[7]]
+		if( l == 1 ) skope = ::getroottable()
+		else if( l == 2 ) skope = ::getroottable()[d[1]]
+		else if( l == 3 ) skope = ::getroottable()[d[1]][d[2]]
+		else if( l == 4 ) skope = ::getroottable()[d[1]][d[2]][d[3]]
+		else if( l == 5 ) skope = ::getroottable()[d[1]][d[2]][d[3]][d[4]]
+		else if( l == 6 ) skope = ::getroottable()[d[1]][d[2]][d[3]][d[4]][d[5]]
+		else if( l == 7 ) skope = ::getroottable()[d[1]][d[2]][d[3]][d[4]][d[5]][d[6]]
+		else if( l == 8 ) skope = ::getroottable()[d[1]][d[2]][d[3]][d[4]][d[5]][d[6]][d[7]]
 	}
 
 	scope[sOutput] <- bExecInEnt ? skope[sFunc] : skope[sFunc].bindenv(tScope)
@@ -312,7 +310,7 @@ function VS::AddOutput2( hEnt, sOutput, sFunc, tScope = null, bExecInEnt = false
 {
 	if( !tScope ) tScope = GetCaller()
 	if( !("self" in tScope) ) throw"Invalid function path"
-	EntFireByHandle( hEnt,"addoutput",sOutput+" "+(bExecInEnt?hEnt.GetName():tScope.self.GetName())+":runscriptcode:"+sFunc,0.0,tScope.self,hEnt )
+	::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+(bExecInEnt?hEnt.GetName():tScope.self.GetName())+":runscriptcode:"+sFunc,0.0,tScope.self,hEnt )
 	return true
 }
 
@@ -326,7 +324,7 @@ function VS::AddOutput2( hEnt, sOutput, sFunc, tScope = null, bExecInEnt = false
 //-----------------------------------------------------------------------
 function VS::CreateEntity( classname, targetname = null, keyvalues = null )
 {
-	local ent = Entities.CreateByClassname( classname )
+	local ent = ::Entities.CreateByClassname( classname )
 	if( targetname ) SetName( ent, targetname )
 	if( typeof keyvalues == "table" ) foreach( k, v in keyvalues ) SetKey( ent, k, v )
 	return ent
@@ -384,7 +382,7 @@ function VS::SetName( ent, name )
 
 // Change targetname
 function VS::ChangeName( oldname, newname )
-{ Entities.FindByName(null,oldname).__KeyValueFromString("targetname",newname) }
+{ ::Entities.FindByName(null,oldname).__KeyValueFromString("targetname",newname) }
 
 //-----------------------------------------------------------------------
 // ent_script_dump
@@ -397,10 +395,10 @@ function VS::DumpEnt( input = null )
 	if( !input )
 	{
 		local ent
-		while( ent = Entities.Next(ent) )
+		while( ent = ::Entities.Next(ent) )
 		{
 			local s = ent.GetScriptScope()
-			if( s ) printl(ent + " :: " + s.__vname)//GetTableName(s))
+			if( s ) ::printl(ent + " :: " + s.__vname)//GetTableName(s))
 		}
 	}
 	else if( typeof input == "instance" || typeof input == "string" )
@@ -410,23 +408,23 @@ function VS::DumpEnt( input = null )
 
 		local s
 		try(s=input.GetScriptScope())catch(e)
-		{return printl("Entity has no script scope! " + input)}
+		{return::printl("Entity has no script scope! " + input)}
 
-		printl("--- Script dump for entity "+input)
+		::printl("--- Script dump for entity "+input)
 		DumpScope(s,0,1,0,1)
-		printl("--- End script dump")
+		::printl("--- End script dump")
 	}
 	else if( input )
 	{
 		local ent
-		while( ent = Entities.Next(ent) )
+		while( ent = ::Entities.Next(ent) )
 		{
 			local s = ent.GetScriptScope()
 			if( s )
 			{
-				printl("\n--- Script dump for entity "+ent)
+				::printl("\n--- Script dump for entity "+ent)
 				DumpScope(s,0,1,0,1)
-				printl("--- End script dump")
+				::printl("--- End script dump")
 			}
 		}
 	}
@@ -458,9 +456,9 @@ function VS::DumpEnt( input = null )
 function VS::GetPlayersAndBots( validated = false )
 {
 	local ent, ply = [], bot = []
-	while( ent = Entities.FindByClassname(ent, "cs_bot") ) bot.append(ent)
+	while( ent = ::Entities.FindByClassname(ent, "cs_bot") ) bot.append(ent)
 	ent = null
-	while( ent = Entities.FindByClassname(ent, "player") )
+	while( ent = ::Entities.FindByClassname(ent, "player") )
 	{
 		if( validated && ent.GetScriptScope().networkid == "BOT" ) bot.append(ent)
 		else ply.append(ent)
@@ -489,7 +487,7 @@ function VS::GetPlayersAndBots( validated = false )
 function VS::GetAllPlayers( closure = null )
 {
 	local e, a = []
-	while( e = Entities.Next(e) )
+	while( e = ::Entities.Next(e) )
 		if( e.GetClassname() == "player" )
 			if( closure )
 				closure( e )
@@ -509,7 +507,7 @@ function VS::DumpPlayers( dumpscope = false, validated = false )
 {
 	local a = GetPlayersAndBots(validated), p = a[0], b = a[1]
 
-	print("\n===\n" + p.len()+" players found\n" + b.len()+" bots found\n")
+	::print("\n===\n" + p.len()+" players found\n" + b.len()+" bots found\n")
 
 	local c = function( _s, _a, d = dumpscope )
 	{
@@ -517,14 +515,14 @@ function VS::DumpPlayers( dumpscope = false, validated = false )
 		{
 			local s = e.GetScriptScope()
 			try( s = GetTableName(s) ) catch(e){ s = "null" }
-			printl( _s+"- " + e + " :: " + s )
+			::printl( _s+"- " + e + " :: " + s )
 			if( d && s != "null" ) DumpEnt( e )
 		}
 	}
 
 	c("[BOT]    ",b)
 	c("[PLAYER] ",p)
-	print("===\n")
+	::print("===\n")
 }
 
 //-----------------------------------------------------------------------
@@ -540,21 +538,18 @@ function VS::GetLocalPlayer()
 
 	while( i = Entc("player", i) ) c++
 
-	if( c > 1 ) printl("[VS::GetLocalPlayer] More than 1 player detected!")
+	if( c > 1 ) ::printl("[VS::GetLocalPlayer] More than 1 player detected!")
 
 	e = Entc("player")
 
 	if( e != GetPlayerByIndex(1) )
-		printl("[VS::GetLocalPlayer] Discrepancy detected!")
+		::printl("[VS::GetLocalPlayer] Discrepancy detected!")
 
 	if( !e || !e.IsValid() )
-		return printl( "[VS::GetLocalPlayer] No player found!" )
+		return::printl( "[VS::GetLocalPlayer] No player found!" )
 
 	if( !e.ValidateScriptScope() )
-		return printl( "[VS::GetLocalPlayer] Failed to validate player scope!" )
-
-	if( Entc("logic_eventlistener") )
-		ValidateUserid(e)
+		return::printl( "[VS::GetLocalPlayer] Failed to validate player scope!" )
 
 	SetName( e, "player" )
 
@@ -566,12 +561,12 @@ function VS::GetLocalPlayer()
 
 function VS::GetPlayerByIndex( entindex )
 {
-	local e; while( e = Entities.Next(e) ) if( e.GetClassname() == "player" ) if( e.entindex() == entindex ) return e
+	local e; while( e = ::Entities.Next(e) ) if( e.GetClassname() == "player" ) if( e.entindex() == entindex ) return e
 }
 
 function VS::FindEntityByIndex( entindex, classname = null )
 {
-	local e; while( e = Entities.FindByClassname(e, classname ? classname : "*") ) if( e.entindex() == entindex ) return e
+	local e; while( e = ::Entities.FindByClassname(e, classname ? classname : "*") ) if( e.entindex() == entindex ) return e
 }
 
 //-----------------------------------------------------------------------
@@ -580,7 +575,7 @@ function VS::FindEntityByIndex( entindex, classname = null )
 //-----------------------------------------------------------------------
 function VS::FindEntityByString( str )
 {
-	local e; while( e = Entities.Next(e) ) if( e.tostring() == str ) return e
+	local e; while( e = ::Entities.Next(e) ) if( e.tostring() == str ) return e
 }
 
 function VS::IsPointSized( h )
@@ -592,10 +587,10 @@ function VS::FindEntityGeneric( hStartEntity, sName )
 {
 	local ent
 
-	ent = Entities.FindByName( hStartEntity, sName )
+	ent = ::Entities.FindByName( hStartEntity, sName )
 
 	if( !ent )
-		ent = Entities.FindByClassname( hStartEntity, sName )
+		ent = ::Entities.FindByClassname( hStartEntity, sName )
 
 	return ent
 }
@@ -605,8 +600,8 @@ function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassn
 	local bestDot = fThreshold,
 	      best_ent, ent
 
-	// for( local ent = Entities.First(); ent; ent = Entities.Next(ent) )
-	while( ent = Entities.Next(ent) )
+	// for( local ent = ::Entities.First(); ent; ent = ::Entities.Next(ent) )
+	while( ent = ::Entities.Next(ent) )
 	{
 		if( ent.GetClassname() != sClassname ) continue
 
@@ -631,7 +626,7 @@ function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold )
 	local bestDot = fThreshold,
 	      best_ent, ent
 
-	while( ent = Entities.Next(ent) )
+	while( ent = ::Entities.Next(ent) )
 	{
 		// skip all point sized entitites
 		if( IsPointSized( ent ) ) continue
@@ -665,7 +660,7 @@ function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, 
 	if( !flMaxDist2 )
 		flMaxDist2 = 3.22122e+09; // MAX_TRACE_LENGTH * MAX_TRACE_LENGTH
 
-	while( ent = Entities.Next(ent) )
+	while( ent = ::Entities.Next(ent) )
 	{
 		if( ent.GetClassname() != sClassname ) continue
 
