@@ -8,12 +8,24 @@
 //-----------------------------------------------------------------------
 
 //-----------------------------------------------------------------------
-// EntFireByHandle with default parameters
+// Make EntFireByHandle allow default parameters
 //-----------------------------------------------------------------------
-::EntFireHandle <- function( target, action, value = "", delay = 0.0, activator = null, caller = null )
+if( ::EntFireByHandle.getinfos().native )
+	::DoEntFireByInstanceHandle <- ::EntFireByHandle
+
+::EntFireByHandle <- function( target, action, value = "", delay = 0.0, activator = null, caller = null )
 {
-	EntFireByHandle( target, action.tostring(), value.tostring(), delay, activator, caller )
+	DoEntFireByInstanceHandle( target, action.tostring(), value.tostring(), delay, activator, caller )
 }
+
+::EntFire <- function( target, action, value = "", delay = 0.0, activator = null, caller = null )
+{
+	DoEntFire( target, action.tostring(), value.tostring(), delay, activator, caller )
+}
+
+::EntFireHandle <- ::EntFireByHandle
+
+//-----------------------------------------------------------------------
 
 ::PrecacheModel <- function( str )
 {
@@ -37,7 +49,7 @@ function VS::MakePermanent( handle )
 // Set child's parent
 // if parent == null, unparent child
 //
-// Input  : string/handle [ child targetname / entity ]
+// Input  : handle [ child entity ]
 // Output : handle [ parent entity ]
 //-----------------------------------------------------------------------
 function VS::SetParent( hChild, hParent )
@@ -79,8 +91,7 @@ VS.CreateGameText(null,{
 //-----------------------------------------------------------------------
 function VS::CreateGameText( targetname = "", kv = null )
 {
-	targetname = _GUN( targetname, "game_text" )
-	return CreateEntity("game_text", targetname, kv)
+	return CreateEntity("game_text", _GUN( targetname, "game_text" ), kv)
 }
 
 //-----------------------------------------------------------------------
@@ -92,9 +103,7 @@ function VS::CreateGameText( targetname = "", kv = null )
 //-----------------------------------------------------------------------
 function VS::CreateHudHint( targetname = "", msg = "" )
 {
-	targetname = _GUN( targetname, "hudhint" )
-	local ent = CreateEntity("env_hudhint", targetname, {message = msg})
-	return ent
+	return CreateEntity("env_hudhint", _GUN( targetname, "hudhint" ), {message = msg})
 }
 
 //-----------------------------------------------------------------------
@@ -133,9 +142,7 @@ function VS::HideHudHint( hEnt, hTarget, delay = 0.0 )
 
 player <- VS.GetLocalPlayer()
 
-local playername = player.GetName()
-
-player_eye <- VS.CreateMeasure(playername)[0]
+player_eye <- VS.CreateMeasure( player.GetName() )[0]
 
 printl("Player eye angles: " + player_eye.GetAngles() )
 
@@ -145,7 +152,27 @@ printl("Player eye angles: " + player_eye.GetAngles() )
 //          string [ logic_measure entity name ] (optional)
 // Output : array [ handle reference, handle measure ]
 //-----------------------------------------------------------------------
-function VS::CreateMeasure(g,n=null){local r="vs_ref_"+UniqueString(),t=CreateEntity("logic_script",r);n=_GUN(n,"measure");local e=CreateEntity("logic_measure_movement",n,{measuretype=1,measurereference="",targetreference=r,target=r,measureretarget=""});EntFireHandle(e,"setmeasurereference",r);EntFireHandle(e,"setmeasuretarget",g);EntFireHandle(e,"enable");return[t,e]}
+function VS::CreateMeasure(g,n=null)
+{
+	local r = "vs_ref_"+UniqueString(),
+	      t = CreateEntity( "logic_script",r ),
+	      e = CreateEntity( "logic_measure_movement",
+	                        _GUN(n,"measure"),
+	                        { measuretype = 1,
+	                          measurereference = "",
+	                          targetreference = r,
+	                          target = r,
+	                          measureretarget = "" }
+	                      )
+
+	EntFireHandle(e,"setmeasurereference",r)
+
+	EntFireHandle(e,"setmeasuretarget",g)
+
+	EntFireHandle(e,"enable")
+
+	return[t,e]
+}
 
 //-----------------------------------------------------------------------
 // Start measuring new target
@@ -169,11 +196,14 @@ function VS::SetMeasure(h,s)
 //-----------------------------------------------------------------------
 function VS::CreateTimer( targetname = "", refire = 1, lower = 1, upper = 5, oscillator = 0, disabled = 1 )
 {
-	targetname = _GUN( targetname, "timer" )
+	local ent = CreateEntity( "logic_timer",
+	                          _GUN( targetname, "timer" ),
+	                          { UseRandomTime = 0,
+	                            LowerRandomBound = lower,
+	                            UpperRandomBound = upper }
+	                        )
 
-	local ent = CreateEntity("logic_timer", targetname, {UseRandomTime = 0, LowerRandomBound = lower, UpperRandomBound = upper})
-
-	if( !refire || refire == "" )
+	if( !refire )
 	{
 		SetKeyInt( ent, "UseRandomTime", 1 )
 		SetKeyInt( ent, "spawnflags", oscillator )
@@ -193,8 +223,7 @@ function VS::CreateTimer( targetname = "", refire = 1, lower = 1, upper = 5, osc
 function VS::Timer(b,f,s,t=null,e=false)
 {
 	local h = CreateTimer(null,f,0,0,0,b)
-	if(!t) t = GetCaller()
-	OnTimer(h,s,t,e)
+	OnTimer(h,s,t?t:GetCaller(),e)
 	return h
 }
 
@@ -206,20 +235,17 @@ function VS::Timer(b,f,s,t=null,e=false)
 //-----------------------------------------------------------------------
 function VS::OnTimer( hEnt, sFunc, tScope = null, bExecInEnt = false )
 {
-	if( !tScope ) tScope = GetCaller()
-	return AddOutput( hEnt, "OnTimer", sFunc, tScope, bExecInEnt )
+	return AddOutput( hEnt, "OnTimer", sFunc, tScope ? tScope : GetCaller(), bExecInEnt )
 }
 
 function VS::OnTimerHigh( hEnt, sFunc, tScope = null, bExecInEnt = false )
 {
-	if( !tScope ) tScope = GetCaller()
-	return AddOutput( hEnt, "OnTimerHigh", sFunc, tScope, bExecInEnt )
+	return AddOutput( hEnt, "OnTimerHigh", sFunc, tScope ? tScope : GetCaller(), bExecInEnt )
 }
 
 function VS::OnTimerLow( hEnt, sFunc, tScope = null, bExecInEnt = false )
 {
-	if( !tScope ) tScope = GetCaller()
-	return AddOutput( hEnt, "OnTimerLow", sFunc, tScope, bExecInEnt )
+	return AddOutput( hEnt, "OnTimerLow", sFunc, tScope ? tScope : GetCaller(), bExecInEnt )
 }
 
 //-----------------------------------------------------------------------

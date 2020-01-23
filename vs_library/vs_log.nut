@@ -24,15 +24,19 @@
 // Clear the log.
 //  	VS.Log.Clear()
 //
-// Print the log.
-//  	VS.Log.Print()
-//
 // export the log file to the game directory ( if VS.Log.export == true )
 // return exported file name
+// if VS.Log.export == false, then print in the console
 //  	VS.Log.Run()
 //
-// Set encryption key.
+// Set encryption key. ( used if VS.Log.encryption == true )
 //  	VS.Log.SetKey( string )
+//
+// VS.Log.conn = " " // (default)
+// encrypted log output: 023 021 022 008 010
+//
+// VS.Log.conn = "x"
+// encrypted log output: 023x021x022x008x010
 //
 //-----------------------------------------------------------------------
 
@@ -92,18 +96,6 @@ function VS::Log::Encrypt(q)
 // XOR decryption
 function VS::Log::Decrypt(q)
 {if(typeof q!="string")throw"Invalid input";local d=function(m){local s="";for(local i=0;i<m.len();i++)s+=(m[i].tointeger()^_xa9b2df87ffe[i%_xffcd55c01dd]).tochar();return s}foreach(r in split(q,filter))print(d(split(r,conn)))}
-
-/*
-
-VS.Log.conn = " " // (default)
-
-// encrypted log output: 023 021 022 008 010
-
-VS.Log.conn = "x"
-
-// encrypted log output: 023x021x022x008x010
-
-*/
 
 //-----------------------------------------------------------------------
 

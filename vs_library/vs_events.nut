@@ -62,9 +62,9 @@
 // there needs to be at least one frame time delay between each validation.
 //
 // You can add your delay like so:
-//  	delay( "VS.ValidateUserid( VS.FindEntityByString(\""+hPLAYER+"\") )", FrameTime() * _COUNTER )
+//  	delay( "VS.ValidateUserid( activator )", _COUNTER * FrameTime(), ENT_SCRIPT, hPLAYER )
 // or
-//  	delay( "VS.ValidateUserid( activator )", FrameTime() * _COUNTER, ENT_SCRIPT, hPLAYER )
+//  	delay( "VS.ValidateUserid( VS.FindEntityByString(\""+hPLAYER+"\") )", _COUNTER * FrameTime() )
 //
 //
 // You can automate this by putting this as a game_playerjoin output: VS.ValidateUserid( activator )

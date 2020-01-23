@@ -9,7 +9,7 @@ Written for CSGO. Some features may not work properly in other games. You can re
 
 It is advised to always use the latest version.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.32.2-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.32.3-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation
@@ -22,7 +22,7 @@ Add this following line at the beginning of your script: `IncludeScript("vs_libr
 
 Done!
 
-This file contains the contents of the following: `vs_resources`,`vs_math`,`vs_utility`,`vs_entity`,`vs_events`,`vs_log`.
+This file contains the contents of the following: `vs_math`,`vs_utility`,`vs_entity`,`vs_events`,`vs_log`.
 
 ### Additional libraries
 These are not included in `vs_library.nut` by default. Include them manually to use them.
@@ -39,7 +39,7 @@ No difference from the minified version. This should only be used to read the do
 See [CHANGELOG.txt](CHANGELOG.txt)
 
 ## License
-You are free to modify and share this library under the terms of the MIT License. The only condition is keeping the copyright notice, and state whether or not the code was modified. See [LICENSE](LICENSE) for details.
+You are free to use, modify and share this library under the terms of the MIT License. The only condition is keeping the copyright notice, and state whether or not the code was modified. See [LICENSE](LICENSE) for details.
 
 [![HitCount][]](http://hits.dwyl.io/samisalreadytaken/vs_library)
 
