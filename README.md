@@ -9,7 +9,7 @@ Written for CSGO. Some features may not work properly in other games. You can re
 
 It is advised to always use the latest version.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.32.3-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.33.0-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation

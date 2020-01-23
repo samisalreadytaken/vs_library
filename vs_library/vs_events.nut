@@ -15,12 +15,6 @@
 // Return player handle
 //  	VS.GetPlayerByUserid( int userid )
 //
-// Input player handle, add their userid, networkid (steamID32) and name in their scope
-//  	VS.ValidateUserid( handle entity )
-//
-// Validate every player and bot's userid
-//  	VS.ValidateUseridAll()
-//
 // Dump every player and bot scopes
 //  	VS.DumpPlayers(1)
 //
@@ -48,45 +42,12 @@
 // (vs_library required)
 //
 // If you'd like to get the userid, networkid (steamID32) and name of players,
-// add the following outputs on your player_connect and player_info event listeners
-//  	OnEventFired @event_connect RunScriptCode ::VS.Events.player_connect(event_data)
-//  	OnEventFired @event_info    RunScriptCode ::VS.Events.player_info(event_data)
+// add the following outputs on your player_connect and player_spawn event listeners
+//  	OnEventFired @event_connect RunScriptCode VS.Events.player_connect(event_data)
+//  	OnEventFired @event_spawn RunScriptCode VS.Events.player_spawn(event_data)
 //
 // You can still execute your arbitrary code on these events by
-// simply creating ::OnGameEvent_<event_name>(data) functions
-//
-// When you call VS.ValidateUserid( hPLAYER ) with a player handle as a parameter,
-// that player's known info will be put into the player scope. ( userid, networkid, name )
-//
-// IMPORTANT: You cannot validate every player at the same frame,
-// there needs to be at least one frame time delay between each validation.
-//
-// You can add your delay like so:
-//  	delay( "VS.ValidateUserid( activator )", _COUNTER * FrameTime(), ENT_SCRIPT, hPLAYER )
-// or
-//  	delay( "VS.ValidateUserid( VS.FindEntityByString(\""+hPLAYER+"\") )", _COUNTER * FrameTime() )
-//
-//
-// You can automate this by putting this as a game_playerjoin output: VS.ValidateUserid( activator )
-// Note that this won't work for bots. You would have to use one of the other methods for them.
-//
-// An example of this game_playerjoin automation (in script) can be seen in this following code:
-// The same can be done inside Hammer as well by adding the VS.ValidateUserid(activator) output on game_playerjoin.
-/*
-
-if( !Entities.FindByName(null, "game_playerjoin") )
-	VS.CreateEntity("trigger_brush","game_playerjoin").GetScriptScope().OnUse <- function(){VS.ValidateUserid( activator )}
-
-*/
-//
-// Or execute this every round to make sure every player and bot in the server has their userid set up:
-//  	logic_auto output:
-//  	OnMapSpawn <any_script_entity> RunScriptCode ::VS.ValidateUseridAll()
-//
-// Or put a trigger_multiple on every spawn point in the map with this output:
-//  	OnStartTouch !self      RunScriptCode ::VS.ValidateUserid(activator)
-// or
-//  	OnStartTouch !activator RunScriptCode ::VS.ValidateUserid(self)
+// simply creating the ::OnGameEvent_player_spawn(data) functions
 //
 //-----------------------------------------------------------------------
 
@@ -98,60 +59,21 @@ function VS::GetPlayerByUserid( userid )
 {
 	local ent
 
-	// find players only
-	// while( ent = Entities.FindByClassname(ent, "player") )
-
-	// find players and bots
 	while( ent = Entities.Next(ent) ) if( ent.GetClassname() == "player" )
-
-	{local s = ent.GetScriptScope(); if( s && s.userid == userid ) return ent}
-}
-
-//-----------------------------------------------------------------------
-// Input  : player handle, add its userid in its scope
-// Output : return ent scope if ent is valid
-//-----------------------------------------------------------------------
-function VS::ValidateUserid( ent )
-{
-	if( !ent.ValidateScriptScope() ) return printl("Userid validation failed: Invalid player entity.")
-	local scope = ent.GetScriptScope()
-	if( "userid" in scope ) return scope
-	Events.SValidatee <- scope
-	EntFireHandle( Events.proxy, "generategameevent", "", 0.0, ent )
-	return scope
-}
-
-//-----------------------------------------------------------------------
-// Validate every player and bot's userid
-//-----------------------------------------------------------------------
-function VS::ValidateUseridAll()
-{
-	local i = 0, f = FrameTime()
-	foreach( e in GetAllPlayers() )
-		delay( "VS.ValidateUserid(activator)", f * i++, ENT_SCRIPT, e )
-}
-
-//-----------------------------------------------------------------------
-
-// If events are correctly set up, add the userid, networkid (steamID32) and name to the player scope
-// if not, just add the userid
-// Bot networkid is "BOT"
-function VS::Events::Info( data )
-{
-	SValidatee.networkid <- ""
-	SValidatee.name <- ""
-	SValidatee.userid <- data.userid
-
-	if( ::_xa9b2dfB7ffe.len() ) foreach( i, t in ::_xa9b2dfB7ffe ) if( t.userid == data.userid )
 	{
-		SValidatee.networkid = t.networkid
-		SValidatee.name = t.name
-		::_xa9b2dfB7ffe.remove(i)
-		break
+		local s = ent.GetScriptScope()
+		if( s && s.userid == userid )
+			return ent
 	}
 }
 
+//-----------------------------------------------------------------------
+
 // OnEvent player_connect
+
+// If events are correctly set up, add the userid, networkid (steamID32) and name to the player scope
+// Bot networkid is "BOT"
+
 // user function ::OnGameEvent_player_connect will still be called
 // Only allows 512 unprocessed entries to be held
 function VS::Events::player_connect(data)
@@ -161,11 +83,29 @@ function VS::Events::player_connect(data)
 	::OnGameEvent_player_connect(data)
 }
 
-// OnEvent player_info
-// user function ::OnGameEvent_player_info will still be called
-function VS::Events::player_info(data)
+// OnEvent player_spawn
+// user function ::OnGameEvent_player_spawn will still be called
+function VS::Events::player_spawn(data)
 {
-	Info(data)
+	if( ::_xa9b2dfB7ffe.len() ) foreach( i, d in ::_xa9b2dfB7ffe ) if( d.userid == data.userid )
+	{
+		local scope, player = ::VS.GetPlayerByIndex(d.index+1)
 
-	::OnGameEvent_player_info(data)
+		if( !player.ValidateScriptScope() )
+			return printl("[player_connect]: Invalid player entity.")
+
+		scope = player.GetScriptScope()
+
+		if( "userid" in scope )
+			return::OnGameEvent_player_spawn(data)
+
+		if( !d.networkid.len() )
+			printl("[player_connect]: could not get event data.")
+
+		scope.userid <- d.userid
+		scope.name <- d.name
+		scope.networkid <- d.networkid
+		::_xa9b2dfB7ffe.remove(i)
+		return::OnGameEvent_player_spawn(data)
+	}
 }

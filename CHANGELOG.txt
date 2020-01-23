@@ -2,6 +2,9 @@
 
 --------------------------------
 
+2020-01-23 [v2.33.0]
+- Implemented auto userid validation. VS.ValidateUserid functions are removed.
+
 2020-01-22 [v2.32.4]
 - Allow EntFire to be able to pass a caller
 - Make EntFireByHandle function the same as EntFireHandle, with default parameters. The native function is accessible with DoEntFireByInstanceHandle, naming is consistent with the engine function.
