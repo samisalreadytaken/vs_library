@@ -108,4 +108,6 @@ function VS::Events::player_spawn(data)
 		::_xa9b2dfB7ffe.remove(i)
 		return::OnGameEvent_player_spawn(data)
 	}
+
+	::OnGameEvent_player_spawn(data)
 }
