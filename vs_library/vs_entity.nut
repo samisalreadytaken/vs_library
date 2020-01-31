@@ -10,9 +10,6 @@
 //-----------------------------------------------------------------------
 // Make EntFireByHandle allow default parameters
 //-----------------------------------------------------------------------
-if( ::EntFireByHandle.getinfos().native )
-	::DoEntFireByInstanceHandle <- ::EntFireByHandle
-
 ::EntFireByHandle <- function( target, action, value = "", delay = 0.0, activator = null, caller = null )
 {
 	DoEntFireByInstanceHandle( target, action.tostring(), value.tostring(), delay, activator, caller )
@@ -38,7 +35,7 @@ if( ::EntFireByHandle.getinfos().native )
 }
 
 //-----------------------------------------------------------------------
-//
+// Prevent the entity to be released every round
 //-----------------------------------------------------------------------
 function VS::MakePermanent( handle )
 {
@@ -54,42 +51,17 @@ function VS::MakePermanent( handle )
 //-----------------------------------------------------------------------
 function VS::SetParent( hChild, hParent )
 {
-	if( !hParent ) return::EntFireHandle( hChild, "setparent", "" )
-	return::EntFireHandle( hChild, "setparent", "!activator", 0.0, hParent )
+	if( !hParent ) return::EntFireByHandle( hChild, "setparent", "" )
+	return::EntFireByHandle( hChild, "setparent", "!activator", 0.0, hParent )
 }
 
 //-----------------------------------------------------------------------
 // Create and return a game_text entity with the input keyvalues
-// Uncomment and change the keyvalues you wish to change from their default values
-/*
-
-VS.CreateGameText(null,{
-	// channel = 1,
-	// color = "100 100 100",
-	// color2 = "240 110 0",
-	// effect = 0,
-	// fadein = 1.5,
-	// fadeout = 0.5,
-	// fxtime = 0.25,
-	// holdtime = 1.2,
-	// x = -1,
-	// y = -1,
-	// spawnflags = 0,
-	// message = ""
-})
-
-*/
-// Change the message using one of two methods:
-//  	VS.SetKeyString( gametext, "message", "<your message>" )
-//  	EntFireHandle( gametext, "SetText", "<your message>" )
-//
-// Display it to hPlayer:
-//  	EntFireHandle( gametext, "display", "", 0, hPlayer )
 //
 // Input  : string [ targetname ]
 // Output : table [ keyvalues ]
 //-----------------------------------------------------------------------
-function VS::CreateGameText( targetname = "", kv = null )
+function VS::CreateGameText( targetname = null, kv = null )
 {
 	return CreateEntity("game_text", _GUN( targetname, "game_text" ), kv)
 }
@@ -101,7 +73,7 @@ function VS::CreateGameText( targetname = "", kv = null )
 //          string [ message ]
 // Output : handle [ entity ]
 //-----------------------------------------------------------------------
-function VS::CreateHudHint( targetname = "", msg = "" )
+function VS::CreateHudHint( targetname = null, msg = "" )
 {
 	return CreateEntity("env_hudhint", _GUN( targetname, "hudhint" ), {message = msg})
 }
@@ -113,7 +85,7 @@ function VS::CreateHudHint( targetname = "", msg = "" )
 function VS::ShowHudHint( hEnt, hTarget, msg = null, delay = 0.0 )
 {
 	if( msg ) SetKeyString( hEnt, "message", msg )
-	::EntFireHandle( hEnt, "ShowHudHint", "", delay, hTarget )
+	::EntFireByHandle( hEnt, "ShowHudHint", "", delay, hTarget )
 }
 
 //-----------------------------------------------------------------------
@@ -121,32 +93,11 @@ function VS::ShowHudHint( hEnt, hTarget, msg = null, delay = 0.0 )
 //-----------------------------------------------------------------------
 function VS::HideHudHint( hEnt, hTarget, delay = 0.0 )
 {
-	::EntFireHandle( hEnt, "HideHudHint", "", delay, hTarget )
+	::EntFireByHandle( hEnt, "HideHudHint", "", delay, hTarget )
 }
 
 //-----------------------------------------------------------------------
 // Create logic_measure_movement
-//
-// You can disable the measuring entity to stop the measure.
-// The reference will keep the last measured values.
-//
-// local arr = VS.CreateMeasure(str)
-//
-// ent_refernc = arr[0]
-// ent_measure = arr[1]
-//
-//
-// Example get player eye angles:
-//
-/*
-
-player <- VS.GetLocalPlayer()
-
-player_eye <- VS.CreateMeasure( player.GetName() )[0]
-
-printl("Player eye angles: " + player_eye.GetAngles() )
-
-*/
 //
 // Input  : string [ target targetname ] (e.g. player targetname)
 //          string [ logic_measure entity name ] (optional)
@@ -164,11 +115,11 @@ function VS::CreateMeasure(g,n=null)
 	                          target = r,
 	                          measureretarget = "" } )
 
-	::EntFireHandle(e,"setmeasurereference",r)
+	::EntFireByHandle(e,"setmeasurereference",r)
 
-	::EntFireHandle(e,"setmeasuretarget",g)
+	::EntFireByHandle(e,"setmeasuretarget",g)
 
-	::EntFireHandle(e,"enable")
+	::EntFireByHandle(e,"enable")
 
 	return[t,e]
 }
@@ -181,7 +132,7 @@ function VS::CreateMeasure(g,n=null)
 //-----------------------------------------------------------------------
 function VS::SetMeasure(h,s)
 {
-	::EntFireHandle(h,"setmeasuretarget",s)
+	::EntFireByHandle(h,"setmeasuretarget",s)
 }
 
 //-----------------------------------------------------------------------
@@ -191,9 +142,9 @@ function VS::SetMeasure(h,s)
 //          float [ upper (randomtime, used when refire == null) ]
 //          bool [ oscillator (alternate between OnTimerHigh and OnTimerLow outputs) ]
 //          bool [ start disabled ? ]
-// Output : array [ entity, entity_scope ]
+// Output : entity
 //-----------------------------------------------------------------------
-function VS::CreateTimer( targetname = "", refire = 1, lower = 1, upper = 5, oscillator = 0, disabled = 1 )
+function VS::CreateTimer( targetname = null, refire = 1, lower = 1, upper = 5, oscillator = 0, disabled = true )
 {
 	local ent = CreateEntity( "logic_timer",
 	                          _GUN( targetname, "timer" ),
@@ -201,22 +152,23 @@ function VS::CreateTimer( targetname = "", refire = 1, lower = 1, upper = 5, osc
 	                            LowerRandomBound = lower,
 	                            UpperRandomBound = upper } )
 
-	if( !refire )
+	if( refire )
+		SetKeyFloat( ent, "RefireTime", refire.tofloat() )
+	else
 	{
 		SetKeyInt( ent, "UseRandomTime", 1 )
 		SetKeyInt( ent, "spawnflags", oscillator )
 	}
-	else SetKeyFloat( ent, "RefireTime", refire.tofloat() )
 
-	::EntFireHandle( ent, disabled ? "disable" : "enable" )
+	::EntFireByHandle( ent, disabled ? "disable" : "enable" )
 
 	return ent
 }
 
 //-----------------------------------------------------------------------
-// Create and return a timer that executes sFunc
-// VS.Timer( false, 0.5, "Think" )
-// VS.Timer( bDisabled, fInterval, sFunc, tScope = this, bExecInEnt = false )
+// Create and return a timer that executes Func
+// VS.Timer( false, 0.5, Think )
+// VS.Timer( bDisabled, fInterval, Func, tScope = this, bExecInEnt = false )
 //-----------------------------------------------------------------------
 function VS::Timer(b,f,s,t=null,e=false)
 {
@@ -228,94 +180,76 @@ function VS::Timer(b,f,s,t=null,e=false)
 //-----------------------------------------------------------------------
 // Add OnTimer output to the timer entity to execute the input function
 // Input  : handle [ entity ]
-//          string [ function ]
-// Output : table [ scope ]
+//          string OR closure [ function ]
+// Output :
 //-----------------------------------------------------------------------
-function VS::OnTimer( hEnt, sFunc, tScope = null, bExecInEnt = false )
+function VS::OnTimer( hEnt, Func, tScope = null, bExecInEnt = false )
 {
-	return AddOutput( hEnt, "OnTimer", sFunc, tScope ? tScope : GetCaller(), bExecInEnt )
+	return AddOutput( hEnt, "OnTimer", Func, tScope ? tScope : GetCaller(), bExecInEnt )
 }
 
-function VS::OnTimerHigh( hEnt, sFunc, tScope = null, bExecInEnt = false )
+function VS::OnTimerHigh( hEnt, Func, tScope = null, bExecInEnt = false )
 {
-	return AddOutput( hEnt, "OnTimerHigh", sFunc, tScope ? tScope : GetCaller(), bExecInEnt )
+	return AddOutput( hEnt, "OnTimerHigh", Func, tScope ? tScope : GetCaller(), bExecInEnt )
 }
 
-function VS::OnTimerLow( hEnt, sFunc, tScope = null, bExecInEnt = false )
+function VS::OnTimerLow( hEnt, Func, tScope = null, bExecInEnt = false )
 {
-	return AddOutput( hEnt, "OnTimerLow", sFunc, tScope ? tScope : GetCaller(), bExecInEnt )
+	return AddOutput( hEnt, "OnTimerLow", Func, tScope ? tScope : GetCaller(), bExecInEnt )
 }
 
 //-----------------------------------------------------------------------
 // Adds output in the chosen entity
 // Executes the given function in the given scope
-// Example:
-//  	VS.AddOutput( hTimer, "OnTimer", "MyFunction" )
-//
-// Or execute the function that is in tScope, in the scope of hEnt
-// Example:
-//  	let function MyFunction(){ print(self.GetName()) }
-//  	VS.AddOutput( hButton, "OnPressed", "MyFunction", null, true )
-// When the button is fired the Pressed input, it prints <hButton.GetName()>
-//
-//  	VS.AddOutput( hButton, "OnPressed", "MyFunction" )
-// In this case the button prints <this.self.GetName()>
-//
-// ! Doesn't support function parameters
 //
 // Input  : handle [ entity ]
 //          string [ output ]
-//          string [ function ]
+//          string OR closure [ function ]
 //          table [ scope ] // null === this
 //          bool [ bool ] // execute the function in the scope of hEnt
 //-----------------------------------------------------------------------
-function VS::AddOutput( hEnt, sOutput, sFunc, tScope = null, bExecInEnt = false )
+function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 {
-	if( !hEnt.ValidateScriptScope() ) throw "Invalid entity."
-
-	local skope, scope = hEnt.GetScriptScope()
+	if( !hEnt.ValidateScriptScope() ) throw "Invalid entity"
 
 	if( !tScope ) tScope = GetCaller()
 
-	if( "self" in tScope && tScope.self.IsValid() ) skope = ::getroottable()[tScope.__vname]
-	else
-	{
-		local d = GetTableDir(tScope), l = d.len()
-		if( l == 1 ) skope = ::getroottable()
-		else if( l == 2 ) skope = ::getroottable()[d[1]]
-		else if( l == 3 ) skope = ::getroottable()[d[1]][d[2]]
-		else if( l == 4 ) skope = ::getroottable()[d[1]][d[2]][d[3]]
-		else if( l == 5 ) skope = ::getroottable()[d[1]][d[2]][d[3]][d[4]]
-		else if( l == 6 ) skope = ::getroottable()[d[1]][d[2]][d[3]][d[4]][d[5]]
-		else if( l == 7 ) skope = ::getroottable()[d[1]][d[2]][d[3]][d[4]][d[5]][d[6]]
-		else if( l == 8 ) skope = ::getroottable()[d[1]][d[2]][d[3]][d[4]][d[5]][d[6]][d[7]]
-	}
+	if( typeof Func == "string" )
+		Func = tScope[Func]
+	else if( typeof Func != "function" )
+		throw "Invalid function type " + typeof Func
 
-	scope[sOutput] <- bExecInEnt ? skope[sFunc] : skope[sFunc].bindenv(tScope)
+	hEnt.GetScriptScope()[sOutput] <- bExecInEnt ? Func : Func.bindenv(tScope)
 
-	hEnt.ConnectOutput( sOutput, sOutput )
+	hEnt.ConnectOutput(sOutput, sOutput)
 
-	// print( "** Adding output '" + sOutput + "' to '" + hEnt.GetName() + "'. Execute '" + sFunc + "()' in '" + skope  + ".'\n" )
-
-	return true
-}
-
-// example
-//
-//  	VS.AddOutput2( hTimer,"ontimer","printl(self)",null,true )
-//
-// caller is the output owner
-// activator is the script owner
-function VS::AddOutput2( hEnt, sOutput, sFunc, tScope = null, bExecInEnt = false )
-{
-	if( !tScope ) tScope = GetCaller()
-	if( !("self" in tScope) ) throw"Invalid function path"
-	::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+(bExecInEnt?hEnt.GetName():tScope.self.GetName())+":runscriptcode:"+sFunc,0.0,tScope.self,hEnt )
-	return true
+	// print("** Adding output '" + sOutput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetTableName(tScope)) + ".'\n")
 }
 
 //-----------------------------------------------------------------------
-// CreateByClassname, set keyvalues, create script scope, return handle
+// Use to add outputs with parameters
+//
+// caller is the output owner
+// activator is the script owner
+//-----------------------------------------------------------------------
+function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
+{
+	if( typeof Func == "function" )
+		return AddOutput( hEnt, sOutput, Func, tScope, bExecInEnt )
+
+	if( typeof Func != "string" )
+		throw "Invalid function type " + typeof Func
+
+	if( !tScope ) tScope = GetCaller()
+
+	if( !("self" in tScope) )
+		throw "Invalid function path"
+
+	::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+(bExecInEnt?hEnt.GetName():tScope.self.GetName())+":runscriptcode:"+Func,0.0,tScope.self,hEnt )
+}
+
+//-----------------------------------------------------------------------
+// CreateByClassname, set keyvalues, return handle
 //
 // Input  : string [ entity classname ]
 //          string [ entity targetname ]
@@ -380,10 +314,6 @@ function VS::SetKeyVector( ent, key, val )
 function VS::SetName( ent, name )
 { ent.__KeyValueFromString("targetname",name) }
 
-// Change targetname
-function VS::ChangeName( oldname, newname )
-{ ::Entities.FindByName(null,oldname).__KeyValueFromString("targetname",newname) }
-
 //-----------------------------------------------------------------------
 // ent_script_dump
 // Dump all entities whose script scopes are already created.
@@ -438,15 +368,8 @@ function VS::DumpEnt( input = null )
 //
 // The only other way of differentiating named bots from players is
 // checking their networkid.
-// But this requires you to have validated their userids first, using
-//  	VS.ValidateUserid( handle )
-// or
-//  	VS.ValidateUseridAll()
 //
-// To prevent common issues with validating userids,
-// check the vs_events file documentation.
-//
-// If your bots are named and you've validated userids,
+// If your bots are named and you've set up the event listeners,
 // set the 'validated' parameter to true.
 //
 //-----------------------------------------------------------------------
@@ -468,37 +391,21 @@ function VS::GetPlayersAndBots( validated = false )
 }
 
 //-----------------------------------------------------------------------
-// Iterate through every player and bot, and apply the input function on them
-// Example ( these 2 snippets do the same thing ):
-/*
-
-	VS.GetAllPlayers( function( player ) {
-		player.SetHealth(1)
-	} )
-
-//---------------
-
-	foreach( player in VS.GetAllPlayers() ) {
-		player.SetHealth(1)
-	}
-
-*/
+// Get every player and bot in a single array
 //-----------------------------------------------------------------------
-function VS::GetAllPlayers( closure = null )
+function VS::GetAllPlayers()
 {
 	local e, a = []
 	while( e = ::Entities.Next(e) )
 		if( e.GetClassname() == "player" )
-			if( closure )
-				closure( e )
-			else a.append(e)
+			a.append(e)
 	return a
 }
 
 //-----------------------------------------------------------------------
 // DumpEnt only players and bots
 //
-// If your bots are named and you've validated userids,
+// If your bots are named and you've set up the event listeners,
 // set the 'validated' parameter to true.
 //
 // Otherwise the named bots will be shown as players.
@@ -564,9 +471,9 @@ function VS::GetPlayerByIndex( entindex )
 	local e; while( e = ::Entities.Next(e) ) if( e.GetClassname() == "player" ) if( e.entindex() == entindex ) return e
 }
 
-function VS::FindEntityByIndex( entindex, classname = null )
+function VS::FindEntityByIndex( entindex, classname = "*" )
 {
-	local e; while( e = ::Entities.FindByClassname(e, classname ? classname : "*") ) if( e.entindex() == entindex ) return e
+	local e; while( e = ::Entities.FindByClassname(e, classname) ) if( e.entindex() == entindex ) return e
 }
 
 //-----------------------------------------------------------------------
@@ -581,44 +488,6 @@ function VS::FindEntityByString( str )
 function VS::IsPointSized( h )
 {
 	return VectorIsZero( h.GetBoundingMaxs() )
-}
-
-function VS::FindEntityGeneric( hStartEntity, sName )
-{
-	local ent
-
-	ent = ::Entities.FindByName( hStartEntity, sName )
-
-	if( !ent )
-		ent = ::Entities.FindByClassname( hStartEntity, sName )
-
-	return ent
-}
-
-function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassname )
-{
-	local bestDot = fThreshold,
-	      best_ent, ent
-
-	// for( local ent = ::Entities.First(); ent; ent = ::Entities.Next(ent) )
-	while( ent = ::Entities.Next(ent) )
-	{
-		if( ent.GetClassname() != sClassname ) continue
-
-		local to_ent = ent.GetOrigin() - vOrigin
-
-		to_ent.Norm()
-
-		local dot = vFacing.Dot( to_ent )
-
-		if( dot > bestDot )
-		{
-			bestDot = dot
-			best_ent = ent
-		}
-	}
-
-	return best_ent
 }
 
 function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold )
@@ -650,6 +519,33 @@ function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold )
 	return best_ent
 }
 
+function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassname )
+{
+	local bestDot = fThreshold,
+	      best_ent, ent
+
+	// for( local ent = ::Entities.First(); ent; ent = ::Entities.Next(ent) )
+	// while( ent = ::Entities.Next(ent) )
+	while( ent = ::Entities.FindByClassname(ent,sClassname) )
+	{
+		// if( ent.GetClassname() != sClassname ) continue
+
+		local to_ent = ent.GetOrigin() - vOrigin
+
+		to_ent.Norm()
+
+		local dot = vFacing.Dot( to_ent )
+
+		if( dot > bestDot )
+		{
+			bestDot = dot
+			best_ent = ent
+		}
+	}
+
+	return best_ent
+}
+
 // When two candidate entities are in front of each other, pick the closer one
 // Not perfect, but it works to some extent
 function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, sClassname, flRadius )
@@ -660,10 +556,8 @@ function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, 
 	if( !flMaxDist2 )
 		flMaxDist2 = 3.22122e+09; // MAX_TRACE_LENGTH * MAX_TRACE_LENGTH
 
-	while( ent = ::Entities.Next(ent) )
+	while( ent = ::Entities.FindByClassname(ent,sClassname) )
 	{
-		if( ent.GetClassname() != sClassname ) continue
-
 		local to_ent = ent.GetOrigin() - vOrigin
 		to_ent.Norm()
 		local dot = vFacing.Dot( to_ent )

@@ -1,9 +1,19 @@
+
 'vs_library' changelog, in reverse chronological order.
 
 --------------------------------
 
+2020-01-31 [v2.34.0]
+- Documentation released
+- Cleanup, various improvements and bugfixes
+- Added error checks on events
+- VS.AddOutput, VS.OnTimer, VS.Timer functions now accept function inputs as well as string
+  - Improved performance
+- Removed VS.ChangeName, VS.GetAllPlayers parameter, VS.Log.Array, VS.TraceLine.GetFraction, VS.ReplaceArrayIndex, VS.FindEntityGeneric
+- Renamed FindInArray to arrayFind to be consistent with the other array functions
+
 2020-01-24 [v2.33.1]
-- Cleanup, better performance
+- Cleanup, improved performance
 
 2020-01-23 [v2.33.0]
 - Implemented auto userid validation. VS.ValidateUserid functions are removed.

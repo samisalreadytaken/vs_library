@@ -52,7 +52,7 @@ function VS::ComputeBoxOffset( ray )
 
 //-----------------------------------------------------------------------------
 // Purpose: returns true if pt intersects the truncated cone
-// origin - cone tip, axis unit cone axis, cosAngle - cosine of cone axis to surface angle
+// origin - cone tip, axis - unit cone axis, cosAngle - cosine of cone axis to surface angle
 //
 // Input  : Vector
 //          Vector
@@ -207,8 +207,8 @@ function VS::IsRayIntersectingSphere( vecRayOrigin, vecRayDelta, vecCenter, flRa
 
 //-----------------------------------------------------------------------------
 // Intersects a ray with a AABB, return true if they intersect
+// Input  : localMins, localMaxs
 //-----------------------------------------------------------------------------
-// localMins, localMaxs
 function VS::IsBoxIntersectingRay( origin, vecBoxMin, vecBoxMax, ray, flTolerance = 0.0 )
 {
 	if( !ray.m_IsSwept )
@@ -227,11 +227,14 @@ function VS::IsBoxIntersectingRay( origin, vecBoxMin, vecBoxMax, ray, flToleranc
 	local vecExpandedBoxMin = vecBoxMin - ray.m_Extents + origin;
 	local vecExpandedBoxMax = vecBoxMax + ray.m_Extents + origin;
 
-	return _IsBoxIntersectingRay( vecExpandedBoxMin, vecExpandedBoxMax, ray.m_Start, ray.m_Delta, flTolerance );
+	return IsBoxIntersectingRay2( vecExpandedBoxMin, vecExpandedBoxMax, ray.m_Start, ray.m_Delta, flTolerance );
 }
 
-// worldMins, worldMaxs
-function VS::_IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance )
+//-----------------------------------------------------------------------------
+// Intersects a ray with a AABB, return true if they intersect
+// Input  : worldMins, worldMaxs
+//-----------------------------------------------------------------------------
+function VS::IsBoxIntersectingRay2( boxMin, boxMax, origin, vecDelta, flTolerance )
 {
 	// Assert( boxMin.x <= boxMax.x );
 	// Assert( boxMin.y <= boxMax.y );
@@ -404,15 +407,15 @@ function VS::IntersectRayWithRay( ray0, ray1 )
 // FIXME
 //-----------------------------------------------------------------------------
 // Swept OBB test
+// Input  : localMins, localMaxs
 //-----------------------------------------------------------------------------
-// localMins, localMaxs
 function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs, flTolerance )
 {
 	if( VectorIsZero(angles) )
 	{
 		local vecWorldMins = org + mins;
 		local vecWorldMaxs = org + maxs;
-		return _IsBoxIntersectingRay( vecWorldMins, vecWorldMaxs, ray.m_Start, ray.m_Delta, flTolerance );
+		return IsBoxIntersectingRay2( vecWorldMins, vecWorldMaxs, ray.m_Start, ray.m_Delta, flTolerance );
 	};
 
 	if( ray.m_IsRay )

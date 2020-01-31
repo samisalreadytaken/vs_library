@@ -8,19 +8,10 @@
 //-----------------------------------------------------------------------
 
 /*
-	DebugDrawLine( vec1, vec2, R, G, B, zTest, time )
+	DebugDrawLine( vec1, vec2, R, G, B, noDepthTest, time )
 
-	DebugDrawBox( vecOri, vecMin, vecMax, R, G, B, A, time )
+	DebugDrawBox( vecOri, vecMins, vecMaxs, R, G, B, A, time )
 */
-
-//-----------------------------------------------------------------------
-// Draw entity's AABB
-// ent_bbox
-//-----------------------------------------------------------------------
-function VS::DrawEntityBBox( time, ent, r = 255, g = 138, b = 0, a = 0 )
-{
-	::DebugDrawBox(ent.GetOrigin(),ent.GetBoundingMins(),ent.GetBoundingMaxs(),r,g,b,a,time)
-}
 
 ::Ent  <- function( s, i = null ){ return Entities.FindByName(i,s) }
 ::Entc <- function( s, i = null ){ return Entities.FindByClassname(i,s) }
@@ -30,8 +21,13 @@ function VS::DrawEntityBBox( time, ent, r = 255, g = 138, b = 0, a = 0 )
 // Output : string - .tointeger() or .tofloat() can be used on the result
 //-----------------------------------------------------------------------
 function VS::FormatPrecision( f, n = 2 ){ return::format("%." +n+"f",f) }
-function VS::FormatHex( i, n = 4 )      { return::format("%#0"+n+"x",i) }
 function VS::FormatExp( i, n = 1 )      { return::format("%." +n+"e",i) }
+
+//-----------------------------------------------------------------------
+// Input  : int
+// Output : string - .tointeger() or .tofloat() can be used on the result
+//-----------------------------------------------------------------------
+function VS::FormatHex( i, n = 4 )      { return::format("%#0"+n+"x",i) }
 
 //-----------------------------------------------------------------------
 // Input  : 0 or " "
@@ -41,7 +37,7 @@ function VS::FormatExp( i, n = 1 )      { return::format("%." +n+"e",i) }
 function VS::FormatWidth( s, i, n = 4 ) { return::format("%"+s+""+n+"s",i.tostring()) }
 
 //-----------------------------------------------------------------------
-// Input  : vector instance
+// Input  : Vector
 // Output : string
 //-----------------------------------------------------------------------
 ::VecToString <- function( vec, prefix = "Vector(", separator = ",", suffix = ")" )
@@ -56,13 +52,21 @@ function VS::SetAngles( hEnt, vAng )
 }
 
 //-----------------------------------------------------------------------
+// Draw entity's AABB
+// ent_bbox
+//-----------------------------------------------------------------------
+function VS::DrawEntityBBox( time, ent, r = 255, g = 138, b = 0, a = 0 )
+{
+	::DebugDrawBox(ent.GetOrigin(),ent.GetBoundingMins(),ent.GetBoundingMaxs(),r,g,b,a,time)
+}
+
+//-----------------------------------------------------------------------
 // Ray tracing
 /*
 
 local trace = VS.TraceLine( v1, v2 )
 
 trace.DidHit()
-trace.GetFraction()
 trace.GetEnt( search_radius )
 trace.GetPos()
 trace.GetDist()
@@ -75,8 +79,6 @@ trace.hitpos
 trace.normal
 
 */
-// This doesn't hit entities. To calculate LOS with them, iterate through every entity type you want and trace individually
-// Example: https://github.com/samisalreadytaken/vscripts/blob/master/aimbot/aimbot.nut#L291
 //-----------------------------------------------------------------------
 class::VS.TraceLine
 {
@@ -84,8 +86,12 @@ class::VS.TraceLine
 	{
 		if( !start )
 		{
-			start =::Vector()
-			end =::Vector()
+			local v = ::Vector()
+			startpos = v
+			endpos = v
+			hIgnore = ent
+			fraction = 1.0
+			return
 		}
 
 		startpos = start
@@ -98,12 +104,6 @@ class::VS.TraceLine
 	function DidHit()
 	{
 		return fraction < 1.0
-	}
-
-	// hit fraction
-	function GetFraction()
-	{
-		return fraction
 	}
 
 	// return hit entity handle, null if none
@@ -203,25 +203,7 @@ class::VS.TraceLine
 }
 
 //-----------------------------------------------------------------------
-// Example draw a cube at player aim (GOTV spectator like)
 // Set 'f' to limit the max distance
-/*
-
-function OnTimer()
-{
-	local eye = HPlayer.EyePosition()
-	local v1 = VS.TraceDir( eye, HPlayerEye.GetForwardVector() ).GetPos()
-
-	DebugDrawLine( eye, v1, 255, 255, 255, false, fT2 )
-	DebugDrawBox( v1, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 125, fT2 )
-}
-
-HPlayer <- VS.GetLocalPlayer()
-HPlayerEye <- VS.CreateMeasure( HPlayer.GetName() )[0]
-hTimer <- VS.Timer( 0, FrameTime(), "OnTimer" )
-fT2 <- FrameTime() * 2
-
-*/
 // Input  : vector [ start pos ]
 //          vector [ normalised direction ]
 //          handle [ to ignore ]
@@ -233,32 +215,22 @@ function VS::TraceDir( v1, vDir, f = 6144, hEnt = null )
 }
 
 //-----------------------------------------------------------------------
-// Draw the normal of a surface the player is looking at
-/*
-
-local tr = VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() )
-
-tr.GetNormal()
-
-DebugDrawLine( tr.hitpos, tr.normal * 16 + tr.hitpos, 0, 0, 255, false, 10 )
-
-*/
-//-----------------------------------------------------------------------
-
 // UniqueString without _ in the end
-function VS::UniqueString(i="")
+//-----------------------------------------------------------------------
+function VS::UniqueString()
 {
-	local n = ""
-	foreach( c in::UniqueString(i) )
-		if( c != '_' )
-			n += c.tochar()
-	return n
-}
+	local s =::DoUniqueString("")
+	return s.slice(0,s.len()-1)
 
-function VS::ReplaceArrayIndex( arr, idx, val )
-{
-	arr.remove( idx )
-	arr.insert( idx, val )
+/*
+	local n = "",
+	      s =::DoUniqueString("")
+
+	for( local i = 0; i < s.len(); i++ )
+		n += s[i].tochar()
+
+	return n; 
+*/
 }
 
 //-----------------------------------------------------------------------
@@ -270,7 +242,7 @@ function VS::ReplaceArrayIndex( arr, idx, val )
 // if value found in array, return index
 // else return null
 //-----------------------------------------------------------------------
-function VS::FindInArray( val, arr )
+function VS::arrayFind( val, arr )
 {
 	foreach( i, v in arr )
 		if( v == val )
@@ -320,7 +292,7 @@ function VS::DumpScope( table, printall = false, deepprint = true, guides = true
 		foreach( key, val in table )
 		{
 			local isdefault = false
-			if( !printall ){ foreach( k in VS.slots_default ) if( key == k ) isdefault = true }
+			if( !printall ){ foreach( k in slots_default ) if( key == k ) isdefault = true }
 			else if( key == "VS" || key == "Documentation" ) isdefault = true
 			if( !isdefault )
 			{
@@ -403,22 +375,22 @@ Engine function calls are done through Call(...), that's why these 2 stacks are 
 	 ---
 */
 //-----------------------------------------------------------------------
-function VS::GetStackInfo( deepprint = false )
+function VS::GetStackInfo( deepprint = false, printall = false )
 {
 	::print(" --- STACKINFO ----------------\n")
 	local s, j = 2
-	while( s =::getstackinfos(j) )
+	while( s =::getstackinfos(j++) )
 	{
 		if( s.func == "pcall" && s.src == "NATIVE" ) break
-		::print(" ("+j+++")\n")
+		::print(" ("+(j-1)+")\n")
 		local w, m = s.locals
 		if( "this" in m && typeof m["this"] == "table" )
 		{
 			w = GetTableName( m["this"] )
 			m[w] <- delete m["this"]
 		}
-		if( w == "roottable" ) DumpScope( s, 1, 0, 0 )
-		else DumpScope( s, 1, deepprint, 0 )
+		if( w == "roottable" ) DumpScope( s, printall, 0, 0 )
+		else DumpScope( s, printall, deepprint, 0 )
 		if(w)::print("scope = \""+w+"\"\n")
 	}
 	::print(" --- STACKINFO ----------------\n")
@@ -444,14 +416,6 @@ function VS::GetInfo( func )
 
 //-----------------------------------------------------------------------
 // Get input table's name
-// Example:
-//  	::t1.t2.t6 <- {}
-//  	VS.GetTableName( t1.t2.t6 )
-//  	-> returns "t6"
-//  	// or
-//  	VS.GetTableName( this )
-//
-// Returns "roottable" for the root table
 //
 // Input  : table [ unknown table ]
 // Output : string [ table name ]
@@ -460,15 +424,6 @@ function VS::GetTableName( table )
 {if(typeof table!="table")throw("Invalid input type '"+(typeof table)+"' ; expected: 'table'");local r=_fb3k551r91t7(table);if(r)return r;return "roottable"}function VS::_fb3k551r91t7(t,l=::getroottable()){foreach(v,u in l)if(typeof u=="table")if(v!="VS"&&v!="Documentation")if(u!=t){local r=_fb3k551r91t7(t,u);if(r)return r}else return v}
 
 //-----------------------------------------------------------------------
-// To use this function with a string input, you can combine it with VS.FindTableByName.
-// Example:
-//  	::t1.t2.t3.t4 <- {}
-//  	VS.GetTableDir( t1.t2.t3.t4 )
-//  	VS.GetTableDir( VS.FindTableByName( "t4" ) )
-//  	-> both return ["roottable","t1","t2","t3","t4"]
-//
-//  	You can quickly print the array with VS.DumpScope(output)
-//
 // Input  : table
 // Output : array containing the input's directory
 //-----------------------------------------------------------------------
@@ -476,11 +431,6 @@ function VS::GetTableDir( table )
 {if(typeof table!="table")throw("Invalid input type '"+(typeof table)+"' ; expected: 'table'");bF.clear();local r=_f627f40d21a6(table);if(r)r.append("roottable");else r=["roottable"];r.reverse();return r}function VS::_f627f40d21a6(t,l=::getroottable()){foreach(v,u in l)if(typeof u=="table")if(v!="VS"&&v!="Documentation")if(u!=t){local r=_f627f40d21a6(t,u);if(r){bF.append(v);return r}}else{bF.append(v);return bF}}
 
 //-----------------------------------------------------------------------
-// Example:
-//  	::t1.t2.t3.t4 <- {}
-//  	VS.FindTableByName( "t4" )
-//  	-> returns table <t1.t2.t3.t4>
-//
 // Input  : string [ table ]
 // Output : table
 //-----------------------------------------------------------------------
@@ -496,32 +446,13 @@ function VS::FindTableByName( str )
 // Doesn't work with primitive variables if
 // there are multiple variables with the same value.
 // But it can work if the value is unique, like a unique string.
-//
-// Example
-/*
-
-::somestring <- "my unique string"
-::somefunc <- function(){}
-
-local test = function( param )
-{
-	printl( VS.GetVarName( param ) )
-}
-
-// prints "somestring"
-test( somestring )
-
-// prints "somefunc"
-test( somefunc )
-
-*/
 //-----------------------------------------------------------------------
 function VS::GetVarName(v){local r=_fb3k5S1r91t7(typeof v,v);if(r)return r;return"null"}function VS::_fb3k5S1r91t7(t,i,s=::getroottable()){foreach(k,v in s){local y=typeof v;if(y==t){if(v==i)return k}else if(y=="table"){if(k!="VS"&&k!="Documentation"){local r=_fb3k5S1r91t7(t,i,v);if(r)return r}}}}
 
 function VS::GetFuncName(f){return f.getinfos().name}
 
-
 /*
+Frame times:
 
 64.0  tick : 0.01562500
 102.4 tick : 0.00976563
@@ -540,12 +471,12 @@ function VS::GetTickrate()
 //
 // If you wish to delay the code in a specific scope,
 // you need to know the name of the table.
-// Using VS.DumpScope( VS.GetTableDir( tableInput ) ), you can find
+// Using VS.DumpScope(VS.GetTableDir(tableInput)), you can find
 // in which table your desired scope is and execute the code
 //
 // You can use activators and callers to easily access entity handles
 //-----------------------------------------------------------------------
-::delay     <- function( f, t = 0.0, e = ::ENT_SCRIPT, a = null, c = null ){ DoEntFireByInstanceHandle( e, "runscriptcode", ""+f, t, a, c ) }
+::delay     <- function( X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null ){DoEntFireByInstanceHandle( E, "runscriptcode", ""+X, T, A, C )}
 
 ::Chat      <- function(s){ScriptPrintMessageChatAll(" "+s)}
 ::ChatTeam  <- function(i,s){ScriptPrintMessageChatTeam(i," "+s)}
@@ -577,22 +508,18 @@ function VS::GetTickrate()
 // Reload the script file this is put in once again
 // Can be used to "apply" the const variables compiled from another file
 /*
+
 if(!("__reloading"in::getroottable()))::__reloading<-false;;if(::__reloading)delete::__reloading;else{local _=function(){};::__reloading=true;return::DoIncludeScript(_.getinfos().src,this)}
+
 */
 //------------------------------
 // snippet to test target time - server time conversion
+// Paste in the console, change 0.1 in the end of the line to your time
+
+// Just don't execute it 60000 times. If you do, restart the map.
 /*
 
-fTime <- 0.0
-
-function test( i ) {
-	fTime = Time()
-	delay( "xx()", i.tofloat() )
-}
-
-function xx() {
-	printl( (Time() - fTime ) )
-}
+script local _=function(i){delay("printl("+i+"+\" -> \"+(Time()-"+VS.FormatPrecision(Time(),9)+"))",i.tofloat())}( 0.1 )
 
 */
 //------------------------------

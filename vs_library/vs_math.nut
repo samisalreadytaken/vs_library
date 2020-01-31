@@ -35,28 +35,6 @@ function VS::IsInteger( f ){ return::floor(f) == f }
 
 //-----------------------------------------------------------------------
 // IsLookingAt with tolerance
-/* Test snippet
-
-function OnTimer()
-{
-	local b, eye = HPlayer.EyePosition(),
-	      target = Vector(-530.289490,-753.231506,123.932724)
-
-	if( !VS.TraceLine( eye, target ).DidHit() )
-		b = VS.IsLookingAt( eye, target, HPlayerEye.GetForwardVector(), 0.9 )
-
-	VS.ShowHudHint( hHudHint, HPlayer, b ? "LOOKING" : "NOT looking" )
-
-	DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 255, 255, 255, 255, fT2 )
-}
-
-HPlayer <- VS.GetLocalPlayer()
-HPlayerEye <- VS.CreateMeasure("player")[0]
-hHudHint <- VS.CreateHudHint()
-hTimer <- VS.Timer( 0, FrameTime(), "OnTimer" )
-fT2 <- FrameTime() * 2
-
-*/
 // cosTolerance [-1..1]
 //-----------------------------------------------------------------------
 function VS::IsLookingAt( vSrc, vTarget, vDir, cosTolerance )
@@ -103,62 +81,7 @@ function VS::GetAngle2D( vFrom, vTo )
 }
 
 //-----------------------------------------------------------------------
-/* // Vec to QAng, QAng to Vec test snippet
-{
-	local ang = HPlayerEye.GetAngles()
-	local fwd = HPlayerEye.GetForwardVector()
-	local up = HPlayerEye.GetUpVector()
-	local rg = HPlayerEye.GetLeftVector()
-
-	printl( "ang " + ang )
-	printl( "fwd " + fwd )
-	printl( "up  " + up )
-	printl( "rg  " + rg )
-
-	printl( "\nTranslating: " )
-
-	local ang2 = VS.VectorAngles( fwd )
-	local fwd2 = Vector()
-	local up2  = Vector()
-	local rg2  = Vector()
-
-	// normalize converted angles
-	VS.QAngleNormalize(ang2)
-
-	// get direction vectors from QAngle
-	VS.AngleVectors( ang, fwd2, rg2, up2 )
-
-	printl( "ang " + ang2 )
-	printl( "fwd " + fwd2 )
-	printl( "up  " + up2 )
-	printl( "rg  " + rg2 )
-
-	printl( "\nGetting up/right vectors from forward:" )
-
-	local rg3 = Vector()
-	local up3 = Vector()
-
-	// get right and left vectors from forward vector
-	VS.VectorVectors( fwd, rg3, up3 )
-	printl( "up3 " + up3 )
-	printl( "rg3 " + rg3 )
-
-	printl( "\nChecking: ")
-
-	printl( VS.VectorsAreEqual( ang,ang2, 0.0001 ) )
-	printl( VS.VectorsAreEqual( fwd,fwd2, 0.0001 ) )
-	printl( VS.VectorsAreEqual( up,up2, 0.0001 ) )
-	printl( VS.VectorsAreEqual( up,up3, 0.0001 ) )
-	printl( VS.VectorsAreEqual( rg,rg2, 0.0001 ) )
-	printl( VS.VectorsAreEqual( rg,rg3, 0.0001 ) )
-
-	local eye = HPlayer.EyePosition()
-	DebugDrawLine( eye, eye + fwd * 128, 255, 138, 0, true, 10 )
-	DebugDrawLine( eye, eye + up * 128, 255, 138, 0, true, 10 )
-	DebugDrawLine( eye, eye + rg * 128, 255, 138, 0, true, 10 )
-}
-*/
-// input vector pointers
+//
 //-----------------------------------------------------------------------
 function VS::VectorVectors( forward, right, up )
 {
@@ -174,7 +97,7 @@ function VS::VectorVectors( forward, right, up )
 	}
 	else
 	{
-		local R = forward.Cross( ::Vector(0,0,1) )
+		local R = forward.Cross(::Vector(0,0,1))
 		right.x = R.x; right.y = R.y; right.z = R.z
 		right.Norm()
 
@@ -188,7 +111,7 @@ function VS::VectorVectors( forward, right, up )
 // Euler QAngle -> Basis Vectors.  Each vector is optional
 // input vector pointers
 //-----------------------------------------------------------------------
-function VS::AngleVectors( vAng, vFwd, vRg = null, vUp = null )
+function VS::AngleVectors( vAng, vFwd = _VEC, vRg = null, vUp = null )
 {
 	local sr, cr, rr,
 
@@ -232,6 +155,8 @@ function VS::AngleVectors( vAng, vFwd, vRg = null, vUp = null )
 		vUp.y = (cr*sp*sy+-sr*cy)
 		vUp.z = cr*cp
 	}
+
+	return vFwd
 }
 
 //-----------------------------------------------------------------------
@@ -406,36 +331,6 @@ function VS::QAngleNormalize( vAng )
 
 //-----------------------------------------------------------------------------
 // Snaps the input vector to the closest axis
-/* Test snippet
-
-function OnTimer()
-{
-	local eye = HPlayer.EyePosition()
-	local pVec = HPlayerEye.GetForwardVector()
-
-	VS.SnapDirectionToAxis( pVec, 0.1 )
-
-	// draw normal direction
-	local vec2 = eye + HPlayerEye.GetForwardVector() * 128
-	DebugDrawLine( eye, vec2, 255, 255, 255, false, fT2 )
-	DebugDrawBox( vec2, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 128, fT2 )
-
-	// draw snapped direction
-	local vec3 = eye + pVec * 128
-	DebugDrawLine( eye, vec3, 255, 138, 0, false, fT2 )
-	DebugDrawBox( vec3, Vector(-2,-2,-2), Vector(2,2,2), 255, 138, 0, 128, fT2 )
-
-	// print snapped direction
-	VS.ShowHudHint( hHudHint, HPlayer, VecToString(pVec) )
-}
-
-HPlayer <- VS.GetLocalPlayer()
-HPlayerEye <- VS.CreateMeasure( HPlayer.GetName() )[0]
-hHudHint <- VS.CreateHudHint()
-hTimer <- VS.Timer( 0, FrameTime(), "OnTimer" )
-fT2 <- FrameTime() * 2
-
-*/
 // input vector pointer [ normalised direction vector ]
 //-----------------------------------------------------------------------------
 function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 )
@@ -496,7 +391,7 @@ function VS::DistSqr( v1, v2 )
 }
 
 //-----------------------------------------------------------------------------
-// copy source's values into destination
+// Copy source's values into destination
 //-----------------------------------------------------------------------------
 function VS::VectorCopy( src, dst )
 {
@@ -738,7 +633,7 @@ function VS::ExponentialDecay2( halflife, dt )
 // dt is the time relative to the last velocity update
 function VS::ExponentialDecayIntegral( decayTo, decayTime, dt )
 {
-	return ( ::pow(decayTo, dt / decayTime) * decayTime - decayTime ) / ::log(decayTo)
+	return (::pow(decayTo, dt / decayTime) * decayTime - decayTime) / ::log(decayTo)
 }
 
 // hermite basis function for smooth interpolation

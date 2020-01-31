@@ -9,61 +9,11 @@
 //
 // Print and export custom log lines.
 //
-// Overrides the user con_filter settings
-// but if the user cares about this at all,
-// they would already have their own settings in an autoexec file.
-//
-//
-//
-// Add new string to the log. "\n" not included.
-//  	VS.Log.Add( string )
-//
-// Add the input array to the log.
-//  	VS.Log.Array( array )
-//
-// Clear the log.
-//  	VS.Log.Clear()
-//
-// export the log file to the game directory ( if VS.Log.export == true )
-// return exported file name
-// if VS.Log.export == false, then print in the console
-//  	VS.Log.Run()
-//
-// Set encryption key. ( used if VS.Log.encryption == true )
-//  	VS.Log.SetKey( string )
-//
-// VS.Log.conn = " " // (default)
-// encrypted log output: 023 021 022 008 010
-//
-// VS.Log.conn = "x"
-// encrypted log output: 023x021x022x008x010
-//
-//-----------------------------------------------------------------------
-
-// Encrypt the log?
-VS.Log.encryption <- false
-
-// Print the log?
-VS.Log.condition <- false
-
-// Export the log?
-VS.Log.export <- false
-
-// The log export file name prefix.
-VS.Log.filePrefix <- "vs.log"
-
-// if( condition && !export ) then print the log in the console
-
 //-----------------------------------------------------------------------
 
 function VS::Log::Add( s )
 {
 	L.append( "L " + s )
-}
-
-function VS::Log::Array( a )
-{
-	foreach( k in a ) Add(k)
 }
 
 function VS::Log::Clear()
@@ -98,25 +48,31 @@ function VS::Log::Decrypt(q)
 {if(typeof q!="string")throw"Invalid input";local d=function(m){local s="";for(local i=0;i<m.len();i++)s+=(m[i].tointeger()^::_xa9b2df87ffe[i%_xffcd55c01dd]).tochar();return s}foreach(r in::split(q,filter))::print(d(::split(r,conn)))}
 
 //-----------------------------------------------------------------------
+// Internal functions. Do not call these
+//-----------------------------------------------------------------------
 
-function VS::Log::_Print( encrypt = false )
+function VS::Log::_Print( bEncrypt = false )
 {
-	if( encrypt ) if( !::_xa9b2df87ffe ) return::printl("\nPlease set an encryption key with: VS.Log.SetKey(string)")
-	else __print(0)
+	if( bEncrypt ) if( !::_xa9b2df87ffe ) return::printl("\nPlease set an encryption key with: VS.Log.SetKey(string)")
+	else __Print(0)
 	else
 	{
 		if( !export )
-			__print(1)
+			__Print(1)
 		else
-			__print(2)
+			__Print(2)
 	}
 }
 
-function VS::Log::__print(f)
+function VS::Log::__Print(f)
 {
 	if( nC >= nN )
 	{
 		if( f == 2 ) _Stop()
+		nL = null
+		nD = null
+		nC = null
+		nN = null
 		return
 	}
 
@@ -130,14 +86,14 @@ function VS::Log::__print(f)
 	nC += nD
 	nN = ::clamp( nN + nD, 0, nL )
 
-	return::delay( "::VS.Log.__print("+f+")", ::FrameTime() )
+	return::delay( "::VS.Log.__Print("+f+")", ::FrameTime() )
 }
 
 function VS::Log::_Start()
 {
 	local fname = filePrefix + "_" + ::VS.UniqueString()
 	_d = ::GetDeveloperLevel()
-	::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\""+filter+"\";con_filter_text\"\";con_logfile\""+fname+".log\";script delay(\"VS.Log._Print(VS.Log.encryption)\","+::FrameTime()*4+")")
+	::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\""+filter+"\";con_filter_text\"\";con_logfile\""+fname+".log\";script delay(\"::VS.Log._Print(::VS.Log.encryption)\","+::FrameTime()*4+")")
 	return fname
 }
 
