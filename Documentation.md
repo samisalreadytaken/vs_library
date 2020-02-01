@@ -3,13 +3,12 @@ Documentation for [vs_library](https://github.com/samisalreadytaken/vs_library).
 
 ________________________________
 <!-- U+2800 U+2514 U+2500 -->
-<a name="_TOC_"></a>
 ### Table of Contents
 └─ [**Installation**](#Installation)  
 └─ [**Usage**](#Usage)  
-⠀ ⠀└─ [Setting up basis event listeners](#readme_eventlisteners)  
+⠀ ⠀└─ [Setting up basis event listeners](#setting-up-basis-event-listeners)  
 └─ **Reference**  
-⠀ ⠀└─ [Keywords, symbols and variables](#kw)  
+⠀ ⠀└─ [Keywords, symbols and variables](#keywords-and-symbols-used-in-this-documentation)  
 ⠀ ⠀└─ **Base**  
 ⠀ ⠀ ⠀ ⠀└─ [Constants](#Constants)  
 ⠀ ⠀ ⠀ ⠀└─ [vs_math](#vs_math)  
@@ -27,20 +26,19 @@ ________________________________
 Place `vs_library.nut` in your vscripts directory `/csgo/scripts/vscripts/`
 
 ### Downloading
-**Method 1.** Using [curl](https://github.com/curl/curl), use the following line to download the library directly into your game files.
+**Method 1.** Manually download the library by right clicking [**HERE**](https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/vs_library.nut), and choosing _"Save Link As..."_.  
+After acquiring the file, place it in your vscripts directory: `/csgo/scripts/vscripts/`
+
+**Method 2.** Using [curl](https://github.com/curl/curl), use the following line to download the library directly into your game files.
 ```
 cd "W:/Program Files (x86)/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/scripts/vscripts/";curl -O https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/vs_library.nut
 ```
 
-**Method 2.** Manually download the library by right clicking [**HERE**](https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/vs_library.nut), and choosing _"Save Link As..."_.  
-	After acquiring the file, place it in your vscripts directory: `/csgo/scripts/vscripts/`
-
-#### Downloading more
+### Downloading more
 If you are planning on not only using the base library but working on its source or using the additional libraries, clone the repository with
 ```
 git clone git@github.com:samisalreadytaken/vs_library.git
 ```
-
 or download manually by clicking [**HERE**](https://github.com/samisalreadytaken/vs_library/archive/master.zip).
 
 ## Usage
@@ -50,12 +48,10 @@ Done!
 
 It only needs to be included once in the lifetime of the map running in the server. Including it more than once does not affect the performance. 
 
-<a name="readme_eventlisteners"></a>
 ### Setting up basis event listeners
 Set up these event listeners to automatically validate player userids. This will let you access player userids, SteamIDs, and Steam names.
 
 Entity targetnames are arbitrary.
-
 ```
 logic_eventlistener:
 	targetname: player_connect
@@ -73,7 +69,6 @@ logic_eventlistener:
 ```
 
 You can access the player data via their scope.
-
 ```c#
 player.GetScriptScope().userid
 player.GetScriptScope().networkid
@@ -81,13 +76,11 @@ player.GetScriptScope().name
 ```
 
 You can get the player handle from their userid.
-
 ```lua
 local player = VS.GetPlayerByUserid(userid)
 ```
 
 Use `VS.DumpPlayers(1)` to see every player data.
-
 ```
 ] script VS.DumpPlayers(1)
 
@@ -116,7 +109,6 @@ Use `VS.DumpPlayers(1)` to see every player data.
 ```
 ________________________________
 
-<a name="kw"></a>
 ## Keywords and symbols used in this documentation
 | Type                  | Example                                                                             |
 | --------------------- | ----------------------------------------------------------------------------------- |
@@ -135,13 +127,12 @@ ________________________________
 | `matrix3x4_t`         | `matrix3x4()`                                                                       |
 | `trace_t`             | `VS.TraceLine()`                                                                    |
 | `ray_t`               | `VS.TraceLine().Ray()`, `trace_t`                                                   |
-| `TYPE`                | Any type, unless specified in description                                           |
+| `TYPE`                | Multiple types, unless specified in description                                     |
 
 | Symbols | Description                                                                                                                                                                                                       |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `&`     | pointer, reference, instance. This means the input will be modified. Optional pointers can be omitted, but their result will be modified the next time another function with omitted pointer parameter is called. |
 | `[]`    | array. `float[3]` means the input is an array made of floats, with only 3 indices.<br />`char[]` does not represent a string, it is an array made of strings                                                      |
-
 
 ### Variables used in examples
 | Variable     | Creation                          | Description                             |
@@ -166,7 +157,7 @@ Included in `vs_library.nut`
 | `RAD2DEG`          | `57.29577951`                    |
 
 
-### [vs_math](#h_vs_math)
+### [vs_math](#vs_math-1)
 [`max()`](#f_max)  
 [`min()`](#f_min)  
 [`clamp()`](#f_clamp)  
@@ -232,7 +223,7 @@ Included in `vs_library.nut`
 [`VS.IsBoxIntersectingBox()`](#f_IsBoxIntersectingBox)  
 
 
-### [vs_utility](#h_vs_utility)
+### [vs_utility](#vs_utility-1)
 [`Ent()`](#f_Ent)  
 [`Entc()`](#f_Entc)  
 [`delay()`](#f_delay)  
@@ -279,7 +270,7 @@ Included in `vs_library.nut`
 [`VS.ForceReload()`](#f_ForceReload)  
 
 
-### [vs_entity](#h_vs_entity)
+### [vs_entity](#vs_entity-1)
 [`EntFireByHandle()`](#f_EntFireByHandle)  
 [`PrecacheModel()`](#f_PrecacheModel)  
 [`PrecacheScriptSound()`](#f_PrecacheScriptSound)  
@@ -320,11 +311,11 @@ Included in `vs_library.nut`
 [`VS.FindEntityClassNearestFacingNearest()`](#f_FindEntityClassNearestFacingNearest)  
 
 
-### [vs_events](#h_vs_events)
+### [vs_events](#vs_events-1)
 [`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)
 
 
-### [vs_log](#h_vs_log)
+### [vs_log](#vs_log-1)
 [`VS.Log.encryption`](#f_f_Logencryption)  
 [`VS.Log.condition`](#f_Logcondition)  
 [`VS.Log.export`](#f_Logexport)  
@@ -340,7 +331,7 @@ Included in `vs_library.nut`
 ## Additional
 Not included in `vs_library.nut`
 
-### [vs_math2](#h_vs_math2)
+### [vs_math2](#vs_math2-1)
 [`Quaternion`](#f_Quaternion)  
 [`matrix3x4`](#f_matrix3x4)  
 [`VS.InvRSquared()`](#f_InvRSquared)  
@@ -407,7 +398,7 @@ Not included in `vs_library.nut`
 [`VS.IRotateAABB()`](#f_IRotateAABB)  
 
 
-### [vs_collision](#h_vs_collision)
+### [vs_collision](#vs_collision-1)
 [`VS.Collision_ClearTrace()`](#f_Collision_ClearTrace)  
 [`VS.ComputeBoxOffset()`](#f_ComputeBoxOffset)  
 [`VS.IsPointInCone()`](#f_IsPointInCone)  
@@ -423,7 +414,7 @@ Not included in `vs_library.nut`
 [`VS.ComputeSeparatingPlane2()`](#f_ComputeSeparatingPlane2)  
 
 
-### [vs_interp](#h_vs_interp)
+### [vs_interp](#vs_interp-1)
 [`enum INTERPOLATE`](#f_INTERPOLATE)  
 [`VS.Interpolator_GetKochanekBartelsParams()`](#f_Interpolator_GetKochanekBartelsParams)  
 [`VS.Interpolator_CurveInterpolate()`](#f_Interpolator_CurveInterpolate)  
@@ -455,9 +446,7 @@ Not included in `vs_library.nut`
 
 ________________________________
 
-<a name="h_vs_math"></a>
 ### [vs_math](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_math.nut)
-
 ________________________________
 
 <a name="f_max"></a>
@@ -667,7 +656,7 @@ ________________________________
 
 <a name="f_SnapDirectionToAxis"></a>
 ```cpp
-Vector VS::SnapDirectionToAxis(Vector direction, float epsilon = 0.1)
+Vector VS::SnapDirectionToAxis(Vector& direction, float epsilon = 0.1)
 ```
 Snaps the input (normalised direction) vector to the closest axis
 ________________________________
@@ -1095,9 +1084,7 @@ bool VS::IsBoxIntersectingBox(Vector boxMin1, Vector boxMax1, Vector boxMin2, Ve
 Return true of the boxes intersect (but not if they just touch)
 ________________________________
 
-<a name="h_vs_utility"></a>
 ### [vs_utility](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_utility.nut)
-
 ________________________________
 
 <a name="f_Ent"></a>
@@ -1467,7 +1454,6 @@ if maxdist is `0`, maxdist is `MAX_TRACE_LENGTH`
 <details><summary>Example</summary>
 
 Example draw a cube at player aim (GOTV spectator like)
-
 ```lua
 function Think()
 {
@@ -1492,7 +1478,7 @@ ________________________________
 
 <a name="f_arrayFind"></a>
 ```cpp
-int VS::arrayFind(TYPE val, array arr)
+int VS::arrayFind(array arr, TYPE val)
 ```
 `FindInArray`
 
@@ -1695,10 +1681,7 @@ void VS::ForceReload()
 Force reload the library
 ________________________________
 
-
-<a name="h_vs_entity"></a>
 ### [vs_entity](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_entity.nut)
-
 ________________________________
 
 <a name="f_EntFireByHandle"></a>
@@ -1804,32 +1787,58 @@ ________________________________
 
 <a name="f_CreateMeasure"></a>
 ```cpp
-handle[2] VS::CreateMeasure(char targetName, char measureName = null)
+handle[2] VS::CreateMeasure(char targetTargetname, char lmmTargetname = null, bool makePermanent = false)
 ```
-Create logic_measure_movement, measuring eye angles
+Create measure eye angle measuring entities
 
-Return array[ handle reference, handle measure ]
+Return array[ handle reference, handle lmm ]
 
 <details><summary>Example</summary>
+
+```lua
+local arr = VS.CreateMeasure("player_targetname")
+ent_reference = arr[0]
+ent_measure   = arr[1]
+```
+
+Example get player eye angles:
+```lua
+hPlayer <- VS.GetLocalPlayer()
+hPlayerEye <- VS.CreateMeasure( hPlayer.GetName() )[0]
+
+printl("Player eye angles: " + hPlayerEye.GetAngles() )
+```
+
+Example check to prevent spawning if the entities are already spawned
+```lua
+if( !Ent("vs_measure_*") )
+
+if( !Ent("vs_ref_*") )
+{
+	hPlayerEye <- VS.CreateMeasure( "playername", null, true )
+}
+```
+
+Or being specific
+```lua
+if( !Ent("measure_name") )
+{
+	hPlayerEye <- VS.CreateMeasure( "playername", "measure_name", true )
+}
+```
 
 You can disable the measuring entity to stop the measure.  
 The reference will keep the last measured values.
 
-```lua
-local arr = VS.CreateMeasure(str)
-ent_refernc = arr[0]  
-ent_measure = arr[1]
-```
+</details>
 
-Example get player eye angles:
+<details><summary>Details</summary>
 
-```
-player <- VS.GetLocalPlayer()
+This function creates 2 entities to measure player eye angles: `logic_measure_movement` and a reference entity named `vs_ref_********`.
 
-player_eye <- VS.CreateMeasure( player.GetName() )[0]
+`"measure_name"` in the example above refers to the `logic_measure_movement` entity's targetname.
 
-printl("Player eye angles: " + player_eye.GetAngles() )
-```
+The `makePermanent` paramater ensures the entities are not released on round end. However, while using it, make sure to include a check to prevent spawning over and over again. Shown in the example above.
 
 </details>
 
@@ -1837,7 +1846,7 @@ ________________________________
 
 <a name="f_SetMeasure"></a>
 ```cpp
-void VS::SetMeasure(handle logic_measure_movement, char playerName)
+void VS::SetMeasure(handle logic_measure_movement, char targetTargetname)
 ```
 Start measuring new target
 ________________________________
@@ -2150,7 +2159,6 @@ handle VS::FindEntityClassNearestFacingNearest(Vector vOrigin, Vector vFacing, f
 When two candidate entities are in front of each other, pick the closer one
 ________________________________
 
-<a name="h_vs_events"></a>
 ### [vs_events](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_events.nut)
 ________________________________
 
@@ -2162,10 +2170,9 @@ If event listeners are correctly set up, get the player handle from their userid
 
 Return null if no player is found.
 
-See [Setting up basis event listeners](#readme_eventlisteners)
+See [Setting up basis event listeners](#setting-up-basis-event-listeners)
 ________________________________
 
-<a name="h_vs_log"></a>
 ### [vs_log](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_log.nut)
 
 Print and export custom log lines.
@@ -2264,9 +2271,7 @@ VS.Log.filter = "VFLTR"
 Export filter
 ________________________________
 
-<a name="h_vs_math2"></a>
 ### [vs_math2](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_math2.nut)
-
 ________________________________
 
 <a name="f_Quaternion"></a>
@@ -2279,7 +2284,8 @@ class Quaternion
 ________________________________
 
 ```cpp
-Quaternion Quaternion(x = 0.0, y = 0.0, z = 0.0, w = 0.0)
+Quaternion Quaternion()
+Quaternion Quaternion(x, y, z, w)
 ```
 
 ________________________________
@@ -2295,6 +2301,7 @@ class matrix3x4
 ________________________________
 
 ```cpp
+matrix3x4_t matrix3x4()
 matrix3x4_t matrix3x4(Vector xAxis, Vector yAxis, Vector zAxis, Vector vecOrigin)
 ```
 Creates a matrix where the X axis = forward  
@@ -2565,7 +2572,7 @@ ________________________________
 
 <a name="f_MatrixAnglesQ"></a>
 ```cpp
-Quaternion VS::MatrixAnglesQ(matrix3x4_t matrix, Quaternion& q = _QUAT, Vector pos = null)
+Quaternion VS::MatrixAnglesQ(matrix3x4_t matrix, Quaternion& angles = _QUAT, Vector position = null)
 ```
 matrix3x4 -> Quaternion
 ________________________________
@@ -2715,21 +2722,21 @@ ________________________________
 
 <a name="f_TransformAABB"></a>
 ```cpp
-void VS::TransformAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector vecMinsOut, Vector vecMaxsOut)
+void VS::TransformAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
 ```
 Transforms a AABB into another space; which will inherently grow the box.
 ________________________________
 
 <a name="f_ITransformAABB"></a>
 ```cpp
-void VS::ITransformAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector vecMinsOut, Vector vecMaxsOut)
+void VS::ITransformAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
 ```
 Uses the inverse transform of in1
 ________________________________
 
 <a name="f_RotateAABB"></a>
 ```cpp
-void VS::RotateAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector vecMinsOut, Vector vecMaxsOut)
+void VS::RotateAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
 ```
 Rotates a AABB into another space; which will inherently grow the box.  
 (same as TransformAABB, but doesn't take the translation into account)
@@ -2737,12 +2744,11 @@ ________________________________
 
 <a name="f_IRotateAABB"></a>
 ```cpp
-void VS::IRotateAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector vecMinsOut, Vector vecMaxsOut)
+void VS::IRotateAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
 ```
 
 ________________________________
 
-<a name="h_vs_collision"></a>
 ### [vs_collision](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_collision.nut)
 
 Ray traces need to be initialised with `trace.Ray()`
@@ -2852,9 +2858,7 @@ VS::ComputeSeparatingPlane2(Vector org1, QAngle angles1, Vector min1, Vector max
 
 ________________________________
 
-<a name="h_vs_interp"></a>
 ### [vs_interp](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_interp.nut)
-
 ________________________________
 
 <a name="f_INTERPOLATE"></a>

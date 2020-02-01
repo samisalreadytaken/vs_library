@@ -97,13 +97,14 @@ function VS::HideHudHint( hEnt, hTarget, delay = 0.0 )
 }
 
 //-----------------------------------------------------------------------
-// Create logic_measure_movement
+// Create logic_measure_movement, measure eye angles
 //
 // Input  : string [ target targetname ] (e.g. player targetname)
 //          string [ logic_measure entity name ] (optional)
+//          bool   [ make measuring entities permanent ]
 // Output : array [ handle reference, handle measure ]
 //-----------------------------------------------------------------------
-function VS::CreateMeasure(g,n=null)
+function VS::CreateMeasure( g , n = null, p = false )
 {
 	local r = "vs_ref_"+UniqueString(),
 	      t = CreateEntity( "logic_script",r ),
@@ -120,6 +121,12 @@ function VS::CreateMeasure(g,n=null)
 	::EntFireByHandle(e,"setmeasuretarget",g)
 
 	::EntFireByHandle(e,"enable")
+
+	if( p )
+	{
+		MakePermanent(t)
+		MakePermanent(e)
+	}
 
 	return[t,e]
 }

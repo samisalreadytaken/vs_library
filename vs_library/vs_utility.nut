@@ -221,28 +221,17 @@ function VS::UniqueString()
 {
 	local s =::DoUniqueString("")
 	return s.slice(0,s.len()-1)
-
-/*
-	local n = "",
-	      s =::DoUniqueString("")
-
-	for( local i = 0; i < s.len(); i++ )
-		n += s[i].tochar()
-
-	return n; 
-*/
 }
 
 //-----------------------------------------------------------------------
 // FindInArray
-// arrayFind
 // arr.find( val )
 //
 // linear search
 // if value found in array, return index
 // else return null
 //-----------------------------------------------------------------------
-function VS::arrayFind( val, arr )
+function VS::arrayFind( arr, val )
 {
 	foreach( i, v in arr )
 		if( v == val )

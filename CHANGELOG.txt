@@ -3,6 +3,10 @@
 
 --------------------------------
 
+2020-02-01 [v2.34.1]
+- Corrected VS.arrayFind parameters
+- Added a parameter for making entities permanent in VS.CreateMeasure
+
 2020-01-31 [v2.34.0]
 - Documentation released
 - Cleanup, various improvements and bugfixes

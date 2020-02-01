@@ -5,7 +5,7 @@ High-performance, powerful vscript libraries; written mainly for CSGO.
 
 It is advised to always use the latest version.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.34.0-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.34.1-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation
@@ -34,7 +34,6 @@ It only needs to be included once in the lifetime of the map running in the serv
 Set up these event listeners to automatically validate player userids. This will let you access player userids, SteamIDs, and Steam names.
 
 Entity targetnames are arbitrary.
-
 ```
 logic_eventlistener:
 	targetname: player_connect
@@ -52,7 +51,6 @@ logic_eventlistener:
 ```
 
 You can access the player data via their scope.
-
 ```c#
 player.GetScriptScope().userid
 player.GetScriptScope().networkid
@@ -60,13 +58,11 @@ player.GetScriptScope().name
 ```
 
 You can get the player handle from their userid.
-
 ```lua
 local player = VS.GetPlayerByUserid(userid)
 ```
 
 Use `VS.DumpPlayers(1)` to see every player data.
-
 ```
 ] script VS.DumpPlayers(1)
 
