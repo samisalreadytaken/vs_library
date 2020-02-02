@@ -92,7 +92,7 @@ function VS::Log::__Print(f)
 function VS::Log::_Start()
 {
 	local fname = filePrefix + "_" + ::VS.UniqueString()
-	_d = ::GetDeveloperLevel()
+	_d <- ::GetDeveloperLevel()
 	::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\""+filter+"\";con_filter_text\"\";con_logfile\""+fname+".log\";script delay(\"::VS.Log._Print(::VS.Log.encryption)\","+::FrameTime()*4+")")
 	return fname
 }

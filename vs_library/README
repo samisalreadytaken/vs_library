@@ -1,4 +1,4 @@
-vs_library source
+vs_library source files
 
 Base (vs_library.nut):
     vs_resources.nut
@@ -12,4 +12,4 @@ Additional:
     vs_math2.nut
     vs_collision.nut
     vs_interp.nut
-	flags.nut
+    flags.nut

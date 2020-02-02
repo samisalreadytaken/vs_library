@@ -25,7 +25,8 @@
 
 2020-01-22 [v2.32.4]
 - Allow EntFire to be able to pass a caller
-- Make EntFireByHandle function the same as EntFireHandle, with default parameters. The native function is accessible with DoEntFireByInstanceHandle, naming is consistent with the engine function.
+- Make EntFireByHandle function the same as EntFireHandle, with default parameters. The native function is
+  accessible with DoEntFireByInstanceHandle, naming is consistent with the engine function.
 
 2020-01-20 [v2.32.3]
 - Cleanup, no changes

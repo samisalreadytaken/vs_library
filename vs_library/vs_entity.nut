@@ -421,7 +421,7 @@ function VS::DumpPlayers( dumpscope = false, validated = false )
 {
 	local a = GetPlayersAndBots(validated), p = a[0], b = a[1]
 
-	::print("\n===\n" + p.len()+" players found\n" + b.len()+" bots found\n")
+	::print("\n=======================================\n" + p.len()+" players found\n" + b.len()+" bots found\n")
 
 	local c = function( _s, _a, d = dumpscope )
 	{
@@ -436,7 +436,7 @@ function VS::DumpPlayers( dumpscope = false, validated = false )
 
 	c("[BOT]    ",b)
 	c("[PLAYER] ",p)
-	::print("===\n")
+	::print("=======================================\n")
 }
 
 //-----------------------------------------------------------------------

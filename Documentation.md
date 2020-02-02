@@ -69,7 +69,7 @@ logic_eventlistener:
 ```
 
 You can access the player data via their scope.
-```c#
+```cs
 player.GetScriptScope().userid
 player.GetScriptScope().networkid
 player.GetScriptScope().name
@@ -84,7 +84,7 @@ Use `VS.DumpPlayers(1)` to see every player data.
 ```
 ] script VS.DumpPlayers(1)
 
-===
+=======================================
 1 players found
 2 bots found
 [BOT]    - ([2] player) :: 8b4f4f2f171_player
@@ -105,7 +105,7 @@ Use `VS.DumpPlayers(1)` to see every player data.
    userid = 14
    name = "Sam"
 --- End script dump
-===
+=======================================
 ```
 ________________________________
 
@@ -501,7 +501,7 @@ bool VS::IsLookingAt(Vector source, Vector target, Vector direction, float toler
 ```
 <details><summary>Example</summary>
 
-```lua
+```cs
 function Think()
 {
 	local b, eye = HPlayer.EyePosition(),
@@ -1121,7 +1121,7 @@ in which table your desired scope is and execute the code
 
 You can use activators and callers to easily access entity handles
 
-```lua
+```cs
 local vec = Vector(4,6,0)
 
 delay( "activator.SetOrigin("+ VecToString(vec) +")", 2.5, ENT_SCRIPT, hSomeEntity )
@@ -1133,7 +1133,7 @@ delay( "activator.SetOrigin("+ VecToString(vec) +")", 2.5, ENT_SCRIPT, hSomeEnti
 
 Paste the line below to the console to test target time -> server time conversion. Change `0.1` in the end to your time
 
-```lua
+```cs
 script local _=function(i){delay("printl("+i+"+\" -> \"+(Time()-"+VS.FormatPrecision(Time(),9)+"))",i.tofloat())}( 0.1 )
 ```
 
@@ -1422,7 +1422,7 @@ This computes 2 extra traces
 <details><summary>Example</summary>
 
 Draw the normal of a surface the player is looking at
-```lua
+```cs
 function Think()
 {
 	local tr = VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() )
@@ -1485,6 +1485,51 @@ int VS::arrayFind(array arr, TYPE val)
 linear search  
 if value found in array, return index  
 else return null
+
+Checks using this function should be explicit, and not be implicit (`if(arrayFind())`); because the returned index value can be `0`, which is considered `false` in checks.
+
+<details><summary>Example</summary>
+
+```cs
+local arr = ["a","b","c","d"]
+
+// Wrong usage:
+
+// index (1) is in array
+// true
+printl( VS.arrayFind(arr, "b") ? "true" : "false" )
+
+// index (0) is in array
+// false
+printl( VS.arrayFind(arr, "a") ? "true" : "false" )
+
+// index (null) is NOT in array
+// false
+printl( VS.arrayFind(arr, "x") ? "true" : "false" )
+
+
+
+// Correct usage:
+
+// Check if "a" is in array
+// index (0) is in array
+// true
+printl( VS.arrayFind(arr, "a") != null ? "true" : "false" )
+
+// Check if "a" is NOT in array
+// index (0) is in array
+// false
+printl( VS.arrayFind(arr, "a") == null ? "true" : "false" )
+
+// Check if "x" is NOT in array
+// true
+printl( VS.arrayFind(arr, "x") == null ? "true" : "false" )
+
+```
+
+
+</details>
+
 ________________________________
 
 <a name="f_arrayApply"></a>
@@ -1517,7 +1562,7 @@ ________________________________
 
 <a name="f_GetStackInfo"></a>
 ```cpp
-void VS::GetStackInfo(bool deepprint = false)
+void VS::GetStackInfo(bool deepprint = false, bool printall = false)
 ```
 Print current stack info
 
@@ -1647,7 +1692,7 @@ But it can work if the value is unique, like a unique string.
 
 <details><summary>Example</summary>
 
-```lua
+```cs
 ::somestring <- "my unique string"
 ::somefunc <- function(){}
 
@@ -1735,7 +1780,7 @@ Create and return a game_text entity with the input keyvalues
 
 <details><summary>More</summary>
 
-```lua
+```cs
 local gametext = VS.CreateGameText(null,{
 	// channel = 1,
 	// color = "100 100 100",
@@ -1811,7 +1856,7 @@ printl("Player eye angles: " + hPlayerEye.GetAngles() )
 
 Example check to prevent spawning if the entities are already spawned
 ```lua
-if( !Ent("vs_measure_*") )
+if( !Ent("vs_measure_*") ){}
 
 if( !Ent("vs_ref_*") )
 {
@@ -1834,7 +1879,7 @@ The reference will keep the last measured values.
 
 <details><summary>Details</summary>
 
-This function creates 2 entities to measure player eye angles: `logic_measure_movement` and a reference entity named `vs_ref_********`.
+This function creates 2 entities to measure player eye angles: `logic_measure_movement : vs_measure_*` and a reference entity named `vs_ref_*`.
 
 `"measure_name"` in the example above refers to the `logic_measure_movement` entity's targetname.
 
@@ -1864,7 +1909,7 @@ ________________________________
 ```cpp
 handle VS::Timer(bool bDisabled, float refire, TYPE func, table scope = null, bool bExecInEnt = false)
 ```
-Create and return a timer that executes sFunc
+Create and return a timer that executes func
 
 `TYPE`: `string` OR `function`
 
@@ -2100,7 +2145,7 @@ String input such as `"([2] player)"` and `"([88] func_button: targetname)"`
 
 <details><summary>Example</summary>
 
-```lua
+```cs
 local str = HPlayer.tostring()
 
 printl(typeof str)
@@ -2237,6 +2282,8 @@ if VS.Log.export == true, then export the log file to the game directory
 return exported file name
 
 if VS.Log.export == false, then print in the console
+
+When exporting, do NOT call multiple times in a frame, or before the previous exporting is done.
 ________________________________
 
 <a name="f_LogSetKey"></a>
@@ -2295,6 +2342,8 @@ ________________________________
 class matrix3x4
 {
 	m_flMatVal[3][4]
+
+	void Init()
 }
 ```
 

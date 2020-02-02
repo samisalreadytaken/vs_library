@@ -35,7 +35,6 @@ if("VS"in::getroottable()&&typeof::VS=="table"&&"_xa9b2dfB7ffe"in::getroottable(
 		L=[],
 		filter="VFLTR",
 		conn=" ",
-		_d=0,
 		_xffcd55c01dd=null
 	},
 	bF = [],
@@ -65,8 +64,8 @@ if( !("_xa9b2dfB7ffe" in getroottable()) ) ::_xa9b2dfB7ffe <- []
 if( !("_xa9b2df87ffe" in getroottable()) ) ::_xa9b2df87ffe <- null
 else if( typeof _xa9b2df87ffe == "string" ) VS.Log._xffcd55c01dd = ::_xa9b2df87ffe.len()
 
-if( !("OnGameEvent_player_spawn" in getroottable()) ) ::OnGameEvent_player_spawn <- _FN1
-if( !("OnGameEvent_player_connect" in getroottable()) ) ::OnGameEvent_player_connect <- _FN1
+if( !("OnGameEvent_player_spawn" in getroottable()) ) ::OnGameEvent_player_spawn <- ::dummy
+if( !("OnGameEvent_player_connect" in getroottable()) ) ::OnGameEvent_player_connect <- ::dummy
 
 local _v0 = function()
 {
@@ -88,7 +87,6 @@ local _v0 = function()
 }
 
 local _VEC = Vector()
-local _FN1 = function(d){}
 
 function VS::ForceReload(f=_f)
 {
@@ -96,5 +94,3 @@ function VS::ForceReload(f=_f)
 	::printl("Reloading vs_library...")
 	::DoIncludeScript(f,::getroottable())
 }
-
-SendToConsole("con_logfile\"\"")

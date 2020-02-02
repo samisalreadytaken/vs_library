@@ -51,7 +51,7 @@ logic_eventlistener:
 ```
 
 You can access the player data via their scope.
-```c#
+```cs
 player.GetScriptScope().userid
 player.GetScriptScope().networkid
 player.GetScriptScope().name
@@ -66,7 +66,7 @@ Use `VS.DumpPlayers(1)` to see every player data.
 ```
 ] script VS.DumpPlayers(1)
 
-===
+=======================================
 1 players found
 2 bots found
 [BOT]    - ([2] player) :: 8b4f4f2f171_player
@@ -87,7 +87,7 @@ Use `VS.DumpPlayers(1)` to see every player data.
    userid = 14
    name = "Sam"
 --- End script dump
-===
+=======================================
 ```
 
 ## Changelog
