@@ -63,7 +63,7 @@ function VS::SetParent( hChild, hParent )
 //-----------------------------------------------------------------------
 function VS::CreateGameText( targetname = null, kv = null )
 {
-	return CreateEntity("game_text", _GUN( targetname, "game_text" ), kv)
+	return CreateEntity("game_text", targetname?targetname.tostring():"vs_game_text_"+UniqueString(), kv)
 }
 
 //-----------------------------------------------------------------------
@@ -75,7 +75,7 @@ function VS::CreateGameText( targetname = null, kv = null )
 //-----------------------------------------------------------------------
 function VS::CreateHudHint( targetname = null, msg = "" )
 {
-	return CreateEntity("env_hudhint", _GUN( targetname, "hudhint" ), {message = msg})
+	return CreateEntity("env_hudhint", targetname?targetname.tostring():"vs_hudhint_"+UniqueString(), {message = msg})
 }
 
 //-----------------------------------------------------------------------
@@ -100,21 +100,26 @@ function VS::HideHudHint( hEnt, hTarget, delay = 0.0 )
 // Create logic_measure_movement, measure eye angles
 //
 // Input  : string [ target targetname ] (e.g. player targetname)
-//          string [ logic_measure entity name ] (optional)
-//          bool   [ make measuring entities permanent ]
-// Output : array [ handle reference, handle measure ]
+//          string [ reference entity name ] (optional)
+//          bool   [ make the reference entity permanent ]
+//          bool   [ measure eyes ]
+//          float  [ scale ]
+// Output : handle reference
 //-----------------------------------------------------------------------
-function VS::CreateMeasure( g , n = null, p = false )
+function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 )
 {
-	local r = "vs_ref_"+UniqueString(),
-	      t = CreateEntity( "logic_script",r ),
-	      e = CreateEntity( "logic_measure_movement",
-	                        _GUN(n,"measure"),
-	                        { measuretype = 1,
+	local r = e ? n ? n.tostring() : "vs_ref_"+UniqueString() : n ? n.tostring() : null
+
+	if(!r) throw "Invalid targetname"
+
+	local e = CreateEntity( "logic_measure_movement",
+	                        e?r:"vs_measure_"+UniqueString(),
+	                        { measuretype = e ? 1 : 0,
 	                          measurereference = "",
 	                          targetreference = r,
 	                          target = r,
-	                          measureretarget = "" } )
+	                          measureretarget = "",
+	                          targetscale = s.tofloat() } )
 
 	::EntFireByHandle(e,"setmeasurereference",r)
 
@@ -124,18 +129,18 @@ function VS::CreateMeasure( g , n = null, p = false )
 
 	if( p )
 	{
-		MakePermanent(t)
 		MakePermanent(e)
 	}
 
-	return[t,e]
+	return e
 }
 
 //-----------------------------------------------------------------------
 // Start measuring new target
 //
 // Input  : handle [ logic_measure_movement ]
-// Output : string [ player_targetname ]
+//          string [ player_targetname ]
+// Output :
 //-----------------------------------------------------------------------
 function VS::SetMeasure(h,s)
 {
@@ -154,10 +159,10 @@ function VS::SetMeasure(h,s)
 function VS::CreateTimer( targetname = null, refire = 1, lower = 1, upper = 5, oscillator = 0, disabled = true )
 {
 	local ent = CreateEntity( "logic_timer",
-	                          _GUN( targetname, "timer" ),
+	                          targetname?targetname.tostring():"vs_timer_"+UniqueString(),
 	                          { UseRandomTime = 0,
-	                            LowerRandomBound = lower,
-	                            UpperRandomBound = upper } )
+	                            LowerRandomBound = lower.tofloat(),
+	                            UpperRandomBound = upper.tofloat() } )
 
 	if( refire )
 		SetKeyFloat( ent, "RefireTime", refire.tofloat() )
@@ -179,6 +184,12 @@ function VS::CreateTimer( targetname = null, refire = 1, lower = 1, upper = 5, o
 //-----------------------------------------------------------------------
 function VS::Timer(b,f,s,t=null,e=false)
 {
+	if(!f)
+	{
+		::print("\nERROR:\nRefire time cannot be null in VS.Timer\nUse VS.CreateTimer for randomised fire times.\n")
+		throw"NULL REFIRE TIME"
+	}
+
 	local h = CreateTimer(null,f,0,0,0,b)
 	OnTimer(h,s,t?t:GetCaller(),e)
 	return h
@@ -271,13 +282,6 @@ function VS::CreateEntity( classname, targetname = null, keyvalues = null )
 	return ent
 }
 
-// Get Unique Name
-function VS::_GUN( targetname, keyword = "" )
-{
-	if( typeof targetname == "string" ) return targetname
-	else return "vs_" + keyword + "_" + UniqueString()
-}
-
 //-----------------------------------------------------------------------
 // Input  : handle [ entity ]
 //          string [ key ]
@@ -306,20 +310,20 @@ function VS::SetKey( ent, key, val )
 }
 
 function VS::SetKeyInt( ent, key, val )
-{ ent.__KeyValueFromInt( key, val.tointeger() ) }
+{ ent.__KeyValueFromInt( key, val ) }
 
 function VS::SetKeyFloat( ent, key, val )
-{ ent.__KeyValueFromFloat( key, val.tofloat() ) }
+{ ent.__KeyValueFromFloat( key, val ) }
 
 function VS::SetKeyString( ent, key, val )
-{ ent.__KeyValueFromString( key, val.tostring() ) }
+{ ent.__KeyValueFromString( key, val ) }
 
 function VS::SetKeyVector( ent, key, val )
 { ent.__KeyValueFromVector( key, val ) }
 
 // Set targetname
 function VS::SetName( ent, name )
-{ ent.__KeyValueFromString("targetname",name) }
+{ ent.__KeyValueFromString("targetname",name.tostring()) }
 
 //-----------------------------------------------------------------------
 // ent_script_dump
@@ -452,18 +456,18 @@ function VS::GetLocalPlayer()
 
 	while( i = Entc("player", i) ) c++
 
-	if( c > 1 ) ::printl("[VS::GetLocalPlayer] More than 1 player detected!")
+	if( c > 1 ) ::printl("GetLocalPlayer: More than 1 player detected!")
 
 	e = Entc("player")
 
 	if( e != GetPlayerByIndex(1) )
-		::printl("[VS::GetLocalPlayer] Discrepancy detected!")
+		::printl("GetLocalPlayer: Discrepancy detected!")
 
 	if( !e || !e.IsValid() )
-		return::printl( "[VS::GetLocalPlayer] No player found!" )
+		return::printl( "GetLocalPlayer: No player found!" )
 
 	if( !e.ValidateScriptScope() )
-		return::printl( "[VS::GetLocalPlayer] Failed to validate player scope!" )
+		return::printl( "GetLocalPlayer: Failed to validate player scope!" )
 
 	SetName( e, "player" )
 

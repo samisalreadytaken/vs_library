@@ -138,7 +138,7 @@ ________________________________
 | Variable     | Creation                          | Description                             |
 | ------------ | --------------------------------- | ----------------------------------------|
 | `HPlayer`    | `VS.GetLocalPlayer()`             | Local player in the server              |
-| `HPlayerEye` | `VS.CreateMeasure("player")[0]`   | Buffer to get player eye angles         |
+| `HPlayerEye` | `VS.CreateMeasure("player")`      | Buffer to get player eye angles         |
 | `hHudHint`   | `VS.CreateHudHint()`              | Hud hint, show messages to the player   |
 | `Think()`    | `VS.Timer(0, FrameTime(), Think)` | A function that is executed every frame |
 
@@ -1832,32 +1832,28 @@ ________________________________
 
 <a name="f_CreateMeasure"></a>
 ```cpp
-handle[2] VS::CreateMeasure(char targetTargetname, char lmmTargetname = null, bool makePermanent = false)
+handle VS::CreateMeasure(char targetTargetname, char refTargetname = null, bool makePermanent = false, bool measureEye = true, float scale = 1.0)
 ```
-Create measure eye angle measuring entities
-
-Return array[ handle reference, handle lmm ]
-
-<details><summary>Example</summary>
+Create and return an eye angle measuring entity
 
 ```lua
-local arr = VS.CreateMeasure("player_targetname")
-ent_reference = arr[0]
-ent_measure   = arr[1]
+player_eye_reference <- VS.CreateMeasure("player_targetname")
 ```
+
+If `measureEye` is false, measure `targetTargetname`, set `refTargetname` as reference (entity to move)
+
+<details><summary>Example</summary>
 
 Example get player eye angles:
 ```lua
 hPlayer <- VS.GetLocalPlayer()
-hPlayerEye <- VS.CreateMeasure( hPlayer.GetName() )[0]
+hPlayerEye <- VS.CreateMeasure(hPlayer.GetName())
 
 printl("Player eye angles: " + hPlayerEye.GetAngles() )
 ```
 
 Example check to prevent spawning if the entities are already spawned
 ```lua
-if( !Ent("vs_measure_*") ){}
-
 if( !Ent("vs_ref_*") )
 {
 	hPlayerEye <- VS.CreateMeasure( "playername", null, true )
@@ -1866,24 +1862,28 @@ if( !Ent("vs_ref_*") )
 
 Or being specific
 ```lua
-if( !Ent("measure_name") )
+if( !Ent("refname") )
 {
-	hPlayerEye <- VS.CreateMeasure( "playername", "measure_name", true )
+	hPlayerEye <- VS.CreateMeasure( "playername", "refname", true )
 }
 ```
 
-You can disable the measuring entity to stop the measure.  
+You can disable the reference entity to stop the measure.  
 The reference will keep the last measured values.
+
+```lua
+EntFireByHandle( hPlayerEye, "disable" )
+```
 
 </details>
 
 <details><summary>Details</summary>
 
-This function creates 2 entities to measure player eye angles: `logic_measure_movement : vs_measure_*` and a reference entity named `vs_ref_*`.
+This function creates an entity to measure player eye angles `logic_measure_movement : vs_ref_*`.
 
-`"measure_name"` in the example above refers to the `logic_measure_movement` entity's targetname.
+`"refname"` in the example above refers to the reference entity's targetname.
 
-The `makePermanent` paramater ensures the entities are not released on round end. However, while using it, make sure to include a check to prevent spawning over and over again. Shown in the example above.
+The `makePermanent` paramater ensures the entity is not released on round end. However, while using it, make sure to include a check to prevent spawning over and over again. Shown in the example above.
 
 </details>
 

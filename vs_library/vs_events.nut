@@ -49,7 +49,7 @@ function VS::Events::player_connect(data)
 	if(::_xa9b2dfB7ffe.len()>128)
 	{
 		for(local i=0;i<64;i++)::_xa9b2dfB7ffe.remove(0)
-		::Msg("[player_connect] ERROR!!! Player data is not being processed.")
+		::Msg("player_connect: ERROR!!! Player data is not being processed.")
 	}
 	::_xa9b2dfB7ffe.append(data)
 
@@ -66,7 +66,7 @@ function VS::Events::player_spawn(data)
 
 		if( !player.ValidateScriptScope() )
 		{
-			::Msg("[player_connect] Invalid player entity.\n")
+			::Msg("player_connect: Invalid player entity.\n")
 			break
 		}
 
@@ -74,12 +74,12 @@ function VS::Events::player_spawn(data)
 
 		if( "networkid" in scope )
 		{
-			::Msg("[player_connect] BUG!!! Something has gone wrong. "+(scope.networkid==d.networkid?"Duplicated data!":"Conflicting data!")+"\n")
+			::Msg("player_connect: BUG!!! Something has gone wrong. "+(scope.networkid==d.networkid?"Duplicated data!":"Conflicting data!")+"\n")
 			break
 		}
 
 		if( !d.networkid.len() )
-			::Msg("[player_connect] could not get event data.\n")
+			::Msg("player_connect: could not get event data.\n")
 
 		scope.userid <- d.userid
 		scope.name <- d.name
