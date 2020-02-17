@@ -13,28 +13,28 @@
 	DebugDrawBox( vecOri, vecMins, vecMaxs, R, G, B, A, time )
 */
 
-::Ent  <- function( s, i = null ){ return Entities.FindByName(i,s) }
-::Entc <- function( s, i = null ){ return Entities.FindByClassname(i,s) }
+::Ent  <- function( s, i = null ){ return Entities.FindByName(i,s); }
+::Entc <- function( s, i = null ){ return Entities.FindByClassname(i,s); }
 
 //-----------------------------------------------------------------------
 // Input  : int / float
 // Output : string - .tointeger() or .tofloat() can be used on the result
 //-----------------------------------------------------------------------
-function VS::FormatPrecision( f, n = 2 ){ return::format("%." +n+"f",f) }
-function VS::FormatExp( i, n = 1 )      { return::format("%." +n+"e",i) }
+function VS::FormatPrecision( f, n = 2 ){ return::format("%." +n+"f",f); }
+function VS::FormatExp( i, n = 1 )      { return::format("%." +n+"e",i); }
 
 //-----------------------------------------------------------------------
 // Input  : int
 // Output : string - .tointeger() or .tofloat() can be used on the result
 //-----------------------------------------------------------------------
-function VS::FormatHex( i, n = 4 )      { return::format("%#0"+n+"x",i) }
+function VS::FormatHex( i, n = 4 )      { return::format("%#0"+n+"x",i); }
 
 //-----------------------------------------------------------------------
 // Input  : 0 or " "
 //          str/int/float
 // Output : string
 //-----------------------------------------------------------------------
-function VS::FormatWidth( s, i, n = 4 ) { return::format("%"+s+""+n+"s",i.tostring()) }
+function VS::FormatWidth( s, i, n = 4 ) { return::format("%"+s+""+n+"s",i.tostring()); }
 
 //-----------------------------------------------------------------------
 // Input  : Vector
@@ -42,13 +42,13 @@ function VS::FormatWidth( s, i, n = 4 ) { return::format("%"+s+""+n+"s",i.tostri
 //-----------------------------------------------------------------------
 ::VecToString <- function( vec, prefix = "Vector(", separator = ",", suffix = ")" )
 {
-	return prefix + vec.x + separator + vec.y + separator + vec.z + suffix
+	return prefix + vec.x + separator + vec.y + separator + vec.z + suffix;
 }
 
 // input QAngle
 function VS::SetAngles( hEnt, vAng )
 {
-	hEnt.SetAngles( vAng.x, vAng.y, vAng.z )
+	hEnt.SetAngles( vAng.x, vAng.y, vAng.z );
 }
 
 //-----------------------------------------------------------------------
@@ -57,7 +57,7 @@ function VS::SetAngles( hEnt, vAng )
 //-----------------------------------------------------------------------
 function VS::DrawEntityBBox( time, ent, r = 255, g = 138, b = 0, a = 0 )
 {
-	::DebugDrawBox(ent.GetOrigin(),ent.GetBoundingMins(),ent.GetBoundingMaxs(),r,g,b,a,time)
+	::DebugDrawBox(ent.GetOrigin(),ent.GetBoundingMins(),ent.GetBoundingMaxs(),r,g,b,a,time);
 }
 
 //-----------------------------------------------------------------------
@@ -86,44 +86,44 @@ class::VS.TraceLine
 	{
 		if( !start )
 		{
-			local v = ::Vector()
-			startpos = v
-			endpos = v
-			hIgnore = ent
-			fraction = 1.0
-			return
-		}
+			local v = ::Vector();
+			startpos = v;
+			endpos = v;
+			hIgnore = ent;
+			fraction = 1.0;
+			return;
+		};
 
-		startpos = start
-		endpos = end
-		hIgnore = ent
-		fraction = ::TraceLine( startpos, endpos, hIgnore )
+		startpos = start;
+		endpos = end;
+		hIgnore = ent;
+		fraction = ::TraceLine( startpos, endpos, hIgnore );
 	}
 
 	// if direct LOS return false
 	function DidHit()
 	{
-		return fraction < 1.0
+		return fraction < 1.0;
 	}
 
 	// return hit entity handle, null if none
 	function GetEnt( radius = 1.0 )
 	{
-		return GetEntByClassname( "*", radius )
+		return GetEntByClassname( "*", radius );
 	}
 
 	// GetEnt, find by name
 	function GetEntByName( targetname, radius = 1.0 )
 	{
-		if( !hitpos ) GetPos()
-		return::Entities.FindByNameNearest( targetname, hitpos, radius )
+		if( !hitpos ) GetPos();
+		return::Entities.FindByNameNearest( targetname, hitpos, radius );
 	}
 
 	// GetEnt, find by classname
 	function GetEntByClassname( classname, radius = 1.0 )
 	{
-		if( !hitpos ) GetPos()
-		return::Entities.FindByClassnameNearest( classname, hitpos, radius )
+		if( !hitpos ) GetPos();
+		return::Entities.FindByClassnameNearest( classname, hitpos, radius );
 	}
 
 	// return hit position (hitpos)
@@ -131,22 +131,22 @@ class::VS.TraceLine
 	{
 		if( !hitpos )
 		{
-			if( DidHit() ) hitpos = startpos + (endpos - startpos) * fraction
-			else hitpos = endpos
-		}
-		return hitpos
+			if( DidHit() ) hitpos = startpos + (endpos - startpos) * fraction;
+			else hitpos = endpos;
+		};
+		return hitpos;
 	}
 
 	// Get distance from startpos to hit position
 	function GetDist()
 	{
-		return::VS.Dist( startpos, GetPos() )
+		return::VS.Dist( startpos, GetPos() );
 	}
 
 	// Get distance squared. Useful for comparisons
 	function GetDistSqr()
 	{
-		return::VS.DistSqr( startpos, GetPos() )
+		return::VS.DistSqr( startpos, GetPos() );
 	}
 
 	// Get surface normal
@@ -155,50 +155,50 @@ class::VS.TraceLine
 		if( !normal )
 		{
 			local u = ::Vector(0,0,0.5),
-			      d = endpos - startpos
-			d.Norm()
-			GetPos()
-			normal = (hitpos-::VS.TraceDir(startpos+d.Cross(u),d).GetPos()).Cross(hitpos-::VS.TraceDir(startpos+u,d).GetPos())
-			normal.Norm()
-		}
+			      d = endpos - startpos;
+			d.Norm();
+			GetPos();
+			normal = (hitpos-::VS.TraceDir(startpos+d.Cross(u),d).GetPos()).Cross(hitpos-::VS.TraceDir(startpos+u,d).GetPos());
+			normal.Norm();
+		};
 
-		return normal
+		return normal;
 	}
 
-	function _cmp(d) { if( fraction < d.fraction ) return -1; if( fraction > d.fraction ) return 1; return 0 }
-	function _add(d) { return fraction + d.fraction }
-	function _sub(d) { return fraction - d.fraction }
-	function _mul(d) { return fraction * d.fraction }
-	function _div(d) { return fraction / d.fraction }
-	function _modulo(d) { return fraction % d.fraction }
-	function _unm() { return -fraction }
-	function _typeof() { return "trace_t" }
+	function _cmp(d) { if( fraction < d.fraction ) return -1; if( fraction > d.fraction ) return 1; return 0; }
+	function _add(d) { return fraction + d.fraction; }
+	function _sub(d) { return fraction - d.fraction; }
+	function _mul(d) { return fraction * d.fraction; }
+	function _div(d) { return fraction / d.fraction; }
+	function _modulo(d) { return fraction % d.fraction; }
+	function _unm() { return -fraction; }
+	function _typeof() { return "trace_t"; }
 
-	startpos = null
-	endpos = null
-	hIgnore = null
-	fraction = 0.0
-	hitpos = null
-	normal = null
+	startpos = null;
+	endpos = null;
+	hIgnore = null;
+	fraction = 0.0;
+	hitpos = null;
+	normal = null;
 
-	m_Delta = null
-	m_IsSwept = null
-	m_Extents = null
-	m_IsRay = null
-	m_StartOffset = null
-	m_Start = null
+	m_Delta = null;
+	m_IsSwept = null;
+	m_Extents = null;
+	m_IsRay = null;
+	m_StartOffset = null;
+	m_Start = null;
 
 	// initiate ray tracing
 	function Ray( mins =::Vector(), maxs =::Vector() )
 	{
-		m_Delta = endpos - startpos
-		m_IsSwept = m_Delta.LengthSqr() != 0
-		m_Extents = (maxs - mins) * 0.5
-		m_IsRay = m_Extents.LengthSqr() < 1.e-6
-		m_StartOffset = (mins + maxs) * 0.5
-		m_Start = startpos + m_StartOffset
-		m_StartOffset *= -1.0
-		return this
+		m_Delta = endpos - startpos;
+		m_IsSwept = m_Delta.LengthSqr() != 0;
+		m_Extents = (maxs - mins) * 0.5;
+		m_IsRay = m_Extents.LengthSqr() < 1.e-6;
+		m_StartOffset = (mins + maxs) * 0.5;
+		m_Start = startpos + m_StartOffset;
+		m_StartOffset *= -1.0;
+		return this;
 	}
 }
 
@@ -211,7 +211,7 @@ class::VS.TraceLine
 //-----------------------------------------------------------------------
 function VS::TraceDir( v1, vDir, f = 6144, hEnt = null )
 {
-	return TraceLine( v1, v1 + ( vDir * ( f ? f : ::MAX_TRACE_LENGTH ) ), hEnt )
+	return TraceLine( v1, v1 + ( vDir * ( f ? f : ::MAX_TRACE_LENGTH ) ), hEnt );
 }
 
 //-----------------------------------------------------------------------
@@ -219,8 +219,8 @@ function VS::TraceDir( v1, vDir, f = 6144, hEnt = null )
 //-----------------------------------------------------------------------
 function VS::UniqueString()
 {
-	local s =::DoUniqueString("")
-	return s.slice(0,s.len()-1)
+	local s =::DoUniqueString("");
+	return s.slice(0,s.len()-1);
 }
 
 //-----------------------------------------------------------------------
@@ -235,8 +235,8 @@ function VS::arrayFind( arr, val )
 {
 	foreach( i, v in arr )
 		if( v == val )
-			return i
-	return null
+			return i;
+	return null;
 }
 
 //-----------------------------------------------------------------------
@@ -246,7 +246,7 @@ function VS::arrayFind( arr, val )
 function VS::arrayApply( arr, func )
 {
 	foreach( i, v in arr )
-		arr[i] = func( v )
+		arr[i] = func( v );
 }
 
 //-----------------------------------------------------------------------
@@ -255,12 +255,12 @@ function VS::arrayApply( arr, func )
 //-----------------------------------------------------------------------
 function VS::arrayMap( arr, func )
 {
-	local new =::array(arr.len())
+	local new =::array(arr.len());
 
 	foreach( i, v in arr )
-		new[i] = func( v )
+		new[i] = func( v );
 
-	return new
+	return new;
 }
 
 //-----------------------------------------------------------------------
@@ -275,55 +275,55 @@ function VS::arrayMap( arr, func )
 function VS::DumpScope( table, printall = false, deepprint = true, guides = true, depth = 0 )
 {
 	local indent = function( count ){ for( local i = 0; i < count; i++ ) ::print("   ") }
-	if( guides ) ::print(" ------------------------------\n")
+	if( guides ) ::print(" ------------------------------\n");
 	if( table )
 	{
 		foreach( key, val in table )
 		{
-			local isdefault = false
+			local isdefault = false;
 			if( !printall ){ foreach( k in slots_default ) if( key == k ) isdefault = true }
-			else if( key == "VS" || key == "Documentation" ) isdefault = true
+			else if( key == "VS" || key == "Documentation" ) isdefault = true;;
 			if( !isdefault )
 			{
-				indent(depth)
-				::print(key)
+				indent(depth);
+				::print(key);
 				switch( typeof val )
 				{
 					case "table":
-						::print("(TABLE) : "+val.len())
-						if(!deepprint) break
-						::print("\n")
-						indent(depth)
-						::print("{\n")
-						DumpScope( val, printall, deepprint, false, depth + 1 )
-						indent(depth)
-						::print("}")
-						break
+						::print("(TABLE) : "+val.len());
+						if(!deepprint) break;
+						::print("\n");
+						indent(depth);
+						::print("{\n");
+						DumpScope( val, printall, deepprint, false, depth + 1 );
+						indent(depth);
+						::print("}");
+						break;
 					case "array":
-						::print("(ARRAY) : "+val.len())
-						if(!deepprint) break
-						::print("\n")
-						indent(depth)
-						::print("[\n")
-						DumpScope( val, printall, deepprint, false, depth + 1 )
-						indent(depth)
-						::print("]")
-						break
+						::print("(ARRAY) : "+val.len());
+						if(!deepprint) break;
+						::print("\n");
+						indent(depth);
+						::print("[\n");
+						DumpScope( val, printall, deepprint, false, depth + 1 );
+						indent(depth);
+						::print("]");
+						break;
 					case "string":
-						::print(" = \""+val+"\"")
-						break
+						::print(" = \""+val+"\"");
+						break;
 					case "Vector":
-						::print(" = "+::VecToString(val))
-						break
+						::print(" = "+::VecToString(val));
+						break;
 					default:
-						::print(" = "+val)
+						::print(" = "+val);
 				}
-				::print("\n")
-			}
+				::print("\n");
+			};
 		}
 	}
-	else ::print("null")
-	if( guides ) ::print(" ------------------------------\n")
+	else ::print("null");
+	if( guides ) ::print(" ------------------------------\n");
 }
 
 //-----------------------------------------------------------------------
@@ -335,8 +335,8 @@ function VS::DumpScope( table, printall = false, deepprint = true, guides = true
 function VS::ArrayToTable( a )
 {
 	local t = {}
-	foreach( i, v in a ) t[v] <- i
-	return t
+	foreach( i, v in a ) t[v] <- i;
+	return t;
 }
 
 //-----------------------------------------------------------------------
@@ -366,41 +366,41 @@ Engine function calls are done through Call(...), that's why these 2 stacks are 
 //-----------------------------------------------------------------------
 function VS::GetStackInfo( deepprint = false, printall = false )
 {
-	::print(" --- STACKINFO ----------------\n")
-	local s, j = 2
+	::print(" --- STACKINFO ----------------\n");
+	local s, j = 2;
 	while( s =::getstackinfos(j++) )
 	{
-		if( s.func == "pcall" && s.src == "NATIVE" ) break
-		::print(" ("+(j-1)+")\n")
-		local w, m = s.locals
+		if( s.func == "pcall" && s.src == "NATIVE" ) break;
+		::print(" ("+(j-1)+")\n");
+		local w, m = s.locals;
 		if( "this" in m && typeof m["this"] == "table" )
 		{
-			w = GetTableName( m["this"] )
-			m[w] <- delete m["this"]
-		}
-		if( w == "roottable" ) DumpScope( s, printall, 0, 0 )
-		else DumpScope( s, printall, deepprint, 0 )
-		if(w)::print("scope = \""+w+"\"\n")
+			w = GetTableName( m["this"] );
+			m[w] <- delete m["this"];
+		};
+		if( w == "roottable" ) DumpScope( s, printall, 0, 0 );
+		else DumpScope( s, printall, deepprint, 0 );
+		if(w)::print("scope = \""+w+"\"\n");
 	}
-	::print(" --- STACKINFO ----------------\n")
+	::print(" --- STACKINFO ----------------\n");
 }
 
 // (DEBUG) return caller function as string
 function VS::GetCallerFunc()
 {
-	return::compilestring("return(getstackinfos(3)[\"func\"])")()
+	return::compilestring("return(getstackinfos(3)[\"func\"])")();
 }
 
 // return caller table
 function VS::GetCaller()
 {
-	return::compilestring("return(getstackinfos(3)[\"locals\"][\"this\"])")()
+	return::compilestring("return(getstackinfos(3)[\"locals\"][\"this\"])")();
 }
 
 // dump function infos
 function VS::GetInfo( func )
 {
-	DumpScope(func.getinfos())
+	DumpScope(func.getinfos());
 }
 
 //-----------------------------------------------------------------------
@@ -438,7 +438,7 @@ function VS::FindTableByName( str )
 //-----------------------------------------------------------------------
 function VS::GetVarName(v){local r=_fb3k5S1r91t7(typeof v,v);if(r)return r;return"null"}function VS::_fb3k5S1r91t7(t,i,s=::getroottable()){foreach(k,v in s){local y=typeof v;if(y==t){if(v==i)return k}else if(y=="table"){if(k!="VS"&&k!="Documentation"){local r=_fb3k5S1r91t7(t,i,v);if(r)return r}}}}
 
-function VS::GetFuncName(f){return f.getinfos().name}
+function VS::GetFuncName(f){return f.getinfos().name;}
 
 /*
 Frame times:
@@ -450,7 +450,7 @@ Frame times:
 */
 function VS::GetTickrate()
 {
-	return 1.0 / ::FrameTime()
+	return 1.0 / ::FrameTime();
 }
 
 //-----------------------------------------------------------------------
@@ -465,13 +465,13 @@ function VS::GetTickrate()
 //
 // You can use activators and callers to easily access entity handles
 //-----------------------------------------------------------------------
-::delay     <- function( X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null ){DoEntFireByInstanceHandle( E, "runscriptcode", ""+X, T, A, C )}
+::delay     <- function( X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null ){DoEntFireByInstanceHandle( E, "runscriptcode", ""+X, T, A, C );}
 
-::Chat      <- function(s){ScriptPrintMessageChatAll(" "+s)}
-::ChatTeam  <- function(i,s){ScriptPrintMessageChatTeam(i," "+s)}
-::Alert     <- ::ScriptPrintMessageCenterAll
-::AlertTeam <- ::ScriptPrintMessageCenterTeam
-::ClearChat <- function(){ for( local i = 0; i < 9; i++ ) Chat("") }
+::Chat      <- function(s){ScriptPrintMessageChatAll(" "+s);}
+::ChatTeam  <- function(i,s){ScriptPrintMessageChatTeam(i," "+s);}
+::Alert     <- ::ScriptPrintMessageCenterAll;
+::AlertTeam <- ::ScriptPrintMessageCenterTeam;
+::ClearChat <- function(){ for( local i = 0; i < 9; i++ ) Chat(""); }
 
 ::txt <- {
 	invis      = "\x00",
@@ -498,7 +498,7 @@ function VS::GetTickrate()
 // Can be used to "apply" the const variables compiled from another file
 /*
 
-if(!("__reloading"in::getroottable()))::__reloading<-false;;if(::__reloading)delete::__reloading;else{local _=function(){};::__reloading=true;return::DoIncludeScript(_.getinfos().src,this)}
+if(!("__reloading"in::getroottable()))::__reloading<-false;;if(::__reloading)delete::__reloading;else{local _=function(){};::__reloading=true;return::DoIncludeScript(_.getinfos().src,this)};;
 
 */
 //------------------------------
@@ -512,4 +512,3 @@ script local _=function(i){delay("printl("+i+"+\" -> \"+(Time()-"+VS.FormatPreci
 
 */
 //------------------------------
-// try{if(1){if(1){if(1){if(1){if(1){if(1){if(1){if(1){if(1){if(1){}}}}}}}}}}}catch(e){}

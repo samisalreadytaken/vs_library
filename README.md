@@ -5,7 +5,7 @@ High-performance, powerful vscript libraries; written mainly for CSGO.
 
 It is advised to always use the latest version.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.34.1-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.34.7-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation
@@ -73,13 +73,13 @@ Use `VS.DumpPlayers(1)` to see every player data.
 --- Script dump for entity ([2] player)
    networkid = "BOT"
    userid = 24
-   name = "Ethan"
+   name = "Chet"
 --- End script dump
 [BOT]    - ([3] player) :: b02f4f5e377_player
 --- Script dump for entity ([3] player)
    networkid = "BOT"
    userid = 25
-   name = "Tim"
+   name = "Vitaliy"
 --- End script dump
 [PLAYER] - ([1] player) :: b3ff40ba523_player
 --- Script dump for entity ([1] player)
@@ -96,9 +96,7 @@ See [CHANGELOG.txt](CHANGELOG.txt)
 ## License
 You are free to use, modify and share this library under the terms of the MIT License. The only condition is keeping the copyright notice, and state whether or not the code was modified. See [LICENSE](LICENSE) for details.
 
-[![HitCount][]](http://hits.dwyl.io/samisalreadytaken/vs_library)
-
-[HitCount]: http://hits.dwyl.io/samisalreadytaken/vs_library.svg
+[![](http://hits.dwyl.com/samisalreadytaken/vs_library.svg)](https://hits.dwyl.com/samisalreadytaken/vs_library)
 
 ________________________________
 

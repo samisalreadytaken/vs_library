@@ -91,13 +91,13 @@ Use `VS.DumpPlayers(1)` to see every player data.
 --- Script dump for entity ([2] player)
    networkid = "BOT"
    userid = 24
-   name = "Ethan"
+   name = "Chet"
 --- End script dump
 [BOT]    - ([3] player) :: b02f4f5e377_player
 --- Script dump for entity ([3] player)
    networkid = "BOT"
    userid = 25
-   name = "Tim"
+   name = "Vitaliy"
 --- End script dump
 [PLAYER] - ([1] player) :: b3ff40ba523_player
 --- Script dump for entity ([1] player)
@@ -127,7 +127,7 @@ ________________________________
 | `matrix3x4_t`         | `matrix3x4()`                                                                       |
 | `trace_t`             | `VS.TraceLine()`                                                                    |
 | `ray_t`               | `VS.TraceLine().Ray()`, `trace_t`                                                   |
-| `TYPE`                | Multiple types, unless specified in description                                     |
+| `TYPE`                | Multiple types. Any unless specified in description                                 |
 
 | Symbols | Description                                                                                                                                                                                                       |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -135,12 +135,13 @@ ________________________________
 | `[]`    | array. `float[3]` means the input is an array made of floats, with only 3 indices.<br />`char[]` does not represent a string, it is an array made of strings                                                      |
 
 ### Variables used in examples
-| Variable     | Creation                          | Description                             |
-| ------------ | --------------------------------- | ----------------------------------------|
-| `HPlayer`    | `VS.GetLocalPlayer()`             | Local player in the server              |
-| `HPlayerEye` | `VS.CreateMeasure("player")`      | Buffer to get player eye angles         |
-| `hHudHint`   | `VS.CreateHudHint()`              | Hud hint, show messages to the player   |
-| `Think()`    | `VS.Timer(0, FrameTime(), Think)` | A function that is executed every frame |
+| Variable       | Creation                          | Description                                           |
+| -------------- | --------------------------------- | ----------------------------------------------------- |
+| `HPlayer`      | `VS.GetLocalPlayer()`             | Local player in the server                            |
+| `HPlayerEye`   | `VS.CreateMeasure("player")`      | Buffer to get player eye angles                       |
+| `hHudHint`     | `VS.CreateHudHint()`              | Hud hint, show messages to the player                 |
+| `Think()`      | `VS.Timer(0, FrameTime(), Think)` | A function that is executed every frame               |
+| `flFrameTime2` | `FrameTime() * 2`                 | Used in the Think function for displaying every frame |
 
 
 ## Base
@@ -427,6 +428,8 @@ Not included in `vs_library.nut`
 [`VS.Catmull_Rom_Spline_Normalize()`](#f_Catmull_Rom_Spline_Normalize)  
 [`VS.Catmull_Rom_Spline_Integral_Normalize()`](#f_Catmull_Rom_Spline_Integral_Normalize)  
 [`VS.Catmull_Rom_Spline_NormalizeX()`](#f_Catmull_Rom_Spline_NormalizeX)  
+[`VS.Catmull_Rom_SplineQ()`](#f_Catmull_Rom_SplineQ)  
+[`VS.Catmull_Rom_SplineQ_Tangent()`](#f_Catmull_Rom_SplineQ_Tangent)  
 [`VS.Hermite_Spline()`](#f_Hermite_Spline)  
 [`VS.Hermite_SplineF()`](#f_Hermite_SplineF)  
 [`VS.Hermite_SplineBasis()`](#f_Hermite_SplineBasis)  
@@ -513,7 +516,7 @@ function Think()
 
 	VS.ShowHudHint( hHudHint, HPlayer, b ? "LOOKING" : "NOT looking" )
 
-	DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 255, 255, 255, 255, FrameTime()*2 )
+	DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 255, 255, 255, 255, flFrameTime2 )
 }
 ```
 
@@ -659,6 +662,33 @@ ________________________________
 Vector VS::SnapDirectionToAxis(Vector& direction, float epsilon = 0.1)
 ```
 Snaps the input (normalised direction) vector to the closest axis
+
+<details><summary>Example</summary>
+
+```cs
+function Think()
+{
+	local eye = HPlayer.EyePosition()
+	local dir = HPlayerEye.GetForwardVector()
+
+	// draw normal direction
+	DebugDrawLine( eye, eye+dir*128, 255, 255, 255, false, flFrameTime2 )
+	DebugDrawBox( eye+dir*128, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 128, flFrameTime2 )
+
+	// snap
+	VS.SnapDirectionToAxis( dir, 0.5 )
+
+	// draw snapped direction
+	DebugDrawLine( eye, eye+dir*128, 255, 255, 255, false, flFrameTime2 )
+	DebugDrawBox( eye+dir*128, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 128, flFrameTime2 )
+
+	// print snapped direction
+	VS.ShowHudHint( hHudHint, HPlayer, VecToString(dir) )
+}
+```
+
+</details>
+
 ________________________________
 
 <a name="f_Dist"></a>
@@ -1460,8 +1490,8 @@ function Think()
 	local eye = HPlayer.EyePosition()
 	local v1 = VS.TraceDir( eye, HPlayerEye.GetForwardVector() ).GetPos()
 
-	DebugDrawLine( eye, v1, 255, 255, 255, false, FrameTime()*2 )
-	DebugDrawBox( v1, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 125, FrameTime()*2 )
+	DebugDrawLine( eye, v1, 255, 255, 255, false, flFrameTime2 )
+	DebugDrawBox( v1, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 125, flFrameTime2 )
 }
 ```
 
@@ -1761,7 +1791,7 @@ ________________________________
 ```cpp
 void VS::MakePermanent(handle ent)
 ```
-Prevent the entity to be released every round
+Prevent the entity from being released every round
 ________________________________
 
 <a name="f_SetParent"></a>
@@ -1849,7 +1879,7 @@ Example get player eye angles:
 hPlayer <- VS.GetLocalPlayer()
 hPlayerEye <- VS.CreateMeasure(hPlayer.GetName())
 
-printl("Player eye angles: " + hPlayerEye.GetAngles() )
+printl("Player eye angles: " + VecToString(hPlayerEye.GetAngles()) )
 ```
 
 Example check to prevent spawning if the entities are already spawned
@@ -1894,6 +1924,26 @@ ________________________________
 void VS::SetMeasure(handle logic_measure_movement, char targetTargetname)
 ```
 Start measuring new target
+
+<details><summary>Example</summary>
+
+```cs
+hPlayer1 <- VS.GetLocalPlayer()
+hPlayer2 <- GetSomeOtherPlayer()
+
+// start measuring hPlayer1
+hPlayerEye <- VS.CreateMeasure(hPlayer1.GetName())
+
+printl("Player1 eye angles: " + VecToString(hPlayerEye.GetAngles()) )
+
+// start measuring hPlayer2
+VS.SetMeasure( hPlayerEye, hPlayer2.GetName() )
+
+printl("Player2 eye angles: " + VecToString(hPlayerEye.GetAngles()) )
+```
+
+</details>
+
 ________________________________
 
 <a name="f_CreateTimer"></a>
@@ -2073,17 +2123,15 @@ ________________________________
 
 <a name="f_GetPlayersAndBots"></a>
 ```cpp
-handle[2][] VS::GetPlayersAndBots(bool validated = false)
+handle[2][] VS::GetPlayersAndBots()
 ```
 Return an array of player and bot arrays.
 
 <details><summary>Details</summary>
 
-If bots have targetnames, they 'become' humans. Don't name your bots, use their handles.
+If bots have targetnames, they 'become' humans
 
-The only other way of differentiating named bots from humans is checking their networkid.
-
-If your bots are named and you've set up the event listeners, set the 'validated' parameter to true.
+If the event listeners are not set up, named bots will be shown as players
 
 </details>
 
@@ -2098,15 +2146,15 @@ ________________________________
 
 <a name="f_DumpPlayers"></a>
 ```cpp
-void VS::DumpPlayers(bool dumpscope = false, bool validated = false)
+void VS::DumpPlayers(bool dumpscope = false)
 ```
 DumpEnt only players and bots
 
 <details><summary>Details</summary>
 
-If your bots are named and you've set up the event listeners, set the 'validated' parameter to true.
+If bots have targetnames, they 'become' humans
 
-Otherwise the named bots will be shown as players.
+If the event listeners are not set up, named bots will be shown as players
 
 </details>
 
@@ -3020,6 +3068,22 @@ Vector VS::Catmull_Rom_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector
 Interpolate a Catmull-Rom spline.
 
 Normalize p2.x->p1.x and p3.x->p4.x to be the same length as p2.x->p3.x
+________________________________
+
+<a name="f_Catmull_Rom_SplineQ"></a>
+```cpp
+Quaternion VS::Catmull_Rom_SplineQ(Quaternion p1, Quaternion p2, Quaternion p3, Quaternion p4, float t, Quaternion& output)
+```
+Interpolate a Catmull-Rom spline.
+________________________________
+
+<a name="f_Catmull_Rom_SplineQ_Tangent"></a>
+```cpp
+Quaternion VS::Catmull_Rom_SplineQ_Tangent(Quaternion p1, Quaternion p2, Quaternion p3, Quaternion p4, float t, Quaternion& output)
+```
+Interpolate a Catmull-Rom spline.
+
+Returns the tangent of the point at t of the spline
 ________________________________
 
 <a name="f_Hermite_Spline"></a>

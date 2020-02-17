@@ -12,26 +12,24 @@
 //-----------------------------------------------------------------------
 ::EntFireByHandle <- function( target, action, value = "", delay = 0.0, activator = null, caller = null )
 {
-	DoEntFireByInstanceHandle( target, action.tostring(), value.tostring(), delay, activator, caller )
+	DoEntFireByInstanceHandle( target, action.tostring(), value.tostring(), delay, activator, caller );
 }
 
 ::EntFire <- function( target, action, value = "", delay = 0.0, activator = null, caller = null )
 {
-	DoEntFire( target, action.tostring(), value.tostring(), delay, activator, caller )
+	DoEntFire( target, action.tostring(), value.tostring(), delay, activator, caller );
 }
-
-::EntFireHandle <- ::EntFireByHandle
 
 //-----------------------------------------------------------------------
 
 ::PrecacheModel <- function( str )
 {
-	ENT_SCRIPT.PrecacheModel(str)
+	ENT_SCRIPT.PrecacheModel(str);
 }
 
 ::PrecacheScriptSound <- function( str )
 {
-	ENT_SCRIPT.PrecacheScriptSound(str)
+	ENT_SCRIPT.PrecacheScriptSound(str);
 }
 
 //-----------------------------------------------------------------------
@@ -39,7 +37,7 @@
 //-----------------------------------------------------------------------
 function VS::MakePermanent( handle )
 {
-	SetKeyString( handle, "classname", "soundent" )
+	SetKeyString( handle, "classname", "soundent" );
 }
 
 //-----------------------------------------------------------------------
@@ -51,8 +49,8 @@ function VS::MakePermanent( handle )
 //-----------------------------------------------------------------------
 function VS::SetParent( hChild, hParent )
 {
-	if( !hParent ) return::EntFireByHandle( hChild, "setparent", "" )
-	return::EntFireByHandle( hChild, "setparent", "!activator", 0.0, hParent )
+	if( !hParent ) return::EntFireByHandle( hChild, "setparent", "" );
+	return::EntFireByHandle( hChild, "setparent", "!activator", 0.0, hParent );
 }
 
 //-----------------------------------------------------------------------
@@ -63,7 +61,7 @@ function VS::SetParent( hChild, hParent )
 //-----------------------------------------------------------------------
 function VS::CreateGameText( targetname = null, kv = null )
 {
-	return CreateEntity("game_text", targetname?targetname.tostring():"vs_game_text_"+UniqueString(), kv)
+	return CreateEntity("game_text", targetname?targetname.tostring():"vs_game_text_"+UniqueString(), kv);
 }
 
 //-----------------------------------------------------------------------
@@ -75,17 +73,17 @@ function VS::CreateGameText( targetname = null, kv = null )
 //-----------------------------------------------------------------------
 function VS::CreateHudHint( targetname = null, msg = "" )
 {
-	return CreateEntity("env_hudhint", targetname?targetname.tostring():"vs_hudhint_"+UniqueString(), {message = msg})
+	return CreateEntity("env_hudhint", targetname?targetname.tostring():"vs_hudhint_"+UniqueString(), {message = msg});
 }
 
 //-----------------------------------------------------------------------
 // Show hudhint
-// if ent == handle, set msg
+// if msg, set msg
 //-----------------------------------------------------------------------
 function VS::ShowHudHint( hEnt, hTarget, msg = null, delay = 0.0 )
 {
-	if( msg ) SetKeyString( hEnt, "message", msg )
-	::EntFireByHandle( hEnt, "ShowHudHint", "", delay, hTarget )
+	if( msg ) SetKeyString( hEnt, "message", ""+msg );
+	::EntFireByHandle( hEnt, "ShowHudHint", "", delay, hTarget );
 }
 
 //-----------------------------------------------------------------------
@@ -93,7 +91,7 @@ function VS::ShowHudHint( hEnt, hTarget, msg = null, delay = 0.0 )
 //-----------------------------------------------------------------------
 function VS::HideHudHint( hEnt, hTarget, delay = 0.0 )
 {
-	::EntFireByHandle( hEnt, "HideHudHint", "", delay, hTarget )
+	::EntFireByHandle( hEnt, "HideHudHint", "", delay, hTarget );
 }
 
 //-----------------------------------------------------------------------
@@ -108,9 +106,9 @@ function VS::HideHudHint( hEnt, hTarget, delay = 0.0 )
 //-----------------------------------------------------------------------
 function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 )
 {
-	local r = e ? n ? n.tostring() : "vs_ref_"+UniqueString() : n ? n.tostring() : null
+	local r = e ? n ? n.tostring() : "vs_ref_"+UniqueString() : n ? n.tostring() : null;
 
-	if(!r) throw "Invalid targetname"
+	if(!r) throw "Invalid targetname";
 
 	local e = CreateEntity( "logic_measure_movement",
 	                        e?r:"vs_measure_"+UniqueString(),
@@ -119,20 +117,20 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 )
 	                          targetreference = r,
 	                          target = r,
 	                          measureretarget = "",
-	                          targetscale = s.tofloat() } )
+	                          targetscale = s.tofloat() } );
 
-	::EntFireByHandle(e,"setmeasurereference",r)
+	::EntFireByHandle(e,"setmeasurereference",r);
 
-	::EntFireByHandle(e,"setmeasuretarget",g)
+	::EntFireByHandle(e,"setmeasuretarget",g);
 
-	::EntFireByHandle(e,"enable")
+	::EntFireByHandle(e,"enable");
 
 	if( p )
 	{
-		MakePermanent(e)
-	}
+		MakePermanent(e);
+	};
 
-	return e
+	return e;
 }
 
 //-----------------------------------------------------------------------
@@ -144,7 +142,7 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 )
 //-----------------------------------------------------------------------
 function VS::SetMeasure(h,s)
 {
-	::EntFireByHandle(h,"setmeasuretarget",s)
+	::EntFireByHandle(h,"setmeasuretarget",s);
 }
 
 //-----------------------------------------------------------------------
@@ -162,19 +160,19 @@ function VS::CreateTimer( targetname = null, refire = 1, lower = 1, upper = 5, o
 	                          targetname?targetname.tostring():"vs_timer_"+UniqueString(),
 	                          { UseRandomTime = 0,
 	                            LowerRandomBound = lower.tofloat(),
-	                            UpperRandomBound = upper.tofloat() } )
+	                            UpperRandomBound = upper.tofloat() } );
 
 	if( refire )
-		SetKeyFloat( ent, "RefireTime", refire.tofloat() )
+		SetKeyFloat( ent, "RefireTime", refire.tofloat() );
 	else
 	{
-		SetKeyInt( ent, "UseRandomTime", 1 )
-		SetKeyInt( ent, "spawnflags", oscillator )
-	}
+		SetKeyInt( ent, "UseRandomTime", 1 );
+		SetKeyInt( ent, "spawnflags", oscillator.tointeger() );
+	};
 
-	::EntFireByHandle( ent, disabled ? "disable" : "enable" )
+	::EntFireByHandle( ent, disabled ? "disable" : "enable" );
 
-	return ent
+	return ent;
 }
 
 //-----------------------------------------------------------------------
@@ -186,13 +184,13 @@ function VS::Timer(b,f,s,t=null,e=false)
 {
 	if(!f)
 	{
-		::print("\nERROR:\nRefire time cannot be null in VS.Timer\nUse VS.CreateTimer for randomised fire times.\n")
-		throw"NULL REFIRE TIME"
-	}
+		::print("\nERROR:\nRefire time cannot be null in VS.Timer\nUse VS.CreateTimer for randomised fire times.\n");
+		throw"NULL REFIRE TIME";
+	};
 
-	local h = CreateTimer(null,f,0,0,0,b)
-	OnTimer(h,s,t?t:GetCaller(),e)
-	return h
+	local h = CreateTimer(null,f,0,0,0,b);
+	OnTimer(h,s,t?t:GetCaller(),e);
+	return h;
 }
 
 //-----------------------------------------------------------------------
@@ -203,17 +201,17 @@ function VS::Timer(b,f,s,t=null,e=false)
 //-----------------------------------------------------------------------
 function VS::OnTimer( hEnt, Func, tScope = null, bExecInEnt = false )
 {
-	return AddOutput( hEnt, "OnTimer", Func, tScope ? tScope : GetCaller(), bExecInEnt )
+	return AddOutput( hEnt, "OnTimer", Func, tScope ? tScope : GetCaller(), bExecInEnt );
 }
 
 function VS::OnTimerHigh( hEnt, Func, tScope = null, bExecInEnt = false )
 {
-	return AddOutput( hEnt, "OnTimerHigh", Func, tScope ? tScope : GetCaller(), bExecInEnt )
+	return AddOutput( hEnt, "OnTimerHigh", Func, tScope ? tScope : GetCaller(), bExecInEnt );
 }
 
 function VS::OnTimerLow( hEnt, Func, tScope = null, bExecInEnt = false )
 {
-	return AddOutput( hEnt, "OnTimerLow", Func, tScope ? tScope : GetCaller(), bExecInEnt )
+	return AddOutput( hEnt, "OnTimerLow", Func, tScope ? tScope : GetCaller(), bExecInEnt );
 }
 
 //-----------------------------------------------------------------------
@@ -228,20 +226,20 @@ function VS::OnTimerLow( hEnt, Func, tScope = null, bExecInEnt = false )
 //-----------------------------------------------------------------------
 function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 {
-	if( !hEnt.ValidateScriptScope() ) throw "Invalid entity"
+	if( !hEnt.ValidateScriptScope() ) throw "Invalid entity";
 
-	if( !tScope ) tScope = GetCaller()
+	if( !tScope ) tScope = GetCaller();
 
 	if( typeof Func == "string" )
-		Func = tScope[Func]
+		Func = tScope[Func];
 	else if( typeof Func != "function" )
-		throw "Invalid function type " + typeof Func
+		throw "Invalid function type " + typeof Func;;
 
-	hEnt.GetScriptScope()[sOutput] <- bExecInEnt ? Func : Func.bindenv(tScope)
+	hEnt.GetScriptScope()[sOutput] <- bExecInEnt ? Func : Func.bindenv(tScope);
 
-	hEnt.ConnectOutput(sOutput, sOutput)
+	hEnt.ConnectOutput(sOutput, sOutput);
 
-	// print("** Adding output '" + sOutput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetTableName(tScope)) + ".'\n")
+	// print("** Adding output '" + sOutput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetTableName(tScope)) + ".'\n");
 }
 
 //-----------------------------------------------------------------------
@@ -253,19 +251,51 @@ function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 {
 	if( typeof Func == "function" )
-		return AddOutput( hEnt, sOutput, Func, tScope, bExecInEnt )
+		return AddOutput( hEnt, sOutput, Func, tScope, bExecInEnt );
 
 	if( typeof Func != "string" )
-		throw "Invalid function type " + typeof Func
+		throw "Invalid function type " + typeof Func;
 
-	if( !tScope ) tScope = GetCaller()
+	if( !tScope ) tScope = GetCaller();
 
-	if( !("self" in tScope) )
-		throw "Invalid function path"
+	if( !bExecInEnt )
+	{
+		local name = hEnt.GetName();
+		if( !name.len() )
+		{
+			name = UniqueString();
+			SetName(hEnt, name);
+		};
 
-	::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+(bExecInEnt?hEnt.GetName():tScope.self.GetName())+":runscriptcode:"+Func,0.0,tScope.self,hEnt )
+		::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+name+":runscriptcode:"+Func,0.0,null,hEnt );
+	}
+	else
+	{
+		if( !("self" in tScope) )
+		{
+			throw "Invalid function path. Not an entity";
+		};
+
+		::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+tScope.self.GetName()+":runscriptcode:"+Func,0.0,tScope.self,hEnt );
+	};
 }
+/*
+function VS::AddInput( hEnt, sInput, Func, tScope = null, bExecInEnt = false )
+{
+	if( !hEnt.ValidateScriptScope() ) throw "Invalid entity";
 
+	if( !tScope ) tScope = GetCaller();
+
+	if( typeof Func == "string" )
+		Func = tScope[Func];
+	else if( typeof Func != "function" )
+		throw "Invalid function type " + typeof Func;;
+
+	hEnt.GetScriptScope()["Input"+sInput] <- bExecInEnt ? Func : Func.bindenv(tScope);
+
+	// print("** Adding input '" + sInput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetTableName(tScope)) + ".'\n");
+}
+*/
 //-----------------------------------------------------------------------
 // CreateByClassname, set keyvalues, return handle
 //
@@ -276,10 +306,10 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 //-----------------------------------------------------------------------
 function VS::CreateEntity( classname, targetname = null, keyvalues = null )
 {
-	local ent = ::Entities.CreateByClassname( classname )
-	if( targetname ) SetName( ent, targetname )
-	if( typeof keyvalues == "table" ) foreach( k, v in keyvalues ) SetKey( ent, k, v )
-	return ent
+	local ent = ::Entities.CreateByClassname( classname );
+	if( targetname ) SetName( ent, targetname );
+	if( typeof keyvalues == "table" ) foreach( k, v in keyvalues ) SetKey( ent, k, v );
+	return ent;
 }
 
 //-----------------------------------------------------------------------
@@ -293,20 +323,20 @@ function VS::SetKey( ent, key, val )
 	{
 		case "bool":
 		case "integer":
-			return ent.__KeyValueFromInt( key, val.tointeger() )
+			return ent.__KeyValueFromInt( key, val.tointeger() );
 
 		case "float":
-			return ent.__KeyValueFromFloat( key, val )
+			return ent.__KeyValueFromFloat( key, val );
 
 		case "string":
-			return ent.__KeyValueFromString( key, val )
+			return ent.__KeyValueFromString( key, val );
 
 		case "Vector":
-			return ent.__KeyValueFromVector( key, val )
+			return ent.__KeyValueFromVector( key, val );
 
 		default:
-			throw "Invalid input type: " + typeof(val)
-	}
+			throw "Invalid input type: " + typeof(val);
+	};
 }
 
 function VS::SetKeyInt( ent, key, val )
@@ -338,67 +368,62 @@ function VS::DumpEnt( input = null )
 		local ent
 		while( ent = ::Entities.Next(ent) )
 		{
-			local s = ent.GetScriptScope()
+			local s = ent.GetScriptScope();
 			if( s ) ::printl(ent + " :: " + s.__vname)//GetTableName(s))
 		}
 	}
 	else if( typeof input == "instance" || typeof input == "string" )
 	{
 		if( typeof input == "string" )
-			input = FindEntityByString(input)
+			input = FindEntityByString(input);
 
-		local s
+		local s;
 		try(s=input.GetScriptScope())catch(e)
-		{return::printl("Entity has no script scope! " + input)}
+		{return::printl("Entity has no script scope! " + input)};
 
-		::printl("--- Script dump for entity "+input)
-		DumpScope(s,0,1,0,1)
-		::printl("--- End script dump")
+		::printl("--- Script dump for entity "+input);
+		DumpScope(s,0,1,0,1);
+		::printl("--- End script dump");
 	}
 	else if( input )
 	{
-		local ent
+		local ent;
 		while( ent = ::Entities.Next(ent) )
 		{
-			local s = ent.GetScriptScope()
+			local s = ent.GetScriptScope();
 			if( s )
 			{
-				::printl("\n--- Script dump for entity "+ent)
-				DumpScope(s,0,1,0,1)
-				::printl("--- End script dump")
+				::printl("\n--- Script dump for entity "+ent);
+				DumpScope(s,0,1,0,1);
+				::printl("--- End script dump");
 			}
 		}
-	}
+	};;;
 }
 
 //-----------------------------------------------------------------------
 // Return an array of player and bot arrays.
 //
-// If bots have targetnames, they 'become' players
-// Don't name your bots, use their handles.
+// If bots have targetnames, they 'become' humans
 //
-// The only other way of differentiating named bots from players is
-// checking their networkid.
-//
-// If your bots are named and you've set up the event listeners,
-// set the 'validated' parameter to true.
-//
+// If the event listeners are not set up, named bots will be shown as players
 //-----------------------------------------------------------------------
 //
 // scope.bot <- scope.networkid == "BOT" ? true : false
 //
-function VS::GetPlayersAndBots( validated = false )
+function VS::GetPlayersAndBots()
 {
-	local ent, ply = [], bot = []
-	while( ent = ::Entities.FindByClassname(ent, "cs_bot") ) bot.append(ent)
-	ent = null
+	local ent, ply = [], bot = [];
+	while( ent = ::Entities.FindByClassname(ent, "cs_bot") ) bot.append(ent);
+	ent = null;
 	while( ent = ::Entities.FindByClassname(ent, "player") )
 	{
-		if( validated && ent.GetScriptScope().networkid == "BOT" ) bot.append(ent)
-		else ply.append(ent)
+		local s = ent.GetScriptScope();
+		if( s && "networkid" in s && s.networkid == "BOT" ) bot.append(ent);
+		else ply.append(ent);
 	}
 
-	return [ply,bot]
+	return [ply,bot];
 }
 
 //-----------------------------------------------------------------------
@@ -406,41 +431,40 @@ function VS::GetPlayersAndBots( validated = false )
 //-----------------------------------------------------------------------
 function VS::GetAllPlayers()
 {
-	local e, a = []
+	local e, a = [];
 	while( e = ::Entities.Next(e) )
 		if( e.GetClassname() == "player" )
-			a.append(e)
-	return a
+			a.append(e);
+	return a;
 }
 
 //-----------------------------------------------------------------------
 // DumpEnt only players and bots
 //
-// If your bots are named and you've set up the event listeners,
-// set the 'validated' parameter to true.
+// If bots have targetnames, they 'become' humans
 //
-// Otherwise the named bots will be shown as players.
+// If the event listeners are not set up, named bots will be shown as players
 //-----------------------------------------------------------------------
-function VS::DumpPlayers( dumpscope = false, validated = false )
+function VS::DumpPlayers( dumpscope = false )
 {
-	local a = GetPlayersAndBots(validated), p = a[0], b = a[1]
+	local a = GetPlayersAndBots(), p = a[0], b = a[1];
 
-	::print("\n=======================================\n" + p.len()+" players found\n" + b.len()+" bots found\n")
+	::print("\n=======================================\n" + p.len()+" players found\n" + b.len()+" bots found\n");
 
 	local c = function( _s, _a, d = dumpscope )
 	{
 		foreach( e in _a )
 		{
-			local s = e.GetScriptScope()
-			try( s = GetTableName(s) ) catch(e){ s = "null" }
-			::printl( _s+"- " + e + " :: " + s )
-			if( d && s != "null" ) DumpEnt( e )
+			local s = e.GetScriptScope();
+			try( s = GetTableName(s) ) catch(e){ s = "null" };
+			::printl( _s+"- " + e + " :: " + s );
+			if( d && s != "null" ) DumpEnt( e );
 		}
-	}
+	};
 
-	c("[BOT]    ",b)
-	c("[PLAYER] ",p)
-	::print("=======================================\n")
+	c("[BOT]    ",b);
+	c("[PLAYER] ",p);
+	::print("=======================================\n");
 }
 
 //-----------------------------------------------------------------------
@@ -452,39 +476,35 @@ function VS::DumpPlayers( dumpscope = false, validated = false )
 //-----------------------------------------------------------------------
 function VS::GetLocalPlayer()
 {
-	local e, i, c = 0
+	if( GetPlayersAndBots()[0].len() > 1 ) ::print("GetLocalPlayer: More than 1 player detected!\n");
 
-	while( i = Entc("player", i) ) c++
-
-	if( c > 1 ) ::printl("GetLocalPlayer: More than 1 player detected!")
-
-	e = Entc("player")
+	local e = Entc("player");
 
 	if( e != GetPlayerByIndex(1) )
-		::printl("GetLocalPlayer: Discrepancy detected!")
+		::print("GetLocalPlayer: Discrepancy detected!\n");
 
 	if( !e || !e.IsValid() )
-		return::printl( "GetLocalPlayer: No player found!" )
+		return::print( "GetLocalPlayer: No player found!\n" );
 
 	if( !e.ValidateScriptScope() )
-		return::printl( "GetLocalPlayer: Failed to validate player scope!" )
+		return::print( "GetLocalPlayer: Failed to validate player scope!\n" );
 
-	SetName( e, "player" )
+	SetName( e, "player" );
 
-	::SPlayer <- e.GetScriptScope()
-	::HPlayer <- e
+	::SPlayer <- e.GetScriptScope();
+	::HPlayer <- e;
 
-	return e
+	return e;
 }
 
 function VS::GetPlayerByIndex( entindex )
 {
-	local e; while( e = ::Entities.Next(e) ) if( e.GetClassname() == "player" ) if( e.entindex() == entindex ) return e
+	local e; while( e = ::Entities.Next(e) ) if( e.GetClassname() == "player" ) if( e.entindex() == entindex ) return e;
 }
 
 function VS::FindEntityByIndex( entindex, classname = "*" )
 {
-	local e; while( e = ::Entities.FindByClassname(e, classname) ) if( e.entindex() == entindex ) return e
+	local e; while( e = ::Entities.FindByClassname(e, classname) ) if( e.entindex() == entindex ) return e;
 }
 
 //-----------------------------------------------------------------------
@@ -493,97 +513,97 @@ function VS::FindEntityByIndex( entindex, classname = "*" )
 //-----------------------------------------------------------------------
 function VS::FindEntityByString( str )
 {
-	local e; while( e = ::Entities.Next(e) ) if( e.tostring() == str ) return e
+	local e; while( e = ::Entities.Next(e) ) if( e.tostring() == str ) return e;
 }
 
 function VS::IsPointSized( h )
 {
-	return VectorIsZero( h.GetBoundingMaxs() )
+	return VectorIsZero( h.GetBoundingMaxs() );
 }
 
 function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold )
 {
 	local bestDot = fThreshold,
-	      best_ent, ent
+	      best_ent, ent;
 
 	while( ent = ::Entities.Next(ent) )
 	{
 		// skip all point sized entitites
-		if( IsPointSized( ent ) ) continue
+		if( IsPointSized( ent ) ) continue;
 
 		// skip only worldspawn and soundent
-		// if( ent.GetClassname() == "worldspawn" || ent.GetClassname() == "soundent" ) continue
+		// if( ent.GetClassname() == "worldspawn" || ent.GetClassname() == "soundent" ) continue;
 
-		local to_ent = ent.GetOrigin() - vOrigin
+		local to_ent = ent.GetOrigin() - vOrigin;
 
-		to_ent.Norm()
+		to_ent.Norm();
 
-		local dot = vFacing.Dot( to_ent )
+		local dot = vFacing.Dot( to_ent );
 
 		if( dot > bestDot )
 		{
-			bestDot = dot
-			best_ent = ent
+			bestDot = dot;
+			best_ent = ent;
 		}
 	}
 
-	return best_ent
+	return best_ent;
 }
 
 function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassname )
 {
 	local bestDot = fThreshold,
-	      best_ent, ent
+	      best_ent, ent;
 
 	// for( local ent = ::Entities.First(); ent; ent = ::Entities.Next(ent) )
 	// while( ent = ::Entities.Next(ent) )
 	while( ent = ::Entities.FindByClassname(ent,sClassname) )
 	{
-		// if( ent.GetClassname() != sClassname ) continue
+		// if( ent.GetClassname() != sClassname ) continue;
 
-		local to_ent = ent.GetOrigin() - vOrigin
+		local to_ent = ent.GetOrigin() - vOrigin;
 
-		to_ent.Norm()
+		to_ent.Norm();
 
-		local dot = vFacing.Dot( to_ent )
+		local dot = vFacing.Dot( to_ent );
 
 		if( dot > bestDot )
 		{
-			bestDot = dot
-			best_ent = ent
+			bestDot = dot;
+			best_ent = ent;
 		}
 	}
 
-	return best_ent
+	return best_ent;
 }
 
 // When two candidate entities are in front of each other, pick the closer one
 // Not perfect, but it works to some extent
 function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, sClassname, flRadius )
 {
-	local best_ent, ent
+	local best_ent, ent;
 
-	local flMaxDist2 = flRadius * flRadius
-	if( !flMaxDist2 )
-		flMaxDist2 = 3.22122e+09; // MAX_TRACE_LENGTH * MAX_TRACE_LENGTH
+	local flMaxDistSqr = flRadius * flRadius;
+	if( !flMaxDistSqr )
+		flMaxDistSqr = 3.22122e+09; // MAX_TRACE_LENGTH * MAX_TRACE_LENGTH
 
 	while( ent = ::Entities.FindByClassname(ent,sClassname) )
 	{
-		local to_ent = ent.GetOrigin() - vOrigin
-		to_ent.Norm()
-		local dot = vFacing.Dot( to_ent )
+		local to_ent = ent.GetOrigin() - vOrigin;
+		to_ent.Norm();
+		local dot = vFacing.Dot( to_ent );
 
 		if( dot > fThreshold )
 		{
-			local flDist2 = (ent.GetOrigin() - vOrigin).LengthSqr()
+			local flDistSqr = (ent.GetOrigin() - vOrigin).LengthSqr();
 
-			if( flMaxDist2 > flDist2 )
+			if( flMaxDistSqr > flDistSqr )
 			{
-				best_ent = ent
-				flMaxDist2 = flDist2
+				best_ent = ent;
+				flMaxDistSqr = flDistSqr;
 			}
 		}
 	}
 
-	return best_ent
+	return best_ent;
 }

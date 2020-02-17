@@ -144,7 +144,7 @@ function VS::Interpolator_CurveInterpolate( interpolationType, vPre, vStart, vEn
 		case INTERPOLATE.KOCHANEK_BARTELS_EARLY:
 		case INTERPOLATE.KOCHANEK_BARTELS_LATE:
 			{
-				local tbc = [-1,-1,-1];
+				local tbc = array(3);
 				Interpolator_GetKochanekBartelsParams( interpolationType, tbc );
 				Kochanek_Bartels_Spline_NormalizeX
 				(
@@ -344,13 +344,10 @@ function VS::Spline_Normalize( p1, p2, p3, p4, p1n, p4n )
 // t is a [0,1] value and interpolates a curve between p2 and p3.
 function VS::Catmull_Rom_Spline( p1, p2, p3, p4, t, output = _VEC )
 {
-/*
-	if( p1 == output ||
-		p2 == output ||
-		p3 == output ||
-		p4 == output ) Assert(0);
-*/
-	// local output = out.getclass()();
+//	if( p1 == output ||
+//		p2 == output ||
+//		p3 == output ||
+//		p4 == output ) Assert(0);
 
 	local th = t*0.5;
 	local tSqr = t*th;
@@ -400,12 +397,11 @@ function VS::Catmull_Rom_Spline( p1, p2, p3, p4, t, output = _VEC )
 // Returns the tangent of the point at t of the spline
 function VS::Catmull_Rom_Spline_Tangent( p1, p2, p3, p4, t, output = _VEC )
 {
-/*
-	if( p1 == output ||
-		p2 == output ||
-		p3 == output ||
-		p4 == output ) Assert(0);
-*/
+//	if( p1 == output ||
+//		p2 == output ||
+//		p3 == output ||
+//		p4 == output ) Assert(0);
+
 	local tOne = 1.5*t*t;
 	local tTwo = 1*t;
 	local tThree = 0.5;
@@ -521,6 +517,89 @@ function VS::Catmull_Rom_Spline_NormalizeX( p1, p2, p3, p4, t, output )
 	return Catmull_Rom_Spline( p1n, p2, p3, p4n, t, output );
 }
 
+// quat
+function VS::Catmull_Rom_SplineQ( p1, p2, p3, p4, t, output )
+{
+	QuaternionAlign( p2, p3, p3 );
+
+	local th = t*0.5;
+	local ts = t*th;
+	local tz = t*ts;
+	t = th;
+
+	output.x=0.0;output.y=0.0;output.z=0.0;output.w=0.0;
+
+	local a = p1 * ( -tz );
+	local b = p2 * ( tz*3 );
+	local c = p3 * ( tz*-3 );
+	local d = p4 * ( tz );
+
+	output.x+=a.x;output.y+=a.y;output.z+=a.z;output.w+=a.w;
+	output.x+=b.x;output.y+=b.y;output.z+=b.z;output.w+=b.w;
+	output.x+=c.x;output.y+=c.y;output.z+=c.z;output.w+=c.w;
+	output.x+=d.x;output.y+=d.y;output.z+=d.z;output.w+=d.w;
+
+	a = p1 * ( ts*2 );
+	b = p2 * ( ts*-5 );
+	c = p3 * ( ts*4 );
+	d = p4 * ( -ts );
+
+	output.x+=a.x;output.y+=a.y;output.z+=a.z;output.w+=a.w;
+	output.x+=b.x;output.y+=b.y;output.z+=b.z;output.w+=b.w;
+	output.x+=c.x;output.y+=c.y;output.z+=c.z;output.w+=c.w;
+	output.x+=d.x;output.y+=d.y;output.z+=d.z;output.w+=d.w;
+
+	a = p1 * ( -t );
+	b = p3 * ( t );
+
+	output.x+=a.x;output.y+=a.y;output.z+=a.z;output.w+=a.w;
+	output.x+=b.x;output.y+=b.y;output.z+=b.z;output.w+=b.w;
+
+	output.x+=p2.x;output.y+=p2.y;output.z+=p2.z;output.w+=p2.w;
+
+	return output;
+}
+
+// quat
+function VS::Catmull_Rom_SplineQ_Tangent( p1, p2, p3, p4, t, output )
+{
+	QuaternionAlign( p2, p3, p3 );
+
+	local to = 1.5*t*t;
+	local tw = 1*t;
+	local th = 0.5;
+
+	output.x=0.0;output.y=0.0;output.z=0.0;
+
+	local a = p1 * ( -to );
+	local b = p2 * ( to*3 );
+	local c = p3 * ( to*-3 );
+	local d = p4 * ( to );
+
+	output.x+=a.x;output.y+=a.y;output.z+=a.z;output.w+=a.w;
+	output.x+=b.x;output.y+=b.y;output.z+=b.z;output.w+=b.w;
+	output.x+=c.x;output.y+=c.y;output.z+=c.z;output.w+=c.w;
+	output.x+=d.x;output.y+=d.y;output.z+=d.z;output.w+=d.w;
+
+	a = p1 * ( tw*2 );
+	b = p2 * ( tw*-5 );
+	c = p3 * ( tw*4 );
+	d = p4 * ( -tw );
+
+	output.x+=a.x;output.y+=a.y;output.z+=a.z;output.w+=a.w;
+	output.x+=b.x;output.y+=b.y;output.z+=b.z;output.w+=b.w;
+	output.x+=c.x;output.y+=c.y;output.z+=c.z;output.w+=c.w;
+	output.x+=d.x;output.y+=d.y;output.z+=d.z;output.w+=d.w;
+
+	a = p1 * ( -th );
+	b = p3 * ( th );
+
+	output.x+=a.x;output.y+=a.y;output.z+=a.z;output.w+=a.w;
+	output.x+=b.x;output.y+=b.y;output.z+=b.z;output.w+=b.w;
+
+	return output;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: basic hermite spline.  t = 0 returns p1, t = 1 returns p2,
 //			d1 and d2 are used to entry and exit slope of curve
@@ -530,12 +609,11 @@ function VS::Catmull_Rom_Spline_NormalizeX( p1, p2, p3, p4, t, output )
 // return Vector
 function VS::Hermite_Spline( p1, p2, d1, d2, t, output = _VEC )
 {
-/*
-	if( p1 == output ||
-		p2 == output ||
-		p3 == output ||
-		p4 == output ) Assert(0);
-*/
+//	if( p1 == output ||
+//		p2 == output ||
+//		p3 == output ||
+//		p4 == output ) Assert(0);
+
 	local tSqr = t*t;
 	local tCube = t*tSqr;
 
@@ -640,12 +718,11 @@ function VS::Hermite_Spline3Q( q0, q1, q2, t, output = ::Quaternion() )
 //-----------------------------------------------------------------------------
 function VS::Kochanek_Bartels_Spline( tension, bias, continuity, p1, p2, p3, p4, t, output = _VEC )
 {
-/*
-	if( p1 == output ||
-		p2 == output ||
-		p3 == output ||
-		p4 == output ) Assert(0);
-*/
+//	if( p1 == output ||
+//		p2 == output ||
+//		p3 == output ||
+//		p4 == output ) Assert(0);
+
 	local ffa = ( 1.0 - tension ) * ( 1.0 + continuity ) * ( 1.0 + bias ),
 	      ffb = ( 1.0 - tension ) * ( 1.0 - continuity ) * ( 1.0 - bias ),
 	      ffc = ( 1.0 - tension ) * ( 1.0 - continuity ) * ( 1.0 + bias ),
@@ -711,12 +788,11 @@ function VS::Kochanek_Bartels_Spline_NormalizeX( tension, bias, continuity, p1, 
 // See link at Kochanek_Bartels_Spline for info on the basis matrix used
 function VS::Cubic_Spline( p1, p2, p3, p4, t, output = _VEC )
 {
-/*
-	if( p1 == output ||
-		p2 == output ||
-		p3 == output ||
-		p4 == output ) Assert(0);
-*/
+//	if( p1 == output ||
+//		p2 == output ||
+//		p3 == output ||
+//		p4 == output ) Assert(0);
+
 	local tSqr = t*t;
 	local tSqrSqr = t*tSqr;
 
@@ -760,12 +836,11 @@ function VS::Cubic_Spline_NormalizeX( p1, p2, p3, p4, t, output = _VEC )
 // See link at Kochanek_Bartels_Spline for info on the basis matrix used
 function VS::BSpline( p1, p2, p3, p4, t, output = _VEC )
 {
-/*
-	if( p1 == output ||
-		p2 == output ||
-		p3 == output ||
-		p4 == output ) Assert(0);
-*/
+//	if( p1 == output ||
+//		p2 == output ||
+//		p3 == output ||
+//		p4 == output ) Assert(0);
+
 	local oneOver6 = 0.166667;
 
 	local th = t * oneOver6;
@@ -828,12 +903,11 @@ function VS::BSpline_NormalizeX( p1, p2, p3, p4, t, output = _VEC )
 // See link at Kochanek_Bartels_Spline for info on the basis matrix used
 function VS::Parabolic_Spline( p1, p2, p3, p4, t, output = _VEC )
 {
-/*
-	if( p1 == output ||
-		p2 == output ||
-		p3 == output ||
-		p4 == output ) Assert(0);
-*/
+//	if( p1 == output ||
+//		p2 == output ||
+//		p3 == output ||
+//		p4 == output ) Assert(0);
+
 	local th = t*0.5;
 	local tSqr = t*th;
 	t = th;
@@ -926,6 +1000,7 @@ function VS::RangeCompressor( flValue, flMin, flMax, flBase )
 	return flValue;
 }
 
+// slerp
 function VS::QAngleLerp( v1, v2, flPercent )
 {
 	// Avoid precision errors

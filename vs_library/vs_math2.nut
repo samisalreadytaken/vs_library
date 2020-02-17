@@ -78,6 +78,12 @@ class::matrix3x4
 // matrix4x4
 // class VMatrix{}
 
+if( VS.arrayFind(VS.slots_default,"Quaternion") == null )
+{
+	VS.slots_default.append("Quaternion")
+	VS.slots_default.append("matrix3x4")
+};
+
 local _VEC =::Vector();
 local _QUAT =::Quaternion();
 
@@ -294,21 +300,12 @@ function VS::QuaternionMult( p, q, qt = _QUAT )
 //-----------------------------------------------------------------------------
 function VS::QuaternionAlign( p, q, qt = _QUAT )
 {
-	// decide if one of the quaternions is backwards
-	local a = 0,
-	      b = 0;
-
-	a += (p.x-q.x)*(p.x-q.x);
-	b += (p.x+q.x)*(p.x+q.x);
-
-	a += (p.y-q.y)*(p.y-q.y);
-	b += (p.y+q.y)*(p.y+q.y);
-
-	a += (p.z-q.z)*(p.z-q.z);
-	b += (p.z+q.z)*(p.z+q.z);
-
-	a += (p.w-q.w)*(p.w-q.w);
-	b += (p.w+q.w)*(p.w+q.w);
+	// a = dot(p-q)
+	// b = dot(p+q)
+	local a = (p.x-q.x)*(p.x-q.x)+(p.y-q.y)*(p.y-q.y)+
+	          (p.z-q.z)*(p.z-q.z)+(p.w-q.w)*(p.w-q.w),
+	      b = (p.x+q.x)*(p.x+q.x)+(p.y+q.y)*(p.y+q.y)+
+	          (p.z+q.z)*(p.z+q.z)+(p.w+q.w)*(p.w+q.w);
 
 	if( a > b )
 	{
@@ -316,7 +313,6 @@ function VS::QuaternionAlign( p, q, qt = _QUAT )
 		qt.y = -q.y;
 		qt.z = -q.z;
 		qt.w = -q.w;
-
 	}
 	else if( qt != q )
 	{
@@ -705,13 +701,23 @@ function VS::QuaternionAngles( q, angles = _VEC )
 	return angles;
 }
 
+function VS::QuaternionAngles2( q, angles = _VEC )
+{
+	// FIXME: doing it this way calculates too much data, needs to do an optimized version...
+	local matrix = ::matrix3x4();
+	QuaternionMatrix2( q, matrix );
+	MatrixAngles( matrix, angles );
+
+	return angles;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Converts a quaternion to an axis / angle in degrees
 //          (exponential map)
 //-----------------------------------------------------------------------------
 function VS::QuaternionAxisAngle( q, axis )
 {
-	local angle = ::RAD2DEG*2*::acos(q.w);
+	local angle = ::acos(q.w)*114.591559026; // RAD2DEG * 2.0
 
 	// AngleNormalize
 	if( angle > 180 )
@@ -730,7 +736,7 @@ function VS::QuaternionAxisAngle( q, axis )
 //-----------------------------------------------------------------------------
 function VS::AxisAngleQuaternion( axis, angle, q = _QUAT )
 {
-	angle = ::DEG2RAD* angle * 0.5;
+	angle = angle * 0.008726645; // DEG2RAD / 2.0
 
 	local sa = ::sin(angle),
 	      ca = ::cos(angle);
@@ -753,9 +759,9 @@ function VS::AxisAngleQuaternion( axis, angle, q = _QUAT )
 //-----------------------------------------------------------------------------
 function VS::AngleQuaternion( angles, outQuat = _QUAT )
 {
-	local ay = ::DEG2RAD* angles.y * 0.5,
-	      ax = ::DEG2RAD* angles.x * 0.5,
-	      az = ::DEG2RAD* angles.z * 0.5;
+	local ay = angles.y * 0.008726645, // DEG2RAD / 2
+	      ax = angles.x * 0.008726645,
+	      az = angles.z * 0.008726645;
 
 	local sy = ::sin(ay),
 	      cy = ::cos(ay),

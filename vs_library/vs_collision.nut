@@ -220,7 +220,7 @@ function VS::IsBoxIntersectingRay( origin, vecBoxMin, vecBoxMax, ray, flToleranc
 			rayMins.x -= flTolerance; rayMins.y -= flTolerance; rayMins.z -= flTolerance;
 			rayMaxs.x += flTolerance; rayMaxs.y += flTolerance; rayMaxs.z += flTolerance;
 		};
-		return _IsBoxIntersectingBox( vecBoxMin, vecBoxMax, rayMins, rayMaxs );
+		return IsBoxIntersectingBox( vecBoxMin, vecBoxMax, rayMins, rayMaxs );
 	};
 
 	// world

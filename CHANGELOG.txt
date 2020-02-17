@@ -3,6 +3,21 @@
 
 --------------------------------
 
+2020-02-15 [v2.34.7]
+- ???
+
+2020-02-09 [v2.34.5]
+- Minor fixes on events and GetLocalPlayer
+
+2020-02-09 [v2.34.4]
+- Removed the 'validated' parameters of GetPlayersAndBots and DumpPlayers
+- Removed EntFireHandle
+- Minor bug fix
+
+2020-02-04
+- vs_interp:
+  - Added Catmull-Rom quaternion interpolation methods
+
 2020-02-04 [v2.34.2]
 - Modified VS.CreateMeasure to use less resources, added new parameters, changed return type.
 - Added error check on VS.Timer

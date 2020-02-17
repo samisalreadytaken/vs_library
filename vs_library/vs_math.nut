@@ -12,26 +12,26 @@
 //-----------------------------------------------------------------------
 
 // deprecated, use <RAD2DEG*> in expensive calculations instead
-::toRad <- function( deg ){ return deg * DEG2RAD } // ( deg * PI / 180.0 )
-::toDeg <- function( rad ){ return rad * RAD2DEG } // ( rad * 180 / PI )
+::toRad <- function( deg ){ return deg * DEG2RAD; } // ( deg * PI / 180.0 )
+::toDeg <- function( rad ){ return rad * RAD2DEG; } // ( rad * 180 / PI )
 
-::max <- function( a, b ){ return a > b ? a : b }
-::min <- function( a, b ){ return a < b ? a : b }
+::max <- function( a, b ){ return a > b ? a : b; }
+::min <- function( a, b ){ return a < b ? a : b; }
 
 ::clamp <- function( v, lo, hi )
 {
 	if( hi < lo )
 	{
-		local t = hi
-		hi = lo
-		lo = t
-	}
-	return (v < lo) ? lo : (hi < v) ? hi : v
+		local t = hi;
+		hi = lo;
+		lo = t;
+	};
+	return (v < lo) ? lo : (hi < v) ? hi : v;
 }
 
 // VS.IsInteger(1.0) is true
 // VS.IsInteger(1.1) is false
-function VS::IsInteger( f ){ return::floor(f) == f }
+function VS::IsInteger( f ){ return::floor(f) == f; }
 
 //-----------------------------------------------------------------------
 // IsLookingAt with tolerance
@@ -39,19 +39,19 @@ function VS::IsInteger( f ){ return::floor(f) == f }
 //-----------------------------------------------------------------------
 function VS::IsLookingAt( vSrc, vTarget, vDir, cosTolerance )
 {
-	local to = vTarget - vSrc
-	to.Norm()
-	return to.Dot( vDir ) >= cosTolerance
+	local to = vTarget - vSrc;
+	to.Norm();
+	return to.Dot( vDir ) >= cosTolerance;
 }
 
 function VS::PointOnLineNearestPoint( vStartPos, vEndPos, vPoint )
 {
 	local v1 = vEndPos - vStartPos,
-	      dist = v1.Dot(vPoint - vStartPos) / v1.LengthSqr()
+	      dist = v1.Dot(vPoint - vStartPos) / v1.LengthSqr();
 
-	if     ( dist < 0 ) return vStartPos
-	else if( dist > 1 ) return vEndPos
-	else                return vStartPos + v1 * dist
+	if     ( dist < 0 ) return vStartPos;
+	else if( dist > 1 ) return vEndPos;
+	else                return vStartPos + v1 * dist;;
 }
 
 //-----------------------------------------------------------------------
@@ -62,9 +62,9 @@ function VS::GetAngle( vFrom, vTo )
 {
 	local d     = vFrom - vTo,
 	      pitch = ::RAD2DEG*::atan2( d.z, d.Length2D() ),
-	      yaw   = ::RAD2DEG*(::atan2( d.y, d.x ) + ::PI)
+	      yaw   = ::RAD2DEG*(::atan2( d.y, d.x ) + ::PI);
 
-	return::Vector(pitch,yaw,0)
+	return::Vector(pitch,yaw,0);
 }
 
 //-----------------------------------------------------------------------
@@ -75,9 +75,9 @@ function VS::GetAngle( vFrom, vTo )
 function VS::GetAngle2D( vFrom, vTo )
 {
 	local d   = vTo - vFrom,
-	      yaw = ::RAD2DEG*::atan2( d.y, d.x )
+	      yaw = ::RAD2DEG*::atan2( d.y, d.x );
 
-	return yaw
+	return yaw;
 }
 
 //-----------------------------------------------------------------------
@@ -88,23 +88,23 @@ function VS::VectorVectors( forward, right, up )
 	if( forward.x == 0 && forward.y == 0 )
 	{
 		// pitch 90 degrees up/down from identity
-		right.x = 0
-		right.y = -1
-		right.z = 0
-		up.x = -forward.z
-		up.y = 0
-		up.z = 0
+		right.x = 0;
+		right.y = -1;
+		right.z = 0;
+		up.x = -forward.z;
+		up.y = 0;
+		up.z = 0;
 	}
 	else
 	{
-		local R = forward.Cross(::Vector(0,0,1))
-		right.x = R.x; right.y = R.y; right.z = R.z
-		right.Norm()
+		local R = forward.Cross(::Vector(0,0,1));
+		right.x = R.x; right.y = R.y; right.z = R.z;
+		right.Norm();
 
-		local U = right.Cross(forward)
-		up.x = U.x; up.y = U.y; up.z = U.z
-		up.Norm()
-	}
+		local U = right.Cross(forward);
+		up.x = U.x; up.y = U.y; up.z = U.z;
+		up.Norm();
+	};
 }
 
 //-----------------------------------------------------------------------
@@ -121,42 +121,42 @@ function VS::AngleVectors( vAng, vFwd = _VEC, vRg = null, vUp = null )
 
 	      pr = ::DEG2RAD*vAng.x,
 	      sp = ::sin(pr),
-	      cp = ::cos(pr)
+	      cp = ::cos(pr);
 
 	if( vAng.z )
 	{
-		rr = ::DEG2RAD*vAng.z
-		sr = ::sin(rr)
-		cr = ::cos(rr)
+		rr = ::DEG2RAD*vAng.z;
+		sr = ::sin(rr);
+		cr = ::cos(rr);
 	}
 	else
 	{
-		sr = 0.0
-		cr = 1.0
-	}
+		sr = 0.0;
+		cr = 1.0;
+	};
 
 	if( vFwd )
 	{
-		vFwd.x = cp*cy
-		vFwd.y = cp*sy
-		vFwd.z = -sp
-	}
+		vFwd.x = cp*cy;
+		vFwd.y = cp*sy;
+		vFwd.z = -sp;
+	};
 
 	if( vRg )
 	{
-		vRg.x = (-1*sr*sp*cy+-1*cr*-sy)
-		vRg.y = (-1*sr*sp*sy+-1*cr*cy)
-		vRg.z = -1*sr*cp
-	}
+		vRg.x = (-1*sr*sp*cy+-1*cr*-sy);
+		vRg.y = (-1*sr*sp*sy+-1*cr*cy);
+		vRg.z = -1*sr*cp;
+	};
 
 	if( vUp )
 	{
-		vUp.x = (cr*sp*cy+-sr*-sy)
-		vUp.y = (cr*sp*sy+-sr*cy)
-		vUp.z = cr*cp
-	}
+		vUp.x = (cr*sp*cy+-sr*-sy);
+		vUp.y = (cr*sp*sy+-sr*cy);
+		vUp.z = cr*cp;
+	};
 
-	return vFwd
+	return vFwd;
 }
 
 //-----------------------------------------------------------------------
@@ -164,29 +164,29 @@ function VS::AngleVectors( vAng, vFwd = _VEC, vRg = null, vUp = null )
 //-----------------------------------------------------------------------
 function VS::VectorAngles( vFwd )
 {
-	local tmp, yaw, pitch
+	local tmp, yaw, pitch;
 
 	if( vFwd.y == 0 && vFwd.x == 0 )
 	{
-		yaw = 0
+		yaw = 0;
 		if( vFwd.z > 0 )
-			pitch = 270
+			pitch = 270;
 		else
-			pitch = 90
+			pitch = 90;
 	}
 	else
 	{
-		yaw = ::RAD2DEG*::atan2(vFwd.y, vFwd.x)
+		yaw = ::RAD2DEG*::atan2(vFwd.y, vFwd.x);
 		if( yaw < 0 )
-			yaw += 360
+			yaw += 360;
 
-		tmp = ::sqrt(vFwd.x*vFwd.x + vFwd.y*vFwd.y)
-		pitch = ::RAD2DEG*::atan2(-vFwd.z, tmp)
+		tmp = ::sqrt(vFwd.x*vFwd.x + vFwd.y*vFwd.y);
+		pitch = ::RAD2DEG*::atan2(-vFwd.z, tmp);
 		if( pitch < 0 )
-			pitch += 360
-	}
+			pitch += 360;
+	};
 
-	return::Vector(pitch,yaw,0)
+	return::Vector(pitch,yaw,0);
 }
 
 //-----------------------------------------------------------------------
@@ -196,32 +196,32 @@ function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC )
 {
 	local rad = ::DEG2RAD*fYaw,
 	      sy  = ::sin(rad),
-	      cy  = ::cos(rad)
+	      cy  = ::cos(rad);
 
-	vOut.x = vIn.x * cy - vIn.y * sy
-	vOut.y = vIn.x * sy + vIn.y * cy
-	vOut.z = vIn.z
+	vOut.x = vIn.x * cy - vIn.y * sy;
+	vOut.y = vIn.x * sy + vIn.y * cy;
+	vOut.z = vIn.z;
 
-	return vOut
+	return vOut;
 }
 
 function VS::YawToVector( yaw )
 {
-	local ang = ::DEG2RAD*yaw
-	return::Vector( ::cos(ang), ::sin(ang), 0 )
+	local ang = ::DEG2RAD*yaw;
+	return::Vector( ::cos(ang), ::sin(ang), 0 );
 }
 
 function VS::VecToYaw( vec )
 {
 	if( vec.y == 0 && vec.x == 0 )
-		return 0
+		return 0;
 
-	local yaw = ::RAD2DEG*::atan2(vec.y, vec.x)
+	local yaw = ::RAD2DEG*::atan2(vec.y, vec.x);
 
 	if( yaw < 0 )
-		yaw += 360
+		yaw += 360;
 
-	return yaw
+	return yaw;
 }
 
 function VS::VecToPitch( vec )
@@ -229,17 +229,17 @@ function VS::VecToPitch( vec )
 	if( vec.y == 0 && vec.x == 0 )
 	{
 		if( vec.z < 0 )
-			return 180.0
+			return 180.0;
 		else
-			return -180.0
-	}
+			return -180.0;
+	};
 
-	return::RAD2DEG*::atan2(-vec.z, vec.Length2D())
+	return::RAD2DEG*::atan2(-vec.z, vec.Length2D());
 }
 
 function VS::VectorIsZero(v)
 {
-	return v.x == v.y && v.y == v.z && v.z == 0
+	return v.x == v.y && v.y == v.z && v.z == 0;
 }
 
 //-----------------------------------------------------------------------
@@ -249,7 +249,7 @@ function VS::VectorsAreEqual( a, b, tolerance = 0.0 )
 {
 	return ( ::fabs(a.x - b.x) <= tolerance &&
 	         ::fabs(a.y - b.y) <= tolerance &&
-	         ::fabs(a.z - b.z) <= tolerance )
+	         ::fabs(a.z - b.z) <= tolerance );
 }
 
 //-----------------------------------------------------------------------
@@ -257,7 +257,7 @@ function VS::VectorsAreEqual( a, b, tolerance = 0.0 )
 //-----------------------------------------------------------------------
 function VS::AnglesAreEqual( a, b, tolerance = 0.0 )
 {
-	return ( ::fabs(AngleDiff(a, b)) <= tolerance )
+	return ::fabs(AngleDiff(a, b)) <= tolerance;
 }
 
 //-----------------------------------------------------------------------
@@ -265,68 +265,68 @@ function VS::AnglesAreEqual( a, b, tolerance = 0.0 )
 //-----------------------------------------------------------------------
 function VS::CloseEnough( a, b, e )
 {
-	return ( ::fabs(a - b) <= e )
+	return ::fabs(a - b) <= e;
 }
 
 function VS::Approach( target, value, speed )
 {
-	local delta = target - value
+	local delta = target - value;
 
 	if( delta > speed )
-		value += speed
+		value += speed;
 	else if( delta < (-speed) )
-		value -= speed
+		value -= speed;
 	else
-		value = target
+		value = target;;
 
-	return value
+	return value;
 }
 
 function VS::ApproachAngle( target, value, speed )
 {
-	target = AngleNormalize( target )
-	value = AngleNormalize( value )
+	target = AngleNormalize( target );
+	value = AngleNormalize( value );
 
-	local delta = AngleDiff( target, value )
+	local delta = AngleDiff( target, value );
 
-	speed = ::fabs(speed)
+	speed = ::fabs(speed);
 
 	if( delta > speed )
-		value += speed
+		value += speed;
 	else if( delta < (-speed) )
-		value -= speed
+		value -= speed;
 	else
-		value = target
+		value = target;;
 
-	return value
+	return value;
 }
 
 // float, float
 function VS::AngleDiff( destAngle, srcAngle )
 {
-	return AngleNormalize( destAngle - srcAngle )
+	return AngleNormalize( destAngle - srcAngle );
 }
 
 // float
 function VS::AngleNormalize( angle )
 {
-	angle %= 360.0
+	angle %= 360.0;
 
 	if( angle > 180 )
-		angle -= 360
-	else if( -180 > angle )
-		angle += 360
+		angle -= 360;
+	else if( angle < (-180) )
+		angle += 360;;
 
-	return angle
+	return angle;
 }
 
 // input vector pointer
 function VS::QAngleNormalize( vAng )
 {
-	vAng.x = AngleNormalize( vAng.x )
-	vAng.y = AngleNormalize( vAng.y )
-	vAng.z = AngleNormalize( vAng.z )
-	return vAng
+	vAng.x = AngleNormalize( vAng.x );
+	vAng.y = AngleNormalize( vAng.y );
+	vAng.z = AngleNormalize( vAng.z );
+	return vAng;
 }
 
 //-----------------------------------------------------------------------------
@@ -335,43 +335,43 @@ function VS::QAngleNormalize( vAng )
 //-----------------------------------------------------------------------------
 function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 )
 {
-	local proj = 1 - epsilon
+	local proj = 1 - epsilon;
 
 	if( ::fabs(v.x) > proj )
 	{
 		if( vDirection.x < 0 )
-			vDirection.x = -1.0
+			vDirection.x = -1.0;
 		else
-			vDirection.x = 1.0
-		vDirection.y = 0
-		vDirection.z = 0
+			vDirection.x = 1.0;
+		vDirection.y = 0;
+		vDirection.z = 0;
 
-		return vDirection
-	}
+		return vDirection;
+	};
 
 	if( ::fabs(v.y) > proj )
 	{
 		if( vDirection.y < 0 )
-			vDirection.y = -1.0
+			vDirection.y = -1.0;
 		else
-			vDirection.y = 1.0
-		vDirection.z = 0
-		vDirection.x = 0
+			vDirection.y = 1.0;
+		vDirection.z = 0;
+		vDirection.x = 0;
 
-		return vDirection
-	}
+		return vDirection;
+	};
 
 	if( ::fabs(v.z) > proj )
 	{
 		if( vDirection.z < 0 )
-			vDirection.z = -1.0
+			vDirection.z = -1.0;
 		else
-			vDirection.z = 1.0
-		vDirection.x = 0
-		vDirection.y = 0
+			vDirection.z = 1.0;
+		vDirection.x = 0;
+		vDirection.y = 0;
 
-		return vDirection
-	}
+		return vDirection;
+	};
 }
 
 //-----------------------------------------------------------------------------
@@ -379,7 +379,7 @@ function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 )
 //-----------------------------------------------------------------------------
 function VS::Dist( v1, v2 )
 {
-	return ( v1 - v2 ).Length()
+	return ( v1 - v2 ).Length();
 }
 
 //-----------------------------------------------------------------------------
@@ -387,7 +387,7 @@ function VS::Dist( v1, v2 )
 //-----------------------------------------------------------------------------
 function VS::DistSqr( v1, v2 )
 {
-	return ( v1 - v2 ).LengthSqr()
+	return ( v1 - v2 ).LengthSqr();
 }
 
 //-----------------------------------------------------------------------------
@@ -395,11 +395,11 @@ function VS::DistSqr( v1, v2 )
 //-----------------------------------------------------------------------------
 function VS::VectorCopy( src, dst )
 {
-	dst.x = src.x
-	dst.y = src.y
-	dst.z = src.z
+	dst.x = src.x;
+	dst.y = src.y;
+	dst.z = src.z;
 
-	return dst
+	return dst;
 }
 
 //-----------------------------------------------------------------------------
@@ -407,138 +407,98 @@ function VS::VectorCopy( src, dst )
 //-----------------------------------------------------------------------------
 function VS::VectorMin( a, b, o = _VEC )
 {
-	o.x = ::min(a.x,b.x)
-	o.y = ::min(a.y,b.y)
-	o.z = ::min(a.z,b.z)
+	o.x = ::min(a.x,b.x);
+	o.y = ::min(a.y,b.y);
+	o.z = ::min(a.z,b.z);
 
-	return o
+	return o;
 }
 
 function VS::VectorMax( a, b, o = _VEC )
 {
-	o.x = ::max(a.x,b.x)
-	o.y = ::max(a.y,b.y)
-	o.z = ::max(a.z,b.z)
+	o.x = ::max(a.x,b.x);
+	o.y = ::max(a.y,b.y);
+	o.z = ::max(a.z,b.z);
 
-	return o
+	return o;
 }
 
 // input vector pointer
 function VS::VectorAbs( v )
 {
-	v.x = ::fabs(v.x)
-	v.y = ::fabs(v.y)
-	v.z = ::fabs(v.z)
-	return v
+	v.x = ::fabs(v.x);
+	v.y = ::fabs(v.y);
+	v.z = ::fabs(v.z);
+	return v;
 }
-
-//
-// <vec1 + vec2> operation returns a new Vector instance
-// <VS.VectorAdd(vec1, vec2, vec1)> stores the result in vec1
-// When the third parameter is omitted, it acts the same as the overload operator
-// (except when it doesn't, then you should either use the operator,
-// or pass a new Vector instance in the third parameter)
-//
-// Example of how to mess up:
-/*
-
-// in1, in2, in3, in4 are unique non-equal vectors
-
-local v1 = VS.VectorAdd( in1, in2 )
-
-// true
-// VS.VectorsAreEqual( v1, in1+in2 )
-
-local v2 = VS.VectorAdd( in3, in4 )
-
-// false
-// VS.VectorsAreEqual( v1, in1+in2 )
-
-// true
-// VS.VectorsAreEqual( v1, in3+in4 )
-
-// true
-// v1 == v2
-
-// Overcoming this:
-
-local v1 = VS.VectorAdd( in1, in2, Vector() )
-local v2 = VS.VectorAdd( in3, in4, Vector() )
-
-// This is because when the third parameter is omitted, they reference the same instance
-// While this may not be much of use in basic + - operations, it can be very helpful in
-// complex functions in 'vs_math2', where you're using the value, not the instance.
-// General idea is that if you're going to do more with the returned Vector instance,
-// create a new one and pass that as a parameter.
-*/
 
 // Vector a + Vector b
 function VS::VectorAdd( a, b, o = _VEC )
 {
-	o.x = a.x + b.x
-	o.y = a.y + b.y
-	o.z = a.z + b.z
+	o.x = a.x + b.x;
+	o.y = a.y + b.y;
+	o.z = a.z + b.z;
 
-	return o
+	return o;
 }
 
 // Vector a - Vector b
 function VS::VectorSubtract( a, b, o = _VEC )
 {
-	o.x = a.x - b.x
-	o.y = a.y - b.y
-	o.z = a.z - b.z
+	o.x = a.x - b.x;
+	o.y = a.y - b.y;
+	o.z = a.z - b.z;
 
-	return o
+	return o;
 }
 
 // scalar
 // Vector a * b
 function VS::VectorMultiply( a, b, o = _VEC )
 {
-	o.x = a.x * b
-	o.y = a.y * b
-	o.z = a.z * b
+	o.x = a.x * b;
+	o.y = a.y * b;
+	o.z = a.z * b;
 
-	return o
+	return o;
 }
 
 // Vector a * Vector b
 function VS::VectorMultiply2( a, b, o = _VEC )
 {
-	o.x = a.x*b.x
-	o.y = a.y*b.y
-	o.z = a.z*b.z
+	o.x = a.x*b.x;
+	o.y = a.y*b.y;
+	o.z = a.z*b.z;
 
-	return o
+	return o;
 }
 
 // Vector a / b
 function VS::VectorDivide( a, b, o = _VEC )
 {
-	local d = 1.0/b
+	local d = 1.0/b;
 
-	o.x = a.x*d
-	o.y = a.y*d
-	o.z = a.z*d
+	o.x = a.x*d;
+	o.y = a.y*d;
+	o.z = a.z*d;
 
-	return o
+	return o;
 }
 
 // Vector a / Vector b
 function VS::VectorDivide2( a, b, o = _VEC )
 {
-	o.x = a.x/b.x
-	o.y = a.y/b.y
-	o.z = a.z/b.z
+	o.x = a.x/b.x;
+	o.y = a.y/b.y;
+	o.z = a.z/b.z;
 
-	return o
+	return o;
 }
 
 function VS::ComputeVolume( vecMins, vecMaxs )
 {
-	local vecDelta = vecMaxs - vecMins
-	return vecDelta.Dot( vecDelta )
+	local vecDelta = vecMaxs - vecMins;
+	return vecDelta.Dot( vecDelta );
 }
 
 //-----------------------------------------------------------------------------
@@ -546,67 +506,67 @@ function VS::ComputeVolume( vecMins, vecMaxs )
 //-----------------------------------------------------------------------------
 function VS::RandomVector( minVal = -RAND_MAX, maxVal = RAND_MAX )
 {
-	return::Vector( ::RandomFloat( minVal, maxVal ), ::RandomFloat( minVal, maxVal ), ::RandomFloat( minVal, maxVal ) )
+	return::Vector( ::RandomFloat( minVal, maxVal ), ::RandomFloat( minVal, maxVal ), ::RandomFloat( minVal, maxVal ) );
 }
 
 // For predetermined values, multiply the value yourself, instead of making the calculation in runtime
 function VS::IsLengthGreaterThan( vec, val )
 {
-	return vec.LengthSqr() > val * val
+	return vec.LengthSqr() > val * val;
 }
 
 function VS::IsLengthLessThan( vec, val )
 {
-	return vec.LengthSqr() < val * val
+	return vec.LengthSqr() < val * val;
 }
 
 function VS::CalcSqrDistanceToAABB( mins, maxs, point )
 {
-	local flDelta, flDistSqr = 0.0
+	local flDelta, flDistSqr = 0.0;
 
 	if( point.x < mins.x )
 	{
-		flDelta = (mins.x - point.x)
-		flDistSqr += flDelta * flDelta
+		flDelta = (mins.x - point.x);
+		flDistSqr += flDelta * flDelta;
 	}
 	else if( point.x > maxs.x )
 	{
-		flDelta = (point.x - maxs.x)
-		flDistSqr += flDelta * flDelta
-	}
+		flDelta = (point.x - maxs.x);
+		flDistSqr += flDelta * flDelta;
+	};;
 
 	if( point.y < mins.y )
 	{
-		flDelta = (mins.y - point.y)
-		flDistSqr += flDelta * flDelta
+		flDelta = (mins.y - point.y);
+		flDistSqr += flDelta * flDelta;
 	}
 	else if( point.y > maxs.y )
 	{
-		flDelta = (point.y - maxs.y)
-		flDistSqr += flDelta * flDelta
-	}
+		flDelta = (point.y - maxs.y);
+		flDistSqr += flDelta * flDelta;
+	};;
 
 	if( point.z < mins.z )
 	{
-		flDelta = (mins.z - point.z)
-		flDistSqr += flDelta * flDelta
+		flDelta = (mins.z - point.z);
+		flDistSqr += flDelta * flDelta;
 	}
 	else if( point.z > maxs.z )
 	{
-		flDelta = (point.z - maxs.z)
-		flDistSqr += flDelta * flDelta
-	}
+		flDelta = (point.z - maxs.z);
+		flDistSqr += flDelta * flDelta;
+	};;
 
-	return flDistSqr
+	return flDistSqr;
 }
 
 function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut = _VEC )
 {
-	closestOut.x = ::clamp( point.x, mins.x, maxs.x )
-	closestOut.y = ::clamp( point.y, mins.y, maxs.y )
-	closestOut.z = ::clamp( point.z, mins.z, maxs.z )
+	closestOut.x = ::clamp( point.x, mins.x, maxs.x );
+	closestOut.y = ::clamp( point.y, mins.y, maxs.y );
+	closestOut.z = ::clamp( point.z, mins.z, maxs.z );
 
-	return closestOut
+	return closestOut;
 }
 
 //-----------------------------------------------------------------------
@@ -618,14 +578,14 @@ function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut = _VEC )
 // decayTo is factor the value should decay to in decayTime
 function VS::ExponentialDecay( decayTo, decayTime, dt )
 {
-	return::exp( ::log(decayTo) / decayTime * dt )
+	return::exp( ::log(decayTo) / decayTime * dt );
 }
 
 // halflife is time for value to reach 50%
 function VS::ExponentialDecay2( halflife, dt )
 {
 	// log(0.5) == -0.69314718055994530941723212145818
-	return::exp( -0.69314718 / halflife * dt )
+	return::exp( -0.69314718 / halflife * dt );
 }
 
 // Get the integrated distanced traveled
@@ -633,7 +593,7 @@ function VS::ExponentialDecay2( halflife, dt )
 // dt is the time relative to the last velocity update
 function VS::ExponentialDecayIntegral( decayTo, decayTime, dt )
 {
-	return (::pow(decayTo, dt / decayTime) * decayTime - decayTime) / ::log(decayTo)
+	return (::pow(decayTo, dt / decayTime) * decayTime - decayTime) / ::log(decayTo);
 }
 
 // hermite basis function for smooth interpolation
@@ -641,44 +601,44 @@ function VS::ExponentialDecayIntegral( decayTo, decayTime, dt )
 // value should be between 0 & 1 inclusive
 function VS::SimpleSpline( value )
 {
-	local valueSquared = value * value
+	local valueSquared = value * value;
 
 	// Nice little ease-in, ease-out spline-like curve
-	return ( 3 * valueSquared - 2 * valueSquared * value )
+	return ( 3 * valueSquared - 2 * valueSquared * value );
 }
 
 // remaps a value in [startInterval, startInterval+rangeInterval] from linear to
 // spline using SimpleSpline
 function VS::SimpleSplineRemapVal( val, A, B, C, D )
 {
-	if( A == B ) return val >= B ? D : C
-	local cVal = (val - A) / (B - A)
-	return C + (D - C) * SimpleSpline( cVal )
+	if( A == B ) return val >= B ? D : C;
+	local cVal = (val - A) / (B - A);
+	return C + (D - C) * SimpleSpline( cVal );
 }
 
 // remaps a value in [startInterval, startInterval+rangeInterval] from linear to
 // spline using SimpleSpline
 function VS::SimpleSplineRemapValClamped( val, A, B, C, D )
 {
-	if( A == B ) return val >= B ? D : C
-	local cVal = (val - A) / (B - A)
-	cVal = ::clamp( cVal, 0.0, 1.0 )
-	return C + (D - C) * SimpleSpline( cVal )
+	if( A == B ) return val >= B ? D : C;
+	local cVal = (val - A) / (B - A);
+	cVal = ::clamp( cVal, 0.0, 1.0 );
+	return C + (D - C) * SimpleSpline( cVal );
 }
 
 // Remap a value in the range [A,B] to [C,D].
 function VS::RemapVal( val, A, B, C, D )
 {
-	if( A == B ) return val >= B ? D : C
-	return C + (D - C) * (val - A) / (B - A)
+	if( A == B ) return val >= B ? D : C;
+	return C + (D - C) * (val - A) / (B - A);
 }
 
 function VS::RemapValClamped( val, A, B, C, D )
 {
-	if( A == B ) return val >= B ? D : C
-	local cVal = (val - A) / (B - A)
-	cVal = ::clamp( cVal, 0.0, 1.0 )
-	return C + (D - C) * cVal
+	if( A == B ) return val >= B ? D : C;
+	local cVal = (val - A) / (B - A);
+	cVal = ::clamp( cVal, 0.0, 1.0 );
+	return C + (D - C) * cVal;
 }
 
 //
@@ -718,10 +678,10 @@ function VS::RemapValClamped( val, A, B, C, D )
 function VS::Bias( x, biasAmt )
 {
 	local lastAmt = -1,
-	      lastExponent = 0
+	      lastExponent = 0;
 	if( lastAmt != biasAmt )
 		lastExponent = ::log(biasAmt) * -1.4427; // (-1.4427 = 1 / log(0.5))
-	return::pow(x, lastExponent)
+	return::pow(x, lastExponent);
 }
 
 //
@@ -758,9 +718,9 @@ function VS::Bias( x, biasAmt )
 function VS::Gain( x, biasAmt )
 {
 	if( x < 0.5 )
-		return 0.5 * Bias( 2*x, 1-biasAmt )
+		return 0.5 * Bias( 2*x, 1-biasAmt );
 	else
-		return 1 - 0.5 * Bias( 2 - 2*x, 1-biasAmt )
+		return 1 - 0.5 * Bias( 2 - 2*x, 1-biasAmt );
 }
 
 //
@@ -783,15 +743,15 @@ function VS::Gain( x, biasAmt )
 //
 function VS::SmoothCurve( x )
 {
-	return (1 - ::cos(x * ::PI)) * 0.5
+	return (1 - ::cos(x * ::PI)) * 0.5;
 }
 
 function VS::MovePeak( x, flPeakPos )
 {
 	if( x < flPeakPos )
-		return x * 0.5 / flPeakPos
+		return x * 0.5 / flPeakPos;
 	else
-		return 0.5 + 0.5 * (x - flPeakPos) / (1 - flPeakPos)
+		return 0.5 + 0.5 * (x - flPeakPos) / (1 - flPeakPos);
 }
 
 // This works like SmoothCurve, with two changes:
@@ -803,14 +763,14 @@ function VS::MovePeak( x, flPeakPos )
 //    Low values blunt the peak and high values sharpen the peak.
 function VS::SmoothCurve_Tweak( x, flPeakPos, flPeakSharpness )
 {
-	local flMovedPeak = MovePeak( x, flPeakPos )
-	local flSharpened = Gain( flMovedPeak, flPeakSharpness )
-	return SmoothCurve( flSharpened )
+	local flMovedPeak = MovePeak( x, flPeakPos );
+	local flSharpened = Gain( flMovedPeak, flPeakSharpness );
+	return SmoothCurve( flSharpened );
 }
 
 function VS::Lerp( A, B, f )
 {
-	return A + ( B - A ) * f
+	return A + ( B - A ) * f;
 }
 
 //
@@ -827,16 +787,16 @@ function VS::Lerp( A, B, f )
 //
 function VS::FLerp( f1, f2, i1, i2, x )
 {
-	return f1 + ( f2 - f1 ) * ( x - i1 ) / ( i2 - i1 )
+	return f1 + ( f2 - f1 ) * ( x - i1 ) / ( i2 - i1 );
 }
 
 function VS::VectorLerp( v1, v2, f, o = _VEC )
 {
-	o.x = Lerp( v1.x, v2.x, f )
-	o.y = Lerp( v1.y, v2.y, f )
-	o.z = Lerp( v1.z, v2.z, f )
+	o.x = Lerp( v1.x, v2.x, f );
+	o.y = Lerp( v1.y, v2.y, f );
+	o.z = Lerp( v1.z, v2.z, f );
 
-	return o
+	return o;
 }
 
 //-----------------------------------------------------------------------
@@ -850,14 +810,14 @@ function VS::IsPointInBox( vec, boxmin, boxmax )
 {
 	return ( vec.x >= boxmin.x && vec.x <= boxmax.x &&
 	         vec.y >= boxmin.y && vec.y <= boxmax.y &&
-	         vec.z >= boxmin.z && vec.z <= boxmax.z )
+	         vec.z >= boxmin.z && vec.z <= boxmax.z );
 }
 
 // Return true of the boxes intersect (but not if they just touch)
 function VS::IsBoxIntersectingBox( boxMin1, boxMax1, boxMin2, boxMax2 )
 {
-	if( ( boxMin1.x > boxMax2.x ) || ( boxMax1.x < boxMin2.x ) ) return false
-	if( ( boxMin1.y > boxMax2.y ) || ( boxMax1.y < boxMin2.y ) ) return false
-	if( ( boxMin1.z > boxMax2.z ) || ( boxMax1.z < boxMin2.z ) ) return false
-	return true
+	if( ( boxMin1.x > boxMax2.x ) || ( boxMax1.x < boxMin2.x ) ) return false;
+	if( ( boxMin1.y > boxMax2.y ) || ( boxMax1.y < boxMin2.y ) ) return false;
+	if( ( boxMin1.z > boxMax2.z ) || ( boxMax1.z < boxMin2.z ) ) return false;
+	return true;
 }
