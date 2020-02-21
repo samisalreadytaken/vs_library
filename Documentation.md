@@ -26,12 +26,18 @@ ________________________________
 Place `vs_library.nut` in your vscripts directory `/csgo/scripts/vscripts/`
 
 ### Downloading
-**Method 1.** Manually download the library by right clicking [**HERE**](https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/vs_library.nut), and choosing _"Save Link As..."_.  
+**Method 1.**
+Manually download the library by right clicking [**HERE**](https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/vs_library.nut), and choosing _"Save Link As..."_.  
 After acquiring the file, place it in your vscripts directory: `/csgo/scripts/vscripts/`
 
-**Method 2.** Using [curl](https://github.com/curl/curl), use the following line to download the library directly into your game files.
+**Method 2.**
+On Windows 10 17063 or later, run the [`install_vs_library.bat`](https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/install_vs_library.bat) file to automatically download the library into your game files. It can also be used update the library.
+
+**Method 3.**
+In bash, after changing the directory below to your Steam game library directory, use the following commands to install the library into your game files.
 ```
-cd "W:/Program Files (x86)/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/scripts/vscripts/";curl -O https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/vs_library.nut
+cd "C:/Program Files/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/scripts/vscripts/" && 
+curl -O https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/vs_library.nut
 ```
 
 ### Downloading more
