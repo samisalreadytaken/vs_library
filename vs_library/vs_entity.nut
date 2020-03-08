@@ -17,6 +17,7 @@
 
 ::EntFire <- function( target, action, value = "", delay = 0.0, activator = null, caller = null )
 {
+	if( !caller ) caller = self;
 	DoEntFire( target, action.tostring(), value.tostring(), delay, activator, caller );
 }
 

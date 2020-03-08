@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2020-03-08 [v2.34.8]
+- Minor change to EntFire to function the same as before
+
 2020-02-15 [v2.34.7]
 - ???
 

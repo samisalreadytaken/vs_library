@@ -11,10 +11,6 @@
 //
 //-----------------------------------------------------------------------
 
-// deprecated, use <RAD2DEG*> in expensive calculations instead
-::toRad <- function( deg ){ return deg * DEG2RAD; } // ( deg * PI / 180.0 )
-::toDeg <- function( rad ){ return rad * RAD2DEG; } // ( rad * 180 / PI )
-
 ::max <- function( a, b ){ return a > b ? a : b; }
 ::min <- function( a, b ){ return a < b ? a : b; }
 
