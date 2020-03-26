@@ -15,12 +15,6 @@
 	DoEntFireByInstanceHandle( target, action.tostring(), value.tostring(), delay, activator, caller );
 }
 
-::EntFire <- function( target, action, value = "", delay = 0.0, activator = null, caller = null )
-{
-	if( !caller ) caller = self;
-	DoEntFire( target, action.tostring(), value.tostring(), delay, activator, caller );
-}
-
 //-----------------------------------------------------------------------
 
 ::PrecacheModel <- function( str )
@@ -62,7 +56,7 @@ function VS::SetParent( hChild, hParent )
 //-----------------------------------------------------------------------
 function VS::CreateGameText( targetname = null, kv = null )
 {
-	return CreateEntity("game_text", targetname?targetname.tostring():"vs_game_text_"+UniqueString(), kv);
+	return CreateEntity("game_text", targetname?targetname.tostring():null, kv);
 }
 
 //-----------------------------------------------------------------------
@@ -74,7 +68,7 @@ function VS::CreateGameText( targetname = null, kv = null )
 //-----------------------------------------------------------------------
 function VS::CreateHudHint( targetname = null, msg = "" )
 {
-	return CreateEntity("env_hudhint", targetname?targetname.tostring():"vs_hudhint_"+UniqueString(), {message = msg});
+	return CreateEntity("env_hudhint", targetname?targetname.tostring():null, {message = msg});
 }
 
 //-----------------------------------------------------------------------
@@ -109,10 +103,10 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 )
 {
 	local r = e ? n ? n.tostring() : "vs_ref_"+UniqueString() : n ? n.tostring() : null;
 
-	if(!r) throw "Invalid targetname";
+	if(!r || !r.len()) throw "Invalid targetname";
 
 	local e = CreateEntity( "logic_measure_movement",
-	                        e?r:"vs_measure_"+UniqueString(),
+	                        e?r:null,
 	                        { measuretype = e ? 1 : 0,
 	                          measurereference = "",
 	                          targetreference = r,
@@ -126,10 +120,7 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 )
 
 	::EntFireByHandle(e,"enable");
 
-	if( p )
-	{
-		MakePermanent(e);
-	};
+	if(p) MakePermanent(e);
 
 	return e;
 }
@@ -158,7 +149,7 @@ function VS::SetMeasure(h,s)
 function VS::CreateTimer( targetname = null, refire = 1, lower = 1, upper = 5, oscillator = 0, disabled = true )
 {
 	local ent = CreateEntity( "logic_timer",
-	                          targetname?targetname.tostring():"vs_timer_"+UniqueString(),
+	                          targetname?targetname.tostring():null,
 	                          { UseRandomTime = 0,
 	                            LowerRandomBound = lower.tofloat(),
 	                            UpperRandomBound = upper.tofloat() } );
@@ -261,6 +252,15 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 
 	if( !bExecInEnt )
 	{
+		if( !("self" in tScope) )
+		{
+			throw "Invalid function path. Not an entity";
+		};
+
+		::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+tScope.self.GetName()+":runscriptcode:"+Func,0.0,tScope.self,hEnt );
+	}
+	else
+	{
 		local name = hEnt.GetName();
 		if( !name.len() )
 		{
@@ -269,15 +269,6 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 		};
 
 		::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+name+":runscriptcode:"+Func,0.0,null,hEnt );
-	}
-	else
-	{
-		if( !("self" in tScope) )
-		{
-			throw "Invalid function path. Not an entity";
-		};
-
-		::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+tScope.self.GetName()+":runscriptcode:"+Func,0.0,tScope.self,hEnt );
 	};
 }
 /*

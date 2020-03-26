@@ -168,8 +168,6 @@ Included in `vs_library.nut`
 [`max()`](#f_max)  
 [`min()`](#f_min)  
 [`clamp()`](#f_clamp)  
-[`toDeg()`](#f_toDeg)  
-[`toRad()`](#f_toRad)  
 [`VS.IsInteger()`](#f_IsInteger)  
 [`VS.IsLookingAt()`](#f_IsLookingAt)  
 [`VS.PointOnLineNearestPoint()`](#f_PointOnLineNearestPoint)  
@@ -206,8 +204,6 @@ Included in `vs_library.nut`
 [`VS.VectorDivide2()`](#f_VectorDivide2)  
 [`VS.ComputeVolume()`](#f_ComputeVolume)  
 [`VS.RandomVector()`](#f_RandomVector)  
-[`VS.IsLengthGreaterThan()`](#f_IsLengthGreaterThan)  
-[`VS.IsLengthLessThan()`](#f_IsLengthLessThan)  
 [`VS.CalcSqrDistanceToAABB()`](#f_CalcSqrDistanceToAABB)  
 [`VS.CalcClosestPointOnAABB()`](#f_CalcClosestPointOnAABB)  
 [`VS.ExponentialDecay()`](#f_ExponentialDecay)  
@@ -323,15 +319,12 @@ Included in `vs_library.nut`
 
 
 ### [vs_log](#vs_log-1)
-[`VS.Log.encryption`](#f_f_Logencryption)  
 [`VS.Log.condition`](#f_Logcondition)  
 [`VS.Log.export`](#f_Logexport)  
 [`VS.Log.filePrefix`](#f_LogfilePrefix)  
 [`VS.Log.Add()`](#f_LogAdd)  
 [`VS.Log.Clear()`](#f_LogClear)  
 [`VS.Log.Run()`](#f_LogRun)  
-[`VS.Log.SetKey()`](#f_LogSetKey)  
-[`VS.Log.conn`](#f_Logconn)  
 [`VS.Log.filter`](#f_Logfilter)  
 
 
@@ -479,24 +472,6 @@ float clamp(float value, float min, float max)
 Clamp the value between min and max
 ________________________________
 
-<a name="f_toDeg"></a>
-```cpp
-float toDeg(float radians)
-```
-Convert radians to degrees.
-
-Identical to `RAD2DEG * radians`
-________________________________
-
-<a name="f_toRad"></a>
-```cpp
-float toRad(float degrees)
-```
-Convert degrees to radians.
-
-Identical to `DEG2RAD * degrees`
-________________________________
-
 <a name="f_IsInteger"></a>
 ```cpp
 bool VS::IsInteger(float input)
@@ -513,14 +488,14 @@ bool VS::IsLookingAt(Vector source, Vector target, Vector direction, float toler
 ```cs
 function Think()
 {
-	local b, eye = HPlayer.EyePosition(),
+	local looking, eye = HPlayer.EyePosition(),
 	      target = Vector(-530.289490,-753.231506,123.932724)
 
 	// only check if there is direct LOS with the target
 	if( !VS.TraceLine( eye, target ).DidHit() )
-		b = VS.IsLookingAt( eye, target, HPlayerEye.GetForwardVector(), 0.9 )
+		looking = VS.IsLookingAt( eye, target, HPlayerEye.GetForwardVector(), 0.9 )
 
-	VS.ShowHudHint( hHudHint, HPlayer, b ? "LOOKING" : "NOT looking" )
+	VS.ShowHudHint( hHudHint, HPlayer, looking ? "LOOKING" : "NOT looking" )
 
 	DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 255, 255, 255, 255, flFrameTime2 )
 }
@@ -842,20 +817,6 @@ Vector VS::RandomVector(float minVal = -RAND_MAX, float maxVal = RAND_MAX)
 Get a random vector
 ________________________________
 
-<a name="f_IsLengthGreaterThan"></a>
-```cpp
-bool VS::IsLengthGreaterThan(Vector vec, float val)
-```
-Note: For predetermined values, multiply the value yourself, instead of making the calculation in runtime
-________________________________
-
-<a name="f_IsLengthLessThan"></a>
-```cpp
-bool VS::IsLengthLessThan(Vector vec, float val)
-```
-
-________________________________
-
 <a name="f_CalcSqrDistanceToAABB"></a>
 ```cpp
 float VS::CalcSqrDistanceToAABB(Vector mins, Vector maxs, Vector point)
@@ -1121,6 +1082,21 @@ Return true of the boxes intersect (but not if they just touch)
 ________________________________
 
 ### [vs_utility](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_utility.nut)
+
+<details><summary>Snippet</summary>
+
+```cs
+// Reload the script file this is put in once again
+// Can be used to "apply" the const variables compiled from another file
+/*
+
+if(!("__reloading"in::getroottable()))::__reloading<-false;;if(::__reloading)delete::__reloading;else{local _=function(){};::__reloading=true;return::DoIncludeScript(_.getinfos().src,this)};;
+
+*/
+```
+
+</details>
+
 ________________________________
 
 <a name="f_Ent"></a>
@@ -1507,7 +1483,7 @@ ________________________________
 
 <a name="f_UniqueString"></a>
 ```cpp
-char VS::UniqueString(char i = "")
+char VS::UniqueString()
 ```
 UniqueString without _ in the end
 ________________________________
@@ -2278,14 +2254,7 @@ Print and export custom log lines.
 
 Overrides the user con_filter settings but if the user cares about this at all, they would already have their own settings in an autoexec file.
 
-Works for listen server host only.
-________________________________
-
-<a name="f_Logencryption"></a>
-```cpp
-VS.Log.encryption = false
-```
-Encrypt the log?
+Works for listen server host (local player) only.
 ________________________________
 
 <a name="f_Logcondition"></a>
@@ -2309,6 +2278,10 @@ ________________________________
 VS.Log.filePrefix = "vs.log"
 ```
 The exported log file name prefix.
+
+By default, every file is appended with random strings to make each exported file unique. Putting `:` in the beginning will remove this suffix, and each export will overwrite the previously exported file. E.g.: `VS.Log.filePrefix = ":vs.log"`
+
+The user can specify export directories by using `/`. E.g.: `VS.Log.filePrefix = "bin/vs.log"`
 ________________________________
 
 <a name="f_LogAdd"></a>
@@ -2316,8 +2289,6 @@ ________________________________
 void VS::Log::Add(char s)
 ```
 Add new string to the log. Newline (`"\n"`) not included.
-
-Alternatively `VS.Log.L.append(string)` can be used for more control.
 ________________________________
 
 <a name="f_LogClear"></a>
@@ -2338,31 +2309,6 @@ return exported file name
 if VS.Log.export == false, then print in the console
 
 When exporting, do NOT call multiple times in a frame, or before the previous exporting is done.
-________________________________
-
-<a name="f_LogSetKey"></a>
-```cpp
-void VS::Log::SetKey(char key)
-```
-Set encryption key. ( used if VS.Log.encryption == true )
-________________________________
-
-<a name="f_Logconn"></a>
-```cpp
-VS.Log.conn = " "
-```
-Encrypted log connector.
-
-<details><summary>Example</summary>
-
-encrypted log output: `023 021 022 008 010`
-
-`VS.Log.conn = "x"`
-
-encrypted log output: `023x021x022x008x010`
-
-</details>
-
 ________________________________
 
 <a name="f_Logfilter"></a>

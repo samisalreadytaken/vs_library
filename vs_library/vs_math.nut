@@ -505,17 +505,6 @@ function VS::RandomVector( minVal = -RAND_MAX, maxVal = RAND_MAX )
 	return::Vector( ::RandomFloat( minVal, maxVal ), ::RandomFloat( minVal, maxVal ), ::RandomFloat( minVal, maxVal ) );
 }
 
-// For predetermined values, multiply the value yourself, instead of making the calculation in runtime
-function VS::IsLengthGreaterThan( vec, val )
-{
-	return vec.LengthSqr() > val * val;
-}
-
-function VS::IsLengthLessThan( vec, val )
-{
-	return vec.LengthSqr() < val * val;
-}
-
 function VS::CalcSqrDistanceToAABB( mins, maxs, point )
 {
 	local flDelta, flDistSqr = 0.0;

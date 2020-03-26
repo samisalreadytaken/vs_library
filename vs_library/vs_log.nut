@@ -13,7 +13,7 @@
 
 function VS::Log::Add( s )
 {
-	L.append( "L " + s );
+	L.append(s);
 }
 
 function VS::Log::Clear()
@@ -25,50 +25,18 @@ function VS::Log::Run()
 {
 	if( !condition ) return;
 
-	nL <- L.len();
-	nD <- 2000;
-	// nS <- ceil( nL / nD.tofloat() );
-	nC <- 0;
-	nN <- ::clamp( nD, 0, nL );
-
-	if( export ) return _Start();
-	else _Print( encryption );
+	return _Start();
 }
-
-// Encryption key
-function VS::Log::SetKey(k)
-{::_xa9b2df87ffe=k.tostring();_xffcd55c01dd=::_xa9b2df87ffe.len();}
-
-// Basic XOR encryption
-function VS::Log::Encrypt(q)
-{if(typeof q!="string")throw"Invalid input";local s="";for(local i=0;i<q.len();i++)s+=VS.FormatWidth(0,(q[i]^::_xa9b2df87ffe[i%_xffcd55c01dd]).tostring(),3)+conn;return s}
-
-// XOR decryption
-function VS::Log::Decrypt(q)
-{if(typeof q!="string")throw"Invalid input";local d=function(m){local s="";for(local i=0;i<m.len();i++)s+=(m[i].tointeger()^::_xa9b2df87ffe[i%_xffcd55c01dd]).tochar();return s}foreach(r in::split(q,filter))::print(d(::split(r,conn)))}
 
 //-----------------------------------------------------------------------
 // Internal functions. Do not call these
 //-----------------------------------------------------------------------
 
-function VS::Log::_Print( bEncrypt = false )
-{
-	if( bEncrypt ) if( !::_xa9b2df87ffe ) return::print("\nSet an encryption key with: VS.Log.SetKey(string key)\n");
-	else __Print(0);
-	else
-	{
-		if( !export )
-			__Print(1);
-		else
-			__Print(2);
-	};
-}
-
-function VS::Log::__Print(f)
+function VS::Log::_Print(f)
 {
 	if( nC >= nN )
 	{
-		if( f == 2 ) _Stop();
+		if( f ) _Stop();
 		nL = null;
 		nD = null;
 		nC = null;
@@ -78,25 +46,36 @@ function VS::Log::__Print(f)
 
 	local t = filter, p = ::print;
 
-	if( f == 0 )
-		for( local i = nC; i < nN; i++ )p( t + Encrypt(L[i]) );
-	else if( f == 1 )
+	if( !f )
 		for( local i = nC; i < nN; i++ )p( L[i] );
-	else if( f == 2 )
-		for( local i = nC; i < nN; i++ )p( t + L[i] );;;
+	else if( f )
+		for( local i = nC; i < nN; i++ )p( t + L[i] );;
 
 	nC += nD;
 	nN = ::clamp( nN + nD, 0, nL );
 
-	return::delay( "::VS.Log.__Print("+f+")", ::FrameTime() );
+	return::delay( "::VS.Log._Print("+f+")", ::FrameTime() );
 }
 
 function VS::Log::_Start()
 {
-	local fname = filePrefix + "_" + ::VS.UniqueString();
-	_d <- ::GetDeveloperLevel();
-	::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\""+filter+"\";con_filter_text\"\";con_logfile\""+fname+".log\";script delay(\"::VS.Log._Print(::VS.Log.encryption)\","+::FrameTime()*4+")");
-	return fname;
+	nL <- L.len();
+	nD <- 2000;
+	// nS <- ceil( nL / nD.tofloat() );
+	nC <- 0;
+	nN <- ::clamp( nD, 0, nL );
+
+	if( export )
+	{
+		local file = filePrefix[0] == 58 ? filePrefix.slice(1) : filePrefix + "_" + ::VS.UniqueString();
+		_d <- ::developer();
+		::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\""+filter+"\";con_filter_text\"\";con_logfile\""+file+".log\";script delay(\"::VS.Log._Print(1)\","+::FrameTime()*4+")");
+		return file;
+	}
+	else
+	{
+		_Print(0);
+	};
 }
 
 function VS::Log::_Stop()

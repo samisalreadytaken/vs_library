@@ -473,7 +473,8 @@ function VS::GetTickrate()
 ::AlertTeam <- ::ScriptPrintMessageCenterTeam;
 ::ClearChat <- function(){ for( local i = 0; i < 9; i++ ) Chat(""); }
 
-::txt <- {
+::txt <-
+{
 	invis      = "\x00",
 	white      = "\x01",
 	red        = "\x02",
@@ -492,23 +493,3 @@ function VS::GetTickrate()
 	orangered  = "\x0f",
 	orange     = "\x10"
 }
-
-//------------------------------
-// Reload the script file this is put in once again
-// Can be used to "apply" the const variables compiled from another file
-/*
-
-if(!("__reloading"in::getroottable()))::__reloading<-false;;if(::__reloading)delete::__reloading;else{local _=function(){};::__reloading=true;return::DoIncludeScript(_.getinfos().src,this)};;
-
-*/
-//------------------------------
-// snippet to test target time - server time conversion
-// Paste in the console, change 0.1 in the end of the line to your time
-
-// Just don't execute it 60000 times. If you do, restart the map.
-/*
-
-script local _=function(i){delay("printl("+i+"+\" -> \"+(Time()-"+VS.FormatPrecision(Time(),9)+"))",i.tofloat())}( 0.1 )
-
-*/
-//------------------------------

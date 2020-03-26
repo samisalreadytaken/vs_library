@@ -3,6 +3,16 @@
 
 --------------------------------
 
+2020-03-26 [v2.35.0]
+- Removed default naming for script created entities to improve resource usage, and give the user more control.
+- Removed VS.IsLengthGreaterThan and VS.IsLengthLessThan functions.
+- AddOutput2 bugfix
+- Reverted all EntFire changes.
+- vs_log:
+  - Added an option to export non-unique file names
+  - Removed encryption options
+  - Simplified internal functions
+
 2020-03-08 [v2.34.8]
 - Minor change to EntFire to function the same as before
 
