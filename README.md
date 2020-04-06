@@ -5,7 +5,7 @@ High-performance, powerful vscript libraries; written mainly for CSGO.
 
 It is advised to always use the latest version.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.35.0-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.35.1-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation
@@ -56,16 +56,16 @@ logic_eventlistener:
 	OnEventFired > player_spawn   > RunScriptCode > VS.Events.player_spawn(event_data)
 ```
 
+You can get the player handle from their userid.
+```lua
+local player = VS.GetPlayerByUserid(userid)
+```
+
 You can access the player data via their scope.
 ```cs
 player.GetScriptScope().userid
 player.GetScriptScope().networkid
 player.GetScriptScope().name
-```
-
-You can get the player handle from their userid.
-```lua
-local player = VS.GetPlayerByUserid(userid)
 ```
 
 Use `VS.DumpPlayers(1)` to see every player data.

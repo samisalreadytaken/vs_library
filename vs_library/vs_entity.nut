@@ -398,10 +398,10 @@ function VS::DumpEnt( input = null )
 //
 // If bots have targetnames, they 'become' humans
 //
-// If the event listeners are not set up, named bots will be shown as players
+// If the event listeners are NOT set up, named bots will be shown as players
 //-----------------------------------------------------------------------
 //
-// scope.bot <- scope.networkid == "BOT" ? true : false
+// scope.bot <- scope.networkid == "BOT";
 //
 function VS::GetPlayersAndBots()
 {
@@ -481,7 +481,7 @@ function VS::GetLocalPlayer()
 	if( !e.ValidateScriptScope() )
 		return::print( "GetLocalPlayer: Failed to validate player scope!\n" );
 
-	SetName( e, "player" );
+	SetName(e, "localplayer");
 
 	::SPlayer <- e.GetScriptScope();
 	::HPlayer <- e;

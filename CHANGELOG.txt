@@ -3,6 +3,11 @@
 
 --------------------------------
 
+2020-04-06 [v2.35.1]
+- Removed traces of previously removed functions (toRad, toDeg).
+- Changed the local player's targetname to "localplayer" from "player".
+- Minor improvements
+
 2020-03-26 [v2.35.0]
 - Removed default naming for script created entities to improve resource usage, and give the user more control.
 - Removed VS.IsLengthGreaterThan and VS.IsLengthLessThan functions.

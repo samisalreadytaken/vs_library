@@ -74,16 +74,16 @@ logic_eventlistener:
 	OnEventFired > player_spawn   > RunScriptCode > VS.Events.player_spawn(event_data)
 ```
 
+You can get the player handle from their userid.
+```lua
+local player = VS.GetPlayerByUserid(userid)
+```
+
 You can access the player data via their scope.
 ```cs
 player.GetScriptScope().userid
 player.GetScriptScope().networkid
 player.GetScriptScope().name
-```
-
-You can get the player handle from their userid.
-```lua
-local player = VS.GetPlayerByUserid(userid)
 ```
 
 Use `VS.DumpPlayers(1)` to see every player data.
@@ -2275,13 +2275,13 @@ ________________________________
 
 <a name="f_LogfilePrefix"></a>
 ```cpp
-VS.Log.filePrefix = "vs.log"
+VS.Log.filePrefix = "vslog"
 ```
 The exported log file name prefix.
 
-By default, every file is appended with random strings to make each exported file unique. Putting `:` in the beginning will remove this suffix, and each export will overwrite the previously exported file. E.g.: `VS.Log.filePrefix = ":vs.log"`
+By default, every file is appended with random strings to make each exported file unique. Putting `:` in the beginning will remove this suffix, and each export will overwrite the previously exported file. E.g.: `VS.Log.filePrefix = ":vslog"`
 
-The user can specify export directories by using `/`. E.g.: `VS.Log.filePrefix = "bin/vs.log"`
+The user can specify export directories by using `/`. E.g.: `VS.Log.filePrefix = "bin/vslog"`
 ________________________________
 
 <a name="f_LogAdd"></a>
@@ -2593,7 +2593,7 @@ ________________________________
 
 <a name="f_AngleQuaternion"></a>
 ```cpp
-Quaternion VS::AngleQuaternion(Qangle angles, Quaternion& out = _QUAT)
+Quaternion VS::AngleQuaternion(QAngle angles, Quaternion& out = _QUAT)
 ```
 QAngle -> Quaternion
 ________________________________

@@ -82,7 +82,7 @@ if( VS.arrayFind(VS.slots_default,"Quaternion") == null )
 {
 	VS.slots_default.append("Quaternion")
 	VS.slots_default.append("matrix3x4")
-};
+};;
 
 local _VEC =::Vector();
 local _QUAT =::Quaternion();
@@ -460,8 +460,8 @@ function VS::QuaternionAngleDiff( p, q )
 
 	// Note if the quaternion is slightly non-normalized the square root below may be more than 1,
 	// the value is clamped to one otherwise it may result in ::asin() returning an undefined result.
-	local sinang = ::min( 1.0, ::sqrt( diff.x * diff.x + diff.y * diff.y + diff.z * diff.z ) );
-	local angle = ::RAD2DEG* 2 * ::asin( sinang );
+	local sinang = ::min( 1.0, ::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z) );
+	local angle = ::asin(sinang) * 114.591559026; // DEG2RAD * 2.0
 	return angle;
 /* #}else{
 	local q2 = ::Quaternion();
@@ -898,15 +898,7 @@ function VS::MatrixAngles( matrix, angles = _VEC, position = null )
 	      up      = [ null,
 	                  null,
 	                  matrix[2][2] ];
-/*
-	forward[0] = matrix[0][0];
-	forward[1] = matrix[1][0];
-	forward[2] = matrix[2][0];
-	left[0] = matrix[0][1];
-	left[1] = matrix[1][1];
-	left[2] = matrix[2][1];
-	up[2] = matrix[2][2];
-*/
+
 	local xyDist = ::sqrt( forward[0] * forward[0] + forward[1] * forward[1] );
 
 	// enough here to get angles?
@@ -1304,11 +1296,20 @@ function VS::ConcatTransforms( in1, in2, out )
 	      rowB1 = in2[1],
 	      rowB2 = in2[2];
 
-	local out0 = [(rowA0[0]*rowB0[0]+rowA0[1]*rowB1[0]+rowA0[2]*rowB2[0])+(rowA0[0]&lastMask[0]),(rowA0[0]*rowB0[1]+rowA0[1]*rowB1[1]+rowA0[2]*rowB2[1])+(rowA0[1]&lastMask[1]),(rowA0[0]*rowB0[2]+rowA0[1]*rowB1[2]+rowA0[2]*rowB2[2])+(rowA0[2]&lastMask[2]),(rowA0[0]*rowB0[3]+rowA0[1]*rowB1[3]+rowA0[2]*rowB2[3])+(rowA0[3]&lastMask[3])],
+	local out0 = [(rowA0[0]*rowB0[0] + rowA0[1]*rowB1[0] + rowA0[2]*rowB2[0]) + (rowA0[0]&lastMask[0]),
+	              (rowA0[0]*rowB0[1] + rowA0[1]*rowB1[1] + rowA0[2]*rowB2[1]) + (rowA0[1]&lastMask[1]),
+	              (rowA0[0]*rowB0[2] + rowA0[1]*rowB1[2] + rowA0[2]*rowB2[2]) + (rowA0[2]&lastMask[2]),
+	              (rowA0[0]*rowB0[3] + rowA0[1]*rowB1[3] + rowA0[2]*rowB2[3]) + (rowA0[3]&lastMask[3])],
 
-	      out1 = [(rowA1[0]*rowB0[0]+rowA1[1]*rowB1[0]+rowA1[2]*rowB2[0])+(rowA1[0]&lastMask[0]),(rowA1[0]*rowB0[1]+rowA1[1]*rowB1[1]+rowA1[2]*rowB2[1])+(rowA1[1]&lastMask[1]),(rowA1[0]*rowB0[2]+rowA1[1]*rowB1[2]+rowA1[2]*rowB2[2])+(rowA1[2]&lastMask[2]),(rowA1[0]*rowB0[3]+rowA1[1]*rowB1[3]+rowA1[2]*rowB2[3])+(rowA1[3]&lastMask[3])],
+	      out1 = [(rowA1[0]*rowB0[0] + rowA1[1]*rowB1[0] + rowA1[2]*rowB2[0]) + (rowA1[0]&lastMask[0]),
+	              (rowA1[0]*rowB0[1] + rowA1[1]*rowB1[1] + rowA1[2]*rowB2[1]) + (rowA1[1]&lastMask[1]),
+	              (rowA1[0]*rowB0[2] + rowA1[1]*rowB1[2] + rowA1[2]*rowB2[2]) + (rowA1[2]&lastMask[2]),
+	              (rowA1[0]*rowB0[3] + rowA1[1]*rowB1[3] + rowA1[2]*rowB2[3]) + (rowA1[3]&lastMask[3])],
 
-	      out2 = [(rowA2[0]*rowB0[0]+rowA2[1]*rowB1[0]+rowA2[2]*rowB2[0])+(rowA2[0]&lastMask[0]),(rowA2[0]*rowB0[1]+rowA2[1]*rowB1[1]+rowA2[2]*rowB2[1])+(rowA2[1]&lastMask[1]),(rowA2[0]*rowB0[2]+rowA2[1]*rowB1[2]+rowA2[2]*rowB2[2])+(rowA2[2]&lastMask[2]),(rowA2[0]*rowB0[3]+rowA2[1]*rowB1[3]+rowA2[2]*rowB2[3])+(rowA2[3]&lastMask[3])];
+	      out2 = [(rowA2[0]*rowB0[0] + rowA2[1]*rowB1[0] + rowA2[2]*rowB2[0]) + (rowA2[0]&lastMask[0]),
+	              (rowA2[0]*rowB0[1] + rowA2[1]*rowB1[1] + rowA2[2]*rowB2[1]) + (rowA2[1]&lastMask[1]),
+	              (rowA2[0]*rowB0[2] + rowA2[1]*rowB1[2] + rowA2[2]*rowB2[2]) + (rowA2[2]&lastMask[2]),
+	              (rowA2[0]*rowB0[3] + rowA2[1]*rowB1[3] + rowA2[2]*rowB2[3]) + (rowA2[3]&lastMask[3])];
 
 	// write to output
 	out = out.m_flMatVal;
