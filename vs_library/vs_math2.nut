@@ -461,7 +461,7 @@ function VS::QuaternionAngleDiff( p, q )
 	// Note if the quaternion is slightly non-normalized the square root below may be more than 1,
 	// the value is clamped to one otherwise it may result in ::asin() returning an undefined result.
 	local sinang = ::min( 1.0, ::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z) );
-	local angle = ::asin(sinang) * 114.591559026; // DEG2RAD * 2.0
+	local angle = ::asin(sinang) * 114.591559026; // RAD2DEG * 2.0
 	return angle;
 /* #}else{
 	local q2 = ::Quaternion();

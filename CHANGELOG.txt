@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2020-04-08
+- Added glow library. Not included in vs_library.
+
 2020-04-06 [v2.35.1]
 - Removed traces of previously removed functions (toRad, toDeg).
 - Changed the local player's targetname to "localplayer" from "player".

@@ -2275,13 +2275,15 @@ ________________________________
 
 <a name="f_LogfilePrefix"></a>
 ```cpp
-VS.Log.filePrefix = "vslog"
+VS.Log.filePrefix = "vs.log"
 ```
 The exported log file name prefix.
 
-By default, every file is appended with random strings to make each exported file unique. Putting `:` in the beginning will remove this suffix, and each export will overwrite the previously exported file. E.g.: `VS.Log.filePrefix = ":vslog"`
+By default, every file is appended with random strings to make each exported file unique. Putting `:` in the beginning will remove this suffix, and each export will overwrite the previously exported file. E.g.: `VS.Log.filePrefix = ":vs.log"`
 
-The user can specify export directories by using `/`. E.g.: `VS.Log.filePrefix = "bin/vslog"`
+The user can specify export directories by using `/`. E.g.: `VS.Log.filePrefix = "bin/vs.log"`
+
+Example file name: `vs.log_c9ae41f5d8d.log`
 ________________________________
 
 <a name="f_LogAdd"></a>
