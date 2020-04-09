@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2020-04-09
+- glow.nut: Changed the method of storage.
+
 2020-04-08
 - Added glow library. Not included in vs_library.
 
