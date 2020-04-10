@@ -1229,7 +1229,7 @@ ________________________________
 
 <a name="f_FormatPrecision"></a>
 ```cpp
-char VS::FormatPrecision(float f, int n = 2)
+char VS::FormatPrecision(float f, int n)
 ```
 .tointeger() or .tofloat() can be used on the result
 
@@ -1251,7 +1251,7 @@ ________________________________
 
 <a name="f_FormatHex"></a>
 ```cpp
-char VS::FormatHex(int i, int n = 2)
+char VS::FormatHex(int i, int n)
 ```
 .tointeger() or .tofloat() can be used on the result
 
@@ -1276,7 +1276,7 @@ ________________________________
 
 <a name="f_FormatExp"></a>
 ```cpp
-char VS::FormatExp(float f, int n = 2)
+char VS::FormatExp(float f, int n)
 ```
 .tointeger() or .tofloat() can be used on the result
 
@@ -1301,16 +1301,16 @@ ________________________________
 
 <a name="f_FormatWidth"></a>
 ```cpp
-char VS::FormatWidth(char s, char i, int n = 2)
+char VS::FormatWidth(char i, int n, char s = " ")
 ```
-First parameter can be either `0` or `" "`
+Parameter `s` can be either `0` or `" "`
 
 <details><summary>Example</summary>
 
 ```lua
-local res  = VS.FormatWidth(0,   "test",  5)
-local res2 = VS.FormatWidth(0,   123,     6)
-local res3 = VS.FormatWidth(" ", 123,     6)
+local res  = VS.FormatWidth("test", 5, 0   )
+local res2 = VS.FormatWidth(123,    6, 0   )
+local res3 = VS.FormatWidth(123,    6, " " )
 
 printl(res)
 printl(res2)

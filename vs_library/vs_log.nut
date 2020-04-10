@@ -47,9 +47,9 @@ function VS::Log::_Print(f)
 	local t = filter, p = ::print;
 
 	if( !f )
-		for( local i = nC; i < nN; i++ )p( L[i] );
-	else if( f )
-		for( local i = nC; i < nN; i++ )p( t + L[i] );;
+		for( local i = nC; i < nN; ++i )p( L[i] );
+	else
+		for( local i = nC; i < nN; ++i )p( t + L[i] );;
 
 	nC += nD;
 	nN = ::clamp( nN + nD, 0, nL );
@@ -69,7 +69,7 @@ function VS::Log::_Start()
 	{
 		local file = filePrefix[0] == 58 ? filePrefix.slice(1) : filePrefix + "_" + ::VS.UniqueString();
 		_d <- ::developer();
-		::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\""+filter+"\";con_filter_text\"\";con_logfile\""+file+".log\";script delay(\"::VS.Log._Print(1)\","+::FrameTime()*4+")");
+		::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\""+filter+"\";con_filter_text\"\";con_logfile\""+file+".log\";script delay(\"::VS.Log._Print(1)\","+::FrameTime()*4.0+")");
 		return file;
 	}
 	else

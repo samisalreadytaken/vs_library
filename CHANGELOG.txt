@@ -3,6 +3,17 @@
 
 --------------------------------
 
+2020-04-10 [v2.35.2]
+- Edge case fix on events
+- ENT_SCRIPT is no longer chosen as an already existing logic_script entity.
+  This gives the user more control, and fixes some issues.
+- Changed VS.FormatWidth parameters to be consistent with the other format functions.
+- Removed default parameter values on the format functions.
+- Minor improvements
+- glow.nut:
+  - Added variable 'DEBUG' for console output
+  - Added entity indices on console output
+
 2020-04-09
 - glow.nut: Changed the method of storage.
 

@@ -20,21 +20,22 @@
 // Input  : int / float
 // Output : string - .tointeger() or .tofloat() can be used on the result
 //-----------------------------------------------------------------------
-function VS::FormatPrecision( f, n = 2 ){ return::format("%." +n+"f",f); }
-function VS::FormatExp( i, n = 1 )      { return::format("%." +n+"e",i); }
+function VS::FormatPrecision(f, n){ return::format("%." +n+"f",f); }
+function VS::FormatExp(i, n)      { return::format("%." +n+"e",i); }
 
 //-----------------------------------------------------------------------
 // Input  : int
 // Output : string - .tointeger() or .tofloat() can be used on the result
 //-----------------------------------------------------------------------
-function VS::FormatHex( i, n = 4 )      { return::format("%#0"+n+"x",i); }
+function VS::FormatHex(i, n)      { return::format("%#0"+n+"x",i); }
 
 //-----------------------------------------------------------------------
-// Input  : 0 or " "
-//          str/int/float
+// Input  : str/int/float
+//          int amount
+//          0 or " "
 // Output : string
 //-----------------------------------------------------------------------
-function VS::FormatWidth( s, i, n = 4 ) { return::format("%"+s+""+n+"s",i.tostring()); }
+function VS::FormatWidth(i, n, s = " ") { return::format("%"+s+""+n+"s",i.tostring()); }
 
 //-----------------------------------------------------------------------
 // Input  : Vector
@@ -154,7 +155,7 @@ class::VS.TraceLine
 	{
 		if( !normal )
 		{
-			local u = ::Vector(0,0,0.5),
+			local u = ::Vector(0.0,0.0,0.5),
 			      d = endpos - startpos;
 			d.Norm();
 			GetPos();
@@ -192,7 +193,7 @@ class::VS.TraceLine
 	function Ray( mins =::Vector(), maxs =::Vector() )
 	{
 		m_Delta = endpos - startpos;
-		m_IsSwept = m_Delta.LengthSqr() != 0;
+		m_IsSwept = m_Delta.LengthSqr() != 0.0;
 		m_Extents = (maxs - mins) * 0.5;
 		m_IsRay = m_Extents.LengthSqr() < 1.e-6;
 		m_StartOffset = (mins + maxs) * 0.5;
@@ -209,7 +210,7 @@ class::VS.TraceLine
 //          handle [ to ignore ]
 // Output : instance [ VS.TraceLine ]
 //-----------------------------------------------------------------------
-function VS::TraceDir( v1, vDir, f = 6144, hEnt = null )
+function VS::TraceDir( v1, vDir, f = 6144.0, hEnt = null )
 {
 	return TraceLine( v1, v1 + ( vDir * ( f ? f : ::MAX_TRACE_LENGTH ) ), hEnt );
 }
@@ -274,7 +275,7 @@ function VS::arrayMap( arr, func )
 //-----------------------------------------------------------------------
 function VS::DumpScope( table, printall = false, deepprint = true, guides = true, depth = 0 )
 {
-	local indent = function( count ){ for( local i = 0; i < count; i++ ) ::print("   ") }
+	local indent = function( count ){ for( local i = 0; i < count; ++i ) ::print("   ") }
 	if( guides ) ::print(" ------------------------------\n");
 	if( table )
 	{
@@ -471,7 +472,7 @@ function VS::GetTickrate()
 ::ChatTeam  <- function(i,s){ScriptPrintMessageChatTeam(i," "+s);}
 ::Alert     <- ::ScriptPrintMessageCenterAll;
 ::AlertTeam <- ::ScriptPrintMessageCenterTeam;
-::ClearChat <- function(){ for( local i = 0; i < 9; i++ ) Chat(""); }
+::ClearChat <- function(){ for( local i = 0; i < 9; ++i ) Chat(""); }
 
 ::txt <-
 {

@@ -64,21 +64,18 @@ if( !("OnGameEvent_player_connect" in getroottable()) ) ::OnGameEvent_player_con
 
 local _v0 = function()
 {
-	collectgarbage();
-
-	if( ::ENT_SCRIPT <- Entc("logic_script") ) return;
-	else if( ::ENT_SCRIPT <- Ent("vs_script") ) return::ENT_SCRIPT.ValidateScriptScope();
-	else if( ::ENT_SCRIPT <- Entc("worldspawn") )
+	if( ::ENT_SCRIPT <- ::Entc("worldspawn") )
 	{
 		::ENT_SCRIPT.ValidateScriptScope();
-		VS.slots_default.append(VS.GetTableName(::ENT_SCRIPT.GetScriptScope()));
-		return;
+		::VS.slots_default.append(::VS.GetTableName(::ENT_SCRIPT.GetScriptScope()));
 	}
 	else
 	{
-		(::ENT_SCRIPT<-VS.CreateEntity("soundent","vs_script")).ValidateScriptScope();
-		print("ERROR: Could not find worldspawn\n");
-	};;;
+		(::ENT_SCRIPT<-::VS.CreateEntity("soundent","vs.script")).ValidateScriptScope();
+		::print("ERROR: Could not find worldspawn\n");
+	};
+
+	::collectgarbage();
 }
 
 local _VEC = Vector();

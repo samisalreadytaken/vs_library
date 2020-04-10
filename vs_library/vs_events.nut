@@ -26,7 +26,7 @@ function VS::GetPlayerByUserid( userid )
 	while( ent =::Entities.Next(ent) ) if( ent.GetClassname() == "player" )
 	{
 		local s = ent.GetScriptScope();
-		if( s && s.userid == userid )
+		if( "userid" in s && s.userid == userid )
 			return ent;
 	}
 }
@@ -48,7 +48,7 @@ function VS::Events::player_connect(data)
 {
 	if(::_xa9b2dfB7ffe.len()>128)
 	{
-		for(local i=0;i<64;i++)::_xa9b2dfB7ffe.remove(0);
+		for(local i=0;i<64;++i)::_xa9b2dfB7ffe.remove(0);
 		::print("player_connect: ERROR!!! Player data is not being processed.\n")
 	};
 	::_xa9b2dfB7ffe.append(data);
@@ -93,7 +93,7 @@ function VS::Events::player_spawn(data)
 		scope.name <- d.name;
 		scope.networkid <- d.networkid;
 		::_xa9b2dfB7ffe.remove(i);
-		return::OnGameEvent_player_spawn(data); // break
+		break;
 	};;
 
 	return::OnGameEvent_player_spawn(data);

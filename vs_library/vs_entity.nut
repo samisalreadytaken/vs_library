@@ -146,7 +146,7 @@ function VS::SetMeasure(h,s)
 //          bool [ start disabled ? ]
 // Output : entity
 //-----------------------------------------------------------------------
-function VS::CreateTimer( targetname = null, refire = 1, lower = 1, upper = 5, oscillator = 0, disabled = true )
+function VS::CreateTimer( targetname = null, refire = 1.0, lower = 1.0, upper = 5.0, oscillator = false, disabled = true )
 {
 	local ent = CreateEntity( "logic_timer",
 	                          targetname?targetname.tostring():null,
@@ -328,7 +328,7 @@ function VS::SetKey( ent, key, val )
 
 		default:
 			throw "Invalid input type: " + typeof(val);
-	};
+	}
 }
 
 function VS::SetKeyInt( ent, key, val )
@@ -357,11 +357,11 @@ function VS::DumpEnt( input = null )
 {
 	if( !input )
 	{
-		local ent
+		local ent;
 		while( ent = ::Entities.Next(ent) )
 		{
 			local s = ent.GetScriptScope();
-			if( s ) ::printl(ent + " :: " + s.__vname)//GetTableName(s))
+			if(s) ::printl(ent + " :: " + s.__vname); // GetTableName(s)
 		}
 	}
 	else if( typeof input == "instance" || typeof input == "string" )
@@ -370,8 +370,8 @@ function VS::DumpEnt( input = null )
 			input = FindEntityByString(input);
 
 		local s;
-		try(s=input.GetScriptScope())catch(e)
-		{return::printl("Entity has no script scope! " + input)};
+		try(s = input.GetScriptScope())catch(e)
+		{return::printl("Entity has no script scope! " + input)}
 
 		::printl("--- Script dump for entity "+input);
 		DumpScope(s,0,1,0,1);
@@ -383,12 +383,12 @@ function VS::DumpEnt( input = null )
 		while( ent = ::Entities.Next(ent) )
 		{
 			local s = ent.GetScriptScope();
-			if( s )
+			if(s)
 			{
 				::printl("\n--- Script dump for entity "+ent);
 				DumpScope(s,0,1,0,1);
 				::printl("--- End script dump");
-			}
+			};
 		}
 	};;;
 }
@@ -411,7 +411,7 @@ function VS::GetPlayersAndBots()
 	while( ent = ::Entities.FindByClassname(ent, "player") )
 	{
 		local s = ent.GetScriptScope();
-		if( s && "networkid" in s && s.networkid == "BOT" ) bot.append(ent);
+		if( "networkid" in s && s.networkid == "BOT" ) bot.append(ent);
 		else ply.append(ent);
 	}
 
@@ -448,11 +448,11 @@ function VS::DumpPlayers( dumpscope = false )
 		foreach( e in _a )
 		{
 			local s = e.GetScriptScope();
-			try( s = GetTableName(s) ) catch(e){ s = "null" };
+			try( s = GetTableName(s) ) catch(e){ s = "null" }
 			::printl( _s+"- " + e + " :: " + s );
 			if( d && s != "null" ) DumpEnt( e );
 		}
-	};
+	}
 
 	c("[BOT]    ",b);
 	c("[PLAYER] ",p);
@@ -521,7 +521,7 @@ function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold )
 	while( ent = ::Entities.Next(ent) )
 	{
 		// skip all point sized entitites
-		if( IsPointSized( ent ) ) continue;
+		if( IsPointSized(ent) ) continue;
 
 		// skip only worldspawn and soundent
 		// if( ent.GetClassname() == "worldspawn" || ent.GetClassname() == "soundent" ) continue;
@@ -530,13 +530,13 @@ function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold )
 
 		to_ent.Norm();
 
-		local dot = vFacing.Dot( to_ent );
+		local dot = vFacing.Dot(to_ent);
 
 		if( dot > bestDot )
 		{
 			bestDot = dot;
 			best_ent = ent;
-		}
+		};
 	}
 
 	return best_ent;
@@ -547,23 +547,20 @@ function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassn
 	local bestDot = fThreshold,
 	      best_ent, ent;
 
-	// for( local ent = ::Entities.First(); ent; ent = ::Entities.Next(ent) )
-	// while( ent = ::Entities.Next(ent) )
+	// for( local ent; ent = ::Entities.Next(ent); )
 	while( ent = ::Entities.FindByClassname(ent,sClassname) )
 	{
-		// if( ent.GetClassname() != sClassname ) continue;
-
 		local to_ent = ent.GetOrigin() - vOrigin;
 
 		to_ent.Norm();
 
-		local dot = vFacing.Dot( to_ent );
+		local dot = vFacing.Dot(to_ent);
 
 		if( dot > bestDot )
 		{
 			bestDot = dot;
 			best_ent = ent;
-		}
+		};
 	}
 
 	return best_ent;
@@ -583,7 +580,7 @@ function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, 
 	{
 		local to_ent = ent.GetOrigin() - vOrigin;
 		to_ent.Norm();
-		local dot = vFacing.Dot( to_ent );
+		local dot = vFacing.Dot(to_ent);
 
 		if( dot > fThreshold )
 		{
@@ -593,8 +590,8 @@ function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, 
 			{
 				best_ent = ent;
 				flMaxDistSqr = flDistSqr;
-			}
-		}
+			};
+		};
 	}
 
 	return best_ent;

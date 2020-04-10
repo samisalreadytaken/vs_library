@@ -45,9 +45,9 @@ function VS::PointOnLineNearestPoint( vStartPos, vEndPos, vPoint )
 	local v1 = vEndPos - vStartPos,
 	      dist = v1.Dot(vPoint - vStartPos) / v1.LengthSqr();
 
-	if     ( dist < 0 ) return vStartPos;
-	else if( dist > 1 ) return vEndPos;
-	else                return vStartPos + v1 * dist;;
+	if     ( dist < 0.0 ) return vStartPos;
+	else if( dist > 1.0 ) return vEndPos;
+	else                  return vStartPos + v1 * dist;;
 }
 
 //-----------------------------------------------------------------------
@@ -60,7 +60,7 @@ function VS::GetAngle( vFrom, vTo )
 	      pitch = ::RAD2DEG*::atan2( d.z, d.Length2D() ),
 	      yaw   = ::RAD2DEG*(::atan2( d.y, d.x ) + ::PI);
 
-	return::Vector(pitch,yaw,0);
+	return::Vector(pitch,yaw,0.0);
 }
 
 //-----------------------------------------------------------------------
@@ -81,19 +81,19 @@ function VS::GetAngle2D( vFrom, vTo )
 //-----------------------------------------------------------------------
 function VS::VectorVectors( forward, right, up )
 {
-	if( forward.x == 0 && forward.y == 0 )
+	if( forward.x == 0.0 && forward.y == 0.0 )
 	{
 		// pitch 90 degrees up/down from identity
-		right.x = 0;
-		right.y = -1;
-		right.z = 0;
+		right.x = 0.0;
+		right.y = -1.0;
+		right.z = 0.0;
 		up.x = -forward.z;
-		up.y = 0;
-		up.z = 0;
+		up.y = 0.0;
+		up.z = 0.0;
 	}
 	else
 	{
-		local R = forward.Cross(::Vector(0,0,1));
+		local R = forward.Cross(::Vector(0.0,0.0,1.0));
 		right.x = R.x; right.y = R.y; right.z = R.z;
 		right.Norm();
 
@@ -140,9 +140,9 @@ function VS::AngleVectors( vAng, vFwd = _VEC, vRg = null, vUp = null )
 
 	if( vRg )
 	{
-		vRg.x = (-1*sr*sp*cy+-1*cr*-sy);
-		vRg.y = (-1*sr*sp*sy+-1*cr*cy);
-		vRg.z = -1*sr*cp;
+		vRg.x = (-1.0*sr*sp*cy+-1.0*cr*-sy);
+		vRg.y = (-1.0*sr*sp*sy+-1.0*cr*cy);
+		vRg.z = -1.0*sr*cp;
 	};
 
 	if( vUp )
@@ -162,27 +162,27 @@ function VS::VectorAngles( vFwd )
 {
 	local tmp, yaw, pitch;
 
-	if( vFwd.y == 0 && vFwd.x == 0 )
+	if( vFwd.y == 0.0 && vFwd.x == 0.0 )
 	{
-		yaw = 0;
-		if( vFwd.z > 0 )
-			pitch = 270;
+		yaw = 0.0;
+		if( vFwd.z > 0.0 )
+			pitch = 270.0;
 		else
-			pitch = 90;
+			pitch = 90.0;
 	}
 	else
 	{
 		yaw = ::RAD2DEG*::atan2(vFwd.y, vFwd.x);
-		if( yaw < 0 )
-			yaw += 360;
+		if( yaw < 0.0 )
+			yaw += 360.0;
 
 		tmp = ::sqrt(vFwd.x*vFwd.x + vFwd.y*vFwd.y);
 		pitch = ::RAD2DEG*::atan2(-vFwd.z, tmp);
-		if( pitch < 0 )
-			pitch += 360;
+		if( pitch < 0.0 )
+			pitch += 360.0;
 	};
 
-	return::Vector(pitch,yaw,0);
+	return::Vector(pitch,yaw,0.0);
 }
 
 //-----------------------------------------------------------------------
@@ -204,27 +204,27 @@ function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC )
 function VS::YawToVector( yaw )
 {
 	local ang = ::DEG2RAD*yaw;
-	return::Vector( ::cos(ang), ::sin(ang), 0 );
+	return::Vector(::cos(ang), ::sin(ang), 0.0);
 }
 
 function VS::VecToYaw( vec )
 {
-	if( vec.y == 0 && vec.x == 0 )
-		return 0;
+	if( vec.y == 0.0 && vec.x == 0.0 )
+		return 0.0;
 
 	local yaw = ::RAD2DEG*::atan2(vec.y, vec.x);
 
-	if( yaw < 0 )
-		yaw += 360;
+	if( yaw < 0.0 )
+		yaw += 360.0;
 
 	return yaw;
 }
 
 function VS::VecToPitch( vec )
 {
-	if( vec.y == 0 && vec.x == 0 )
+	if( vec.y == 0.0 && vec.x == 0.0 )
 	{
-		if( vec.z < 0 )
+		if( vec.z < 0.0 )
 			return 180.0;
 		else
 			return -180.0;
@@ -235,7 +235,7 @@ function VS::VecToPitch( vec )
 
 function VS::VectorIsZero(v)
 {
-	return v.x == v.y && v.y == v.z && v.z == 0;
+	return v.x == v.y && v.y == v.z && v.z == 0.0;
 }
 
 //-----------------------------------------------------------------------
@@ -308,10 +308,10 @@ function VS::AngleNormalize( angle )
 {
 	angle %= 360.0;
 
-	if( angle > 180 )
-		angle -= 360;
-	else if( angle < (-180) )
-		angle += 360;;
+	if( angle > 180.0 )
+		angle -= 360.0;
+	else if( angle < (-180.0) )
+		angle += 360.0;;
 
 	return angle;
 }
@@ -331,40 +331,40 @@ function VS::QAngleNormalize( vAng )
 //-----------------------------------------------------------------------------
 function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 )
 {
-	local proj = 1 - epsilon;
+	local proj = 1.0 - epsilon;
 
 	if( ::fabs(v.x) > proj )
 	{
-		if( vDirection.x < 0 )
+		if( vDirection.x < 0.0 )
 			vDirection.x = -1.0;
 		else
 			vDirection.x = 1.0;
-		vDirection.y = 0;
-		vDirection.z = 0;
+		vDirection.y = 0.0;
+		vDirection.z = 0.0;
 
 		return vDirection;
 	};
 
 	if( ::fabs(v.y) > proj )
 	{
-		if( vDirection.y < 0 )
+		if( vDirection.y < 0.0 )
 			vDirection.y = -1.0;
 		else
 			vDirection.y = 1.0;
-		vDirection.z = 0;
-		vDirection.x = 0;
+		vDirection.z = 0.0;
+		vDirection.x = 0.0;
 
 		return vDirection;
 	};
 
 	if( ::fabs(v.z) > proj )
 	{
-		if( vDirection.z < 0 )
+		if( vDirection.z < 0.0 )
 			vDirection.z = -1.0;
 		else
 			vDirection.z = 1.0;
-		vDirection.x = 0;
-		vDirection.y = 0;
+		vDirection.x = 0.0;
+		vDirection.y = 0.0;
 
 		return vDirection;
 	};
@@ -589,7 +589,7 @@ function VS::SimpleSpline( value )
 	local valueSquared = value * value;
 
 	// Nice little ease-in, ease-out spline-like curve
-	return ( 3 * valueSquared - 2 * valueSquared * value );
+	return ( 3.0 * valueSquared - 2.0 * valueSquared * value );
 }
 
 // remaps a value in [startInterval, startInterval+rangeInterval] from linear to
@@ -662,8 +662,8 @@ function VS::RemapValClamped( val, A, B, C, D )
 //
 function VS::Bias( x, biasAmt )
 {
-	local lastAmt = -1,
-	      lastExponent = 0;
+	local lastAmt = -1.0,
+	      lastExponent = 0.0;
 	if( lastAmt != biasAmt )
 		lastExponent = ::log(biasAmt) * -1.4427; // (-1.4427 = 1 / log(0.5))
 	return::pow(x, lastExponent);
@@ -703,9 +703,9 @@ function VS::Bias( x, biasAmt )
 function VS::Gain( x, biasAmt )
 {
 	if( x < 0.5 )
-		return 0.5 * Bias( 2*x, 1-biasAmt );
+		return 0.5 * Bias( 2.0*x, 1.0-biasAmt );
 	else
-		return 1 - 0.5 * Bias( 2 - 2*x, 1-biasAmt );
+		return 1.0 - 0.5 * Bias( 2.0 - 2.0*x, 1.0-biasAmt );
 }
 
 //
@@ -728,7 +728,7 @@ function VS::Gain( x, biasAmt )
 //
 function VS::SmoothCurve( x )
 {
-	return (1 - ::cos(x * ::PI)) * 0.5;
+	return (1.0 - ::cos(x * ::PI)) * 0.5;
 }
 
 function VS::MovePeak( x, flPeakPos )
@@ -736,7 +736,7 @@ function VS::MovePeak( x, flPeakPos )
 	if( x < flPeakPos )
 		return x * 0.5 / flPeakPos;
 	else
-		return 0.5 + 0.5 * (x - flPeakPos) / (1 - flPeakPos);
+		return 0.5 + 0.5 * (x - flPeakPos) / (1.0 - flPeakPos);
 }
 
 // This works like SmoothCurve, with two changes:

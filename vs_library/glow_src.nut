@@ -9,6 +9,8 @@
 //    Glow.Set(player, "255 138 0", 1, 2048)
 //    Glow.Disable(player)
 //
+//    Glow.DEBUG = true
+//
 //-----------------------------------------------------------------------
 
 if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow))
@@ -33,10 +35,12 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 
 			if(glow)
 			{
-				::print("Glow::Set: Found linked glow, updating.\n");
+				if(DEBUG)::print("Glow::Set: Updating glow ["+src.entindex()+"]\n");
 			}
 			else
 			{
+				if(DEBUG)::print("Glow::Set: Setting glow ["+src.entindex()+"]\n");
+
 				foreach( e in _list ) if( e.IsValid() )
 				{
 					local p = e.GetMoveParent();
@@ -91,10 +95,12 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 				::VS.SetKeyInt(glow, "effects", EF_DEFAULT|EF_NODRAW);
 				::VS.SetParent(glow, null);
 				::EntFireByHandle(glow,"setglowdisabled");
+
+				if(DEBUG)::print("Glow::Disable: Disabled glow ["+src.entindex()+"]\n");
 			}
 			else
 			{
-				::print("Glow::Disable: No glow found.\n");
+				if(DEBUG)::print("Glow::Disable: No glow found ["+src.entindex()+"]\n");
 			};
 
 			return glow;
@@ -131,6 +137,7 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 		//	} while( i.NextMovePeer() )
 		}
 
+		DEBUG = false,
 		EF_DEFAULT = (1<<0|1<<11)|1<<14,
 		EF_NODRAW = 1<<5,
 		_list = []
