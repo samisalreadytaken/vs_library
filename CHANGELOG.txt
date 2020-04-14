@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2020-04-14
+- glow.nut: Removed IsPointSized check
+
 2020-04-10 [v2.35.2]
 - Edge case fix on events
 - ENT_SCRIPT is no longer chosen as an already existing logic_script entity.

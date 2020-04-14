@@ -71,7 +71,8 @@ local _v0 = function()
 	}
 	else
 	{
-		(::ENT_SCRIPT<-::VS.CreateEntity("soundent","vs.script")).ValidateScriptScope();
+		(::ENT_SCRIPT<-::VS.CreateEntity("soundent")).ValidateScriptScope();
+		::VS._ENT_SCRIPT <- ::ENT_SCRIPT;
 		::print("ERROR: Could not find worldspawn\n");
 	};
 

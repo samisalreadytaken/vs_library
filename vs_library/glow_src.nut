@@ -114,7 +114,7 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 		//-----------------------------------------------------------------------
 		function Get(src)
 		{
-			if( ::VS.IsPointSized(src) || !src.GetModelName().len() )
+			if( !src.GetModelName().len() )
 				throw "Glow: Invalid source entity";
 
 			foreach( i,p in _list ) if( p.IsValid() )
