@@ -288,8 +288,6 @@ Included in `vs_library.nut`
 [`VS.CreateTimer()`](#f_CreateTimer)  
 [`VS.Timer()`](#f_Timer)  
 [`VS.OnTimer()`](#f_OnTimer)  
-[`VS.OnTimerHigh()`](#f_OnTimerHigh)  
-[`VS.OnTimerLow()`](#f_OnTimerLow)  
 [`VS.AddOutput()`](#f_AddOutput)  
 [`VS.AddOutput2()`](#f_AddOutput2)  
 [`VS.CreateEntity()`](#f_CreateEntity)  
@@ -1951,7 +1949,7 @@ ________________________________
 
 <a name="f_OnTimer"></a>
 ```cpp
-void VS::OnTimer(handle ent, TYPE func, table scope = null, bool bExecInEnt = false)
+table VS::OnTimer(handle ent, TYPE func, table scope = null, bool bExecInEnt = false)
 ```
 Add OnTimer output to the timer entity to execute the input function
 
@@ -1960,35 +1958,23 @@ Add OnTimer output to the timer entity to execute the input function
 `VS.OnTimer( hTimer, MyFunc )`
 ________________________________
 
-<a name="f_OnTimerHigh"></a>
-```cpp
-void VS::OnTimerHigh(handle ent, TYPE func, table scope = null, bool bExecInEnt = false)
-```
-`TYPE`: `string` OR `function`
-________________________________
-
-<a name="f_OnTimerLow"></a>
-```cpp
-void VS::OnTimerLow(handle ent, TYPE func, table scope = null, bool bExecInEnt = false)
-```
-`TYPE`: `string` OR `function`
-________________________________
-
 <a name="f_AddOutput"></a>
 ```cpp
-void VS::AddOutput(handle ent, char output, TYPE func, table scope = null, bool bExecInEnt = false)
+table VS::AddOutput(handle ent, char output, TYPE func, table scope = null, bool bExecInEnt = false)
 ```
 Adds output in the chosen entity  
-Executes the given function in the given scope
+Executes the given function in the given scope  
+Accepts function parameters
 
-Does not support function parameters, use `AddOutput2` for parameters
+Returns entity scope
 
 `TYPE`: `string` OR `function`
 
 <details><summary>Example</summary>
 
-`VS.AddOutput( hTimer, "OnTimer", MyFunction )`  
-`VS.AddOutput( hTimer, "OnTimer", "MyFunction" )`
+`VS.AddOutput( hButton, "OnPressed", MyFunction )`  
+`VS.AddOutput( hButton, "OnPressed", "MyFunction" )`  
+`VS.AddOutput( hButton, "OnPressed", "MyFunction(1)" )`
 
 `bExecInEnt`: execute the function that is in `scope`, in the scope of `ent`
 
@@ -2021,25 +2007,8 @@ ________________________________
 
 <a name="f_AddOutput2"></a>
 ```cpp
-void VS::AddOutput2(handle ent, char output, TYPE exec, table scope = null, bool bExecInEnt = false)
+void VS::AddOutput2(handle ent, char output, string exec, table scope = null, bool bExecInEnt = false)
 ```
-Add output to execute `exec`
-
-Use this over `AddOutput` to add outputs with parameters
-
-`TYPE`: `string` OR `function`
-
-function input will redirect to `AddOutput`
-
-<details><summary>Example</summary>
-
-`VS.AddOutput2( hTimer, "OnTimer",  "printl(self)", null,true )`  
-`VS.AddOutput2( hButton,"OnPressed","SomeFunc(2,5)",null,true )`
-
-caller is the output owner  
-activator is the script owner
-
-</details>
 
 ________________________________
 
@@ -2052,35 +2021,35 @@ ________________________________
 
 <a name="f_SetKey"></a>
 ```cpp
-void VS::SetKey(handle ent, char key, TYPE val)
+bool VS::SetKey(handle ent, char key, TYPE val)
 ```
 Useful for when the value type is unknown
 ________________________________
 
 <a name="f_SetKeyInt"></a>
 ```cpp
-void VS::SetKeyInt(handle ent, char key, int val)
+bool VS::SetKeyInt(handle ent, char key, int val)
 ```
 
 ________________________________
 
 <a name="f_SetKeyFloat"></a>
 ```cpp
-void VS::SetKeyFloat(handle ent, char key, float val)
+bool VS::SetKeyFloat(handle ent, char key, float val)
 ```
 
 ________________________________
 
 <a name="f_SetKeyString"></a>
 ```cpp
-void VS::SetKeyString(handle ent, char key, char val)
+bool VS::SetKeyString(handle ent, char key, char val)
 ```
 
 ________________________________
 
 <a name="f_SetKeyVector"></a>
 ```cpp
-void VS::SetKeyVector(handle ent, char key, Vector val)
+bool VS::SetKeyVector(handle ent, char key, Vector val)
 ```
 
 ________________________________

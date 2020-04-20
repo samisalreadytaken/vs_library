@@ -5,7 +5,7 @@ High-performance, powerful vscript libraries; written mainly for CSGO.
 
 It is advised to always use the latest version.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.35.2-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.35.3-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation
@@ -108,7 +108,7 @@ ________________________________
 
 ## See also
 * [**vscripts repository**][vscripts]: Some of my projects using this library
-* [**YouTube channel**][youtube]: Related videos and tutorials
+* [**YouTube channel**][youtube]
 * [**Notepad++ syntax highlighter**][npp]
 
 [vscripts]: https://github.com/samisalreadytaken/vscripts

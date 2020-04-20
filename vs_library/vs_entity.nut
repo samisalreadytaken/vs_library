@@ -59,6 +59,23 @@ function VS::CreateGameText( targetname = null, kv = null )
 	return CreateEntity("game_text", targetname?targetname.tostring():null, kv);
 }
 
+//function VS::CreateWorldText( msg, cl, size, ori, ang, perm = false )
+//{
+//	local e = CreateEntity("point_worldtext",null,
+//	{
+//		spawnflags = 0,
+//		origin = ori,
+//		angles = ang,
+//		message = msg,
+//		textsize = size,
+//		color = cl
+//	});
+//
+//	if(perm) MakePermanent(e);
+//
+//	return e;
+//}
+
 //-----------------------------------------------------------------------
 // Create and return an env_hudhint entity
 //
@@ -196,52 +213,51 @@ function VS::OnTimer( hEnt, Func, tScope = null, bExecInEnt = false )
 	return AddOutput( hEnt, "OnTimer", Func, tScope ? tScope : GetCaller(), bExecInEnt );
 }
 
-function VS::OnTimerHigh( hEnt, Func, tScope = null, bExecInEnt = false )
-{
-	return AddOutput( hEnt, "OnTimerHigh", Func, tScope ? tScope : GetCaller(), bExecInEnt );
-}
-
-function VS::OnTimerLow( hEnt, Func, tScope = null, bExecInEnt = false )
-{
-	return AddOutput( hEnt, "OnTimerLow", Func, tScope ? tScope : GetCaller(), bExecInEnt );
-}
-
 //-----------------------------------------------------------------------
 // Adds output in the chosen entity
 // Executes the given function in the given scope
+// Accepts function parameters
 //
 // Input  : handle [ entity ]
 //          string [ output ]
 //          string OR closure [ function ]
 //          table [ scope ] // null === this
 //          bool [ bool ] // execute the function in the scope of hEnt
+// Output : table [ent scope]
 //-----------------------------------------------------------------------
 function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 {
-	if( !hEnt.ValidateScriptScope() ) throw "Invalid entity";
-
 	if( !tScope ) tScope = GetCaller();
 
 	if( typeof Func == "string" )
-		Func = tScope[Func];
+	{
+		if( Func.find("(") != null )
+			Func = ::compilestring(Func);
+		else
+			Func = tScope[Func];
+	}
 	else if( typeof Func != "function" )
 		throw "Invalid function type " + typeof Func;;
 
-	hEnt.GetScriptScope()[sOutput] <- bExecInEnt ? Func : Func.bindenv(tScope);
+	hEnt.ValidateScriptScope();
+
+	local r = hEnt.GetScriptScope();
+
+	r[sOutput] <- bExecInEnt ? Func : Func.bindenv(tScope);
 
 	hEnt.ConnectOutput(sOutput, sOutput);
 
 	// print("** Adding output '" + sOutput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetTableName(tScope)) + ".'\n");
+
+	return r;
 }
 
-//-----------------------------------------------------------------------
-// Use to add outputs with parameters
-//
-// caller is the output owner
-// activator is the script owner
-//-----------------------------------------------------------------------
+// This could still be useful, but only in very specific scenarios
 function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 {
+	if( hEnt.GetScriptScope() )
+		return AddOutput( hEnt, sOutput, Func, tScope, bExecInEnt );
+
 	if( typeof Func == "function" )
 		return AddOutput( hEnt, sOutput, Func, tScope, bExecInEnt );
 
@@ -257,7 +273,7 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 			throw "Invalid function path. Not an entity";
 		};
 
-		::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+tScope.self.GetName()+":runscriptcode:"+Func,0.0,tScope.self,hEnt );
+		::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+tScope.self.GetName()+",runscriptcode,"+Func,0.0,tScope.self,hEnt );
 	}
 	else
 	{
@@ -268,9 +284,10 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 			SetName(hEnt, name);
 		};
 
-		::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+name+":runscriptcode:"+Func,0.0,null,hEnt );
+		::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+name+",runscriptcode,"+Func,0.0,null,hEnt );
 	};
 }
+
 /*
 function VS::AddInput( hEnt, sInput, Func, tScope = null, bExecInEnt = false )
 {
@@ -332,16 +349,16 @@ function VS::SetKey( ent, key, val )
 }
 
 function VS::SetKeyInt( ent, key, val )
-{ ent.__KeyValueFromInt( key, val ) }
+{ return ent.__KeyValueFromInt( key, val ) }
 
 function VS::SetKeyFloat( ent, key, val )
-{ ent.__KeyValueFromFloat( key, val ) }
+{ return ent.__KeyValueFromFloat( key, val ) }
 
 function VS::SetKeyString( ent, key, val )
-{ ent.__KeyValueFromString( key, val ) }
+{ return ent.__KeyValueFromString( key, val ) }
 
 function VS::SetKeyVector( ent, key, val )
-{ ent.__KeyValueFromVector( key, val ) }
+{ return ent.__KeyValueFromVector( key, val ) }
 
 // Set targetname
 function VS::SetName( ent, name )
