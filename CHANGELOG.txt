@@ -3,6 +3,20 @@
 
 --------------------------------
 
+2020-04-25 [v2.36.0]
+- CreateEntity:
+  - Removed the targetname parameter; it should be handled in the KV table
+  - Added a 'make permanent' parameter
+- Added 'make permanent' parameters on Timer and CreateTimer
+- Removed CreateGameText and CreateHudHint. They can be replaced with:
+    VS.CreateEntity("game_text",{})
+    VS.CreateEntity("env_hudhint",{message = "initial msg"})
+- Added ShowGameText, works the same as ShowHudHint (set msg, display)
+- Passing SetKey a null value now skips that key
+- Improved GetCaller and GetCallerFunc
+- Removed SetAngles
+- Removed traces of previously removed functions (IsLengthGreaterThan, IsLengthLessThan).
+
 2020-04-20 [v2.35.3]
 - AddOutput now accepts function parameters using a more efficient method than AddOutput2
 - Removed OnTimerHigh and OnTimerLow
@@ -15,7 +29,7 @@
 2020-04-10 [v2.35.2]
 - Edge case fix on events
 - ENT_SCRIPT is no longer chosen as an already existing logic_script entity.
-  This gives the user more control, and fixes some issues.
+    This gives the user more control, and fixes some issues.
 - Changed VS.FormatWidth parameters to be consistent with the other format functions.
 - Removed default parameter values on the format functions.
 - Minor improvements

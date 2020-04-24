@@ -124,10 +124,20 @@ function VS::Events::ForceValidateUserid(ent)
 
 function VS::Events::player_info(data)
 {
-	_SV.userid <- data.userid;
+	if(_SV)
+	{
+		_SV.userid <- data.userid;
 
-	if( !("name" in _SV) )
-		_SV.name <- "";
-	if( !("networkid" in _SV) )
-		_SV.networkid <- "";
+		if( !("name" in _SV) )
+			_SV.name <- "";
+		if( !("networkid" in _SV) )
+			_SV.networkid <- "";
+
+		_SV = null;
+	};
+
+	return::OnGameEvent_player_info(data);
 }
+
+if( !("OnGameEvent_player_info" in::getroottable()) )
+	::OnGameEvent_player_info <- ::dummy;;

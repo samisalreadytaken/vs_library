@@ -13,8 +13,8 @@
 	DebugDrawBox( vecOri, vecMins, vecMaxs, R, G, B, A, time )
 */
 
-::Ent  <- function( s, i = null ){ return Entities.FindByName(i,s); }
-::Entc <- function( s, i = null ){ return Entities.FindByClassname(i,s); }
+::Ent  <- function( s, i = null ){ return::Entities.FindByName(i,s); }
+::Entc <- function( s, i = null ){ return::Entities.FindByClassname(i,s); }
 
 //-----------------------------------------------------------------------
 // Input  : int / float
@@ -44,12 +44,6 @@ function VS::FormatWidth(i, n, s = " ") { return::format("%"+s+""+n+"s",i.tostri
 ::VecToString <- function( vec, prefix = "Vector(", separator = ",", suffix = ")" )
 {
 	return prefix + vec.x + separator + vec.y + separator + vec.z + suffix;
-}
-
-// input QAngle
-function VS::SetAngles( hEnt, vAng )
-{
-	hEnt.SetAngles( vAng.x, vAng.y, vAng.z );
 }
 
 //-----------------------------------------------------------------------
@@ -205,14 +199,14 @@ class::VS.TraceLine
 
 //-----------------------------------------------------------------------
 // Set 'f' to limit the max distance
-// Input  : vector [ start pos ]
-//          vector [ normalised direction ]
+// Input  : Vector [ start pos ]
+//          Vector [ normalised direction ]
 //          handle [ to ignore ]
 // Output : instance [ VS.TraceLine ]
 //-----------------------------------------------------------------------
-function VS::TraceDir( v1, vDir, f = 6144.0, hEnt = null )
+function VS::TraceDir( v1, vDir, f = ::MAX_TRACE_LENGTH, hEnt = null )
 {
-	return TraceLine( v1, v1 + ( vDir * ( f ? f : ::MAX_TRACE_LENGTH ) ), hEnt );
+	return TraceLine( v1, v1 + (vDir * f), hEnt );
 }
 
 //-----------------------------------------------------------------------
@@ -386,17 +380,11 @@ function VS::GetStackInfo( deepprint = false, printall = false )
 	::print(" --- STACKINFO ----------------\n");
 }
 
-// (DEBUG) return caller function as string
-function VS::GetCallerFunc()
-{
-	return::compilestring("return(getstackinfos(3)[\"func\"])")();
-}
-
 // return caller table
-function VS::GetCaller()
-{
-	return::compilestring("return(getstackinfos(3)[\"locals\"][\"this\"])")();
-}
+VS.GetCaller <- ::compilestring("return(getstackinfos(3)[\"locals\"][\"this\"])");
+
+// (DEBUG) return caller function as string
+VS.GetCallerFunc <- ::compilestring("return(getstackinfos(3)[\"func\"])");
 
 // dump function infos
 function VS::GetInfo( func )
@@ -466,13 +454,13 @@ function VS::GetTickrate()
 //
 // You can use activators and callers to easily access entity handles
 //-----------------------------------------------------------------------
-::delay     <- function( X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null ){DoEntFireByInstanceHandle( E, "runscriptcode", ""+X, T, A, C );}
+::delay     <- function( X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null )::DoEntFireByInstanceHandle( E, "runscriptcode", ""+X, T, A, C );
 
-::Chat      <- function(s){ScriptPrintMessageChatAll(" "+s);}
-::ChatTeam  <- function(i,s){ScriptPrintMessageChatTeam(i," "+s);}
+::Chat      <- function(s)::ScriptPrintMessageChatAll(" "+s);
+::ChatTeam  <- function(i,s)::ScriptPrintMessageChatTeam(i," "+s);
 ::Alert     <- ::ScriptPrintMessageCenterAll;
 ::AlertTeam <- ::ScriptPrintMessageCenterTeam;
-::ClearChat <- function(){ for( local i = 0; i < 9; ++i ) Chat(""); }
+::ClearChat <- function(){ for( local i = 0; i < 9; ++i ) ::Chat(""); }
 
 ::txt <-
 {

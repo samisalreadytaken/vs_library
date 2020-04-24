@@ -144,8 +144,8 @@ ________________________________
 | Variable       | Creation                          | Description                                           |
 | -------------- | --------------------------------- | ----------------------------------------------------- |
 | `HPlayer`      | `VS.GetLocalPlayer()`             | Local player in the server                            |
-| `HPlayerEye`   | `VS.CreateMeasure("player")`      | Buffer to get player eye angles                       |
-| `hHudHint`     | `VS.CreateHudHint()`              | Hud hint, show messages to the player                 |
+| `HPlayerEye`   | `VS.CreateMeasure(HPlayer.GetName())`      | Buffer to get player eye angles                       |
+| `hHudHint`     | `VS.CreateEntity("env_hudhint")`  | Hud hint, show messages to the player                 |
 | `Think()`      | `VS.Timer(0, FrameTime(), Think)` | A function that is executed every frame               |
 | `flFrameTime2` | `FrameTime() * 2`                 | Used in the Think function for displaying every frame |
 
@@ -242,7 +242,6 @@ Included in `vs_library.nut`
 [`VS.FormatHex()`](#f_FormatHex)  
 [`VS.FormatExp()`](#f_FormatExp)  
 [`VS.FormatWidth()`](#f_FormatWidth)  
-[`VS.SetAngles()`](#f_SetAngles)  
 [`VS.DrawEntityBBox()`](#f_DrawEntityBBox)  
 [`VS.TraceLine`](#f_TraceLine)  
 [`VS.TraceLine.DidHit()`](#f_DidHit)  
@@ -279,8 +278,7 @@ Included in `vs_library.nut`
 [`PrecacheScriptSound()`](#f_PrecacheScriptSound)  
 [`VS.MakePermanent()`](#f_MakePermanent)  
 [`VS.SetParent()`](#f_SetParent)  
-[`VS.CreateGameText()`](#f_CreateGameText)  
-[`VS.CreateHudHint()`](#f_CreateHudHint)  
+[`VS.ShowGameText()`](#f_ShowGameText)  
 [`VS.ShowHudHint()`](#f_ShowHudHint)  
 [`VS.HideHudHint()`](#f_HideHudHint)  
 [`VS.CreateMeasure()`](#f_CreateMeasure)  
@@ -306,7 +304,6 @@ Included in `vs_library.nut`
 [`VS.FindEntityByIndex()`](#f_FindEntityByIndex)  
 [`VS.FindEntityByString()`](#f_FindEntityByString)  
 [`VS.IsPointSized()`](#f_IsPointSized)  
-[`VS.FindEntityGeneric()`](#f_FindEntityGeneric)  
 [`VS.FindEntityClassNearestFacing()`](#f_FindEntityClassNearestFacing)  
 [`VS.FindEntityNearestFacing()`](#f_FindEntityNearestFacing)  
 [`VS.FindEntityClassNearestFacingNearest()`](#f_FindEntityClassNearestFacingNearest)  
@@ -1324,13 +1321,6 @@ printl(res3)
 
 ________________________________
 
-<a name="f_SetAngles"></a>
-```cpp
-void VS::SetAngles(handle ent, QAngle ang)
-```
-`ent.SetAngles(ang.x,ang.y,ang.z)`
-________________________________
-
 <a name="f_DrawEntityBBox"></a>
 ```cpp
 void VS::DrawEntityBBox(float time, handle ent, int r = 255, int g = 138, int b = 0, int alpha = 0)
@@ -1429,6 +1419,8 @@ Get surface normal
 
 This computes 2 extra traces
 
+Calling this will save the normal in `normal`, calling it again will not recompute.
+
 <details><summary>Example</summary>
 
 Draw the normal of a surface the player is looking at
@@ -1457,9 +1449,8 @@ ________________________________
 
 <a name="f_TraceDir"></a>
 ```cpp
-trace_t VS::TraceDir(Vector start, Vector direction, float maxdist = 6144, handle ignore = null)
+trace_t VS::TraceDir(Vector start, Vector direction, float maxdist = MAX_TRACE_LENGTH, handle ignore = null)
 ```
-if maxdist is `0`, maxdist is `MAX_TRACE_LENGTH`
 
 <details><summary>Example</summary>
 
@@ -1524,16 +1515,16 @@ printl( VS.arrayFind(arr, "x") ? "true" : "false" )
 // Check if "a" is in array
 // index (0) is in array
 // true
-printl( VS.arrayFind(arr, "a") != null ? "true" : "false" )
-
-// Check if "a" is NOT in array
-// index (0) is in array
-// false
-printl( VS.arrayFind(arr, "a") == null ? "true" : "false" )
-
-// Check if "x" is NOT in array
-// true
-printl( VS.arrayFind(arr, "x") == null ? "true" : "false" )
+printl( VS.arrayFind(arr, "a") != null )
+                                       
+// Check if "a" is NOT in array        
+// index (0) is in array               
+// false                               
+printl( VS.arrayFind(arr, "a") == null )
+                                       
+// Check if "x" is NOT in array        
+// true                                
+printl( VS.arrayFind(arr, "x") == null )
 
 ```
 
@@ -1782,46 +1773,13 @@ Set child's parent
 if parent == null, unparent child
 ________________________________
 
-<a name="f_CreateGameText"></a>
+<a name="f_ShowGameText"></a>
 ```cpp
-handle VS::CreateGameText(char targetname = null, table keyvalues = null)
+void VS::ShowGameText(handle ent, handle target, char msg = null, float delay = 0.0)
 ```
-Create and return a game_text entity with the input keyvalues
+Show gametext
 
-<details><summary>More</summary>
-
-```cs
-local gametext = VS.CreateGameText(null,{
-	// channel = 1,
-	// color = "100 100 100",
-	// color2 = "240 110 0",
-	// effect = 0,
-	// fadein = 1.5,
-	// fadeout = 0.5,
-	// fxtime = 0.25,
-	// holdtime = 1.2,
-	// x = -1,
-	// y = -1,
-	// spawnflags = 0,
-	// message = ""
-})
-```
-Change the message using one of two methods:  
-`VS.SetKeyString( gametext, "message", "<your message>" )`  
-`EntFireByHandle( gametext, "SetText", "<your message>" )`
-
-Display it to hPlayer:  
-`EntFireByHandle( gametext, "display", "", 0, hPlayer )`
-
-</details>
-
-________________________________
-
-<a name="f_CreateHudHint"></a>
-```cpp
-handle VS::CreateHudHint(char targetname = null, char msg = "")
-```
-Create and return an env_hudhint entity
+if ent == handle, set msg
 ________________________________
 
 <a name="f_ShowHudHint"></a>
@@ -1889,7 +1847,7 @@ EntFireByHandle( hPlayerEye, "disable" )
 
 <details><summary>Details</summary>
 
-This function creates an entity to measure player eye angles `logic_measure_movement : vs_ref_*`.
+This function creates an entity to measure player eye angles `logic_measure_movement : vs.ref_*`.
 
 `"refname"` in the example above refers to the reference entity's targetname.
 
@@ -1928,7 +1886,7 @@ ________________________________
 
 <a name="f_CreateTimer"></a>
 ```cpp
-handle VS::CreateTimer(char targetname = null, float refire = 1, float lower = 1, float upper = 5, bool oscillator = 0, bool disabled = 1)
+handle VS::CreateTimer(char targetname = null, float refire = 1, float lower = null, float upper = null, bool oscillator = 0, bool disabled = true, bool perm = false)
 ```
 Create and return a logic_timer entity
 
@@ -1937,7 +1895,7 @@ ________________________________
 
 <a name="f_Timer"></a>
 ```cpp
-handle VS::Timer(bool bDisabled, float refire, TYPE func, table scope = null, bool bExecInEnt = false)
+handle VS::Timer(bool bDisabled, float refire, TYPE func, table scope = null, bool bExecInEnt = false, bool perm = false)
 ```
 Create and return a timer that executes func
 
@@ -2007,16 +1965,57 @@ ________________________________
 
 <a name="f_AddOutput2"></a>
 ```cpp
-void VS::AddOutput2(handle ent, char output, string exec, table scope = null, bool bExecInEnt = false)
+void VS::AddOutput2(handle ent, char output, char exec, table scope = null, bool bExecInEnt = false)
 ```
 
 ________________________________
 
 <a name="f_CreateEntity"></a>
 ```cpp
-handle VS::CreateEntity(char classname, char targetname = null, table keyvalues = null)
+handle VS::CreateEntity(char classname, table keyvalues = null, bool perm = false)
 ```
 CreateByClassname, set keyvalues, return handle
+
+<details><summary><code>game_text</code></summary>
+
+```cs
+	VS.CreateEntity("game_text", 
+	{
+//		channel = 1,
+//		color = "100 100 100",
+//		color2 = "240 110 0",
+//		effect = 0,
+//		fadein = 1.5,
+//		fadeout = 0.5,
+//		fxtime = 0.25,
+//		holdtime = 1.2,
+//		x = -1,
+//		y = -1,
+//		spawnflags = 0,
+//		message = ""
+	});
+```
+
+</details>
+
+<details><summary><code>point_worldtext</code></summary>
+
+If changing the text from script, create in script (and make perm); else if text is static, doesn't matter
+
+```cs
+	VS.CreateEntity("point_worldtext", 
+	{
+//		spawnflags = 0,
+//		origin = Vector(),
+//		angles = Vector(),
+//		message = "msg",
+//		textsize = 10,
+//		color = Vector(255,255,255)
+	});
+```
+
+</details>
+
 ________________________________
 
 <a name="f_SetKey"></a>
@@ -2030,35 +2029,35 @@ ________________________________
 ```cpp
 bool VS::SetKeyInt(handle ent, char key, int val)
 ```
-
+`KeyValueFromInt`
 ________________________________
 
 <a name="f_SetKeyFloat"></a>
 ```cpp
 bool VS::SetKeyFloat(handle ent, char key, float val)
 ```
-
+`KeyValueFromFloat`
 ________________________________
 
 <a name="f_SetKeyString"></a>
 ```cpp
 bool VS::SetKeyString(handle ent, char key, char val)
 ```
-
+`KeyValueFromString`
 ________________________________
 
 <a name="f_SetKeyVector"></a>
 ```cpp
 bool VS::SetKeyVector(handle ent, char key, Vector val)
 ```
-
+`KeyValueFromVector`
 ________________________________
 
 <a name="f_SetName"></a>
 ```cpp
 void VS::SetName(handle ent, char name)
 ```
-
+Set targetname
 ________________________________
 
 <a name="f_DumpEnt"></a>
@@ -2173,13 +2172,6 @@ ________________________________
 bool VS::IsPointSized(handle ent)
 ```
 
-________________________________
-
-<a name="f_FindEntityGeneric"></a>
-```cpp
-handle VS::FindEntityGeneric(handle hStartEntity, char sName)
-```
-if no entity with input targetname is found, look for classname
 ________________________________
 
 <a name="f_FindEntityClassNearestFacing"></a>
