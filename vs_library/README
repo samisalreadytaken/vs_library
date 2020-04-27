@@ -1,17 +1,17 @@
 vs_library source files
 
 Base (vs_library.nut):
-    vs_resources.nut
-    vs_math.nut
-    vs_utility.nut
-    vs_entity.nut
-    vs_events.nut
-    vs_log.nut
+	vs_resources.nut
+	vs_math.nut
+	vs_utility.nut
+	vs_entity.nut
+	vs_events.nut
+	vs_log.nut
 
 Additional:
-    vs_math2.nut
-    vs_collision.nut
-    vs_interp.nut
-    flags.nut
-    base64.nut
-    glow.nut (glow_src.nut)
+	vs_math2.nut
+	vs_collision.nut
+	vs_interp.nut
+	flags.nut
+	base64.nut
+	glow.nut (glow_src.nut)

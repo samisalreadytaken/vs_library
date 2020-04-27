@@ -124,17 +124,10 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 			}
 			else _list.remove(i);
 
-		// old algorithm, looks through children
-		// doesn't work when glow props are made permanent, because
-		// when entities are reset, movement hierarchies are also reset
-		//	local p, i = src.FirstMoveChild();
-		//	do
-		//	{
+		//	old (more expensive) algorithm: looks through children rather than parents
+		//	for( local i = src.FirstMoveChild(); i; i = i.NextMovePeer() )
 		//		foreach( e in _list ) if( e == i )
 		//			return i;
-		//		if( p == i ) break;
-		//		p = i;
-		//	} while( i.NextMovePeer() )
 		}
 
 		DEBUG = false,

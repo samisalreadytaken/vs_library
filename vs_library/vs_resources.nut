@@ -28,14 +28,14 @@ if("VS"in::getroottable()&&typeof::VS=="table"&&"_xa9b2dfB7ffe"in::getroottable(
 	slots_default = [],
 
 	Events = {},
-	Log = {
+	Log =
+	{
 		condition=false,
 		export=false,
 		filePrefix="vs.log",
 		L=[],
 		filter="VFLTR"
 	},
-	bF = [],
 	_reload = false
 }
 
@@ -44,6 +44,7 @@ VS.slots_valve.extend(VS.slots_root);
 VS.slots_default.extend(VS.slots_valve);
 VS.slots_default.extend(VS.slots_VS);
 
+// reduce a call on Msg
 if( ::print.getinfos().native )
 	::Msg <- ::print;;
 
@@ -57,17 +58,19 @@ if( ::EntFireByHandle.getinfos().native )
 ::DEG2RAD <- 0.01745329;  // 0.01745329251994329576
 ::RAD2DEG <- 57.29577951; // 57.29577951308232087679
 
+// array to store event data, user should never modify
 if( !("_xa9b2dfB7ffe" in getroottable()) ) ::_xa9b2dfB7ffe <- [];;
 
 if( !("OnGameEvent_player_spawn" in getroottable()) ) ::OnGameEvent_player_spawn <- ::dummy;;
 if( !("OnGameEvent_player_connect" in getroottable()) ) ::OnGameEvent_player_connect <- ::dummy;;
 
+// wrapped to call later because it uses some functions declared later
 local _v0 = function()
 {
 	if( ::ENT_SCRIPT <- ::Entc("worldspawn") )
 	{
 		::ENT_SCRIPT.ValidateScriptScope();
-		::VS.slots_default.append(::VS.GetTableName(::ENT_SCRIPT.GetScriptScope()));
+		::VS.slots_default.append(::VS.GetVarName(::ENT_SCRIPT.GetScriptScope()));
 	}
 	else
 	{
@@ -79,11 +82,10 @@ local _v0 = function()
 	::collectgarbage();
 }
 
-local _VEC = Vector();
-
-function VS::ForceReload(f=_f)
+function VS::ForceReload():(_f)
 {
 	_reload = true;
 	::print("Reloading vs_library...\n");
-	::DoIncludeScript(f,::getroottable());
+	::DoIncludeScript(_f,::getroottable());
+	::collectgarbage();
 }

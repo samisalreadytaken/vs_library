@@ -78,10 +78,10 @@ function VS::Events::player_spawn(data)
 
 			if( scope.networkid==d.networkid )
 			{
-				print("Duplicated data!\n");
+				::print("Duplicated data!\n");
 				::_xa9b2dfB7ffe.remove(i);
 			}
-			else print("Conflicting data!\n");
+			else::print("Conflicting data!\n");
 
 			break;
 		};
@@ -109,16 +109,22 @@ function VS::Events::player_spawn(data)
 // OnEventFired > player_info > RunScriptCode > VS.Events.player_info(event_data)
 function VS::Events::ForceValidateUserid(ent)
 {
-	if( !ent || !ent.IsValid() || ent.GetClassname() != "player" ) return;
+	if( !ent || !ent.IsValid() || ent.GetClassname() != "player" )
+		return::print("ForceValidateUserid: Invalid input.");
 
-	if( !(proxy <- ::Ent("vs_proxy_info")) && ::Entc("logic_eventlistener") )
+	if( !::Entc("logic_eventlistener") )
+		return::print("ForceValidateUserid: No eventlistener found.");
+
+	local proxy;
+
+	if( !(proxy = ::VS.FindEntityByIndex(nPrxIx)) )
 	{
-		proxy = ::VS.CreateEntity("info_game_event_proxy", "vs_proxy_info", {event_name = "player_info"});
-		::VS.MakePermanent(proxy);
+		proxy = ::VS.CreateEntity("info_game_event_proxy", {event_name = "player_info"}, true);
+		nPrxIx = proxy.entindex();
 	};
 
 	ent.ValidateScriptScope();
-	_SV <- ent.GetScriptScope();
+	_SV = ent.GetScriptScope();
 	::EntFireByHandle(proxy, "generategameevent", "", 0, ent);
 }
 
@@ -138,6 +144,9 @@ function VS::Events::player_info(data)
 
 	return::OnGameEvent_player_info(data);
 }
+
+::VS.Events._SV <- null;
+::VS.Events.nPrxIx <- null;
 
 if( !("OnGameEvent_player_info" in::getroottable()) )
 	::OnGameEvent_player_info <- ::dummy;;

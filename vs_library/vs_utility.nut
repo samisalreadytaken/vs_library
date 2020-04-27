@@ -7,12 +7,6 @@
 // See <README.md> or <LICENSE> for details.
 //-----------------------------------------------------------------------
 
-/*
-	DebugDrawLine( vec1, vec2, R, G, B, noDepthTest, time )
-
-	DebugDrawBox( vecOri, vecMins, vecMaxs, R, G, B, A, time )
-*/
-
 ::Ent  <- function( s, i = null ){ return::Entities.FindByName(i,s); }
 ::Entc <- function( s, i = null ){ return::Entities.FindByClassname(i,s); }
 
@@ -254,12 +248,11 @@ function VS::arrayMap( arr, func )
 
 	foreach( i, v in arr )
 		new[i] = func( v );
-
 	return new;
 }
 
 //-----------------------------------------------------------------------
-// < VS.DumpScope( input, 1, 1, 0, depth ) > is equivalent to < __DumpScope( depth, input ) >
+// < VS.DumpScope(input, 1, 1, 0, depth) > is equivalent to <__DumpScope(depth, input)>
 //
 // Input  : array/table [ array or table to dump ]
 //          bool [ print default keys ]
@@ -269,7 +262,7 @@ function VS::arrayMap( arr, func )
 //-----------------------------------------------------------------------
 function VS::DumpScope( table, printall = false, deepprint = true, guides = true, depth = 0 )
 {
-	local indent = function( count ){ for( local i = 0; i < count; ++i ) ::print("   ") }
+	local indent = function(count) for( local i = 0; i < count; ++i ) ::print("   ");
 	if( guides ) ::print(" ------------------------------\n");
 	if( table )
 	{
@@ -317,7 +310,7 @@ function VS::DumpScope( table, printall = false, deepprint = true, guides = true
 			};
 		}
 	}
-	else ::print("null");
+	else ::print("null\n");
 	if( guides ) ::print(" ------------------------------\n");
 }
 
@@ -370,11 +363,18 @@ function VS::GetStackInfo( deepprint = false, printall = false )
 		local w, m = s.locals;
 		if( "this" in m && typeof m["this"] == "table" )
 		{
-			w = GetTableName( m["this"] );
-			m[w] <- delete m["this"];
+			if(m["this"] == ::getroottable())
+			{
+				w = "roottable";
+			}
+			else
+			{
+				w = GetVarName(m["this"]);
+				m[w] <- delete m["this"];
+			};
 		};
-		if( w == "roottable" ) DumpScope( s, printall, 0, 0 );
-		else DumpScope( s, printall, deepprint, 0 );
+		if( w == "roottable" ) DumpScope(s, printall, 0, 0);
+		else DumpScope(s, printall, deepprint, 0);
 		if(w)::print("scope = \""+w+"\"\n");
 	}
 	::print(" --- STACKINFO ----------------\n");
@@ -386,57 +386,116 @@ VS.GetCaller <- ::compilestring("return(getstackinfos(3)[\"locals\"][\"this\"])"
 // (DEBUG) return caller function as string
 VS.GetCallerFunc <- ::compilestring("return(getstackinfos(3)[\"func\"])");
 
-// dump function infos
-function VS::GetInfo( func )
-{
-	DumpScope(func.getinfos());
-}
-
-//-----------------------------------------------------------------------
-// Get input table's name
-//
-// Input  : table [ unknown table ]
-// Output : string [ table name ]
-//-----------------------------------------------------------------------
-function VS::GetTableName( table )
-{if(typeof table!="table")throw("Invalid input type '"+(typeof table)+"' ; expected: 'table'");local r=_fb3k551r91t7(table);if(r)return r;return "roottable"}function VS::_fb3k551r91t7(t,l=::getroottable()){foreach(v,u in l)if(typeof u=="table")if(v!="VS"&&v!="Documentation")if(u!=t){local r=_fb3k551r91t7(t,u);if(r)return r}else return v}
-
 //-----------------------------------------------------------------------
 // Input  : table
 // Output : array containing the input's directory
 //-----------------------------------------------------------------------
-function VS::GetTableDir( table )
-{if(typeof table!="table")throw("Invalid input type '"+(typeof table)+"' ; expected: 'table'");bF.clear();local r=_f627f40d21a6(table);if(r)r.append("roottable");else r=["roottable"];r.reverse();return r}function VS::_f627f40d21a6(t,l=::getroottable()){foreach(v,u in l)if(typeof u=="table")if(v!="VS"&&v!="Documentation")if(u!=t){local r=_f627f40d21a6(t,u);if(r){bF.append(v);return r}}else{bF.append(v);return bF}}
+
+// implicit buffer used in recursion
+local bF = [];
+
+function VS::GetTableDir(table):(bF)
+{
+	if( typeof table != "table" )
+		throw "Invalid input type '" + typeof table + "' ; expected: 'table'";
+
+	bF.clear();
+
+	local r = _f627f40d21a6(table);
+	if(r) r.append("roottable");
+	else r = ["roottable"];
+	r.reverse();
+	return r
+}
+
+// exclusive recursion function
+function VS::_f627f40d21a6(t, l = ::getroottable()):(bF)
+{
+	foreach(v, u in l)
+		if(typeof u == "table")
+			if(v != "VS" && v != "Documentation")
+				if(u == t)
+				{
+					bF.append(v);
+					return bF;
+				}
+				else
+				{
+					local r = _f627f40d21a6(t, u);
+					if(r)
+					{
+						bF.append(v);
+						return r;
+					};
+				};;;
+}
 
 //-----------------------------------------------------------------------
-// Input  : string [ table ]
-// Output : table
+// Input  : string [variable]
+// Output : variable
 //-----------------------------------------------------------------------
-function VS::FindTableByName( str )
-{if(typeof str!="string")throw("Invalid input type '"+(typeof str)+"' ; expected: 'string'");local r=_fb3k55Ir91t7(str);if(r)return r;return::getroottable()}function VS::_fb3k55Ir91t7(t,l=::getroottable()){foreach(v,u in l)if(typeof u=="table")if(v!="VS"&&v!="Documentation")if(v!=t){local r=_fb3k55Ir91t7(t,u);if(r)return r}else return u}
+function VS::FindVarByName(S)
+{
+	if(typeof S != "string")
+		throw "Invalid input type '" + typeof S + "' ; expected: 'string'";
+
+	return _fb3k55Ir91t7(S);
+}
+
+// exclusive recursion function
+function VS::_fb3k55Ir91t7(t, l = ::getroottable())
+{
+	if(t in l)
+		return l[t];
+	else
+		foreach(v, u in l)
+			if(typeof u == "table")
+				if(v != "VS" && v != "Documentation")
+				{
+					local r = _fb3k55Ir91t7(t, u);
+					if(r) return r;
+				};;;
+}
 
 //-----------------------------------------------------------------------
-// Used to get the variable names of parameters passed into functions
-//
-// For functions, use VS.GetFuncName()
-// For tables, use VS.GetTableName()
-//
 // Doesn't work with primitive variables if
 // there are multiple variables with the same value.
 // But it can work if the value is unique, like a unique string.
 //-----------------------------------------------------------------------
-function VS::GetVarName(v){local r=_fb3k5S1r91t7(typeof v,v);if(r)return r;return"null"}function VS::_fb3k5S1r91t7(t,i,s=::getroottable()){foreach(k,v in s){local y=typeof v;if(y==t){if(v==i)return k}else if(y=="table"){if(k!="VS"&&k!="Documentation"){local r=_fb3k5S1r91t7(t,i,v);if(r)return r}}}}
+function VS::GetVarName(v)
+{
+	local t = typeof v;
 
-function VS::GetFuncName(f){return f.getinfos().name;}
+	if( t == "function" || t == "native function" )
+		return v.getinfos().name;
 
-/*
-Frame times:
+	return _fb3k5S1r91t7(t, v);
+}
 
-64.0  tick : 0.01562500
-102.4 tick : 0.00976563
-128.0 tick : 0.00781250
+// exclusive recursion function
+function VS::_fb3k5S1r91t7(t, i, s = ::getroottable())
+{
+	foreach(k, v in s)
+	{
+		if(v == i)
+			return k;
 
-*/
+		if(typeof v == "table")
+			if(k != "VS" && k != "Documentation")
+			{
+				local r = _fb3k5S1r91t7(t, i, v);
+				if(r) return r;
+			};;
+	}
+}
+
+//-----------------------------------------------------------------------
+// Frame times:
+//
+// 64.0  tick : 0.01562500
+// 102.4 tick : 0.00976563
+// 128.0 tick : 0.00781250
+//-----------------------------------------------------------------------
 function VS::GetTickrate()
 {
 	return 1.0 / ::FrameTime();
@@ -454,13 +513,13 @@ function VS::GetTickrate()
 //
 // You can use activators and callers to easily access entity handles
 //-----------------------------------------------------------------------
-::delay     <- function( X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null )::DoEntFireByInstanceHandle( E, "runscriptcode", ""+X, T, A, C );
+::delay     <- function(X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null)::DoEntFireByInstanceHandle(E, "runscriptcode", ""+X, T, A, C);
 
 ::Chat      <- function(s)::ScriptPrintMessageChatAll(" "+s);
 ::ChatTeam  <- function(i,s)::ScriptPrintMessageChatTeam(i," "+s);
 ::Alert     <- ::ScriptPrintMessageCenterAll;
 ::AlertTeam <- ::ScriptPrintMessageCenterTeam;
-::ClearChat <- function(){ for( local i = 0; i < 9; ++i ) ::Chat(""); }
+::ClearChat <- function() for( local i = 0; i < 9; ++i ) ::Chat("");
 
 ::txt <-
 {

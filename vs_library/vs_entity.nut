@@ -157,26 +157,26 @@ function VS::CreateTimer( targetname = null, refire = 1.0, lower = null, upper =
 //-----------------------------------------------------------------------
 // Create and return a timer that executes Func
 // VS.Timer( false, 0.5, Think )
-// VS.Timer( bDisabled, fInterval, Func, tScope = this, bExecInEnt = false, bMakePerm = false )
 //-----------------------------------------------------------------------
-function VS::Timer(b,f,s,t=null,e=false,p=false)
+function VS::Timer(bDisabled,fInterval,Func,tScope=null,bExecInEnt=false,bMakePerm=false)
 {
-	if(!f)
+	if(!fInterval)
 	{
 		::print("\nERROR:\nRefire time cannot be null in VS.Timer\nUse VS.CreateTimer for randomised fire times.\n");
 		throw"NULL REFIRE TIME";
 	};
 
-	local h = CreateTimer(null,f,null,null,null,b,p);
-	OnTimer(h,s,t?t:GetCaller(),e);
+	local h = CreateTimer(null,fInterval,null,null,null,bDisabled,bMakePerm);
+	OnTimer(h,Func,tScope?tScope:GetCaller(),bExecInEnt);
 	return h;
 }
 
 //-----------------------------------------------------------------------
 // Add OnTimer output to the timer entity to execute the input function
+//
 // Input  : handle [ entity ]
 //          string|closure [ function ]
-// Output :
+// Output : table [ent scope]
 //-----------------------------------------------------------------------
 function VS::OnTimer( hEnt, Func, tScope = null, bExecInEnt = false )
 {
@@ -217,7 +217,7 @@ function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 
 	hEnt.ConnectOutput(sOutput, sOutput);
 
-	// print("** Adding output '" + sOutput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetTableName(tScope)) + ".'\n");
+	// print("** Adding output '" + sOutput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetVarName(tScope)) + ".'\n");
 
 	return r;
 }
@@ -269,7 +269,7 @@ function VS::AddInput( hEnt, sInput, Func, tScope = null, bExecInEnt = false )
 
 	hEnt.GetScriptScope()["Input"+sInput] <- bExecInEnt ? Func : Func.bindenv(tScope);
 
-	// print("** Adding input '" + sInput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetTableName(tScope)) + ".'\n");
+	// print("** Adding input '" + sInput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetVarName(tScope)) + ".'\n");
 }
 */
 
@@ -343,28 +343,40 @@ function VS::SetName( ent, name )
 //-----------------------------------------------------------------------
 function VS::DumpEnt( input = null )
 {
+	// dump only scope names
 	if( !input )
 	{
 		local ent;
 		while( ent = ::Entities.Next(ent) )
 		{
 			local s = ent.GetScriptScope();
-			if(s) ::printl(ent + " :: " + s.__vname); // GetTableName(s)
+			if(s) ::print(ent + " :: " + s.__vname+"\n"); // GetVarName(s)
 		}
-	}
-	else if( typeof input == "instance" || typeof input == "string" )
+
+		return;
+	};
+
+	if( typeof input == "string" )
+		input = FindEntityByString(input);
+
+	// dump input scope
+	if( typeof input == "instance" )
 	{
-		if( typeof input == "string" )
-			input = FindEntityByString(input);
-
-		local s;
-		try(s = input.GetScriptScope())catch(e)
-		{return::printl("Entity has no script scope! " + input)}
-
-		::printl("--- Script dump for entity "+input);
-		DumpScope(s,0,1,0,1);
-		::printl("--- End script dump");
+		if(input.IsValid())
+		{
+			local s = input.GetScriptScope();
+			if(s)
+			{
+				::print("--- Script dump for entity "+input+"\n");
+				DumpScope(s,0,1,0,1);
+				::print("--- End script dump\n");
+			}
+			else return::print("Entity has no script scope! " + input + "\n");
+		}
+		else return::print("Invalid entity!\n");
 	}
+
+	// dump all scopes
 	else if( input )
 	{
 		local ent;
@@ -373,12 +385,12 @@ function VS::DumpEnt( input = null )
 			local s = ent.GetScriptScope();
 			if(s)
 			{
-				::printl("\n--- Script dump for entity "+ent);
+				::print("\n--- Script dump for entity "+ent+"\n");
 				DumpScope(s,0,1,0,1);
-				::printl("--- End script dump");
+				::print("--- End script dump\n");
 			};
 		}
-	};;;
+	};;
 }
 
 //-----------------------------------------------------------------------
@@ -431,19 +443,21 @@ function VS::DumpPlayers( dumpscope = false )
 
 	::print("\n=======================================\n" + p.len()+" players found\n" + b.len()+" bots found\n");
 
-	local c = function( _s, _a, d = dumpscope )
+	local c = function( _s, _a ):(dumpscope)
 	{
 		foreach( e in _a )
 		{
 			local s = e.GetScriptScope();
-			try( s = GetTableName(s) ) catch(e){ s = "null" }
-			::printl( _s+"- " + e + " :: " + s );
-			if( d && s != "null" ) DumpEnt( e );
+			if(s) s = GetVarName(s);
+			if(!s) s = "null";
+			::print( _s+"- " + e + " :: " + s +"\n");
+			if( dumpscope && s != "null" ) DumpEnt(e);
 		}
 	}
 
 	c("[BOT]    ",b);
 	c("[PLAYER] ",p);
+
 	::print("=======================================\n");
 }
 
@@ -456,7 +470,8 @@ function VS::DumpPlayers( dumpscope = false )
 //-----------------------------------------------------------------------
 function VS::GetLocalPlayer()
 {
-	if( GetPlayersAndBots()[0].len() > 1 ) ::print("GetLocalPlayer: More than 1 player detected!\n");
+	if( GetPlayersAndBots()[0].len() > 1 )
+		::print("GetLocalPlayer: More than 1 player detected!\n");
 
 	local e = Entc("player");
 
@@ -464,10 +479,10 @@ function VS::GetLocalPlayer()
 		::print("GetLocalPlayer: Discrepancy detected!\n");
 
 	if( !e || !e.IsValid() )
-		return::print( "GetLocalPlayer: No player found!\n" );
+		return::print("GetLocalPlayer: No player found!\n");
 
 	if( !e.ValidateScriptScope() )
-		return::print( "GetLocalPlayer: Failed to validate player scope!\n" );
+		return::print("GetLocalPlayer: Failed to validate player scope!\n");
 
 	SetName(e, "localplayer");
 

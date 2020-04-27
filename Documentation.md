@@ -259,16 +259,15 @@ Included in `vs_library.nut`
 [`VS.arrayApply()`](#f_arrayApply)  
 [`VS.arrayMap()`](#f_arrayMap)  
 [`VS.DumpScope()`](#f_DumpScope)  
+[`VS.DumpEnt()`](#f_DumpEnt)  
+[`VS.DumpPlayers()`](#f_DumpPlayers)  
 [`VS.ArrayToTable()`](#f_ArrayToTable)  
 [`VS.GetStackInfo()`](#f_GetStackInfo)  
 [`VS.GetCallerFunc()`](#f_GetCallerFunc)  
 [`VS.GetCaller()`](#f_GetCaller)  
-[`VS.GetInfo()`](#f_GetInfo)  
-[`VS.GetTableName()`](#f_GetTableName)  
 [`VS.GetTableDir()`](#f_GetTableDir)  
-[`VS.FindTableByName()`](#f_FindTableByName)  
+[`VS.FindVarByName()`](#f_FindVarByName)  
 [`VS.GetVarName()`](#f_GetVarName)  
-[`VS.GetFuncName()`](#f_GetFuncName)  
 [`VS.ForceReload()`](#f_ForceReload)  
 
 
@@ -295,10 +294,8 @@ Included in `vs_library.nut`
 [`VS.SetKeyString()`](#f_SetKeyString)  
 [`VS.SetKeyVector()`](#f_SetKeyVector)  
 [`VS.SetName()`](#f_SetName)  
-[`VS.DumpEnt()`](#f_DumpEnt)  
 [`VS.GetPlayersAndBots()`](#f_GetPlayersAndBots)  
 [`VS.GetAllPlayers()`](#f_GetAllPlayers)  
-[`VS.DumpPlayers()`](#f_DumpPlayers)  
 [`VS.GetLocalPlayer()`](#f_GetLocalPlayer)  
 [`VS.GetPlayerByIndex()`](#f_GetPlayerByIndex)  
 [`VS.FindEntityByIndex()`](#f_FindEntityByIndex)  
@@ -310,7 +307,8 @@ Included in `vs_library.nut`
 
 
 ### [vs_events](#vs_events-1)
-[`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)
+[`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)  
+[`VS.Events.ForceValidateUserid()`](#f_ForceValidateUserid)
 
 
 ### [vs_log](#vs_log-1)
@@ -1516,14 +1514,14 @@ printl( VS.arrayFind(arr, "x") ? "true" : "false" )
 // index (0) is in array
 // true
 printl( VS.arrayFind(arr, "a") != null )
-                                       
-// Check if "a" is NOT in array        
-// index (0) is in array               
-// false                               
+
+// Check if "a" is NOT in array
+// index (0) is in array
+// false
 printl( VS.arrayFind(arr, "a") == null )
-                                       
-// Check if "x" is NOT in array        
-// true                                
+
+// Check if "x" is NOT in array
+// true
 printl( VS.arrayFind(arr, "x") == null )
 
 ```
@@ -1552,6 +1550,33 @@ ________________________________
 void VS::DumpScope(table table, bool printall = false, bool deepprint = true, bool guides = true, int depth = 0)
 ```
 Usage: `VS.DumpScope(table)`
+________________________________
+
+<a name="f_DumpEnt"></a>
+```cpp
+void VS::DumpEnt(TYPE input = null)
+```
+Dump all entities whose script scopes are already created.
+
+Input an entity handle or string to dump its scope.
+
+`ent_script_dump`
+________________________________
+
+<a name="f_DumpPlayers"></a>
+```cpp
+void VS::DumpPlayers(bool dumpscope = false)
+```
+DumpEnt only players and bots
+
+<details><summary>Details</summary>
+
+If bots have targetnames, they 'become' humans
+
+If the event listeners are not set up, named bots will be shown as players
+
+</details>
+
 ________________________________
 
 <a name="f_ArrayToTable"></a>
@@ -1612,65 +1637,36 @@ table VS::GetCaller()
 Get caller table
 ________________________________
 
-<a name="f_GetInfo"></a>
-```cpp
-void VS::GetInfo(function func)
-```
-Dump function infos
-________________________________
-
-<a name="f_GetTableName"></a>
-```cpp
-char VS::GetTableName(table input)
-```
-Get input table's name.  
-Returns "roottable" for the root table
-
-<details><summary>Example</summary>
-
-```cpp
-::t1.t2.t6 <- {}
-VS.GetTableName( t1.t2.t6 )
--> returns "t6"
-// or
-VS.GetTableName( this )
-```
-
-</details>
-
-________________________________
-
 <a name="f_GetTableDir"></a>
 ```cpp
 char[] VS::GetTableDir(table input)
 ```
-To use this function with a string input, you can combine it with VS.FindTableByName.
 
 <details><summary>Example</summary>
 
 ```cpp
 ::t1.t2.t3.t4 <- {}
 VS.GetTableDir( t1.t2.t3.t4 )
-VS.GetTableDir( VS.FindTableByName( "t4" ) )
+VS.GetTableDir( VS.FindVarByName( "t4" ) )
 -> both return ["roottable","t1","t2","t3","t4"]
 
-You can quickly print the array with VS.DumpScope(output)
+You can quickly print the array with VS.DumpScope(output) for debug purposes
 ```
 
 </details>
 
 ________________________________
 
-<a name="f_FindTableByName"></a>
+<a name="f_FindVarByName"></a>
 ```cpp
-table VS::FindTableByName(char str)
+TYPE VS::FindVarByName(char str)
 ```
 
 <details><summary>Example</summary>
 
 ```cpp
 ::t1.t2.t3.t4 <- {}
-VS.FindTableByName( "t4" )
+VS.FindVarByName( "t4" )
 -> returns table <t1.t2.t3.t4>
 ```
 
@@ -1682,11 +1678,6 @@ ________________________________
 ```cpp
 char VS::GetVarName(TYPE v)
 ```
-Used to get the variable names of parameters passed into functions
-
-For functions, use VS.GetFuncName()  
-For tables, use VS.GetTableName()
-
 Doesn't work with primitive variables if  
 there are multiple variables with the same value.  
 But it can work if the value is unique, like a unique string.
@@ -1697,26 +1688,14 @@ But it can work if the value is unique, like a unique string.
 ::somestring <- "my unique string"
 ::somefunc <- function(){}
 
-local test = function( param )
-{
-	printl( VS.GetVarName( param ) )
-}
-
 // prints "somestring"
-test( somestring )
+printl( VS.GetVarName(somestring) )
 
 // prints "somefunc"
-test( somefunc )
+printl( VS.GetVarName(somefunc) )
 ```
 
 </details>
-
-________________________________
-
-<a name="f_GetFuncName"></a>
-```cpp
-char VS::GetFuncName(function f)
-```
 
 ________________________________
 
@@ -1822,7 +1801,7 @@ printl("Player eye angles: " + VecToString(hPlayerEye.GetAngles()) )
 
 Example check to prevent spawning if the entities are already spawned
 ```lua
-if( !Ent("vs_ref_*") )
+if( !Ent("vs.ref_*") )
 {
 	hPlayerEye <- VS.CreateMeasure( "playername", null, true )
 }
@@ -1913,7 +1892,14 @@ Add OnTimer output to the timer entity to execute the input function
 
 `TYPE`: `string` OR `function`
 
-`VS.OnTimer( hTimer, MyFunc )`
+```cs
+VS.OnTimer(hTimer, MyFunc)
+
+VS.OnTimer(hTimer, function()
+{
+	// do
+})
+```
 ________________________________
 
 <a name="f_AddOutput"></a>
@@ -2060,17 +2046,6 @@ void VS::SetName(handle ent, char name)
 Set targetname
 ________________________________
 
-<a name="f_DumpEnt"></a>
-```cpp
-void VS::DumpEnt(TYPE input = null)
-```
-Dump all entities whose script scopes are already created.
-
-Input an entity handle or string to dump its scope.
-
-`ent_script_dump`
-________________________________
-
 <a name="f_GetPlayersAndBots"></a>
 ```cpp
 handle[2][] VS::GetPlayersAndBots()
@@ -2092,22 +2067,6 @@ ________________________________
 handle[] VS::GetAllPlayers()
 ```
 Get every player and bot in a single array
-________________________________
-
-<a name="f_DumpPlayers"></a>
-```cpp
-void VS::DumpPlayers(bool dumpscope = false)
-```
-DumpEnt only players and bots
-
-<details><summary>Details</summary>
-
-If bots have targetnames, they 'become' humans
-
-If the event listeners are not set up, named bots will be shown as players
-
-</details>
-
 ________________________________
 
 <a name="f_GetLocalPlayer"></a>
@@ -2207,6 +2166,19 @@ If event listeners are correctly set up, get the player handle from their userid
 Return null if no player is found.
 
 See [Setting up basis event listeners](#setting-up-basis-event-listeners)
+________________________________
+
+<a name="f_ForceValidateUserid"></a>
+```cpp
+void VS::Events::ForceValidateUserid(handle player)
+```
+_This is currently not included in `vs_library.nut`._
+
+if something has gone wrong with automatic validation, force add userid. 
+
+Requires player_info eventlistener that has the output:
+
+`OnEventFired > player_info > RunScriptCode > VS.Events.player_info(event_data)`
 ________________________________
 
 ### [vs_log](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_log.nut)

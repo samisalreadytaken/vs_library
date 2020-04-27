@@ -11,6 +11,9 @@
 //
 //-----------------------------------------------------------------------
 
+// instance for reading values from functions with optional output parameters
+local _VEC = Vector();
+
 ::max <- function( a, b ){ return a > b ? a : b; }
 ::min <- function( a, b ){ return a < b ? a : b; }
 

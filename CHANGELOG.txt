@@ -3,6 +3,12 @@
 
 --------------------------------
 
+2020-04-27 [v2.36.1]
+- Bugfixes on force userid validation
+- Minor improvements on DumpEnt and DumpPlayers, fix on DumpScope
+- Removed GetInfo, GetTableName, GetFuncName, FindTableByName
+- Improved GetVarName, GetTableDir, (added) FindVarByName
+
 2020-04-25 [v2.36.0]
 - CreateEntity:
   - Removed the targetname parameter; it should be handled in the KV table
@@ -16,6 +22,7 @@
 - Improved GetCaller and GetCallerFunc
 - Removed SetAngles
 - Removed traces of previously removed functions (IsLengthGreaterThan, IsLengthLessThan).
+- Bugfixes on force userid validation
 
 2020-04-20 [v2.35.3]
 - AddOutput now accepts function parameters using a more efficient method than AddOutput2
