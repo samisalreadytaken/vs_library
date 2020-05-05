@@ -315,8 +315,6 @@ function VS::DumpScope( table, printall = false, deepprint = true, guides = true
 }
 
 //-----------------------------------------------------------------------
-// Quick and dirty method to use !in (not in) keyword with arrays
-//
 // Input  : array [ input ]
 // Output : table [ clone of the input ]
 //-----------------------------------------------------------------------

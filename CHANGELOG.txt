@@ -3,6 +3,11 @@
 
 --------------------------------
 
+2020-05-05 [v2.36.2]
+- Fixed a wrong constant value
+- Removed misplaced garbage collection
+- Bugfix on IsLookingAt, bug only present in the minified version
+
 2020-04-27 [v2.36.1]
 - Bugfixes on force userid validation
 - Minor improvements on DumpEnt and DumpPlayers, fix on DumpScope
@@ -27,7 +32,7 @@
 2020-04-20 [v2.35.3]
 - AddOutput now accepts function parameters using a more efficient method than AddOutput2
 - Removed OnTimerHigh and OnTimerLow
-- Fix VectorCopy not returning, bug only present in minified version.
+- Fix VectorCopy not returning, bug only present in the minified version.
 - Fix SetKey wrapper functions not returning
 
 2020-04-14

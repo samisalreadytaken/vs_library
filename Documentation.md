@@ -159,9 +159,11 @@ Included in `vs_library.nut`
 | `CONST`            | `table` Squirrel constant table  |
 | `vs_library`       | `string` VScript Library version |
 | `MAX_COORD_FLOAT`  | `16384.0`                        |
-| `MAX_TRACE_LENGTH` | `56755.8`                        |
+| `MAX_TRACE_LENGTH` | `56755.84086241`                 |
 | `DEG2RAD`          | `0.01745329`                     |
 | `RAD2DEG`          | `57.29577951`                    |
+| `PI`               | `3.14159265`                     |
+| `RAND_MAX`         | `32767`                          |
 
 
 ### [vs_math](#vs_math-1)
@@ -2076,8 +2078,8 @@ handle VS::GetLocalPlayer()
 return the only / the first connected player in the server
 
 exposes:  
-`handle HPlayer` -> player handle  
-`table  SPlayer` -> player scope
+`handle HPlayer`: player handle  
+`table  SPlayer`: player scope
 ________________________________
 
 <a name="f_GetPlayerByIndex"></a>

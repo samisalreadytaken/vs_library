@@ -54,9 +54,10 @@ if( ::EntFireByHandle.getinfos().native )
 ::CONST <- getconsttable();
 ::vs_library <- "vs_library v#.#.#";
 ::MAX_COORD_FLOAT <- 16384.0;
-::MAX_TRACE_LENGTH <- 56755.8; // sqrt(0x0003) * 0x0002 * 0x4000
+::MAX_TRACE_LENGTH <- 56755.84086241; // sqrt(0x0003) * 0x0002 * 0x4000 = 56755.84086241697115430736
 ::DEG2RAD <- 0.01745329;  // 0.01745329251994329576
 ::RAD2DEG <- 57.29577951; // 57.29577951308232087679
+// PI 3.14159265358979323846
 
 // array to store event data, user should never modify
 if( !("_xa9b2dfB7ffe" in getroottable()) ) ::_xa9b2dfB7ffe <- [];;
@@ -87,5 +88,4 @@ function VS::ForceReload():(_f)
 	_reload = true;
 	::print("Reloading vs_library...\n");
 	::DoIncludeScript(_f,::getroottable());
-	::collectgarbage();
 }
