@@ -3,6 +3,13 @@
 
 --------------------------------
 
+2020-05-11 [v2.36.3]
+- Changed CreateTimer parameters to be consistent with Timer parameters. Removed targetname param
+- AddOutput (by extension Timer and OnTimer as well) now accepts null function input
+- Removed SetKeyInt, SetKeyFloat, SetKeyString and SetKeyVector functions.
+- Minor performance improvements
+- Bugfix on glow.nut
+
 2020-05-05 [v2.36.2]
 - Fixed a wrong constant value
 - Removed misplaced garbage collection

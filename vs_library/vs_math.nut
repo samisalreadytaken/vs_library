@@ -48,9 +48,12 @@ function VS::PointOnLineNearestPoint( vStartPos, vEndPos, vPoint )
 	local v1 = vEndPos - vStartPos,
 	      dist = v1.Dot(vPoint - vStartPos) / v1.LengthSqr();
 
-	if     ( dist < 0.0 ) return vStartPos;
-	else if( dist > 1.0 ) return vEndPos;
-	else                  return vStartPos + v1 * dist;;
+	if( dist < 0.0 )
+		return vStartPos;
+	else if( dist > 1.0 )
+		return vEndPos;
+	else
+		return vStartPos + v1 * dist;;
 }
 
 //-----------------------------------------------------------------------

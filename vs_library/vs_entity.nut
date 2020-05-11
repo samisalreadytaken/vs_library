@@ -28,12 +28,12 @@
 }
 
 //-----------------------------------------------------------------------
-// Prevent the entity to be released every round
+// Prevent the entity from being released every round
 // MakePersistent
 //-----------------------------------------------------------------------
 function VS::MakePermanent( handle )
 {
-	SetKeyString( handle, "classname", "soundent" );
+	handle.__KeyValueFromString( "classname", "soundent" );
 }
 
 //-----------------------------------------------------------------------
@@ -55,7 +55,7 @@ function VS::SetParent( hChild, hParent )
 //-----------------------------------------------------------------------
 function VS::ShowGameText( hEnt, hTarget, msg = null, delay = 0.0 )
 {
-	if( msg ) SetKeyString( hEnt, "message", ""+msg );
+	if( msg ) hEnt.__KeyValueFromString( "message", ""+msg );
 	::EntFireByHandle( hEnt, "display", "", delay, hTarget );
 }
 
@@ -65,7 +65,7 @@ function VS::ShowGameText( hEnt, hTarget, msg = null, delay = 0.0 )
 //-----------------------------------------------------------------------
 function VS::ShowHudHint( hEnt, hTarget, msg = null, delay = 0.0 )
 {
-	if( msg ) SetKeyString( hEnt, "message", ""+msg );
+	if( msg ) hEnt.__KeyValueFromString( "message", ""+msg );
 	::EntFireByHandle( hEnt, "ShowHudHint", "", delay, hTarget );
 }
 
@@ -124,32 +124,32 @@ function VS::SetMeasure(h,s)
 }
 
 //-----------------------------------------------------------------------
-// Input  : string [ targetname ]
+// Input  : bool [ start disabled ]
 //          float [ refire time ]
 //          float [ lower (randomtime, used when refire == null) ]
 //          float [ upper (randomtime, used when refire == null) ]
 //          bool [ oscillator (alternate between OnTimerHigh and OnTimerLow outputs) ]
-//          bool [ start disabled ]
 //          bool [ make permanent ]
 // Output : entity
 //-----------------------------------------------------------------------
-function VS::CreateTimer( targetname = null, refire = 1.0, lower = null, upper = null, oscillator = false, disabled = true, perm = false )
+function VS::CreateTimer( bDisabled, flInterval, flLower = null, flUpper = null, bOscillator = false, bMakePerm = false )
 {
-	local ent = CreateEntity( "logic_timer",
-	                          { UseRandomTime = 0,
-	                            targetname = targetname?targetname.tostring():null }, perm );
+	local ent = CreateEntity( "logic_timer", null, bMakePerm );
 
-	if( refire )
-		SetKeyFloat( ent, "RefireTime", refire.tofloat() );
+	if( flInterval )
+	{
+		ent.__KeyValueFromInt( "UseRandomTime", 0 );
+		ent.__KeyValueFromFloat( "RefireTime", flInterval.tofloat() );
+	}
 	else
 	{
-		SetKeyFloat( ent, "LowerRandomBound", lower.tofloat() );
-		SetKeyFloat( ent, "UpperRandomBound", upper.tofloat() );
-		SetKeyInt( ent, "UseRandomTime", 1 );
-		SetKeyInt( ent, "spawnflags", oscillator.tointeger() );
+		ent.__KeyValueFromFloat( "LowerRandomBound", flLower.tofloat() );
+		ent.__KeyValueFromFloat( "UpperRandomBound", flUpper.tofloat() );
+		ent.__KeyValueFromInt( "UseRandomTime", 1 );
+		ent.__KeyValueFromInt( "spawnflags", bOscillator.tointeger() );
 	};
 
-	::EntFireByHandle( ent, disabled ? "disable" : "enable" );
+	::EntFireByHandle( ent, bDisabled ? "disable" : "enable" );
 
 	return ent;
 }
@@ -158,16 +158,16 @@ function VS::CreateTimer( targetname = null, refire = 1.0, lower = null, upper =
 // Create and return a timer that executes Func
 // VS.Timer( false, 0.5, Think )
 //-----------------------------------------------------------------------
-function VS::Timer(bDisabled,fInterval,Func,tScope=null,bExecInEnt=false,bMakePerm=false)
+function VS::Timer( bDisabled, flInterval, Func = null, tScope = null, bExecInEnt = false, bMakePerm = false )
 {
-	if(!fInterval)
+	if(!flInterval)
 	{
 		::print("\nERROR:\nRefire time cannot be null in VS.Timer\nUse VS.CreateTimer for randomised fire times.\n");
 		throw"NULL REFIRE TIME";
 	};
 
-	local h = CreateTimer(null,fInterval,null,null,null,bDisabled,bMakePerm);
-	OnTimer(h,Func,tScope?tScope:GetCaller(),bExecInEnt);
+	local h = CreateTimer(bDisabled, flInterval, null, null, null, bMakePerm);
+	OnTimer(h, Func, tScope ? tScope : GetCaller(), bExecInEnt);
 	return h;
 }
 
@@ -199,15 +199,23 @@ function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 {
 	if( !tScope ) tScope = GetCaller();
 
-	if( typeof Func == "string" )
+	if( Func )
 	{
-		if( Func.find("(") != null )
-			Func = ::compilestring(Func);
-		else
-			Func = tScope[Func];
+		if( typeof Func == "string" )
+		{
+			if( Func.find("(") != null )
+				Func = ::compilestring(Func);
+			else
+				Func = tScope[Func];
+		}
+		else if( typeof Func != "function" )
+			throw "Invalid function type " + typeof Func;;
 	}
-	else if( typeof Func != "function" )
-		throw "Invalid function type " + typeof Func;;
+	else
+	{
+		Func = null;
+		bExecInEnt = true; // to be able to assign Func (null) below
+	};
 
 	hEnt.ValidateScriptScope();
 
@@ -222,7 +230,7 @@ function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 	return r;
 }
 
-// This could still be useful, but only in very specific scenarios
+// This could still be useful in specific scenarios
 function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 {
 	if( hEnt.GetScriptScope() || typeof Func == "function" )
@@ -287,12 +295,40 @@ function VS::CreateEntity( classname, keyvalues = null, perm = false )
 	if( typeof keyvalues == "table" ) foreach( k, v in keyvalues ) SetKey(ent, k, v);
 	if(perm) MakePermanent(ent);
 	return ent;
+
+	// It is better to use entity weak references to store entity handles.
+	//
+	// Using strong refs, when an entity is killed (UTIL_Remove), user variable will
+	// point to an invalid CBaseEntity instance, forcing the user to check for validity using IsValid()
+	//
+	// Using weak refs, when an entity is killed, user variable will lose its reference and become null,
+	// greatly simplifying the validity check of entities, and free the invalid instance.
+	//
+	// There may or may not be unforeseen consequences of using weakrefs,
+	// but I haven't had any problems after using them for months.
+	//
+	// I cannot make this change in the library, because a weak ref acts like a strong ref only when stored (non-local var).
+	// This means that local variables will be weakref objects that do not have the reference object's functions
+	//
+	// For example, the following code will throw an error
+	//   local ent = VS.CreateEntity().weakref()
+	//   printl( ent.GetOrigin() )
+	//
+	// But this will not
+	//   ent <- VS.CreateEntity().weakref()
+	//   printl( ent.GetOrigin() )
+	//   local e = ent
+	//   printl( e.GetOrigin() )
+	//
+	// So, the user has to manage this themselves.
+
+	// return ent.weakref();
 }
 
 //-----------------------------------------------------------------------
 // Input  : handle [ entity ]
 //          string [ key ]
-//          string/int/float/bool/vector [ value ]
+//          string/int/float/bool/Vector [ value ]
 //-----------------------------------------------------------------------
 function VS::SetKey( ent, key, val )
 {
@@ -318,18 +354,6 @@ function VS::SetKey( ent, key, val )
 			throw "Invalid input type: " + typeof val;
 	}
 }
-
-function VS::SetKeyInt( ent, key, val )
-{ return ent.__KeyValueFromInt( key, val ) }
-
-function VS::SetKeyFloat( ent, key, val )
-{ return ent.__KeyValueFromFloat( key, val ) }
-
-function VS::SetKeyString( ent, key, val )
-{ return ent.__KeyValueFromString( key, val ) }
-
-function VS::SetKeyVector( ent, key, val )
-{ return ent.__KeyValueFromVector( key, val ) }
 
 // Set targetname
 function VS::SetName( ent, name )
@@ -405,10 +429,10 @@ function VS::DumpEnt( input = null )
 //
 function VS::GetPlayersAndBots()
 {
-	local ent, ply = [], bot = [];
-	while( ent = ::Entities.FindByClassname(ent, "cs_bot") ) bot.append(ent);
+	local ent, Ent = ::Entities, ply = [], bot = [];
+	while( ent = Ent.FindByClassname(ent, "cs_bot") ) bot.append(ent);
 	ent = null;
-	while( ent = ::Entities.FindByClassname(ent, "player") )
+	while( ent = Ent.FindByClassname(ent, "player") )
 	{
 		local s = ent.GetScriptScope();
 		if( "networkid" in s && s.networkid == "BOT" ) bot.append(ent);
@@ -423,8 +447,8 @@ function VS::GetPlayersAndBots()
 //-----------------------------------------------------------------------
 function VS::GetAllPlayers()
 {
-	local e, a = [];
-	while( e = ::Entities.Next(e) )
+	local e, E = ::Entities, a = [];
+	while( e = E.Next(e) )
 		if( e.GetClassname() == "player" )
 			a.append(e);
 	return a;
@@ -487,19 +511,19 @@ function VS::GetLocalPlayer()
 	SetName(e, "localplayer");
 
 	::SPlayer <- e.GetScriptScope();
-	::HPlayer <- e;
+	::HPlayer <- e.weakref();
 
 	return e;
 }
 
 function VS::GetPlayerByIndex( entindex )
 {
-	local e; while( e = ::Entities.Next(e) ) if( e.GetClassname() == "player" ) if( e.entindex() == entindex ) return e;
+	local e, E = ::Entities; while( e = ::Entities.Next(e) ) if( e.GetClassname() == "player" ) if( e.entindex() == entindex ) return e;
 }
 
 function VS::FindEntityByIndex( entindex, classname = "*" )
 {
-	local e; while( e = ::Entities.FindByClassname(e, classname) ) if( e.entindex() == entindex ) return e;
+	local e, E = ::Entities; while( e = E.FindByClassname(e, classname) ) if( e.entindex() == entindex ) return e;
 }
 
 //-----------------------------------------------------------------------
@@ -508,7 +532,7 @@ function VS::FindEntityByIndex( entindex, classname = "*" )
 //-----------------------------------------------------------------------
 function VS::FindEntityByString( str )
 {
-	local e; while( e = ::Entities.Next(e) ) if( e.tostring() == str ) return e;
+	local e, E = ::Entities; while( e = E.Next(e) ) if( e.tostring() == str ) return e;
 }
 
 function VS::IsPointSized( h )
@@ -519,9 +543,9 @@ function VS::IsPointSized( h )
 function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold )
 {
 	local bestDot = fThreshold,
-	      best_ent, ent;
+	      best_ent, ent, Ent = ::Entities;
 
-	while( ent = ::Entities.Next(ent) )
+	while( ent = Ent.Next(ent) )
 	{
 		// skip all point sized entitites
 		if( IsPointSized(ent) ) continue;
@@ -548,10 +572,10 @@ function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold )
 function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassname )
 {
 	local bestDot = fThreshold,
-	      best_ent, ent;
+	      best_ent, ent, Ent = ::Entities;
 
 	// for( local ent; ent = ::Entities.Next(ent); )
-	while( ent = ::Entities.FindByClassname(ent,sClassname) )
+	while( ent = Ent.FindByClassname(ent,sClassname) )
 	{
 		local to_ent = ent.GetOrigin() - vOrigin;
 
@@ -573,13 +597,13 @@ function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassn
 // Not perfect, but it works to some extent
 function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, sClassname, flRadius )
 {
-	local best_ent, ent;
+	local best_ent, ent, Ent = ::Entities;
 
 	local flMaxDistSqr = flRadius * flRadius;
 	if( !flMaxDistSqr )
 		flMaxDistSqr = 3.22122e+09; // MAX_TRACE_LENGTH * MAX_TRACE_LENGTH
 
-	while( ent = ::Entities.FindByClassname(ent,sClassname) )
+	while( ent = Ent.FindByClassname(ent,sClassname) )
 	{
 		local to_ent = ent.GetOrigin() - vOrigin;
 		to_ent.Norm();

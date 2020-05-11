@@ -21,9 +21,9 @@
 //-----------------------------------------------------------------------
 function VS::GetPlayerByUserid( userid )
 {
-	local ent;
+	local ent, Ent = ::Entities;
 
-	while( ent =::Entities.Next(ent) ) if( ent.GetClassname() == "player" )
+	while( ent = Ent.Next(ent) ) if( ent.GetClassname() == "player" )
 	{
 		local s = ent.GetScriptScope();
 		if( "userid" in s && s.userid == userid )

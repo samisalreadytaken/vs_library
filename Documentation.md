@@ -122,7 +122,7 @@ ________________________________
 | `int`                 | `1`                                                                                 |
 | `float`               | `1.0`                                                                               |
 | `bool`                | `true`, `false`                                                                     |
-| `char`, `string`      | `""`, string                                                                        |
+| `string`              | `""`                                                                                |
 | `table`               | `{}`                                                                                |
 | `array`               | `[]`                                                                                |
 | `closure`, `function` | function                                                                            |
@@ -138,7 +138,7 @@ ________________________________
 | Symbols | Description                                                                                                                                                                                                       |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `&`     | pointer, reference, instance. This means the input will be modified. Optional pointers can be omitted, but their result will be modified the next time another function with omitted pointer parameter is called. |
-| `[]`    | array. `float[3]` means the input is an array made of floats, with only 3 indices.<br />`char[]` does not represent a string, it is an array made of strings                                                      |
+| `[]`    | array. `float[3]` represents an array made of floats, with only 3 indices.                                                                                                                                        |
 
 ### Variables used in examples
 | Variable       | Creation                          | Description                                           |
@@ -1096,21 +1096,21 @@ ________________________________
 
 <a name="f_Ent"></a>
 ```cpp
-handle Ent(char targetname, handle startEntity = null)
+handle Ent(string targetname, handle startEntity = null)
 ```
 Find entity by targetname
 ________________________________
 
 <a name="f_Entc"></a>
 ```cpp
-handle Entc(char classname, handle startEntity = null)
+handle Entc(string classname, handle startEntity = null)
 ```
 Find entity by classname
 ________________________________
 
 <a name="f_delay"></a>
 ```cpp
-void delay(char exec, float time = 0.0, handle ent = ENT_SCRIPT, handle activator = null, handle caller = null)
+void delay(string exec, float time = 0.0, handle ent = ENT_SCRIPT, handle activator = null, handle caller = null)
 ```
 Execute `exec` in the scope of `ent`
 
@@ -1150,28 +1150,28 @@ ________________________________
 
 <a name="f_Chat"></a>
 ```cpp
-void Chat(char s)
+void Chat(string s)
 ```
 
 ________________________________
 
 <a name="f_ChatTeam"></a>
 ```cpp
-void ChatTeam(int team, char s)
+void ChatTeam(int team, string s)
 ```
 
 ________________________________
 
 <a name="f_Alert"></a>
 ```cpp
-void Alert(char s)
+void Alert(string s)
 ```
 
 ________________________________
 
 <a name="f_AlertTeam"></a>
 ```cpp
-void AlertTeam(int team, char s)
+void AlertTeam(int team, string s)
 ```
 
 ________________________________
@@ -1210,7 +1210,7 @@ ________________________________
 
 <a name="f_VecToString"></a>
 ```cpp
-char VecToString(Vector vec, char prefix = "Vector(", char separator = ",", char suffix = ")")
+string VecToString(Vector vec, string prefix = "Vector(", string separator = ",", string suffix = ")")
 ```
 return `"Vector(0,1,2)"`
 ________________________________
@@ -1224,7 +1224,7 @@ ________________________________
 
 <a name="f_FormatPrecision"></a>
 ```cpp
-char VS::FormatPrecision(float f, int n)
+string VS::FormatPrecision(float f, int n)
 ```
 .tointeger() or .tofloat() can be used on the result
 
@@ -1246,7 +1246,7 @@ ________________________________
 
 <a name="f_FormatHex"></a>
 ```cpp
-char VS::FormatHex(int i, int n)
+string VS::FormatHex(int i, int n)
 ```
 .tointeger() or .tofloat() can be used on the result
 
@@ -1271,7 +1271,7 @@ ________________________________
 
 <a name="f_FormatExp"></a>
 ```cpp
-char VS::FormatExp(float f, int n)
+string VS::FormatExp(float f, int n)
 ```
 .tointeger() or .tofloat() can be used on the result
 
@@ -1296,7 +1296,7 @@ ________________________________
 
 <a name="f_FormatWidth"></a>
 ```cpp
-char VS::FormatWidth(char i, int n, char s = " ")
+string VS::FormatWidth(string i, int n, string s = " ")
 ```
 Parameter `s` can be either `0` or `" "`
 
@@ -1376,14 +1376,14 @@ ________________________________
 
 <a name="f_GetEntByName"></a>
 ```cpp
-handle VS::TraceLine::GetEntByName(char targetname, float radius = 1.0)
+handle VS::TraceLine::GetEntByName(string targetname, float radius = 1.0)
 ```
 GetEnt, find by name
 ________________________________
 
 <a name="f_GetEntByClassname"></a>
 ```cpp
-handle VS::TraceLine::GetEntByClassname(char classname, float radius = 1.0)
+handle VS::TraceLine::GetEntByClassname(string classname, float radius = 1.0)
 ```
 GetEnt, find by classname
 ________________________________
@@ -1472,7 +1472,7 @@ ________________________________
 
 <a name="f_UniqueString"></a>
 ```cpp
-char VS::UniqueString()
+string VS::UniqueString()
 ```
 UniqueString without _ in the end
 ________________________________
@@ -1627,7 +1627,7 @@ ________________________________
 
 <a name="f_GetCallerFunc"></a>
 ```cpp
-char VS::GetCallerFunc()
+string VS::GetCallerFunc()
 ```
 (DEBUG) Get caller function as string
 ________________________________
@@ -1641,7 +1641,7 @@ ________________________________
 
 <a name="f_GetTableDir"></a>
 ```cpp
-char[] VS::GetTableDir(table input)
+string[] VS::GetTableDir(table input)
 ```
 
 <details><summary>Example</summary>
@@ -1661,7 +1661,7 @@ ________________________________
 
 <a name="f_FindVarByName"></a>
 ```cpp
-TYPE VS::FindVarByName(char str)
+TYPE VS::FindVarByName(string str)
 ```
 
 <details><summary>Example</summary>
@@ -1678,7 +1678,7 @@ ________________________________
 
 <a name="f_GetVarName"></a>
 ```cpp
-char VS::GetVarName(TYPE v)
+string VS::GetVarName(TYPE v)
 ```
 Doesn't work with primitive variables if  
 there are multiple variables with the same value.  
@@ -1713,7 +1713,7 @@ ________________________________
 
 <a name="f_EntFireByHandle"></a>
 ```cpp
-void EntFireByHandle(handle target, char action, char value = "", float delay = 0.0, handle activator = null, handle caller = null)
+void EntFireByHandle(handle target, string action, string value = "", float delay = 0.0, handle activator = null, handle caller = null)
 ```
 `EntFireByHandle( hEnt, "Use" )`
 
@@ -1727,14 +1727,14 @@ ________________________________
 
 <a name="f_PrecacheModel"></a>
 ```cpp
-void PrecacheModel(char model)
+void PrecacheModel(string model)
 ```
 
 ________________________________
 
 <a name="f_PrecacheScriptSound"></a>
 ```cpp
-void PrecacheScriptSound(char sound)
+void PrecacheScriptSound(string sound)
 ```
 
 ________________________________
@@ -1756,7 +1756,7 @@ ________________________________
 
 <a name="f_ShowGameText"></a>
 ```cpp
-void VS::ShowGameText(handle ent, handle target, char msg = null, float delay = 0.0)
+void VS::ShowGameText(handle ent, handle target, string msg = null, float delay = 0.0)
 ```
 Show gametext
 
@@ -1765,7 +1765,7 @@ ________________________________
 
 <a name="f_ShowHudHint"></a>
 ```cpp
-void VS::ShowHudHint(handle ent, handle target, char msg = null, float delay = 0.0)
+void VS::ShowHudHint(handle ent, handle target, string msg = null, float delay = 0.0)
 ```
 Show hudhint
 
@@ -1781,7 +1781,7 @@ ________________________________
 
 <a name="f_CreateMeasure"></a>
 ```cpp
-handle VS::CreateMeasure(char targetTargetname, char refTargetname = null, bool makePermanent = false, bool measureEye = true, float scale = 1.0)
+handle VS::CreateMeasure(string targetTargetname, string refTargetname = null, bool makePermanent = false, bool measureEye = true, float scale = 1.0)
 ```
 Create and return an eye angle measuring entity
 
@@ -1798,7 +1798,7 @@ Example get player eye angles:
 hPlayer <- VS.GetLocalPlayer()
 hPlayerEye <- VS.CreateMeasure(hPlayer.GetName())
 
-printl("Player eye angles: " + VecToString(hPlayerEye.GetAngles()) )
+printl("Player eye angles: " + VecToString(hPlayerEye.GetAngles()))
 ```
 
 Example check to prevent spawning if the entities are already spawned
@@ -1814,6 +1814,14 @@ Or being specific
 if( !Ent("refname") )
 {
 	hPlayerEye <- VS.CreateMeasure( "playername", "refname", true )
+}
+```
+
+Or saving the handle in an unchanged container, e.g. the root table
+```lua
+if( !("hPlayerEye" in getroottable()) )
+{
+	::hPlayerEye <- VS.CreateMeasure( "playername", "refname", true )
 }
 ```
 
@@ -1840,7 +1848,7 @@ ________________________________
 
 <a name="f_SetMeasure"></a>
 ```cpp
-void VS::SetMeasure(handle logic_measure_movement, char targetTargetname)
+void VS::SetMeasure(handle logic_measure_movement, string targetTargetname)
 ```
 Start measuring new target
 
@@ -1853,12 +1861,12 @@ hPlayer2 <- GetSomeOtherPlayer()
 // start measuring hPlayer1
 hPlayerEye <- VS.CreateMeasure(hPlayer1.GetName())
 
-printl("Player1 eye angles: " + VecToString(hPlayerEye.GetAngles()) )
+printl("Player1 eye angles: " + VecToString(hPlayerEye.GetAngles()))
 
 // start measuring hPlayer2
 VS.SetMeasure( hPlayerEye, hPlayer2.GetName() )
 
-printl("Player2 eye angles: " + VecToString(hPlayerEye.GetAngles()) )
+printl("Player2 eye angles: " + VecToString(hPlayerEye.GetAngles()))
 ```
 
 </details>
@@ -1867,7 +1875,7 @@ ________________________________
 
 <a name="f_CreateTimer"></a>
 ```cpp
-handle VS::CreateTimer(char targetname = null, float refire = 1, float lower = null, float upper = null, bool oscillator = 0, bool disabled = true, bool perm = false)
+handle VS::CreateTimer(bool bDisabled, float flInterval, float flLower = null, float flUpper = null, bool bOscillator = false, bool bMakePerm = false)
 ```
 Create and return a logic_timer entity
 
@@ -1876,14 +1884,15 @@ ________________________________
 
 <a name="f_Timer"></a>
 ```cpp
-handle VS::Timer(bool bDisabled, float refire, TYPE func, table scope = null, bool bExecInEnt = false, bool perm = false)
+handle VS::Timer(bool bDisabled, float flInterval, TYPE func = null, table scope = null, bool bExecInEnt = false, bool bMakePerm = false)
 ```
 Create and return a timer that executes func
 
-`TYPE`: `string` OR `function`
+`TYPE`: `string|function|null`
 
-`VS.Timer( false, 0.5, MyFunc )`  
-`VS.Timer( false, 0.5, "MyFunc" )`
+`VS.Timer(true, 0.5)`  
+`VS.Timer(false, 0.5, MyFunc)`  
+`VS.Timer(false, 0.5, "MyFunc")`
 ________________________________
 
 <a name="f_OnTimer"></a>
@@ -1892,7 +1901,7 @@ table VS::OnTimer(handle ent, TYPE func, table scope = null, bool bExecInEnt = f
 ```
 Add OnTimer output to the timer entity to execute the input function
 
-`TYPE`: `string` OR `function`
+`TYPE`: `string|function`
 
 ```cs
 VS.OnTimer(hTimer, MyFunc)
@@ -1906,7 +1915,7 @@ ________________________________
 
 <a name="f_AddOutput"></a>
 ```cpp
-table VS::AddOutput(handle ent, char output, TYPE func, table scope = null, bool bExecInEnt = false)
+table VS::AddOutput(handle ent, string output, TYPE func, table scope = null, bool bExecInEnt = false)
 ```
 Adds output in the chosen entity  
 Executes the given function in the given scope  
@@ -1914,7 +1923,7 @@ Accepts function parameters
 
 Returns entity scope
 
-`TYPE`: `string` OR `function`
+`TYPE`: `string|function`
 
 <details><summary>Example</summary>
 
@@ -1953,14 +1962,14 @@ ________________________________
 
 <a name="f_AddOutput2"></a>
 ```cpp
-void VS::AddOutput2(handle ent, char output, char exec, table scope = null, bool bExecInEnt = false)
+void VS::AddOutput2(handle ent, string output, string exec, table scope = null, bool bExecInEnt = false)
 ```
 
 ________________________________
 
 <a name="f_CreateEntity"></a>
 ```cpp
-handle VS::CreateEntity(char classname, table keyvalues = null, bool perm = false)
+handle VS::CreateEntity(string classname, table keyvalues = null, bool perm = false)
 ```
 CreateByClassname, set keyvalues, return handle
 
@@ -2008,42 +2017,42 @@ ________________________________
 
 <a name="f_SetKey"></a>
 ```cpp
-bool VS::SetKey(handle ent, char key, TYPE val)
+bool VS::SetKey(handle ent, string key, TYPE val)
 ```
 Useful for when the value type is unknown
 ________________________________
 
 <a name="f_SetKeyInt"></a>
 ```cpp
-bool VS::SetKeyInt(handle ent, char key, int val)
+bool VS::SetKeyInt(handle ent, string key, int val)
 ```
 `KeyValueFromInt`
 ________________________________
 
 <a name="f_SetKeyFloat"></a>
 ```cpp
-bool VS::SetKeyFloat(handle ent, char key, float val)
+bool VS::SetKeyFloat(handle ent, string key, float val)
 ```
 `KeyValueFromFloat`
 ________________________________
 
 <a name="f_SetKeyString"></a>
 ```cpp
-bool VS::SetKeyString(handle ent, char key, char val)
+bool VS::SetKeyString(handle ent, string key, string val)
 ```
 `KeyValueFromString`
 ________________________________
 
 <a name="f_SetKeyVector"></a>
 ```cpp
-bool VS::SetKeyVector(handle ent, char key, Vector val)
+bool VS::SetKeyVector(handle ent, string key, Vector val)
 ```
 `KeyValueFromVector`
 ________________________________
 
 <a name="f_SetName"></a>
 ```cpp
-void VS::SetName(handle ent, char name)
+void VS::SetName(handle ent, string name)
 ```
 Set targetname
 ________________________________
@@ -2091,14 +2100,14 @@ ________________________________
 
 <a name="f_FindEntityByIndex"></a>
 ```cpp
-handle VS::FindEntityByIndex(int entindex, char classname = null)
+handle VS::FindEntityByIndex(int entindex, string classname = null)
 ```
 
 ________________________________
 
 <a name="f_FindEntityByString"></a>
 ```cpp
-handle VS::FindEntityByString(char str)
+handle VS::FindEntityByString(string str)
 ```
 String input such as `"([2] player)"` and `"([88] func_button: targetname)"`
 
@@ -2137,7 +2146,7 @@ ________________________________
 
 <a name="f_FindEntityClassNearestFacing"></a>
 ```cpp
-handle VS::FindEntityClassNearestFacing(Vector vOrigin, Vector vFacing, float fThreshold, char sClassname)
+handle VS::FindEntityClassNearestFacing(Vector vOrigin, Vector vFacing, float fThreshold, string sClassname)
 ```
 
 ________________________________
@@ -2151,7 +2160,7 @@ ________________________________
 
 <a name="f_FindEntityClassNearestFacingNearest"></a>
 ```cpp
-handle VS::FindEntityClassNearestFacingNearest(Vector vOrigin, Vector vFacing, float fThreshold, char sClassname, float flRadius )
+handle VS::FindEntityClassNearestFacingNearest(Vector vOrigin, Vector vFacing, float fThreshold, string sClassname, float flRadius )
 ```
 When two candidate entities are in front of each other, pick the closer one
 ________________________________
@@ -2223,7 +2232,7 @@ ________________________________
 
 <a name="f_LogAdd"></a>
 ```cpp
-void VS::Log::Add(char s)
+void VS::Log::Add(string s)
 ```
 Add new string to the log. Newline (`"\n"`) not included.
 ________________________________
@@ -2237,7 +2246,7 @@ ________________________________
 
 <a name="f_LogRun"></a>
 ```cpp
-char VS::Log::Run()
+string VS::Log::Run()
 ```
 if VS.Log.export == true, then export the log file to the game directory
 

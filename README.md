@@ -1,11 +1,11 @@
 # VScript Library
-[![ver][]](https://github.com/samisalreadytaken/vs_library) [![size][]](/../../raw/master/vs_library.nut)
+[![ver][]](CHANGELOG.txt) [![size][]](/../../raw/master/vs_library.nut)
 
 High-performance, powerful vscript libraries; written mainly for CSGO.
 
 It is advised to always use the latest version.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.36.2-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.36.3-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation

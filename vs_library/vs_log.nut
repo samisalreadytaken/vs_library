@@ -34,16 +34,6 @@ function VS::Log::Run()
 
 function VS::Log::_Print(f)
 {
-	if( nC >= nN )
-	{
-		if( f ) _Stop();
-		nL = null;
-		nD = null;
-		nC = null;
-		nN = null;
-		return;
-	};
-
 	local t = filter, p = ::print;
 
 	if( !f )
@@ -53,6 +43,16 @@ function VS::Log::_Print(f)
 
 	nC += nD;
 	nN = ::clamp( nN + nD, 0, nL );
+
+	if( nC >= nN )
+	{
+		if( f ) _Stop();
+		nL = null;
+		nD = null;
+		nC = null;
+		nN = null;
+		return;
+	};
 
 	return::delay( "::VS.Log._Print("+f+")", ::FrameTime() );
 }
