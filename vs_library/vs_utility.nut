@@ -129,13 +129,13 @@ class::VS.TraceLine
 	// Get distance from startpos to hit position
 	function GetDist()
 	{
-		return::VS.Dist( startpos, GetPos() );
+		return (startpos-GetPos()).Length();
 	}
 
 	// Get distance squared. Useful for comparisons
 	function GetDistSqr()
 	{
-		return::VS.DistSqr( startpos, GetPos() );
+		return (startpos-GetPos()).LengthSqr();
 	}
 
 	// Get surface normal
@@ -196,7 +196,7 @@ class::VS.TraceLine
 // Input  : Vector [ start pos ]
 //          Vector [ normalised direction ]
 //          handle [ to ignore ]
-// Output : instance [ VS.TraceLine ]
+// Output : trace_t [ VS.TraceLine ]
 //-----------------------------------------------------------------------
 function VS::TraceDir( v1, vDir, f = ::MAX_TRACE_LENGTH, hEnt = null )
 {

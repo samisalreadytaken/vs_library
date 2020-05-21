@@ -55,7 +55,7 @@ Done!
 It only needs to be included once in the lifetime of the map running in the server. Including it more than once does not affect the performance. 
 
 ### Setting up basis event listeners
-Set up these event listeners to automatically validate player userids. This will let you access player userids, SteamIDs, and Steam names.
+Set up these event listeners to automatically validate player userids. This will let you access player userid, SteamID, and Steam names.
 
 Entity targetnames are arbitrary.
 ```
@@ -64,14 +64,14 @@ logic_eventlistener:
 	EventName:  player_connect
 	FetchEventData: Yes
 
-	OnEventFired > player_connect > RunScriptCode > VS.Events.player_connect(event_data)
+	OnEventFired > player_connect > RunScriptCode > ::VS.Events.player_connect(event_data)
 
 logic_eventlistener:
 	targetname: player_spawn
 	EventName:  player_spawn
 	FetchEventData: Yes
 
-	OnEventFired > player_spawn   > RunScriptCode > VS.Events.player_spawn(event_data)
+	OnEventFired > player_spawn   > RunScriptCode > ::VS.Events.player_spawn(event_data)
 ```
 
 You can get the player handle from their userid.
@@ -291,10 +291,6 @@ Included in `vs_library.nut`
 [`VS.AddOutput2()`](#f_AddOutput2)  
 [`VS.CreateEntity()`](#f_CreateEntity)  
 [`VS.SetKey()`](#f_SetKey)  
-[`VS.SetKeyInt()`](#f_SetKeyInt)  
-[`VS.SetKeyFloat()`](#f_SetKeyFloat)  
-[`VS.SetKeyString()`](#f_SetKeyString)  
-[`VS.SetKeyVector()`](#f_SetKeyVector)  
 [`VS.SetName()`](#f_SetName)  
 [`VS.GetPlayersAndBots()`](#f_GetPlayersAndBots)  
 [`VS.GetAllPlayers()`](#f_GetAllPlayers)  
@@ -310,6 +306,7 @@ Included in `vs_library.nut`
 
 ### [vs_events](#vs_events-1)
 [`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)  
+[`VS.AddEventCallback()`](#f_AddEventCallback)  
 [`VS.Events.ForceValidateUserid()`](#f_ForceValidateUserid)
 
 
@@ -2019,35 +2016,9 @@ ________________________________
 ```cpp
 bool VS::SetKey(handle ent, string key, TYPE val)
 ```
+`KeyValueFrom`
+
 Useful for when the value type is unknown
-________________________________
-
-<a name="f_SetKeyInt"></a>
-```cpp
-bool VS::SetKeyInt(handle ent, string key, int val)
-```
-`KeyValueFromInt`
-________________________________
-
-<a name="f_SetKeyFloat"></a>
-```cpp
-bool VS::SetKeyFloat(handle ent, string key, float val)
-```
-`KeyValueFromFloat`
-________________________________
-
-<a name="f_SetKeyString"></a>
-```cpp
-bool VS::SetKeyString(handle ent, string key, string val)
-```
-`KeyValueFromString`
-________________________________
-
-<a name="f_SetKeyVector"></a>
-```cpp
-bool VS::SetKeyVector(handle ent, string key, Vector val)
-```
-`KeyValueFromVector`
 ________________________________
 
 <a name="f_SetName"></a>
@@ -2177,6 +2148,13 @@ If event listeners are correctly set up, get the player handle from their userid
 Return null if no player is found.
 
 See [Setting up basis event listeners](#setting-up-basis-event-listeners)
+________________________________
+
+<a name="f_AddEventCallback"></a>
+```cpp
+void VS::AddEventCallback(string event, closure function, table scope = null)
+```
+Bind the input function to global _OnGameEvent\__ function in _scope_, _this_ by default.
 ________________________________
 
 <a name="f_ForceValidateUserid"></a>

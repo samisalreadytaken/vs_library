@@ -1,7 +1,11 @@
 
-'vs_library' changelog, in reverse chronological order.
+'vs_library' changelog in reverse chronological order.
 
 --------------------------------
+
+2020-05-21 [v2.36.4]
+- Added AddEventCallback to simplify event callback adding.
+- Bugfix on glow.nut
 
 2020-05-11 [v2.36.3]
 - Changed CreateTimer parameters to be consistent with Timer parameters. Removed targetname param

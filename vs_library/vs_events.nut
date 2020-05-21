@@ -32,6 +32,45 @@ function VS::GetPlayerByUserid( userid )
 }
 
 //-----------------------------------------------------------------------
+// Bind the input function to global 'OnGameEvent_' function in 'scope', 'this' by default.
+//
+// Input  : string|handle, closure|string, table
+// Output :
+//-----------------------------------------------------------------------
+function VS::AddEventCallback(event,func,scope = null)
+{
+	if(!scope)
+		scope = GetCaller();
+	else if( typeof scope != "table" )
+		throw "Invalid scope type " + typeof scope;;
+
+	if( typeof func == "string" )
+	{
+		if( func.find("(") != null )
+			throw "Invalid function string";
+		else
+			func = scope[func];
+	}
+	else if( typeof func != "function" )
+		throw "Invalid function type " + typeof func;;
+
+	if( typeof event == "instance" )
+	{
+		if( event instanceof ::CBaseEntity )
+		{
+			if( event.IsValid() )
+				event = event.GetName();
+			else
+				throw "Invalid event input";
+		};
+	}
+	else if( typeof event != "string" )
+		throw "Invalid event input: " + typeof event;;
+
+	::getroottable()["OnGameEvent_"+event] <- func.bindenv(scope);
+}
+
+//-----------------------------------------------------------------------
 
 // OnEvent player_connect
 // user function ::OnGameEvent_player_connect will still be called

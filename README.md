@@ -5,7 +5,7 @@ High-performance, powerful vscript libraries; written mainly for CSGO.
 
 It is advised to always use the latest version.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.36.3-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.36.4-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation
@@ -37,7 +37,7 @@ Done!
 It only needs to be included once in the lifetime of the map running in the server. Including it more than once does not affect the performance. 
 
 ### Setting up basis event listeners
-Set up these event listeners to automatically validate player userids. This will let you access player userids, SteamIDs, and Steam names.
+Set up these event listeners to automatically validate player userids. This will let you access player userid, SteamID, and Steam names.
 
 Entity targetnames are arbitrary.
 ```
@@ -46,14 +46,14 @@ logic_eventlistener:
 	EventName:  player_connect
 	FetchEventData: Yes
 
-	OnEventFired > player_connect > RunScriptCode > VS.Events.player_connect(event_data)
+	OnEventFired > player_connect > RunScriptCode > ::VS.Events.player_connect(event_data)
 
 logic_eventlistener:
 	targetname: player_spawn
 	EventName:  player_spawn
 	FetchEventData: Yes
 
-	OnEventFired > player_spawn   > RunScriptCode > VS.Events.player_spawn(event_data)
+	OnEventFired > player_spawn   > RunScriptCode > ::VS.Events.player_spawn(event_data)
 ```
 
 You can get the player handle from their userid.
