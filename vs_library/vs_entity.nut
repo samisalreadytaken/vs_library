@@ -12,7 +12,7 @@
 //-----------------------------------------------------------------------
 ::EntFireByHandle <- function( target, action, value = "", delay = 0.0, activator = null, caller = null )
 {
-	::DoEntFireByInstanceHandle( target, action.tostring(), value.tostring(), delay, activator, caller );
+	return::DoEntFireByInstanceHandle( target, action.tostring(), value.tostring(), delay, activator, caller );
 }
 
 //-----------------------------------------------------------------------
@@ -33,7 +33,7 @@
 //-----------------------------------------------------------------------
 function VS::MakePermanent( handle )
 {
-	handle.__KeyValueFromString( "classname", "soundent" );
+	return handle.__KeyValueFromString( "classname", "soundent" );
 }
 
 //-----------------------------------------------------------------------
@@ -56,7 +56,7 @@ function VS::SetParent( hChild, hParent )
 function VS::ShowGameText( hEnt, hTarget, msg = null, delay = 0.0 )
 {
 	if( msg ) hEnt.__KeyValueFromString( "message", ""+msg );
-	::EntFireByHandle( hEnt, "display", "", delay, hTarget );
+	return::EntFireByHandle( hEnt, "display", "", delay, hTarget );
 }
 
 //-----------------------------------------------------------------------
@@ -66,7 +66,7 @@ function VS::ShowGameText( hEnt, hTarget, msg = null, delay = 0.0 )
 function VS::ShowHudHint( hEnt, hTarget, msg = null, delay = 0.0 )
 {
 	if( msg ) hEnt.__KeyValueFromString( "message", ""+msg );
-	::EntFireByHandle( hEnt, "ShowHudHint", "", delay, hTarget );
+	return::EntFireByHandle( hEnt, "ShowHudHint", "", delay, hTarget );
 }
 
 //-----------------------------------------------------------------------
@@ -74,7 +74,7 @@ function VS::ShowHudHint( hEnt, hTarget, msg = null, delay = 0.0 )
 //-----------------------------------------------------------------------
 function VS::HideHudHint( hEnt, hTarget, delay = 0.0 )
 {
-	::EntFireByHandle( hEnt, "HideHudHint", "", delay, hTarget );
+	return::EntFireByHandle( hEnt, "HideHudHint", "", delay, hTarget );
 }
 
 //-----------------------------------------------------------------------
@@ -120,7 +120,7 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 )
 //-----------------------------------------------------------------------
 function VS::SetMeasure(h,s)
 {
-	::EntFireByHandle(h,"setmeasuretarget",s);
+	return::EntFireByHandle(h,"setmeasuretarget",s);
 }
 
 //-----------------------------------------------------------------------
@@ -357,7 +357,9 @@ function VS::SetKey( ent, key, val )
 
 // Set targetname
 function VS::SetName( ent, name )
-{ ent.__KeyValueFromString("targetname",name.tostring()) }
+{
+	return ent.__KeyValueFromString("targetname",name.tostring());
+}
 
 //-----------------------------------------------------------------------
 // ent_script_dump
@@ -430,13 +432,13 @@ function VS::DumpEnt( input = null )
 function VS::GetPlayersAndBots()
 {
 	local ent, Ent = ::Entities, ply = [], bot = [];
-	while( ent = Ent.FindByClassname(ent, "cs_bot") ) bot.append(ent);
+	while( ent = Ent.FindByClassname(ent, "cs_bot") ) bot.append(ent.weakref());
 	ent = null;
 	while( ent = Ent.FindByClassname(ent, "player") )
 	{
 		local s = ent.GetScriptScope();
-		if( "networkid" in s && s.networkid == "BOT" ) bot.append(ent);
-		else ply.append(ent);
+		if( "networkid" in s && s.networkid == "BOT" ) bot.append(ent.weakref());
+		else ply.append(ent.weakref());
 	}
 
 	return [ply,bot];
@@ -450,7 +452,7 @@ function VS::GetAllPlayers()
 	local e, E = ::Entities, a = [];
 	while( e = E.Next(e) )
 		if( e.GetClassname() == "player" )
-			a.append(e);
+			a.append(e.weakref());
 	return a;
 }
 

@@ -284,6 +284,24 @@ function VS::Approach( target, value, speed )
 	return value;
 }
 
+/*
+// Vector, Vector, float
+function VS::ApproachVector( target, value, speed )
+{
+	local diff = target - value;
+	local delta = diff.Norm();
+
+	if( delta > speed )
+		value += diff * speed;
+	else if( delta < (-speed) )
+		value -= diff * speed;
+	else
+		value = target;;
+
+	return value;
+}
+*/
+
 function VS::ApproachAngle( target, value, speed )
 {
 	target = AngleNormalize( target );

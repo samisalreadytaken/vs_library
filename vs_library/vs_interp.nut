@@ -7,7 +7,7 @@
 // See <README.md> or <LICENSE> for details.
 //-----------------------------------------------------------------------
 //
-// Interpolation. Mostly sourced from 'Source SDK'
+// Interpolation. Mostly sourced from the Source Engine
 //
 // Not included in 'vs_library.nut'
 //

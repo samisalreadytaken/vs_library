@@ -7,6 +7,7 @@ ________________________________
 └─ [**Installation**](#Installation)  
 └─ [**Usage**](#Usage)  
 ⠀ ⠀└─ [Setting up basis event listeners](#setting-up-basis-event-listeners)  
+└─ [**Developer notes**](#developer-notes)  
 └─ **Reference**  
 ⠀ ⠀└─ [Keywords, symbols and variables](#keywords-and-symbols-used-in-this-documentation)  
 ⠀ ⠀└─ **Base**  
@@ -31,7 +32,7 @@ Manually download the library by right clicking [**HERE**](https://raw.githubuse
 After acquiring the file, place it in your vscripts directory: `/csgo/scripts/vscripts/`
 
 **Method 2.**
-On Windows 10 17063 or later, run the [`install_vs_library.bat`](https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/install_vs_library.bat) file to automatically download the library into your game files. It can also be used update the library.
+On Windows 10 17063 or later, run the [`install_vs_library.bat`](https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/install_vs_library.bat) file to automatically download the library into your game files. It can also be used to update the library.
 
 **Method 3.**
 In bash, after changing the directory below to your Steam game library directory, use the following commands to install the library into your game files.
@@ -39,13 +40,6 @@ In bash, after changing the directory below to your Steam game library directory
 cd "C:/Program Files/Steam/steamapps/common/Counter-Strike Global Offensive/csgo/scripts/vscripts/" && 
 curl -O https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/vs_library.nut
 ```
-
-### Downloading more
-If you are planning on not only using the base library but working on its source or using the additional libraries, clone the repository with
-```
-git clone git@github.com:samisalreadytaken/vs_library.git
-```
-or download manually by clicking [**HERE**](https://github.com/samisalreadytaken/vs_library/archive/master.zip).
 
 ## Usage
 Add this following line in the beginning of your script: `IncludeScript("vs_library")`
@@ -115,6 +109,13 @@ Use `VS.DumpPlayers(1)` to see every player data.
 ```
 ________________________________
 
+## Developer notes
+* Some wrapper functions such as EntFireByHandle return the final calls to take advantage of tail calls for better performance.
+* There will be some inconsistencies between the minified version and the source files.
+* * Some functions that should be 'inline' such as max() are manually replaced in the minified version to reduce function call overhead.
+* * Constant variables such as PI and DEG2RAD are replaced with their values in the minified version to reduce variable lookups.
+* * Variables in large loops are saved in local variables to reduce variable lookups.
+
 ## Keywords and symbols used in this documentation
 | Type                  | Example                                                                             |
 | --------------------- | ----------------------------------------------------------------------------------- |
@@ -163,7 +164,7 @@ Included in `vs_library.nut`
 | `DEG2RAD`          | `0.01745329`                     |
 | `RAD2DEG`          | `57.29577951`                    |
 | `PI`               | `3.14159265`                     |
-| `RAND_MAX`         | `32767`                          |
+| `RAND_MAX`         | `0x7FFF`                         |
 
 
 ### [vs_math](#vs_math-1)
@@ -656,7 +657,7 @@ function Think()
 	DebugDrawBox( eye+dir*128, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 128, flFrameTime2 )
 
 	// print snapped direction
-	VS.ShowHudHint( hHudHint, HPlayer, VecToString(dir) )
+	printl( VecToString(dir) )
 }
 ```
 
@@ -1115,13 +1116,9 @@ Execute `exec` in the scope of `ent`
 
 <details><summary>Details</summary>
 
-If you wish to delay the code in a specific entity scope,
-set the value `::ENT_SCRIPT = self`
+If you wish to delay the code in a specific entity scope, set the third parameter to the entity, or 'self'.
 
-If you wish to delay the code in a specific scope,
-you need to know the name of the table.
-Using `VS.DumpScope(VS.GetTableDir(tableInput))`, you can find
-in which table your desired scope is and execute the code
+If you wish to delay the code in a specific scope, you need to know the name of the table. Using `VS.DumpScope(VS.GetTableDir(tableInput))`, you can find in which table your desired scope is, and execute the code.
 
 You can use activators and callers to easily access entity handles
 
@@ -1471,20 +1468,18 @@ ________________________________
 ```cpp
 string VS::UniqueString()
 ```
-UniqueString without _ in the end
+UniqueString without `_` in the end
 ________________________________
 
 <a name="f_arrayFind"></a>
 ```cpp
 int VS::arrayFind(array arr, TYPE val)
 ```
-`FindInArray`
-
-linear search  
+Linear search  
 if value found in array, return index  
 else return null
 
-Checks using this function should be explicit, and not be implicit (`if(arrayFind())`); because the returned index value can be `0`, which is considered `false` in checks.
+Checks using this function should be explicit, and not be implicit (`if(arrayFind())`); because the returned index value can be `0`, which equates to `false` in checks.
 
 <details><summary>Example</summary>
 
@@ -2167,7 +2162,7 @@ if something has gone wrong with automatic validation, force add userid.
 
 Requires player_info eventlistener that has the output:
 
-`OnEventFired > player_info > RunScriptCode > VS.Events.player_info(event_data)`
+`OnEventFired > player_info > RunScriptCode > ::VS.Events.player_info(event_data)`
 ________________________________
 
 ### [vs_log](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_log.nut)
@@ -2212,7 +2207,9 @@ ________________________________
 ```cpp
 void VS::Log::Add(string s)
 ```
-Add new string to the log. Newline (`"\n"`) not included.
+Add new string to the log. Newline (`\n`) not included.
+
+`VS.Log.L.append(string s)`
 ________________________________
 
 <a name="f_LogClear"></a>

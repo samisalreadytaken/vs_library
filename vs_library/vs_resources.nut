@@ -58,6 +58,7 @@ if( ::EntFireByHandle.getinfos().native )
 ::DEG2RAD <- 0.01745329;  // 0.01745329251994329576
 ::RAD2DEG <- 57.29577951; // 57.29577951308232087679
 // PI 3.14159265358979323846
+// RAND_MAX 0x7FFF
 
 // array to store event data, user should never modify
 if( !("_xa9b2dfB7ffe" in getroottable()) ) ::_xa9b2dfB7ffe <- [];;

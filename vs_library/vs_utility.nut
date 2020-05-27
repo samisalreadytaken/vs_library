@@ -46,7 +46,7 @@ function VS::FormatWidth(i, n, s = " ") { return::format("%"+s+""+n+"s",i.tostri
 //-----------------------------------------------------------------------
 function VS::DrawEntityBBox( time, ent, r = 255, g = 138, b = 0, a = 0 )
 {
-	::DebugDrawBox(ent.GetOrigin(),ent.GetBoundingMins(),ent.GetBoundingMaxs(),r,g,b,a,time);
+	return::DebugDrawBox(ent.GetOrigin(),ent.GetBoundingMins(),ent.GetBoundingMaxs(),r,g,b,a,time);
 }
 
 //-----------------------------------------------------------------------
@@ -501,20 +501,19 @@ function VS::GetTickrate()
 
 //-----------------------------------------------------------------------
 // If you wish to delay the code in a specific entity scope,
-// set the value
-//  	::ENT_SCRIPT = self
+// set the third parameter to the entity, or 'self'.
 //
 // If you wish to delay the code in a specific scope,
 // you need to know the name of the table.
 // Using VS.DumpScope(VS.GetTableDir(tableInput)), you can find
-// in which table your desired scope is and execute the code
+// in which table your desired scope is, and execute the code.
 //
 // You can use activators and callers to easily access entity handles
 //-----------------------------------------------------------------------
-::delay     <- function(X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null)::DoEntFireByInstanceHandle(E, "runscriptcode", ""+X, T, A, C);
+::delay     <- function(X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null)return::DoEntFireByInstanceHandle(E, "runscriptcode", ""+X, T, A, C);
 
-::Chat      <- function(s)::ScriptPrintMessageChatAll(" "+s);
-::ChatTeam  <- function(i,s)::ScriptPrintMessageChatTeam(i," "+s);
+::Chat      <- function(s)return::ScriptPrintMessageChatAll(" "+s);
+::ChatTeam  <- function(i,s)return::ScriptPrintMessageChatTeam(i," "+s);
 ::Alert     <- ::ScriptPrintMessageCenterAll;
 ::AlertTeam <- ::ScriptPrintMessageCenterTeam;
 ::ClearChat <- function() for( local i = 0; i < 9; ++i ) ::Chat("");

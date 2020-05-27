@@ -7,7 +7,7 @@
 // See <README.md> or <LICENSE> for details.
 //-----------------------------------------------------------------------
 //
-// Collision detection. Mostly sourced from 'Source SDK'
+// Collision detection. Mostly sourced from the Source Engine
 //
 // Ray traces need to be initialised with trace.Ray()
 //
