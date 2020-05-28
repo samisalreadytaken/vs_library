@@ -15,6 +15,10 @@
 
 IncludeScript("vs_library/vs_math2");
 
+// if already included
+if( "Catmull_Rom_Spline" in ::VS )
+	return;;
+
 enum INTERPOLATE
 {
 	DEFAULT,
@@ -117,14 +121,14 @@ function VS::Interpolator_CurveInterpolate( interpolationType, vPre, vStart, vEn
 			break;
 		case INTERPOLATE.EASE_IN:
 			{
-				f = ::sin( f * 1.5708 );
+				f = ::sin( f * 1.57079633 ); // PI / 2
 				// ignores vPre and vNext
 				VectorLerp( vStart, vEnd, f, vOut );
 			}
 			break;
 		case INTERPOLATE.EASE_OUT:
 			{
-				f = 1.0 - ::sin( f * 1.5708 + 1.5708 );
+				f = 1.0 - ::sin( f * 1.57079633 + 1.57079633 ); // PI / 2
 				// ignores vPre and vNext
 				VectorLerp( vStart, vEnd, f, vOut );
 			}
@@ -228,14 +232,14 @@ function VS::Interpolator_CurveInterpolate_NonNormalized( interpolationType, vPr
 			break;
 		case INTERPOLATE.EASE_IN:
 			{
-				f = ::sin( f * 1.5708 );
+				f = ::sin( f * 1.57079633 ); // PI / 2
 				// ignores vPre and vNext
 				VectorLerp( vStart, vEnd, f, vOut );
 			}
 			break;
 		case INTERPOLATE.EASE_OUT:
 			{
-				f = 1.0 - ::sin( f * 1.5708 + 1.5708 );
+				f = 1.0 - ::sin( f * 1.57079633 + 1.57079633 ); // PI / 2
 				// ignores vPre and vNext
 				VectorLerp( vStart, vEnd, f, vOut );
 			}
@@ -972,9 +976,11 @@ function VS::RangeCompressor( flValue, flMin, flMax, flBase )
 	// convert to -1 to 1 value
 	local flTarget = flMid * 2 - 1;
 
-	if( ::fabs(flTarget) > 0.75 )
+	local fAbs = ::fabs(flTarget);
+
+	if( fAbs > 0.75 )
 	{
-		local t = (::fabs(flTarget) - 0.75) / (1.25);
+		local t = (fAbs - 0.75) / (1.25);
 		if( t < 1.0 )
 		{
 			if( flTarget > 0 )
@@ -1000,8 +1006,8 @@ function VS::RangeCompressor( flValue, flMin, flMax, flBase )
 	return flValue;
 }
 
-// slerp
-function VS::QAngleLerp( v1, v2, flPercent )
+// QAngle, slerp
+function VS::InterpolateAngles( v1, v2, flPercent )
 {
 	// Avoid precision errors
 	if( v1 == v2 )

@@ -17,6 +17,10 @@
 
 IncludeScript("vs_library/vs_math2");
 
+// if already included
+if( "IsBoxIntersectingRay" in ::VS )
+	return;;
+
 //-----------------------------------------------------------------------------
 // Clears the trace
 //-----------------------------------------------------------------------------
@@ -36,10 +40,12 @@ function VS::ComputeBoxOffset( ray )
 	if( ray.m_IsRay )
 		return 1.e-3;
 
+	local fabs = ::fabs;
+
 	// Find the projection of the box diagonal along the ray...
-	local offset = ::fabs(ray.m_Extents.x * ray.m_Delta.x) +
-	               ::fabs(ray.m_Extents.y * ray.m_Delta.y) +
-	               ::fabs(ray.m_Extents.z * ray.m_Delta.z);
+	local offset = fabs(ray.m_Extents.x * ray.m_Delta.x) +
+	               fabs(ray.m_Extents.y * ray.m_Delta.y) +
+	               fabs(ray.m_Extents.z * ray.m_Delta.z);
 
 	// We need to divide twice: Once to normalize the computation above
 	// so we get something in units of extents, and the second to normalize
@@ -244,8 +250,10 @@ function VS::IsBoxIntersectingRay2( boxMin, boxMax, origin, vecDelta, flToleranc
 	local tmin = FLT_MIN,
 	      tmax = FLT_MAX;
 
+	local fabs = ::fabs;
+
 	// Parallel case...
-	if( ::fabs(vecDelta.x) < 1.e-8 )
+	if( fabs(vecDelta.x) < 1.e-8 )
 	{
 		// Check that origin is in the box
 		// if not, then it doesn't intersect..
@@ -283,7 +291,7 @@ function VS::IsBoxIntersectingRay2( boxMin, boxMax, origin, vecDelta, flToleranc
 	};
 
 	// other points:
-	if( ::fabs(vecDelta.y) < 1.e-8 )
+	if( fabs(vecDelta.y) < 1.e-8 )
 	{
 		if( (origin.y < boxMin.y - flTolerance) || (origin.y > boxMax.y + flTolerance) )
 			return false;
@@ -311,7 +319,7 @@ function VS::IsBoxIntersectingRay2( boxMin, boxMax, origin, vecDelta, flToleranc
 			return false;
 	};
 
-	if( ::fabs(vecDelta.z) < 1.e-8 )
+	if( fabs(vecDelta.z) < 1.e-8 )
 	{
 		if( (origin.z < boxMin.z - flTolerance) || (origin.z > boxMax.z + flTolerance) )
 			return false;
@@ -342,6 +350,7 @@ function VS::IsBoxIntersectingRay2( boxMin, boxMax, origin, vecDelta, flToleranc
 	return true;
 }
 
+/*
 //-----------------------------------------------------------------------------
 // Intersects a ray with a ray, return true if they intersect
 // t, s = parameters of closest approach (if not intersecting!)
@@ -403,8 +412,8 @@ function VS::IntersectRayWithRay( ray0, ray1 )
 
 	return false;
 }
-
-// FIXME
+*/
+/*
 //-----------------------------------------------------------------------------
 // Swept OBB test
 // Input  : localMins, localMaxs
@@ -532,12 +541,13 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs, flTolerance )
 
 	return true;
 }
-
+*/
+/*
 //-----------------------------------------------------------------------------
 // Compute a separating plane between two boxes (expensive!)
 // Returns false if no separating plane exists
 //-----------------------------------------------------------------------------
-function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, tolerance/* , pNormalOut */ )
+function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, tolerance )
 {
 	// The various separating planes can be either
 	// 1) A plane parallel to one of the box face planes
@@ -819,12 +829,13 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 	return false;
 }
-
+*/
+/*
 //-----------------------------------------------------------------------------
 // Compute a separating plane between two boxes (expensive!)
 // Returns false if no separating plane exists
 //-----------------------------------------------------------------------------
-function VS::ComputeSeparatingPlane2( org1, angles1, min1, max1, org2, angles2, min2, max2, tolerance/* , pNormalOut */ )
+function VS::ComputeSeparatingPlane2( org1, angles1, min1, max1, org2, angles2, min2, max2, tolerance )
 {
 	local worldToBox1 = ::matrix3x4(),
 	      box2ToWorld = ::matrix3x4();
@@ -836,5 +847,6 @@ function VS::ComputeSeparatingPlane2( org1, angles1, min1, max1, org2, angles2, 
 	local box1Size = (max1 - min1) * 0.5;
 	local box2Size = (max2 - min2) * 0.5;
 
-	return ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, tolerance/* , pNormalOut */ );
+	return ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, tolerance );
 }
+*/

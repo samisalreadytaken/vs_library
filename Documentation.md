@@ -111,10 +111,10 @@ ________________________________
 
 ## Developer notes
 * Some wrapper functions such as EntFireByHandle return the final calls to take advantage of tail calls for better performance.
+* Variables in large loops are saved in local variables to reduce variable lookups.
 * There will be some inconsistencies between the minified version and the source files.
 * * Some functions that should be 'inline' such as max() are manually replaced in the minified version to reduce function call overhead.
 * * Constant variables such as PI and DEG2RAD are replaced with their values in the minified version to reduce variable lookups.
-* * Variables in large loops are saved in local variables to reduce variable lookups.
 
 ## Keywords and symbols used in this documentation
 | Type                  | Example                                                                             |

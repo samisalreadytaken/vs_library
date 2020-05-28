@@ -3,6 +3,12 @@
 
 --------------------------------
 
+2020-05-28
+- Changes in math2, interp, collision:
+  - Commented out some broken functions.
+  - Merged some matrix functions to have optional position parameter.
+  - Added checks to prevent loading if already loaded.
+
 2020-05-26 [v2.36.5]
 - Minor performance improvements
 
