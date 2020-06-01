@@ -1,12 +1,12 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
 //                       github.com/samisalreadytaken
-//- v1.0.5 --------------------------------------------------------------
+//- v1.0.6 --------------------------------------------------------------
 //
 // Easy glow handling library.
 // Can be used on any entity that has a model.
 //
-//    Glow.Set(player, "255 138 0", 1, 2048)
+//    Glow.Set(player, Vector(255,138,0), 1, 2048)
 //    Glow.Disable(player)
 //
 //    Glow.DEBUG = true
@@ -114,7 +114,7 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 			if( !src || !src.GetModelName().len() )
 				throw "Glow: Invalid source entity";
 
-			for( local i = _list.len()-1; i >= 0; --i )
+			for( local i = _list.len(); i--; )
 			{
 				local g = _list[i];
 				if(g)
@@ -124,16 +124,11 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 				}
 				else _list.remove(i);
 			}
-
-		//	old (more expensive) algorithm: looks through children rather than parents
-		//	for( local i = src.FirstMoveChild(); i; i = i.NextMovePeer() )
-		//		foreach( e in _list ) if( e == i )
-		//			return i;
 		}
 
+		// EF_DEFAULT = (1<<0)|(1<<11)|(1<<14),
+		// EF_NODRAW = (1<<5),
 		DEBUG = false,
-		// EF_DEFAULT = (1<<0|1<<11)|1<<14,
-		// EF_NODRAW = 1<<5,
 		_list = []
 	}
 };;

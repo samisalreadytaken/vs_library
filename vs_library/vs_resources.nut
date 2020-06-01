@@ -88,5 +88,5 @@ function VS::ForceReload():(_f)
 {
 	_reload = true;
 	::print("Reloading vs_library...\n");
-	::DoIncludeScript(_f,::getroottable());
+	return::DoIncludeScript(_f,::getroottable());
 }

@@ -110,11 +110,12 @@ Use `VS.DumpPlayers(1)` to see every player data.
 ________________________________
 
 ## Developer notes
-* Some wrapper functions such as EntFireByHandle return the final calls to take advantage of tail calls for better performance.
+* Some wrapper functions such as EntFireByHandle return the final calls to take advantage of tail calls for (minor) performance gains.
 * Variables in large loops are saved in local variables to reduce variable lookups.
-* There will be some inconsistencies between the minified version and the source files.
+* There will be some inconsistencies between the minified version and the source files:
 * * Some functions that should be 'inline' such as max() are manually replaced in the minified version to reduce function call overhead.
 * * Constant variables such as PI and DEG2RAD are replaced with their values in the minified version to reduce variable lookups.
+________________________________
 
 ## Keywords and symbols used in this documentation
 | Type                  | Example                                                                             |
@@ -356,7 +357,6 @@ Not included in `vs_library.nut`
 [`VS.QuaternionInvert()`](#f_QuaternionInvert)  
 [`VS.QuaternionNormalize()`](#f_QuaternionNormalize)  
 [`VS.QuaternionMatrix()`](#f_QuaternionMatrix)  
-[`VS.QuaternionMatrix2()`](#f_QuaternionMatrix2)  
 [`VS.QuaternionAngles()`](#f_QuaternionAngles)  
 [`VS.QuaternionAxisAngle()`](#f_QuaternionAxisAngle)  
 [`VS.AxisAngleQuaternion()`](#f_AxisAngleQuaternion)  
@@ -366,9 +366,7 @@ Not included in `vs_library.nut`
 [`VS.MatrixAngles()`](#f_MatrixAngles)  
 [`VS.MatrixAnglesQ()`](#f_MatrixAnglesQ)  
 [`VS.AngleMatrix()`](#f_AngleMatrix)  
-[`VS.AngleMatrix2()`](#f_AngleMatrix2)  
 [`VS.AngleIMatrix()`](#f_AngleIMatrix)  
-[`VS.AngleIMatrix2()`](#f_AngleIMatrix2)  
 [`VS.MatrixVectors()`](#f_MatrixVectors)  
 [`VS.MatricesAreEqual()`](#f_MatricesAreEqual)  
 [`VS.MatrixCopy()`](#f_MatrixCopy)  
@@ -401,10 +399,6 @@ Not included in `vs_library.nut`
 [`VS.IsRayIntersectingSphere()`](#f_IsRayIntersectingSphere)  
 [`VS.IsBoxIntersectingRay()`](#f_IsBoxIntersectingRay)  
 [`VS.IsBoxIntersectingRay2()`](#f_IsBoxIntersectingRay2)  
-[`VS.IntersectRayWithRay()`](#f_IntersectRayWithRay)  
-[`VS.IsRayIntersectingOBB()`](#f_IsRayIntersectingOBB)  
-[`VS.ComputeSeparatingPlane()`](#f_ComputeSeparatingPlane)  
-[`VS.ComputeSeparatingPlane2()`](#f_ComputeSeparatingPlane2)  
 
 
 ### [vs_interp](#vs_interp-1)
@@ -437,7 +431,7 @@ Not included in `vs_library.nut`
 [`VS.Parabolic_Spline()`](#f_Parabolic_Spline)  
 [`VS.Parabolic_Spline_NormalizeX()`](#f_Parabolic_Spline_NormalizeX)  
 [`VS.RangeCompressor()`](#f_RangeCompressor)  
-[`VS.QAngleLerp()`](#f_QAngleLerp)  
+[`VS.InterpolateAngles()`](#f_InterpolateAngles)  
 
 ________________________________
 
@@ -715,7 +709,7 @@ Vector a + Vector b
 
 <details><summary>NOTE</summary>
 
-```cpp
+```cs
 //
 // <vec1 + vec2> operation returns a new Vector instance
 // <VS.VectorAdd(vec1, vec2, vec1)> stores the result in vec1
@@ -724,7 +718,6 @@ Vector a + Vector b
 // or pass a new Vector instance in the third parameter)
 //
 // Example of how to mess up:
-/*
 
 // in1, in2, in3, in4 are unique non-equal vectors
 
@@ -749,12 +742,11 @@ local v2 = VS.VectorAdd( in3, in4 )
 local v1 = VS.VectorAdd( in1, in2, Vector() )
 local v2 = VS.VectorAdd( in3, in4, Vector() )
 
-// This is because when the third parameter is omitted, they reference the same instance
+// This is because when the third parameter is omitted, they reference the same instance.
 // While this may not be much of use in basic + - operations, it can be very helpful in
 // complex functions in 'vs_math2', where you're using the value, not the instance.
 // General idea is that if you're going to do more with the returned Vector instance,
 // create a new one and pass that as a parameter.
-*/
 ```
 
 </details>
@@ -1036,8 +1028,7 @@ ________________________________
 ```cpp
 float VS::FLerp(float f1, float f2, float i1, float i2, float x)
 ```
-<details><summary>Details</summary>
-
+```
 5-argument floating point linear interpolation.  
 FLerp(f1,f2,i1,i2,x)=  
    f1 at x=i1  
@@ -1048,9 +1039,7 @@ FLerp(f1,f2,i1,i2,x)=
   If you know a function f(x)'s value (f1) at position i1, and its value (f2) at position i2,  
   the function can be linearly interpolated with FLerp(f1,f2,i1,i2,x)  
    i2=i1 will cause a divide by zero.
-
-</details>
-
+```
 ________________________________
 
 <a name="f_VectorLerp"></a>
@@ -1090,20 +1079,42 @@ if(!("__reloading"in::getroottable()))::__reloading<-false;;if(::__reloading)del
 
 </details>
 
+<details><summary>Snippet</summary>
+
+Paste the line below to the console to test target time -> server time conversion. Change `0.1` in the end to your time
+
+```cs
+script local _=function(i){delay("printl("+i+"+\" -> \"+(Time()-"+VS.FormatPrecision(Time(),9)+"))",i.tofloat())}( 0.1 )
+```
+
+</details>
+
 ________________________________
 
 <a name="f_Ent"></a>
 ```cpp
 handle Ent(string targetname, handle startEntity = null)
 ```
-Find entity by targetname
+Find entity by targetname (wrapper function). Meant for initial entity getting without the text getting lengthy and harder to read using `Entities.FindByName`
+
+E.g. compare the following
+
+```cs
+hEnt0 <- Ent("entname0")
+hEnt1 <- Ent("entname1")
+hEnt2 <- Ent("entname2")
+
+hEnt0 <- Entities.FindByName(null,"entname0")
+hEnt1 <- Entities.FindByName(null,"entname1")
+hEnt2 <- Entities.FindByName(null,"entname2")
+```
 ________________________________
 
 <a name="f_Entc"></a>
 ```cpp
 handle Entc(string classname, handle startEntity = null)
 ```
-Find entity by classname
+Find entity by classname (wrapper function). Read above
 ________________________________
 
 <a name="f_delay"></a>
@@ -1123,19 +1134,7 @@ If you wish to delay the code in a specific scope, you need to know the name of 
 You can use activators and callers to easily access entity handles
 
 ```cs
-local vec = Vector(4,6,0)
-
-delay( "activator.SetOrigin("+ VecToString(vec) +")", 2.5, ENT_SCRIPT, hSomeEntity )
-```
-
-</details>
-
-<details><summary>Snippet</summary>
-
-Paste the line below to the console to test target time -> server time conversion. Change `0.1` in the end to your time
-
-```cs
-script local _=function(i){delay("printl("+i+"+\" -> \"+(Time()-"+VS.FormatPrecision(Time(),9)+"))",i.tofloat())}( 0.1 )
+::delay("DoSomething(activator,caller)", 2.5, ::ENT_SCRIPT, hSomeEntity, hOtherEntity)
 ```
 
 </details>
@@ -1146,40 +1145,49 @@ ________________________________
 ```cpp
 void Chat(string s)
 ```
+Wrapper function for `ScriptPrintMessageChatAll`, but allows text colour to be the first character.
 
+```
+// colour will not work
+ScriptPrintMessageChatAll(txt.red + "lorem ipsum")
+
+// will be coloured
+Chat(txt.red + "lorem ipsum")
+```
 ________________________________
 
 <a name="f_ChatTeam"></a>
 ```cpp
 void ChatTeam(int team, string s)
 ```
-
+Wrapper function for `ScriptPrintMessageChatTeam`. Read above
 ________________________________
 
 <a name="f_Alert"></a>
 ```cpp
 void Alert(string s)
 ```
-
+Shorter name for `ScriptPrintMessageCenterAll`
 ________________________________
 
 <a name="f_AlertTeam"></a>
 ```cpp
 void AlertTeam(int team, string s)
 ```
-
+Shorter name for `ScriptPrintMessageCenterTeam`
 ________________________________
 
 <a name="f_ClearChat"></a>
 ```cpp
 void ClearChat()
 ```
-
+Execute `Chat("")` 9 times
 ________________________________
 
 <a name="f_txt"></a>
 ```cpp
-txt {
+txt
+{
 	invis
 	white
 	red
@@ -1199,7 +1207,7 @@ txt {
 	orange
 }
 ```
-`Chat( txt.red + "RED" + txt.yellow + " YELLOW" + txt.white + " WHITE" )`
+`Chat(txt.red + "RED" + txt.yellow + " YELLOW" + txt.white + " WHITE")`
 ________________________________
 
 <a name="f_VecToString"></a>
@@ -1348,8 +1356,9 @@ ________________________________
 ```cpp
 trace_t VS::TraceLine(Vector start = null, Vector end = null, handle ignore = null)
 ```
-Note: This doesn't hit entities. To calculate LOS with them, iterate through every entity type you want and trace individually  
-Example: https://github.com/samisalreadytaken/vscripts/blob/master/aimbot/aimbot.nut#L291
+Note: This doesn't hit entities. To calculate LOS with them, iterate through every entity type you want and trace individually.
+
+Example can be found in `aimbot.nut` at github.com/samisalreadytaken/vscripts
 ________________________________
 
 <a name="f_DidHit"></a>
@@ -1421,11 +1430,11 @@ Draw the normal of a surface the player is looking at
 ```cs
 function Think()
 {
-	local tr = VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() )
+	local tr = VS.TraceDir(HPlayer.EyePosition(), HPlayerEye.GetForwardVector())
 
 	tr.GetNormal()
 
-	DebugDrawLine( tr.hitpos, tr.normal * 16 + tr.hitpos, 0, 0, 255, false, 10 )
+	DebugDrawLine(tr.hitpos, tr.normal * 16 + tr.hitpos, 0, 0, 255, false, 0.1)
 }
 ```
 
@@ -1453,10 +1462,10 @@ Example draw a cube at player aim (GOTV spectator like)
 function Think()
 {
 	local eye = HPlayer.EyePosition()
-	local v1 = VS.TraceDir( eye, HPlayerEye.GetForwardVector() ).GetPos()
+	local pos = VS.TraceDir(eye, HPlayerEye.GetForwardVector()).GetPos()
 
-	DebugDrawLine( eye, v1, 255, 255, 255, false, flFrameTime2 )
-	DebugDrawBox( v1, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 125, flFrameTime2 )
+	DebugDrawLine(eye, pos, 255, 255, 255, false, flFrameTime2)
+	DebugDrawBox(pos, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 125, flFrameTime2)
 }
 ```
 
@@ -1475,9 +1484,7 @@ ________________________________
 ```cpp
 int VS::arrayFind(array arr, TYPE val)
 ```
-Linear search  
-if value found in array, return index  
-else return null
+Linear search. If value found in array then return index, else return null
 
 Checks using this function should be explicit, and not be implicit (`if(arrayFind())`); because the returned index value can be `0`, which equates to `false` in checks.
 
@@ -1501,7 +1508,6 @@ printl( VS.arrayFind(arr, "a") ? "true" : "false" )
 printl( VS.arrayFind(arr, "x") ? "true" : "false" )
 
 
-
 // Correct usage:
 
 // Check if "a" is in array
@@ -1519,7 +1525,6 @@ printl( VS.arrayFind(arr, "a") == null )
 printl( VS.arrayFind(arr, "x") == null )
 
 ```
-
 
 </details>
 
@@ -1586,8 +1591,7 @@ void VS::GetStackInfo(bool deepprint = false, bool printall = false)
 ```
 Print current stack info
 
-Put in the function you want to get stack info from  
-if deepprint && scope not roottable, deepprint
+Put in the function you want to get stack info from. if deepprint && scope not roottable then deepprint
 
 <details><summary>Details</summary>
 
@@ -1672,15 +1676,13 @@ ________________________________
 ```cpp
 string VS::GetVarName(TYPE v)
 ```
-Doesn't work with primitive variables if  
-there are multiple variables with the same value.  
-But it can work if the value is unique, like a unique string.
+Doesn't work with primitive variables if there are multiple variables with the same value. But it can work if the value is unique, like a unique string.
 
 <details><summary>Example</summary>
 
 ```cs
-::somestring <- "my unique string"
-::somefunc <- function(){}
+somestring <- "my unique string"
+somefunc <- function(){}
 
 // prints "somestring"
 printl( VS.GetVarName(somestring) )
@@ -1707,13 +1709,9 @@ ________________________________
 ```cpp
 void EntFireByHandle(handle target, string action, string value = "", float delay = 0.0, handle activator = null, handle caller = null)
 ```
-`EntFireByHandle( hEnt, "Use" )`
-
-<details><summary>More</summary>
+`EntFireByHandle(hEnt, "Use")`
 
 The native function is `DoEntFireByInstanceHandle`
-
-</details>
 
 ________________________________
 
@@ -1742,8 +1740,7 @@ ________________________________
 ```cpp
 void VS::SetParent(handle child, handle parent)
 ```
-Set child's parent  
-if parent == null, unparent child
+Set child's parent. if parent == null then unparent child
 ________________________________
 
 <a name="f_ShowGameText"></a>
@@ -1752,7 +1749,7 @@ void VS::ShowGameText(handle ent, handle target, string msg = null, float delay 
 ```
 Show gametext
 
-if ent == handle, set msg
+if ent == handle then set msg
 ________________________________
 
 <a name="f_ShowHudHint"></a>
@@ -1761,7 +1758,7 @@ void VS::ShowHudHint(handle ent, handle target, string msg = null, float delay =
 ```
 Show hudhint
 
-if ent == handle, set msg
+if ent == handle then set msg
 ________________________________
 
 <a name="f_HideHudHint"></a>
@@ -1781,7 +1778,7 @@ Create and return an eye angle measuring entity
 player_eye_reference <- VS.CreateMeasure("player_targetname")
 ```
 
-If `measureEye` is false, measure `targetTargetname`, set `refTargetname` as reference (entity to move)
+If `measureEye` is false then measure `targetTargetname` and set `refTargetname` as reference (entity to move)
 
 <details><summary>Example</summary>
 
@@ -1817,8 +1814,7 @@ if( !("hPlayerEye" in getroottable()) )
 }
 ```
 
-You can disable the reference entity to stop the measure.  
-The reference will keep the last measured values.
+You can disable the reference entity to stop the measure. The reference will keep the last measured values.
 
 ```lua
 EntFireByHandle( hPlayerEye, "disable" )
@@ -1909,11 +1905,9 @@ ________________________________
 ```cpp
 table VS::AddOutput(handle ent, string output, TYPE func, table scope = null, bool bExecInEnt = false)
 ```
-Adds output in the chosen entity  
-Executes the given function in the given scope  
-Accepts function parameters
+Add output in the chosen entity. Execute the given function in the given scope. Accepts function parameters.
 
-Returns entity scope
+Return entity scope
 
 `TYPE`: `string|function`
 
@@ -2415,7 +2409,8 @@ ________________________________
 ```cpp
 Quaternion VS::QuaternionBlend(Quaternion p, Quaternion q, float t, Quaternion& qt = _QUAT)
 ```
-Do a piecewise addition of the quaternion elements. This is a cheap way to simulate a slerp.  
+Do a piecewise addition of the quaternion elements. This is a cheap way to simulate a slerp.
+
 nlerp
 ________________________________
 
@@ -2479,14 +2474,7 @@ ________________________________
 
 <a name="f_QuaternionMatrix"></a>
 ```cpp
-void VS::QuaternionMatrix(Quaternion q, Vector pos, matrix3x4_t& matrix)
-```
-Quaternion -> matrix3x4
-________________________________
-
-<a name="f_QuaternionMatrix2"></a>
-```cpp
-void VS::QuaternionMatrix2(Quaternion q, matrix3x4_t& matrix)
+void VS::QuaternionMatrix(Quaternion q, matrix3x4_t& matrix, Vector pos)
 ```
 Quaternion -> matrix3x4
 ________________________________
@@ -2549,28 +2537,14 @@ ________________________________
 
 <a name="f_AngleMatrix"></a>
 ```cpp
-void VS::AngleMatrix(QAngle angles, Vector position, matrix3x4_t& matrix)
-```
-QAngle -> matrix3x4 (left-handed)
-________________________________
-
-<a name="f_AngleMatrix2"></a>
-```cpp
-void VS::AngleMatrix2(QAngle angles, matrix3x4_t& matrix)
+void VS::AngleMatrix(QAngle angles, matrix3x4_t& matrix, Vector position)
 ```
 QAngle -> matrix3x4 (left-handed)
 ________________________________
 
 <a name="f_AngleIMatrix"></a>
 ```cpp
-void VS::AngleIMatrix(QAngle angles, Vector position, matrix3x4_t& mat)
-```
-
-________________________________
-
-<a name="f_AngleIMatrix2"></a>
-```cpp
-void VS::AngleIMatrix2(QAngle angles, matrix3x4_t& mat)
+void VS::AngleIMatrix(QAngle angles, matrix3x4_t& mat, Vector position)
 ```
 
 ________________________________
@@ -2581,7 +2555,8 @@ void VS::MatrixVectors(matrix3x4_t matrix, Vector& forward, Vector& right, Vecto
 ```
 matrix3x4 -> basis
 
-Matrix is right-handed x=forward, y=left, z=up.  
+Matrix is right-handed x=forward, y=left, z=up.
+
 Valve uses left-handed convention for vectors in the game code (forward, right, up)
 ________________________________
 
@@ -2708,7 +2683,8 @@ ________________________________
 ```cpp
 void VS::RotateAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
 ```
-Rotates a AABB into another space; which will inherently grow the box.  
+Rotates a AABB into another space; which will inherently grow the box.
+
 (same as TransformAABB, but doesn't take the translation into account)
 ________________________________
 
@@ -2795,37 +2771,6 @@ bool VS::IsBoxIntersectingRay2(Vector boxMin, Vector boxMax, Vector origin, Vect
 Intersects a ray with a AABB, return true if they intersect
 
 Input  : worldMins, worldMaxs
-________________________________
-
-<a name="f_IntersectRayWithRay"></a>
-```cpp
-bool VS::IntersectRayWithRay(ray_t ray0, ray_t ray1)
-```
-Intersects a ray with a ray, return true if they intersect
-________________________________
-
-<a name="f_IsRayIntersectingOBB"></a>
-```cpp
-bool VS::IsRayIntersectingOBB(ray_t ray, Vector org, QAngle angles, Vector mins, Vector maxs, float flTolerance)
-```
-Swept OBB test
-
-Input  : localMins, localMaxs
-________________________________
-
-<a name="f_ComputeSeparatingPlane"></a>
-```cpp
-bool VS::ComputeSeparatingPlane(matrix3x4_t worldToBox1, matrix3x4_t box2ToWorld, Vector box1Size, Vector box2Size, float tolerance)
-```
-Compute a separating plane between two boxes (expensive!)  
-Returns false if no separating plane exists
-________________________________
-
-<a name="f_ComputeSeparatingPlane2"></a>
-```cpp
-VS::ComputeSeparatingPlane2(Vector org1, QAngle angles1, Vector min1, Vector max1, Vector org2, QAngle angles2, Vector min2, Vector max2, float tolerance)
-```
-
 ________________________________
 
 ### [vs_interp](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_interp.nut)
@@ -3089,11 +3034,11 @@ float VS::RangeCompressor(float flValue, float flMin, float flMax, float flBase)
 Compress the input values for a ranged result such that from 75% to 200% smoothly of the range maps
 ________________________________
 
-<a name="f_QAngleLerp"></a>
+<a name="f_InterpolateAngles"></a>
 ```cpp
-QAngle VS::QAngleLerp(QAngle v1, QAngle v2, float flPercent)
+QAngle VS::InterpolateAngles(QAngle v1, QAngle v2, float flPercent)
 ```
-Slerp
+QAngle slerp
 ________________________________
 **END OF DOC**
 ________________________________
