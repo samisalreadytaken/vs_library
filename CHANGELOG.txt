@@ -3,6 +3,10 @@
 
 --------------------------------
 
+2020-06-09 [v2.36.6]
+- Added ForceValidateUserid to base (vs_library.nut)
+- Removed AddEventCallback
+
 2020-05-28
 - Changes in math2, interp, collision:
   - Commented out some broken functions.
@@ -13,7 +17,7 @@
 - Minor performance improvements
 
 2020-05-21 [v2.36.4]
-- Added AddEventCallback to simplify event callback adding.
+- Added AddEventCallback
 - Bugfix on glow.nut
 
 2020-05-11 [v2.36.3]

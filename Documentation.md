@@ -308,7 +308,6 @@ Included in `vs_library.nut`
 
 ### [vs_events](#vs_events-1)
 [`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)  
-[`VS.AddEventCallback()`](#f_AddEventCallback)  
 [`VS.Events.ForceValidateUserid()`](#f_ForceValidateUserid)
 
 
@@ -2139,24 +2138,25 @@ Return null if no player is found.
 See [Setting up basis event listeners](#setting-up-basis-event-listeners)
 ________________________________
 
-<a name="f_AddEventCallback"></a>
-```cpp
-void VS::AddEventCallback(string event, closure function, table scope = null)
-```
-Bind the input function to global _OnGameEvent\__ function in _scope_, _this_ by default.
-________________________________
-
 <a name="f_ForceValidateUserid"></a>
 ```cpp
 void VS::Events::ForceValidateUserid(handle player)
 ```
-_This is currently not included in `vs_library.nut`._
-
 if something has gone wrong with automatic validation, force add userid. 
 
 Requires player_info eventlistener that has the output:
 
 `OnEventFired > player_info > RunScriptCode > ::VS.Events.player_info(event_data)`
+
+Calling multiple times in a frame will cause problems.
+
+Validating all players at once:
+
+```cs
+local flFrameTime = FrameTime()
+foreach( i,v in ::VS.GetAllPlayers() )
+	::delay("::VS.Events.ForceValidateUserid(activator)", i*flFrameTime, ::ENT_SCRIPT, v);
+```
 ________________________________
 
 ### [vs_log](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_log.nut)

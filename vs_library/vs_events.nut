@@ -6,14 +6,6 @@
 // This project is licensed under the terms of the MIT License.
 // See <README.md> or <LICENSE> for details.
 //-----------------------------------------------------------------------
-//
-// For CS:GO event examples, see the example map at
-//   	https://github.com/samisalreadytaken/vscripts
-//
-// For vs_library documentation, see
-//  	https://github.com/samisalreadytaken/vs_library/blob/master/Documentation.md
-//
-//-----------------------------------------------------------------------
 
 //-----------------------------------------------------------------------
 // Input  : int userid
@@ -31,47 +23,6 @@ function VS::GetPlayerByUserid( userid )
 	}
 }
 
-//-----------------------------------------------------------------------
-// Bind the input function to global 'OnGameEvent_' function in 'scope', 'this' by default.
-//
-// Input  : string|handle, closure|string, table
-// Output :
-//-----------------------------------------------------------------------
-function VS::AddEventCallback(event,func,scope = null)
-{
-	if(!scope)
-		scope = GetCaller();
-	else if( typeof scope != "table" )
-		throw "Invalid scope type " + typeof scope;;
-
-	if( typeof func == "string" )
-	{
-		if( func.find("(") != null )
-			throw "Invalid function string";
-		else
-			func = scope[func];
-	}
-	else if( typeof func != "function" )
-		throw "Invalid function type " + typeof func;;
-
-	if( typeof event == "instance" )
-	{
-		if( event instanceof ::CBaseEntity )
-		{
-			if( event.IsValid() )
-				event = event.GetName();
-			else
-				throw "Invalid event input";
-		};
-	}
-	else if( typeof event != "string" )
-		throw "Invalid event input: " + typeof event;;
-
-	::getroottable()["OnGameEvent_"+event] <- func.bindenv(scope);
-}
-
-//-----------------------------------------------------------------------
-
 // OnEvent player_connect
 // user function ::OnGameEvent_player_connect will still be called
 //
@@ -88,7 +39,7 @@ function VS::Events::player_connect(data)
 	if(::_xa9b2dfB7ffe.len()>128)
 	{
 		for(local i=0;i<64;++i)::_xa9b2dfB7ffe.remove(0);
-		::print("player_connect: ERROR!!! Player data is not being processed.\n")
+		::print("player_connect: ERROR!!! Player data is not being processed\n")
 	};
 	::_xa9b2dfB7ffe.append(data);
 
@@ -105,7 +56,7 @@ function VS::Events::player_spawn(data)
 
 		if( !player.ValidateScriptScope() )
 		{
-			::print("player_connect: Invalid player entity.\n");
+			::print("player_connect: Invalid player entity\n");
 			break;
 		};
 
@@ -126,7 +77,7 @@ function VS::Events::player_spawn(data)
 		};
 
 		if( !d.networkid.len() )
-			::print("player_connect: could not get event data.\n");
+			::print("player_connect: could not get event data\n");
 
 		scope.userid <- d.userid;
 		scope.name <- d.name;
@@ -138,32 +89,40 @@ function VS::Events::player_spawn(data)
 	return::OnGameEvent_player_spawn(data);
 }
 
-//-----------------------------------------------------------------------
-
-// NOT INCLUDED IN BASE
-
 // if something has gone wrong with automatic validation,
-// force add userid. Requires player_info eventlistener
-// that has the output:
+// force add userid. Requires player_info eventlistener that has the output:
 // OnEventFired > player_info > RunScriptCode > VS.Events.player_info(event_data)
+//
+// Calling multiple times in a frame will cause problems.
+//
+// Validating all players at once:
+//
+// local flFrameTime = FrameTime()
+// foreach( i,v in ::VS.GetAllPlayers() )
+//		::delay("::VS.Events.ForceValidateUserid(activator)", i*flFrameTime, ::ENT_SCRIPT, v);
+//
 function VS::Events::ForceValidateUserid(ent)
 {
 	if( !ent || !ent.IsValid() || ent.GetClassname() != "player" )
-		return::print("ForceValidateUserid: Invalid input.");
+		return::print("ForceValidateUserid: Invalid input: "+E+"\n");
 
 	if( !::Entc("logic_eventlistener") )
-		return::print("ForceValidateUserid: No eventlistener found.");
+		return::print("ForceValidateUserid: No eventlistener found\n");
 
 	local proxy;
 
-	if( !(proxy = ::VS.FindEntityByIndex(nPrxIx)) )
+	if( !(proxy = ::VS.FindEntityByIndex(iProxyIdx)) )
 	{
 		proxy = ::VS.CreateEntity("info_game_event_proxy", {event_name = "player_info"}, true);
-		nPrxIx = proxy.entindex();
+		iProxyIdx = proxy.entindex();
 	};
 
 	ent.ValidateScriptScope();
 	_SV = ent.GetScriptScope();
+
+	// don't quit, overwrite previous userid if exists
+	// if( "userid" in _SV ) return
+
 	::EntFireByHandle(proxy, "generategameevent", "", 0, ent);
 }
 
@@ -181,11 +140,11 @@ function VS::Events::player_info(data)
 		_SV = null;
 	};
 
+	if( !("OnGameEvent_player_info" in::getroottable()) )
+		::OnGameEvent_player_info <- ::dummy;
+
 	return::OnGameEvent_player_info(data);
 }
 
 ::VS.Events._SV <- null;
-::VS.Events.nPrxIx <- null;
-
-if( !("OnGameEvent_player_info" in::getroottable()) )
-	::OnGameEvent_player_info <- ::dummy;;
+::VS.Events.iProxyIdx <- null;
