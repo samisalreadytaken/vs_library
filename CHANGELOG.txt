@@ -3,6 +3,10 @@
 
 --------------------------------
 
+2020-06-22 [v2.36.7]
+- Minor change: create object only when needed,
+  not on initialisation where it may not even ever be used
+
 2020-06-09 [v2.36.6]
 - Added ForceValidateUserid to base (vs_library.nut)
 - Removed AddEventCallback

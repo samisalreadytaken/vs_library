@@ -160,7 +160,7 @@ Included in `vs_library.nut`
 | ------------------ | -------------------------------- |
 | `CONST`            | `table` Squirrel constant table  |
 | `vs_library`       | `string` VScript Library version |
-| `MAX_COORD_FLOAT`  | `16384.0`                        |
+| `MAX_COORD_FLOAT`  | `16384.0` (`1<<14`)              |
 | `MAX_TRACE_LENGTH` | `56755.84086241`                 |
 | `DEG2RAD`          | `0.01745329`                     |
 | `RAD2DEG`          | `57.29577951`                    |

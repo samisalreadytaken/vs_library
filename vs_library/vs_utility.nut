@@ -388,26 +388,22 @@ VS.GetCallerFunc <- ::compilestring("return(getstackinfos(3)[\"func\"])");
 // Input  : table
 // Output : array containing the input's directory
 //-----------------------------------------------------------------------
-
-// implicit buffer used in recursion
-local bF = [];
-
-function VS::GetTableDir(table):(bF)
+function VS::GetTableDir(table)
 {
 	if( typeof table != "table" )
 		throw "Invalid input type '" + typeof table + "' ; expected: 'table'";
 
-	bF.clear();
+	local r = _f627f40d21a6([],table);
 
-	local r = _f627f40d21a6(table);
 	if(r) r.append("roottable");
 	else r = ["roottable"];
+
 	r.reverse();
 	return r
 }
 
 // exclusive recursion function
-function VS::_f627f40d21a6(t, l = ::getroottable()):(bF)
+function VS::_f627f40d21a6(bF, t, l = ::getroottable())
 {
 	foreach(v, u in l)
 		if(typeof u == "table")
@@ -419,7 +415,7 @@ function VS::_f627f40d21a6(t, l = ::getroottable()):(bF)
 				}
 				else
 				{
-					local r = _f627f40d21a6(t, u);
+					local r = _f627f40d21a6(bF, t, u);
 					if(r)
 					{
 						bF.append(v);

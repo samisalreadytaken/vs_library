@@ -3,7 +3,7 @@
 
 High-performance, powerful vscript libraries; written mainly for CSGO.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.36.6-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.36.7-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation
