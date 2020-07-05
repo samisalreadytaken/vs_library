@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2020-07-04 [v2.36.8]
+- Added VS.Events.ValidateUseridAll()
+
 2020-06-22 [v2.36.7]
 - Minor change: create object only when needed,
   not on initialisation where it may not even ever be used

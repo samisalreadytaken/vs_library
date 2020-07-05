@@ -93,13 +93,7 @@ function VS::Events::player_spawn(data)
 // force add userid. Requires player_info eventlistener that has the output:
 // OnEventFired > player_info > RunScriptCode > VS.Events.player_info(event_data)
 //
-// Calling multiple times in a frame will cause problems.
-//
-// Validating all players at once:
-//
-// local flFrameTime = FrameTime()
-// foreach( i,v in ::VS.GetAllPlayers() )
-//		::delay("::VS.Events.ForceValidateUserid(activator)", i*flFrameTime, ::ENT_SCRIPT, v);
+// Calling multiple times in a frame will cause problems; either delay, or use ValidateUseridAll.
 //
 function VS::Events::ForceValidateUserid(ent)
 {
@@ -111,6 +105,10 @@ function VS::Events::ForceValidateUserid(ent)
 
 	local proxy;
 
+	// todo: force reloading the library will overwrite this.
+	// I believe referencing it using a targetname is more prone to user errors compared to
+	// the rare case of the execution of VS.ForceReload()
+	// ForceReload could be rewritten to clear instead of overwriting everything.
 	if( !(proxy = ::VS.FindEntityByIndex(iProxyIdx)) )
 	{
 		proxy = ::VS.CreateEntity("info_game_event_proxy", {event_name = "player_info"}, true);
@@ -124,6 +122,18 @@ function VS::Events::ForceValidateUserid(ent)
 	// if( "userid" in _SV ) return
 
 	::EntFireByHandle(proxy, "generategameevent", "", 0, ent);
+}
+
+function VS::Events::ValidateUseridAll(force = 0)
+{
+	local flFrameTime = ::FrameTime();
+	local delay = ::delay;
+	local ENT_SCRIPT = ::ENT_SCRIPT;
+	local i = 0;
+
+	foreach( v in ::VS.GetAllPlayers() )
+		if( !("userid" in v.GetScriptScope()) || force )
+			delay("::VS.Events.ForceValidateUserid(activator)", i++*flFrameTime, ENT_SCRIPT, v);
 }
 
 function VS::Events::player_info(data)

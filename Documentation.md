@@ -309,6 +309,7 @@ Included in `vs_library.nut`
 ### [vs_events](#vs_events-1)
 [`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)  
 [`VS.Events.ForceValidateUserid()`](#f_ForceValidateUserid)
+[`VS.Events.ValidateUseridAll()`](#f_ValidateUseridAll)
 
 
 ### [vs_log](#vs_log-1)
@@ -2148,15 +2149,14 @@ Requires player_info eventlistener that has the output:
 
 `OnEventFired > player_info > RunScriptCode > ::VS.Events.player_info(event_data)`
 
-Calling multiple times in a frame will cause problems.
+Calling multiple times in a frame will cause problems; either delay, or use ValidateUseridAll.
+________________________________
 
-Validating all players at once:
-
-```cs
-local flFrameTime = FrameTime()
-foreach( i,v in ::VS.GetAllPlayers() )
-	::delay("::VS.Events.ForceValidateUserid(activator)", i*flFrameTime, ::ENT_SCRIPT, v);
+<a name="f_ValidateUseridAll"></a>
+```cpp
+void VS::Events::ValidateUseridAll(bool force = false)
 ```
+Make sure all player userids are validated
 ________________________________
 
 ### [vs_log](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_log.nut)
