@@ -36,14 +36,40 @@ function VS::GetPlayerByUserid( userid )
 // When the limit is reached, the oldest 64 entries are deleted.
 function VS::Events::player_connect(data)
 {
-	if(::_xa9b2dfB7ffe.len()>128)
+	if( data.networkid.len() )
 	{
-		for(local i=0;i<64;++i)::_xa9b2dfB7ffe.remove(0);
-		::print("player_connect: ERROR!!! Player data is not being processed\n")
-	};
-	::_xa9b2dfB7ffe.append(data);
+		if( ::_xa9b2dfB7ffe.len() > 128 )
+		{
+			for( local i = 64; i--; )
+				::_xa9b2dfB7ffe.remove(0);
 
-	return::OnGameEvent_player_connect(data);
+			::print("player_connect: ERROR!!! Player data is not being processed\n")
+		};
+
+		::_xa9b2dfB7ffe.append(data);
+
+		return::OnGameEvent_player_connect(data);
+	}
+	else if( _SV )
+	{
+		local dt = ::Time() - flValidateTime;
+
+		if( !(dt > ::FrameTime()*2) )
+		{
+			_SV.userid <- data.userid;
+
+			if( !("name" in _SV) )
+				_SV.name <- "";
+			if( !("networkid" in _SV) )
+				_SV.networkid <- "";
+		}
+		else::print("player_connect: Unexpected error! "+dt+"\n");
+
+		_SV = null;
+		flValidateTime = 0.0;
+
+		return;
+	};;
 }
 
 // OnEvent player_spawn
@@ -89,9 +115,7 @@ function VS::Events::player_spawn(data)
 	return::OnGameEvent_player_spawn(data);
 }
 
-// if something has gone wrong with automatic validation,
-// force add userid. Requires player_info eventlistener that has the output:
-// OnEventFired > player_info > RunScriptCode > VS.Events.player_info(event_data)
+// if something has gone wrong with automatic validation, force add userid
 //
 // Calling multiple times in a frame will cause problems; either delay, or use ValidateUseridAll.
 //
@@ -111,9 +135,11 @@ function VS::Events::ForceValidateUserid(ent)
 	// ForceReload could be rewritten to clear instead of overwriting everything.
 	if( !(proxy = ::VS.FindEntityByIndex(iProxyIdx)) )
 	{
-		proxy = ::VS.CreateEntity("info_game_event_proxy", {event_name = "player_info"}, true);
+		proxy = ::VS.CreateEntity("info_game_event_proxy", {event_name = "player_connect"}, true);
 		iProxyIdx = proxy.entindex();
 	};
+
+	flValidateTime = ::Time();
 
 	ent.ValidateScriptScope();
 	_SV = ent.GetScriptScope();
@@ -121,7 +147,7 @@ function VS::Events::ForceValidateUserid(ent)
 	// don't quit, overwrite previous userid if exists
 	// if( "userid" in _SV ) return
 
-	::EntFireByHandle(proxy, "generategameevent", "", 0, ent);
+	::DoEntFireByInstanceHandle(proxy, "generategameevent", "", 0, ent, null);
 }
 
 function VS::Events::ValidateUseridAll(force = 0)
@@ -135,26 +161,3 @@ function VS::Events::ValidateUseridAll(force = 0)
 		if( !("userid" in v.GetScriptScope()) || force )
 			delay("::VS.Events.ForceValidateUserid(activator)", i++*flFrameTime, ENT_SCRIPT, v);
 }
-
-function VS::Events::player_info(data)
-{
-	if(_SV)
-	{
-		_SV.userid <- data.userid;
-
-		if( !("name" in _SV) )
-			_SV.name <- "";
-		if( !("networkid" in _SV) )
-			_SV.networkid <- "";
-
-		_SV = null;
-	};
-
-	if( !("OnGameEvent_player_info" in::getroottable()) )
-		::OnGameEvent_player_info <- ::dummy;
-
-	return::OnGameEvent_player_info(data);
-}
-
-::VS.Events._SV <- null;
-::VS.Events.iProxyIdx <- null;

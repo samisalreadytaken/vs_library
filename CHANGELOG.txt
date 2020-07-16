@@ -3,6 +3,11 @@
 
 --------------------------------
 
+2020-07-11 [v2.36.9]
+- Added fov.nut (v1.0.0)
+- Added turret.nut (v0.5.1)
+- Changed ForceValidateUserid to not require another eventlistener.
+
 2020-07-04 [v2.36.8]
 - Added VS.Events.ValidateUseridAll()
 

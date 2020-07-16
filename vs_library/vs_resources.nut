@@ -27,14 +27,19 @@ if("VS"in::getroottable()&&typeof::VS=="table"&&"_xa9b2dfB7ffe"in::getroottable(
 	// combined ( +vs_library )
 	slots_default = [],
 
-	Events = {},
+	Events =
+	{
+		iProxyIdx = null,
+		flValidateTime = 0.0,
+		_SV = null
+	},
 	Log =
 	{
-		condition=false,
-		export=false,
-		filePrefix="vs.log",
-		L=[],
-		filter="VFLTR"
+		condition = false,
+		export = false,
+		filePrefix = "vs.log",
+		L = [],
+		filter = "VFLTR"
 	},
 	_reload = false
 }
@@ -61,10 +66,13 @@ if( ::EntFireByHandle.getinfos().native )
 // RAND_MAX 0x7FFF
 
 // array to store event data, user should never modify
-if( !("_xa9b2dfB7ffe" in getroottable()) ) ::_xa9b2dfB7ffe <- [];;
+if( !("_xa9b2dfB7ffe" in getroottable()) )
+	::_xa9b2dfB7ffe <- [];;
 
-if( !("OnGameEvent_player_spawn" in getroottable()) ) ::OnGameEvent_player_spawn <- ::dummy;;
-if( !("OnGameEvent_player_connect" in getroottable()) ) ::OnGameEvent_player_connect <- ::dummy;;
+if( !("OnGameEvent_player_spawn" in getroottable()) )
+	::OnGameEvent_player_spawn <- ::dummy;;
+if( !("OnGameEvent_player_connect" in getroottable()) )
+	::OnGameEvent_player_connect <- ::dummy;;
 
 // wrapped to call later because it uses some functions declared later
 local _v0 = function()

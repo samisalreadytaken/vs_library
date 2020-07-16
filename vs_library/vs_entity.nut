@@ -312,13 +312,14 @@ function VS::CreateEntity( classname, keyvalues = null, perm = false )
 	//
 	// For example, the following code will throw an error
 	//   local ent = VS.CreateEntity().weakref()
-	//   printl( ent.GetOrigin() )
+	//   ent.GetOrigin()
 	//
 	// But this will not
 	//   ent <- VS.CreateEntity().weakref()
-	//   printl( ent.GetOrigin() )
+	//   ent.GetOrigin()
+	//
 	//   local e = ent
-	//   printl( e.GetOrigin() )
+	//   e.GetOrigin()
 	//
 	// So, the user has to manage this themselves.
 

@@ -107,6 +107,14 @@ Use `VS.DumpPlayers(1)` to see every player data.
 --- End script dump
 =======================================
 ```
+
+#### Use on dedicated servers
+
+The player_connect event is fired only once when a player connects to the server. For this reason, it is not possible to get the Steam name and SteamIDs of players that were connected to the server prior to a map change. This data will only be available for players that connect to the server while your map is running.
+
+This is not an issue for singleplayer and coop maps that are locally hosted (unless the map is changed while another is loaded).
+
+This also breaks automatic userid validation, requiring manual work. To manually validate every player, execute `VS.Events.ValidateUseridAll()` on the `round_start` event (or `round_freeze_end`, this is dependant on your map and how the data is used). Note that this validation is asynchronous, meaning you cannot access player userids in the same frame as validating them.
 ________________________________
 
 ## Developer notes
@@ -2144,10 +2152,6 @@ ________________________________
 void VS::Events::ForceValidateUserid(handle player)
 ```
 if something has gone wrong with automatic validation, force add userid. 
-
-Requires player_info eventlistener that has the output:
-
-`OnEventFired > player_info > RunScriptCode > ::VS.Events.player_info(event_data)`
 
 Calling multiple times in a frame will cause problems; either delay, or use ValidateUseridAll.
 ________________________________

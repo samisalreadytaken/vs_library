@@ -203,6 +203,57 @@ function VS::TraceDir( v1, vDir, f = ::MAX_TRACE_LENGTH, hEnt = null )
 	return TraceLine( v1, v1 + (vDir * f), hEnt );
 }
 
+// VECTOR_CONE_1DEGREES  = Vector( 0.00873, 0.00873, 0.00873 )
+// VECTOR_CONE_2DEGREES  = Vector( 0.01745, 0.01745, 0.01745 )
+// VECTOR_CONE_3DEGREES  = Vector( 0.02618, 0.02618, 0.02618 )
+// VECTOR_CONE_4DEGREES  = Vector( 0.03490, 0.03490, 0.03490 )
+// VECTOR_CONE_5DEGREES  = Vector( 0.04362, 0.04362, 0.04362 )
+// VECTOR_CONE_6DEGREES  = Vector( 0.05234, 0.05234, 0.05234 )
+// VECTOR_CONE_7DEGREES  = Vector( 0.06105, 0.06105, 0.06105 )
+// VECTOR_CONE_8DEGREES  = Vector( 0.06976, 0.06976, 0.06976 )
+// VECTOR_CONE_9DEGREES  = Vector( 0.07846, 0.07846, 0.07846 )
+// VECTOR_CONE_10DEGREES = Vector( 0.08716, 0.08716, 0.08716 )
+// VECTOR_CONE_15DEGREES = Vector( 0.13053, 0.13053, 0.13053 )
+// VECTOR_CONE_20DEGREES = Vector( 0.17365, 0.17365, 0.17365 )
+
+//function VS::ApplySpread(vecShotDirection, vecSpread, bias = 1.0)
+//{
+//	// get circular gaussian spread
+//	local x, y, z;
+//
+//	if( bias > 1.0 )
+//		bias = 1.0;
+//	else if( bias < 0.0 )
+//		bias = 0.0;;
+//
+//	local shotBiasMin = -1.0;
+//	local shotBiasMax = 1.0;
+//
+//	// 1.0 gaussian, 0.0 is flat, -1.0 is inverse gaussian
+//	local shotBias = ( ( shotBiasMax - shotBiasMin ) * bias ) + shotBiasMin;
+//
+//	local flatness = ( ::fabs(shotBias) * 0.5 );
+//
+//	local RandomFloat = ::RandomFloat;
+//
+//	do
+//	{
+//		x = RandomFloat(-1.0,1.0) * flatness + RandomFloat(-1.0,1.0) * (1.0 - flatness);
+//		y = RandomFloat(-1.0,1.0) * flatness + RandomFloat(-1.0,1.0) * (1.0 - flatness);
+//		if ( shotBias < 0.0 )
+//		{
+//			x = ( x >= 0.0 ) ? 1.0 - x : -1.0 - x;
+//			y = ( y >= 0.0 ) ? 1.0 - y : -1.0 - y;
+//		};
+//		z = x*x+y*y;
+//	} while (z > 1)
+//
+//	local vecRight = ::Vector(), vecUp = ::Vector();
+//	VectorVectors(vecShotDirection, vecRight, vecUp);
+//
+//	return vecShotDirection + x * vecSpread.x * vecRight + y * vecSpread.y * vecUp;
+//}
+
 //-----------------------------------------------------------------------
 // UniqueString without _ in the end
 //-----------------------------------------------------------------------
@@ -495,6 +546,10 @@ function VS::GetTickrate()
 	return 1.0 / ::FrameTime();
 }
 
+// defined in _resources
+// must be executed after 'GetVarName', before 'delay' declaration
+// _v0();
+
 //-----------------------------------------------------------------------
 // If you wish to delay the code in a specific entity scope,
 // set the third parameter to the entity, or 'self'.
@@ -506,7 +561,9 @@ function VS::GetTickrate()
 //
 // You can use activators and callers to easily access entity handles
 //-----------------------------------------------------------------------
-::delay     <- function(X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null)return::DoEntFireByInstanceHandle(E, "runscriptcode", ""+X, T, A, C);
+::delay     <-
+function(X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null)
+	return::DoEntFireByInstanceHandle(E, "runscriptcode", ""+X, T, A, C);
 
 ::Chat      <- function(s)return::ScriptPrintMessageChatAll(" "+s);
 ::ChatTeam  <- function(i,s)return::ScriptPrintMessageChatTeam(i," "+s);
