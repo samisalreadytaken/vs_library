@@ -8,7 +8,17 @@
 //-----------------------------------------------------------------------
 
 // Don't load if the library is already loaded
-if("VS"in::getroottable()&&typeof::VS=="table"&&"_xa9b2dfB7ffe"in::getroottable()&&!::VS._reload&&::ENT_SCRIPT.IsValid())return/*::printl("vs_library is already loaded.")*/;;local _v2=function(){}local _f=_v2.getinfos().src;_f=_f.slice(0,_f.find(".nut"));if(this!=::getroottable())return::DoIncludeScript(_f,::getroottable());;if(_f!="vs_library")::print("Loading vs_library...\n");;
+if( "VS" in ::getroottable() && typeof::VS == "table" && "_xa9b2dfB7ffe" in ::getroottable() && !::VS._reload && ::ENT_SCRIPT.IsValid() )
+	return/*::printl("vs_library is already loaded.")*/;;
+
+local _v2 = function(){}
+local _f = _v2.getinfos().src;
+_f = _f.slice(0,_f.find(".nut"));
+
+if( this != ::getroottable() )
+	return::DoIncludeScript(_f,::getroottable());;
+if( _f != "vs_library" )
+	::print("Loading vs_library...\n");;
 
 ::VS <-
 {
@@ -29,7 +39,7 @@ if("VS"in::getroottable()&&typeof::VS=="table"&&"_xa9b2dfB7ffe"in::getroottable(
 
 	Events =
 	{
-		iProxyIdx = null,
+		hProxy = null,
 		flValidateTime = 0.0,
 		_SV = null
 	},

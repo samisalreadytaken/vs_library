@@ -7,21 +7,26 @@
 // See <README.md> or <LICENSE> for details.
 //-----------------------------------------------------------------------
 
-::Ent  <- function( s, i = null ){ return::Entities.FindByName(i,s); }
-::Entc <- function( s, i = null ){ return::Entities.FindByClassname(i,s); }
+local Entities = ::Entities;
+local DebugDrawBox = ::DebugDrawBox;
+local DoUniqueString = ::DoUniqueString;
+local format = ::format;
+
+::Ent  <- function( s, i = null ):(Entities){ return Entities.FindByName(i,s); }
+::Entc <- function( s, i = null ):(Entities){ return Entities.FindByClassname(i,s); }
 
 //-----------------------------------------------------------------------
 // Input  : int / float
 // Output : string - .tointeger() or .tofloat() can be used on the result
 //-----------------------------------------------------------------------
-function VS::FormatPrecision(f, n){ return::format("%." +n+"f",f); }
-function VS::FormatExp(i, n)      { return::format("%." +n+"e",i); }
+function VS::FormatPrecision(f, n):(format){ return format("%." +n+"f",f); }
+function VS::FormatExp(i, n):(format)      { return format("%." +n+"e",i); }
 
 //-----------------------------------------------------------------------
 // Input  : int
 // Output : string - .tointeger() or .tofloat() can be used on the result
 //-----------------------------------------------------------------------
-function VS::FormatHex(i, n)      { return::format("%#0"+n+"x",i); }
+function VS::FormatHex(i, n):(format)      { return format("%#0"+n+"x",i); }
 
 //-----------------------------------------------------------------------
 // Input  : str/int/float
@@ -29,7 +34,7 @@ function VS::FormatHex(i, n)      { return::format("%#0"+n+"x",i); }
 //          0 or " "
 // Output : string
 //-----------------------------------------------------------------------
-function VS::FormatWidth(i, n, s = " ") { return::format("%"+s+""+n+"s",i.tostring()); }
+function VS::FormatWidth(i, n, s = " "):(format) { return format("%"+s+""+n+"s",i.tostring()); }
 
 //-----------------------------------------------------------------------
 // Input  : Vector
@@ -44,9 +49,9 @@ function VS::FormatWidth(i, n, s = " ") { return::format("%"+s+""+n+"s",i.tostri
 // Draw entity's AABB
 // ent_bbox
 //-----------------------------------------------------------------------
-function VS::DrawEntityBBox( time, ent, r = 255, g = 138, b = 0, a = 0 )
+function VS::DrawEntityBBox( time, ent, r = 255, g = 138, b = 0, a = 0 ):(DebugDrawBox)
 {
-	return::DebugDrawBox(ent.GetOrigin(),ent.GetBoundingMins(),ent.GetBoundingMaxs(),r,g,b,a,time);
+	return DebugDrawBox(ent.GetOrigin(),ent.GetBoundingMins(),ent.GetBoundingMaxs(),r,g,b,a,time);
 }
 
 //-----------------------------------------------------------------------
@@ -69,13 +74,15 @@ trace.normal
 
 */
 //-----------------------------------------------------------------------
+local Trace = ::TraceLine;
+
 class::VS.TraceLine
 {
-	constructor( start = null, end = null, ent = null )
+	constructor( start = null, end = null, ent = null ):(Vector,Trace)
 	{
 		if( !start )
 		{
-			local v = ::Vector();
+			local v = Vector();
 			startpos = v;
 			endpos = v;
 			hIgnore = ent;
@@ -86,72 +93,7 @@ class::VS.TraceLine
 		startpos = start;
 		endpos = end;
 		hIgnore = ent;
-		fraction = ::TraceLine( startpos, endpos, hIgnore );
-	}
-
-	// if direct LOS return false
-	function DidHit()
-	{
-		return fraction < 1.0;
-	}
-
-	// return hit entity handle, null if none
-	function GetEnt( radius = 1.0 )
-	{
-		return GetEntByClassname( "*", radius );
-	}
-
-	// GetEnt, find by name
-	function GetEntByName( targetname, radius = 1.0 )
-	{
-		if( !hitpos ) GetPos();
-		return::Entities.FindByNameNearest( targetname, hitpos, radius );
-	}
-
-	// GetEnt, find by classname
-	function GetEntByClassname( classname, radius = 1.0 )
-	{
-		if( !hitpos ) GetPos();
-		return::Entities.FindByClassnameNearest( classname, hitpos, radius );
-	}
-
-	// return hit position (hitpos)
-	function GetPos()
-	{
-		if( !hitpos )
-		{
-			if( DidHit() ) hitpos = startpos + (endpos - startpos) * fraction;
-			else hitpos = endpos;
-		};
-		return hitpos;
-	}
-
-	// Get distance from startpos to hit position
-	function GetDist()
-	{
-		return (startpos-GetPos()).Length();
-	}
-
-	// Get distance squared. Useful for comparisons
-	function GetDistSqr()
-	{
-		return (startpos-GetPos()).LengthSqr();
-	}
-
-	// Get surface normal
-	function GetNormal()
-	{
-		if( !normal )
-		{
-			local u = ::Vector(0.0,0.0,0.5),
-			      d = endpos - startpos;
-			d.Norm();
-			GetPos();
-			normal = (hitpos-::VS.TraceDir(startpos+d.Cross(u),d).GetPos()).Cross(hitpos-::VS.TraceDir(startpos+u,d).GetPos());
-			normal.Norm();
-		};
-
-		return normal;
+		fraction = Trace( startpos, endpos, hIgnore );
 	}
 
 	function _cmp(d) { if( fraction < d.fraction ) return -1; if( fraction > d.fraction ) return 1; return 0; }
@@ -176,19 +118,6 @@ class::VS.TraceLine
 	m_IsRay = null;
 	m_StartOffset = null;
 	m_Start = null;
-
-	// initiate ray tracing
-	function Ray( mins =::Vector(), maxs =::Vector() )
-	{
-		m_Delta = endpos - startpos;
-		m_IsSwept = m_Delta.LengthSqr() != 0.0;
-		m_Extents = (maxs - mins) * 0.5;
-		m_IsRay = m_Extents.LengthSqr() < 1.e-6;
-		m_StartOffset = (mins + maxs) * 0.5;
-		m_Start = startpos + m_StartOffset;
-		m_StartOffset *= -1.0;
-		return this;
-	}
 }
 
 //-----------------------------------------------------------------------
@@ -198,9 +127,91 @@ class::VS.TraceLine
 //          handle [ to ignore ]
 // Output : trace_t [ VS.TraceLine ]
 //-----------------------------------------------------------------------
-function VS::TraceDir( v1, vDir, f = ::MAX_TRACE_LENGTH, hEnt = null )
+local CTrace = ::VS.TraceLine;
+
+function VS::TraceDir( v1, vDir, f = ::MAX_TRACE_LENGTH, hEnt = null ):(CTrace)
 {
-	return TraceLine( v1, v1 + (vDir * f), hEnt );
+	return CTrace( v1, v1 + (vDir * f), hEnt );
+}
+
+// if direct LOS return false
+function VS::TraceLine::DidHit()
+{
+	return fraction < 1.0;
+}
+
+// return hit entity handle, null if none
+function VS::TraceLine::GetEnt( radius = 1.0 )
+{
+	return GetEntByClassname( "*", radius );
+}
+
+// GetEnt, find by name
+function VS::TraceLine::GetEntByName( targetname, radius = 1.0 ):(Entities)
+{
+	if( !hitpos ) GetPos();
+	return Entities.FindByNameNearest( targetname, hitpos, radius );
+}
+
+// GetEnt, find by classname
+function VS::TraceLine::GetEntByClassname( classname, radius = 1.0 ):(Entities)
+{
+	if( !hitpos ) GetPos();
+	return Entities.FindByClassnameNearest( classname, hitpos, radius );
+}
+
+// return hit position (hitpos)
+function VS::TraceLine::GetPos()
+{
+	if( !hitpos )
+	{
+		if( DidHit() ) hitpos = startpos + (endpos - startpos) * fraction;
+		else hitpos = endpos;
+	};
+	return hitpos;
+}
+
+// Get distance from startpos to hit position
+function VS::TraceLine::GetDist()
+{
+	return (startpos-GetPos()).Length();
+}
+
+// Get distance squared. Useful for comparisons
+function VS::TraceLine::GetDistSqr()
+{
+	return (startpos-GetPos()).LengthSqr();
+}
+
+local TraceDir = ::VS.TraceDir;
+
+// Get surface normal
+function VS::TraceLine::GetNormal():(Vector,TraceDir)
+{
+	if( !normal )
+	{
+		local u = Vector(0.0,0.0,0.5),
+			  d = endpos - startpos;
+		d.Norm();
+		GetPos();
+		normal = (hitpos-TraceDir(startpos+d.Cross(u),d).GetPos()).Cross(hitpos-TraceDir(startpos+u,d).GetPos());
+		normal.Norm();
+	};
+
+	return normal;
+}
+
+// initiate ray tracing
+function VS::TraceLine::Ray( mins =::Vector(), maxs =::Vector() )
+{
+	m_Delta = endpos - startpos;
+	m_IsSwept = m_Delta.LengthSqr() != 0.0;
+	m_Extents = (maxs - mins) * 0.5;
+	m_IsRay = m_Extents.LengthSqr() < 1.e-6;
+	m_StartOffset = (mins + maxs) * 0.5;
+	m_Start = startpos + m_StartOffset;
+	m_StartOffset *= -1.0;
+	return this;
 }
 
 // VECTOR_CONE_1DEGREES  = Vector( 0.00873, 0.00873, 0.00873 )
@@ -257,9 +268,9 @@ function VS::TraceDir( v1, vDir, f = ::MAX_TRACE_LENGTH, hEnt = null )
 //-----------------------------------------------------------------------
 // UniqueString without _ in the end
 //-----------------------------------------------------------------------
-function VS::UniqueString()
+function VS::UniqueString():(DoUniqueString)
 {
-	local s =::DoUniqueString("");
+	local s = DoUniqueString("");
 	return s.slice(0,s.len()-1);
 }
 
@@ -276,7 +287,6 @@ function VS::arrayFind( arr, val )
 	foreach( i, v in arr )
 		if( v == val )
 			return i;
-	return null;
 }
 
 //-----------------------------------------------------------------------
@@ -541,9 +551,10 @@ function VS::_fb3k5S1r91t7(t, i, s = ::getroottable())
 // 102.4 tick : 0.00976563
 // 128.0 tick : 0.00781250
 //-----------------------------------------------------------------------
-function VS::GetTickrate()
+local flTickRate = 1.0 / ::FrameTime();
+function VS::GetTickrate():(flTickRate)
 {
-	return 1.0 / ::FrameTime();
+	return flTickRate;
 }
 
 // defined in _resources
@@ -561,15 +572,20 @@ function VS::GetTickrate()
 //
 // You can use activators and callers to easily access entity handles
 //-----------------------------------------------------------------------
-::delay     <-
-function(X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null)
-	return::DoEntFireByInstanceHandle(E, "runscriptcode", ""+X, T, A, C);
 
-::Chat      <- function(s)return::ScriptPrintMessageChatAll(" "+s);
-::ChatTeam  <- function(i,s)return::ScriptPrintMessageChatTeam(i," "+s);
+local AddEvent = ::DoEntFireByInstanceHandle;
+local Chat = ::ScriptPrintMessageChatAll;
+local ChatTeam = ::ScriptPrintMessageChatTeam;
+
+::delay     <-
+function(X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null):(AddEvent)
+	return AddEvent(E, "runscriptcode", ""+X, T, A, C);
+
+::Chat      <- function(s):(Chat) return Chat(" "+s);
+::ChatTeam  <- function(i,s):(ChatTeam) return ChatTeam(i," "+s);
 ::Alert     <- ::ScriptPrintMessageCenterAll;
 ::AlertTeam <- ::ScriptPrintMessageCenterTeam;
-::ClearChat <- function() for( local i = 0; i < 9; ++i ) ::Chat("");
+::ClearChat <- function():(Chat) for( local i = 9; i--; ) Chat(" ");
 
 ::txt <-
 {

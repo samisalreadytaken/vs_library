@@ -7,12 +7,14 @@
 // See <README.md> or <LICENSE> for details.
 //-----------------------------------------------------------------------
 
+local AddEvent = ::DoEntFireByInstanceHandle;
+
 //-----------------------------------------------------------------------
 // Make EntFireByHandle allow default parameters
 //-----------------------------------------------------------------------
-::EntFireByHandle <- function( target, action, value = "", delay = 0.0, activator = null, caller = null )
+::EntFireByHandle <- function( target, action, value = "", delay = 0.0, activator = null, caller = null ):(AddEvent)
 {
-	return::DoEntFireByInstanceHandle( target, action.tostring(), value.tostring(), delay, activator, caller );
+	return AddEvent( target, action.tostring(), value.tostring(), delay, activator, caller );
 }
 
 //-----------------------------------------------------------------------
@@ -43,38 +45,38 @@ function VS::MakePermanent( handle )
 // Input  : handle [ child entity ]
 // Output : handle [ parent entity ]
 //-----------------------------------------------------------------------
-function VS::SetParent( hChild, hParent )
+function VS::SetParent( hChild, hParent ):(AddEvent)
 {
-	if( !hParent ) return::EntFireByHandle( hChild, "setparent", "" );
-	return::EntFireByHandle( hChild, "setparent", "!activator", 0.0, hParent );
+	if( hParent ) return AddEvent( hChild, "setparent", "!activator", 0.0, hParent, null );
+	return AddEvent( hChild, "setparent", "", 0.0, null, null );
 }
 
 //-----------------------------------------------------------------------
 // Show game_text
 // if msg, set msg
 //-----------------------------------------------------------------------
-function VS::ShowGameText( hEnt, hTarget, msg = null, delay = 0.0 )
+function VS::ShowGameText( hEnt, hTarget, msg = null, delay = 0.0 ):(AddEvent)
 {
 	if( msg ) hEnt.__KeyValueFromString( "message", ""+msg );
-	return::EntFireByHandle( hEnt, "display", "", delay, hTarget );
+	return AddEvent( hEnt, "display", "", delay, hTarget, null );
 }
 
 //-----------------------------------------------------------------------
 // Show hudhint
 // if msg, set msg
 //-----------------------------------------------------------------------
-function VS::ShowHudHint( hEnt, hTarget, msg = null, delay = 0.0 )
+function VS::ShowHudHint( hEnt, hTarget, msg = null, delay = 0.0 ):(AddEvent)
 {
 	if( msg ) hEnt.__KeyValueFromString( "message", ""+msg );
-	return::EntFireByHandle( hEnt, "ShowHudHint", "", delay, hTarget );
+	return AddEvent( hEnt, "ShowHudHint", "", delay, hTarget, null );
 }
 
 //-----------------------------------------------------------------------
 // Hide hudhint
 //-----------------------------------------------------------------------
-function VS::HideHudHint( hEnt, hTarget, delay = 0.0 )
+function VS::HideHudHint( hEnt, hTarget, delay = 0.0 ):(AddEvent)
 {
-	return::EntFireByHandle( hEnt, "HideHudHint", "", delay, hTarget );
+	return AddEvent( hEnt, "HideHudHint", "", delay, hTarget, null );
 }
 
 //-----------------------------------------------------------------------
@@ -87,7 +89,7 @@ function VS::HideHudHint( hEnt, hTarget, delay = 0.0 )
 //          float  [ scale ]
 // Output : handle reference
 //-----------------------------------------------------------------------
-function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 )
+function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 ):(AddEvent)
 {
 	local r = e ? n ? n.tostring() : "vs.ref_"+UniqueString() : n ? n.tostring() : null;
 
@@ -102,11 +104,11 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 )
 	                          targetscale = s.tofloat(),
 	                          targetname = e?r:null }, p );
 
-	::EntFireByHandle(e,"setmeasurereference",r);
+	AddEvent(e,"setmeasurereference",r,0.0,null,null);
 
-	::EntFireByHandle(e,"setmeasuretarget",g);
+	AddEvent(e,"setmeasuretarget",g,0.0,null,null);
 
-	::EntFireByHandle(e,"enable");
+	AddEvent(e,"enable","",0.0,null,null);
 
 	return e;
 }
@@ -118,9 +120,9 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 )
 //          string [ player_targetname ]
 // Output :
 //-----------------------------------------------------------------------
-function VS::SetMeasure(h,s)
+function VS::SetMeasure(h,s):(AddEvent)
 {
-	return::EntFireByHandle(h,"setmeasuretarget",s);
+	return AddEvent(h,"setmeasuretarget",s,0.0,null,null);
 }
 
 //-----------------------------------------------------------------------
@@ -132,7 +134,7 @@ function VS::SetMeasure(h,s)
 //          bool [ make permanent ]
 // Output : entity
 //-----------------------------------------------------------------------
-function VS::CreateTimer( bDisabled, flInterval, flLower = null, flUpper = null, bOscillator = false, bMakePerm = false )
+function VS::CreateTimer( bDisabled, flInterval, flLower = null, flUpper = null, bOscillator = false, bMakePerm = false ):(AddEvent)
 {
 	local ent = CreateEntity( "logic_timer", null, bMakePerm );
 
@@ -149,7 +151,7 @@ function VS::CreateTimer( bDisabled, flInterval, flLower = null, flUpper = null,
 		ent.__KeyValueFromInt( "spawnflags", bOscillator.tointeger() );
 	};
 
-	::EntFireByHandle( ent, bDisabled ? "disable" : "enable" );
+	AddEvent( ent, bDisabled ? "disable" : "enable", "", 0.0, null, null );
 
 	return ent;
 }
@@ -195,7 +197,8 @@ function VS::OnTimer( hEnt, Func, tScope = null, bExecInEnt = false )
 //          bool [ bool ] // execute the function in the scope of hEnt
 // Output : table [ent scope]
 //-----------------------------------------------------------------------
-function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
+local compile = ::compilestring;
+function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false ):(compile)
 {
 	if( !tScope ) tScope = GetCaller();
 
@@ -204,7 +207,7 @@ function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 		if( typeof Func == "string" )
 		{
 			if( Func.find("(") != null )
-				Func = ::compilestring(Func);
+				Func = compile(Func);
 			else
 				Func = tScope[Func];
 		}
@@ -231,7 +234,7 @@ function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 }
 
 // This could still be useful in specific scenarios
-function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
+function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false ):(AddEvent)
 {
 	if( hEnt.GetScriptScope() || typeof Func == "function" )
 		return AddOutput( hEnt, sOutput, Func, tScope, bExecInEnt );
@@ -248,7 +251,7 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 			throw "Invalid function path. Not an entity";
 		};
 
-		::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+tScope.self.GetName()+",runscriptcode,"+Func,0.0,tScope.self,hEnt );
+		AddEvent( hEnt,"addoutput",sOutput+" "+tScope.self.GetName()+",runscriptcode,"+Func,0.0,tScope.self,hEnt );
 	}
 	else
 	{
@@ -259,27 +262,9 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 			SetName(hEnt, name);
 		};
 
-		::DoEntFireByInstanceHandle( hEnt,"addoutput",sOutput+" "+name+",runscriptcode,"+Func,0.0,null,hEnt );
+		AddEvent( hEnt,"addoutput",sOutput+" "+name+",runscriptcode,"+Func,0.0,null,hEnt );
 	};
 }
-
-/*
-function VS::AddInput( hEnt, sInput, Func, tScope = null, bExecInEnt = false )
-{
-	if( !hEnt.ValidateScriptScope() ) throw "Invalid entity";
-
-	if( !tScope ) tScope = GetCaller();
-
-	if( typeof Func == "string" )
-		Func = tScope[Func];
-	else if( typeof Func != "function" )
-		throw "Invalid function type " + typeof Func;;
-
-	hEnt.GetScriptScope()["Input"+sInput] <- bExecInEnt ? Func : Func.bindenv(tScope);
-
-	// print("** Adding input '" + sInput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetVarName(tScope)) + ".'\n");
-}
-*/
 
 //-----------------------------------------------------------------------
 // CreateByClassname, set keyvalues, return handle
@@ -289,9 +274,9 @@ function VS::AddInput( hEnt, sInput, Func, tScope = null, bExecInEnt = false )
 //          bool [ make permanent ]
 // Output : handle [ entity ]
 //-----------------------------------------------------------------------
-function VS::CreateEntity( classname, keyvalues = null, perm = false )
+function VS::CreateEntity( classname, keyvalues = null, perm = false ):(Entities)
 {
-	local ent = ::Entities.CreateByClassname(classname);
+	local ent = Entities.CreateByClassname(classname);
 	if( typeof keyvalues == "table" ) foreach( k, v in keyvalues ) SetKey(ent, k, v);
 	if(perm) MakePermanent(ent);
 	return ent;
@@ -368,13 +353,13 @@ function VS::SetName( ent, name )
 // Input an entity handle or string to dump its scope.
 // String example: "([2] player: targetname)"
 //-----------------------------------------------------------------------
-function VS::DumpEnt( input = null )
+function VS::DumpEnt( input = null ):(Entities)
 {
 	// dump only scope names
 	if( !input )
 	{
 		local ent;
-		while( ent = ::Entities.Next(ent) )
+		while( ent = Entities.Next(ent) )
 		{
 			local s = ent.GetScriptScope();
 			if(s) ::print(ent + " :: " + s.__vname+"\n"); // GetVarName(s)
@@ -407,7 +392,7 @@ function VS::DumpEnt( input = null )
 	else if( input )
 	{
 		local ent;
-		while( ent = ::Entities.Next(ent) )
+		while( ent = Entities.Next(ent) )
 		{
 			local s = ent.GetScriptScope();
 			if(s)
@@ -430,16 +415,25 @@ function VS::DumpEnt( input = null )
 //
 // scope.bot <- scope.networkid == "BOT";
 //
-function VS::GetPlayersAndBots()
+function VS::GetPlayersAndBots():(Entities)
 {
-	local ent, Ent = ::Entities, ply = [], bot = [];
-	while( ent = Ent.FindByClassname(ent, "cs_bot") ) bot.append(ent.weakref());
+	local ent, ply = [], bot = [];
+
+	while( ent = Entities.FindByClassname(ent, "cs_bot") )
+	{
+		bot.append(ent.weakref());
+	}
+
 	ent = null;
-	while( ent = Ent.FindByClassname(ent, "player") )
+
+	while( ent = Entities.FindByClassname(ent, "player") )
 	{
 		local s = ent.GetScriptScope();
-		if( "networkid" in s && s.networkid == "BOT" ) bot.append(ent.weakref());
-		else ply.append(ent.weakref());
+
+		if( "networkid" in s && s.networkid == "BOT" )
+			bot.append(ent.weakref());
+		else
+			ply.append(ent.weakref());
 	}
 
 	return [ply,bot];
@@ -448,10 +442,10 @@ function VS::GetPlayersAndBots()
 //-----------------------------------------------------------------------
 // Get every player and bot in a single array
 //-----------------------------------------------------------------------
-function VS::GetAllPlayers()
+function VS::GetAllPlayers():(Entities)
 {
-	local e, E = ::Entities, a = [];
-	while( e = E.Next(e) )
+	local e, a = [];
+	while( e = Entities.Next(e) )
 		if( e.GetClassname() == "player" )
 			a.append(e.weakref());
 	return a;
@@ -519,23 +513,23 @@ function VS::GetLocalPlayer()
 	return e;
 }
 
-function VS::GetPlayerByIndex( entindex )
+function VS::GetPlayerByIndex( entindex ):(Entities)
 {
-	local e, E = ::Entities; while( e = ::Entities.Next(e) ) if( e.GetClassname() == "player" ) if( e.entindex() == entindex ) return e;
+	local e; while( e = Entities.Next(e) ) if( e.GetClassname() == "player" ) if( e.entindex() == entindex ) return e;
 }
 
-function VS::FindEntityByIndex( entindex, classname = "*" )
+function VS::FindEntityByIndex( entindex, classname = "*" ):(Entities)
 {
-	local e, E = ::Entities; while( e = E.FindByClassname(e, classname) ) if( e.entindex() == entindex ) return e;
+	local e; while( e = Entities.FindByClassname(e, classname) ) if( e.entindex() == entindex ) return e;
 }
 
 //-----------------------------------------------------------------------
 // String input such as "([2] player)" and "([88] func_button: targetname)"
 // Return entity handle
 //-----------------------------------------------------------------------
-function VS::FindEntityByString( str )
+function VS::FindEntityByString( str ):(Entities)
 {
-	local e, E = ::Entities; while( e = E.Next(e) ) if( e.tostring() == str ) return e;
+	local e; while( e = Entities.Next(e) ) if( e.tostring() == str ) return e;
 }
 
 function VS::IsPointSized( h )
@@ -543,12 +537,12 @@ function VS::IsPointSized( h )
 	return VectorIsZero( h.GetBoundingMaxs() );
 }
 
-function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold )
+function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold ):(Entities)
 {
 	local bestDot = fThreshold,
-	      best_ent, ent, Ent = ::Entities;
+	      best_ent, ent;
 
-	while( ent = Ent.Next(ent) )
+	while( ent = Entities.Next(ent) )
 	{
 		// skip all point sized entitites
 		if( IsPointSized(ent) ) continue;
@@ -572,13 +566,13 @@ function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold )
 	return best_ent;
 }
 
-function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassname )
+function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassname ):(Entities)
 {
 	local bestDot = fThreshold,
-	      best_ent, ent, Ent = ::Entities;
+	      best_ent, ent;
 
 	// for( local ent; ent = ::Entities.Next(ent); )
-	while( ent = Ent.FindByClassname(ent,sClassname) )
+	while( ent = Entities.FindByClassname(ent,sClassname) )
 	{
 		local to_ent = ent.GetOrigin() - vOrigin;
 
@@ -598,15 +592,20 @@ function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassn
 
 // When two candidate entities are in front of each other, pick the closer one
 // Not perfect, but it works to some extent
-function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, sClassname, flRadius )
+function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, sClassname, flRadius ):(Entities)
 {
-	local best_ent, ent, Ent = ::Entities;
+	local flMaxDistSqr, best_ent, ent;
 
-	local flMaxDistSqr = flRadius * flRadius;
-	if( !flMaxDistSqr )
+	if( flRadius )
+	{
+		flMaxDistSqr = flRadius * flRadius;
+	}
+	else
+	{
 		flMaxDistSqr = 3.22122e+09; // MAX_TRACE_LENGTH * MAX_TRACE_LENGTH
+	};
 
-	while( ent = Ent.FindByClassname(ent,sClassname) )
+	while( ent = Entities.FindByClassname(ent,sClassname) )
 	{
 		local to_ent = ent.GetOrigin() - vOrigin;
 		to_ent.Norm();

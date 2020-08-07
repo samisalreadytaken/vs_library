@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
 //                       github.com/samisalreadytaken
-//- v0.5.1 --------------------------------------------------------------
+//- v0.5.2 --------------------------------------------------------------
 //
 // Player controlled turret (multiplayer compatible)
 //
@@ -24,7 +24,7 @@
 //		targetname: turret_target_0
 //
 //	func_button:                       (to use the turret)
-//		OnPressed > !activator > RunScriptCode > ::_TURRET_.Use(#YOUR_TURRET_VAR#, activator)
+//		OnPressed > !activator > RunScriptCode > ::_TURRET_.Use(#YOUR_TURRET_VAR#)
 //
 // Create your turret in your script
 //
@@ -184,9 +184,12 @@ function Use(hCtrl,ply = null)
 {
 	if( !ply )
 	{
-		if( "activator" in this )
-			ply = activator;
-		else throw "TURRET: could not find player to use\n";
+		try(ply = activator)
+		catch(e)
+		{
+			e = null;
+			throw "TURRET: could not find player to use";
+		}
 	};
 
 	local sc = hCtrl.GetScriptScope();

@@ -11,12 +11,14 @@
 //
 //-----------------------------------------------------------------------
 
-function VS::Log::Add( s )
+local L = ::VS.Log.L;
+
+function VS::Log::Add(s):(L)
 {
 	L.append(s);
 }
 
-function VS::Log::Clear()
+function VS::Log::Clear():(L)
 {
 	L.clear();
 }
@@ -32,14 +34,18 @@ function VS::Log::Run()
 // Internal functions. Do not call these
 //-----------------------------------------------------------------------
 
-function VS::Log::_Print(f)
+local Msg = ::print;
+local delay = ::delay;
+local flFrameTime = ::FrameTime();
+
+function VS::Log::_Print(f):(Msg,L,delay,flFrameTime)
 {
-	local t = filter, p = ::print;
+	local t = filter, p = Msg, L = L;
 
 	if( !f )
 		for( local i = nC; i < nN; ++i )p( L[i] );
 	else
-		for( local i = nC; i < nN; ++i )p( t + L[i] );;
+		for( local i = nC; i < nN; ++i )p( t + L[i] );
 
 	nC += nD;
 	nN = ::clamp( nN + nD, 0, nL );
@@ -54,10 +60,10 @@ function VS::Log::_Print(f)
 		return;
 	};
 
-	return::delay( "::VS.Log._Print("+f+")", ::FrameTime() );
+	return delay("::VS.Log._Print("+f+")", flFrameTime);
 }
 
-function VS::Log::_Start()
+function VS::Log::_Start():(flFrameTime)
 {
 	nL <- L.len();
 	nD <- 2000;
@@ -67,9 +73,9 @@ function VS::Log::_Start()
 
 	if( export )
 	{
-		local file = filePrefix[0] == 58 ? filePrefix.slice(1) : filePrefix + "_" + ::VS.UniqueString();
+		local file = filePrefix[0] == ':' ? filePrefix.slice(1) : filePrefix + "_" + ::VS.UniqueString();
 		_d <- ::developer();
-		::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\""+filter+"\";con_filter_text\"\";con_logfile\""+file+".log\";script delay(\"::VS.Log._Print(1)\","+::FrameTime()*4.0+")");
+		::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\""+filter+"\";con_filter_text\"\";con_logfile\""+file+".log\";script delay(\"::VS.Log._Print(1)\","+flFrameTime*4.0+")");
 		return file;
 	}
 	else

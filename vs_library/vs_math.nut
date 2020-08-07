@@ -14,6 +14,17 @@
 // instance for reading values from functions with optional output parameters
 local _VEC = Vector();
 
+local Vector = ::Vector;
+local RandomFloat = ::RandomFloat;
+local sin = ::sin;
+local cos = ::cos;
+local floor = ::floor;
+local fabs = ::fabs;
+local atan2 = ::atan2;
+local exp = ::exp;
+local pow = ::pow;
+local log = ::log;
+
 ::max <- function( a, b ){ return a > b ? a : b; }
 ::min <- function( a, b ){ return a < b ? a : b; }
 
@@ -30,7 +41,7 @@ local _VEC = Vector();
 
 // VS.IsInteger(1.0) is true
 // VS.IsInteger(1.1) is false
-function VS::IsInteger( f ){ return::floor(f) == f; }
+function VS::IsInteger( f ):(floor){ return floor(f) == f; }
 
 //-----------------------------------------------------------------------
 // IsLookingAt with tolerance
@@ -45,8 +56,8 @@ function VS::IsLookingAt( vSrc, vTarget, vDir, cosTolerance )
 
 function VS::PointOnLineNearestPoint( vStartPos, vEndPos, vPoint )
 {
-	local v1 = vEndPos - vStartPos,
-	      dist = v1.Dot(vPoint - vStartPos) / v1.LengthSqr();
+	local v1 = vEndPos - vStartPos;
+	local dist = v1.Dot(vPoint - vStartPos) / v1.LengthSqr();
 
 	if( dist < 0.0 )
 		return vStartPos;
@@ -60,13 +71,13 @@ function VS::PointOnLineNearestPoint( vStartPos, vEndPos, vPoint )
 // Angle between 2 vectors
 // return QAngle
 //-----------------------------------------------------------------------
-function VS::GetAngle( vFrom, vTo )
+function VS::GetAngle( vFrom, vTo ):(Vector,atan2)
 {
-	local d     = vFrom - vTo,
-	      pitch = ::RAD2DEG*::atan2( d.z, d.Length2D() ),
-	      yaw   = ::RAD2DEG*(::atan2( d.y, d.x ) + ::PI);
+	local d     = vFrom - vTo;
+	local pitch = ::RAD2DEG*atan2( d.z, d.Length2D() );
+	local yaw   = ::RAD2DEG*(atan2( d.y, d.x ) + ::PI);
 
-	return::Vector(pitch,yaw,0.0);
+	return Vector(pitch,yaw,0.0);
 }
 
 //-----------------------------------------------------------------------
@@ -74,10 +85,10 @@ function VS::GetAngle( vFrom, vTo )
 // return yaw
 // cheaper than the other method
 //-----------------------------------------------------------------------
-function VS::GetAngle2D( vFrom, vTo )
+function VS::GetAngle2D( vFrom, vTo ):(atan2)
 {
-	local d   = vTo - vFrom,
-	      yaw = ::RAD2DEG*::atan2( d.y, d.x );
+	local d   = vTo - vFrom;
+	local yaw = ::RAD2DEG*atan2( d.y, d.x );
 
 	return yaw;
 }
@@ -85,7 +96,7 @@ function VS::GetAngle2D( vFrom, vTo )
 //-----------------------------------------------------------------------
 //
 //-----------------------------------------------------------------------
-function VS::VectorVectors( forward, right, up )
+function VS::VectorVectors( forward, right, up ):(Vector)
 {
 	if( forward.x == 0.0 && forward.y == 0.0 )
 	{
@@ -99,7 +110,7 @@ function VS::VectorVectors( forward, right, up )
 	}
 	else
 	{
-		local R = forward.Cross(::Vector(0.0,0.0,1.0));
+		local R = forward.Cross(Vector(0.0,0.0,1.0));
 		right.x = R.x; right.y = R.y; right.z = R.z;
 		right.Norm();
 
@@ -113,23 +124,23 @@ function VS::VectorVectors( forward, right, up )
 // Euler QAngle -> Basis Vectors.  Each vector is optional
 // input vector pointers
 //-----------------------------------------------------------------------
-function VS::AngleVectors( vAng, vFwd = _VEC, vRg = null, vUp = null )
+function VS::AngleVectors( vAng, vFwd = _VEC, vRg = null, vUp = null ):(sin,cos)
 {
 	local sr, cr, rr,
 
 	      yr = ::DEG2RAD*vAng.y,
-	      sy = ::sin(yr),
-	      cy = ::cos(yr),
+	      sy = sin(yr),
+	      cy = cos(yr),
 
 	      pr = ::DEG2RAD*vAng.x,
-	      sp = ::sin(pr),
-	      cp = ::cos(pr);
+	      sp = sin(pr),
+	      cp = cos(pr);
 
 	if( vAng.z )
 	{
 		rr = ::DEG2RAD*vAng.z;
-		sr = ::sin(rr);
-		cr = ::cos(rr);
+		sr = sin(rr);
+		cr = cos(rr);
 	}
 	else
 	{
@@ -164,7 +175,7 @@ function VS::AngleVectors( vAng, vFwd = _VEC, vRg = null, vUp = null )
 //-----------------------------------------------------------------------
 // Forward direction vector -> Euler QAngle
 //-----------------------------------------------------------------------
-function VS::VectorAngles( vFwd )
+function VS::VectorAngles( vFwd ):(Vector,atan2,sqrt)
 {
 	local tmp, yaw, pitch;
 
@@ -178,27 +189,27 @@ function VS::VectorAngles( vFwd )
 	}
 	else
 	{
-		yaw = ::RAD2DEG*::atan2(vFwd.y, vFwd.x);
+		yaw = ::RAD2DEG*atan2(vFwd.y, vFwd.x);
 		if( yaw < 0.0 )
 			yaw += 360.0;
 
-		tmp = ::sqrt(vFwd.x*vFwd.x + vFwd.y*vFwd.y);
-		pitch = ::RAD2DEG*::atan2(-vFwd.z, tmp);
+		tmp = sqrt(vFwd.x*vFwd.x + vFwd.y*vFwd.y);
+		pitch = ::RAD2DEG*atan2(-vFwd.z, tmp);
 		if( pitch < 0.0 )
 			pitch += 360.0;
 	};
 
-	return::Vector(pitch,yaw,0.0);
+	return Vector(pitch,yaw,0.0);
 }
 
 //-----------------------------------------------------------------------
 // Rotate a vector around the Z axis (YAW)
 //-----------------------------------------------------------------------
-function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC )
+function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC ):(sin,cos)
 {
-	local rad = ::DEG2RAD*fYaw,
-	      sy  = ::sin(rad),
-	      cy  = ::cos(rad);
+	local rad = ::DEG2RAD*fYaw;
+	local sy  = sin(rad);
+	local cy  = cos(rad);
 
 	vOut.x = vIn.x * cy - vIn.y * sy;
 	vOut.y = vIn.x * sy + vIn.y * cy;
@@ -207,18 +218,18 @@ function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC )
 	return vOut;
 }
 
-function VS::YawToVector( yaw )
+function VS::YawToVector( yaw ):(Vector,sin,cos)
 {
 	local ang = ::DEG2RAD*yaw;
-	return::Vector(::cos(ang), ::sin(ang), 0.0);
+	return Vector(cos(ang), sin(ang), 0.0);
 }
 
-function VS::VecToYaw( vec )
+function VS::VecToYaw( vec ):(atan2)
 {
 	if( vec.y == 0.0 && vec.x == 0.0 )
 		return 0.0;
 
-	local yaw = ::RAD2DEG*::atan2(vec.y, vec.x);
+	local yaw = ::RAD2DEG*atan2(vec.y, vec.x);
 
 	if( yaw < 0.0 )
 		yaw += 360.0;
@@ -226,7 +237,7 @@ function VS::VecToYaw( vec )
 	return yaw;
 }
 
-function VS::VecToPitch( vec )
+function VS::VecToPitch( vec ):(atan2)
 {
 	if( vec.y == 0.0 && vec.x == 0.0 )
 	{
@@ -236,7 +247,7 @@ function VS::VecToPitch( vec )
 			return -180.0;
 	};
 
-	return::RAD2DEG*::atan2(-vec.z, vec.Length2D());
+	return::RAD2DEG*atan2(-vec.z, vec.Length2D());
 }
 
 function VS::VectorIsZero(v)
@@ -247,27 +258,27 @@ function VS::VectorIsZero(v)
 //-----------------------------------------------------------------------
 // Vector equality with tolerance
 //-----------------------------------------------------------------------
-function VS::VectorsAreEqual( a, b, tolerance = 0.0 )
+function VS::VectorsAreEqual( a, b, tolerance = 0.0 ):(fabs)
 {
-	return ( ::fabs(a.x - b.x) <= tolerance &&
-	         ::fabs(a.y - b.y) <= tolerance &&
-	         ::fabs(a.z - b.z) <= tolerance );
+	return ( fabs(a.x - b.x) <= tolerance &&
+	         fabs(a.y - b.y) <= tolerance &&
+	         fabs(a.z - b.z) <= tolerance );
 }
 
 //-----------------------------------------------------------------------
 // Angle equality with tolerance
 //-----------------------------------------------------------------------
-function VS::AnglesAreEqual( a, b, tolerance = 0.0 )
+function VS::AnglesAreEqual( a, b, tolerance = 0.0 ):(fabs)
 {
-	return ::fabs(AngleDiff(a, b)) <= tolerance;
+	return fabs(AngleDiff(a, b)) <= tolerance;
 }
 
 //-----------------------------------------------------------------------
 // Equality with tolerance
 //-----------------------------------------------------------------------
-function VS::CloseEnough( a, b, e )
+function VS::CloseEnough( a, b, e ):(fabs)
 {
-	return ::fabs(a - b) <= e;
+	return fabs(a - b) <= e;
 }
 
 function VS::Approach( target, value, speed )
@@ -302,14 +313,14 @@ function VS::ApproachVector( target, value, speed )
 }
 */
 
-function VS::ApproachAngle( target, value, speed )
+function VS::ApproachAngle( target, value, speed ):(fabs)
 {
 	target = AngleNormalize( target );
 	value = AngleNormalize( value );
 
 	local delta = AngleDiff( target, value );
 
-	speed = ::fabs(speed);
+	speed = fabs(speed);
 
 	if( delta > speed )
 		value += speed;
@@ -353,11 +364,11 @@ function VS::QAngleNormalize( vAng )
 // Snaps the input vector to the closest axis
 // input vector pointer [ normalised direction vector ]
 //-----------------------------------------------------------------------------
-function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 )
+function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 ):(fabs)
 {
 	local proj = 1.0 - epsilon;
 
-	if( ::fabs(v.x) > proj )
+	if( fabs(vDirection.x) > proj )
 	{
 		if( vDirection.x < 0.0 )
 			vDirection.x = -1.0;
@@ -369,7 +380,7 @@ function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 )
 		return vDirection;
 	};
 
-	if( ::fabs(v.y) > proj )
+	if( fabs(vDirection.y) > proj )
 	{
 		if( vDirection.y < 0.0 )
 			vDirection.y = -1.0;
@@ -381,7 +392,7 @@ function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 )
 		return vDirection;
 	};
 
-	if( ::fabs(v.z) > proj )
+	if( fabs(vDirection.z) > proj )
 	{
 		if( vDirection.z < 0.0 )
 			vDirection.z = -1.0;
@@ -444,11 +455,11 @@ function VS::VectorMax( a, b, o = _VEC )
 }
 
 // input vector pointer
-function VS::VectorAbs( v )
+function VS::VectorAbs( v ):(fabs)
 {
-	v.x = ::fabs(v.x);
-	v.y = ::fabs(v.y);
-	v.z = ::fabs(v.z);
+	v.x = fabs(v.x);
+	v.y = fabs(v.y);
+	v.z = fabs(v.z);
 	return v;
 }
 
@@ -524,9 +535,9 @@ function VS::ComputeVolume( vecMins, vecMaxs )
 //-----------------------------------------------------------------------------
 // Get a random vector
 //-----------------------------------------------------------------------------
-function VS::RandomVector( minVal = -RAND_MAX, maxVal = RAND_MAX )
+function VS::RandomVector( minVal = -RAND_MAX, maxVal = RAND_MAX ):(Vector,RandomFloat)
 {
-	return::Vector( ::RandomFloat( minVal, maxVal ), ::RandomFloat( minVal, maxVal ), ::RandomFloat( minVal, maxVal ) );
+	return Vector( RandomFloat( minVal, maxVal ), RandomFloat( minVal, maxVal ), RandomFloat( minVal, maxVal ) );
 }
 
 function VS::CalcSqrDistanceToAABB( mins, maxs, point )
@@ -571,9 +582,9 @@ function VS::CalcSqrDistanceToAABB( mins, maxs, point )
 
 function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut = _VEC )
 {
-	closestOut.x = ::clamp( point.x, mins.x, maxs.x );
-	closestOut.y = ::clamp( point.y, mins.y, maxs.y );
-	closestOut.z = ::clamp( point.z, mins.z, maxs.z );
+	closestOut.x = clamp( point.x, mins.x, maxs.x );
+	closestOut.y = clamp( point.y, mins.y, maxs.y );
+	closestOut.z = clamp( point.z, mins.z, maxs.z );
 
 	return closestOut;
 }
@@ -585,24 +596,24 @@ function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut = _VEC )
 //-----------------------------------------------------------------------
 
 // decayTo is factor the value should decay to in decayTime
-function VS::ExponentialDecay( decayTo, decayTime, dt )
+function VS::ExponentialDecay( decayTo, decayTime, dt ):(log,exp)
 {
-	return::exp( ::log(decayTo) / decayTime * dt );
+	return exp( log(decayTo) / decayTime * dt );
 }
 
 // halflife is time for value to reach 50%
-function VS::ExponentialDecay2( halflife, dt )
+function VS::ExponentialDecay2( halflife, dt ):(exp)
 {
 	// log(0.5) == -0.69314718055994530941723212145818
-	return::exp( -0.69314718 / halflife * dt );
+	return exp( -0.69314718 / halflife * dt );
 }
 
 // Get the integrated distanced traveled
 // decayTo is factor the value should decay to in decayTime
 // dt is the time relative to the last velocity update
-function VS::ExponentialDecayIntegral( decayTo, decayTime, dt )
+function VS::ExponentialDecayIntegral( decayTo, decayTime, dt ):(log,pow)
 {
-	return (::pow(decayTo, dt / decayTime) * decayTime - decayTime) / ::log(decayTo);
+	return (pow(decayTo, dt / decayTime) * decayTime - decayTime) / log(decayTo);
 }
 
 // hermite basis function for smooth interpolation
@@ -631,7 +642,7 @@ function VS::SimpleSplineRemapValClamped( val, A, B, C, D )
 {
 	if( A == B ) return val >= B ? D : C;
 	local cVal = (val - A) / (B - A);
-	cVal = ::clamp( cVal, 0.0, 1.0 );
+	cVal = clamp( cVal, 0.0, 1.0 );
 	return C + (D - C) * SimpleSpline( cVal );
 }
 
@@ -646,7 +657,7 @@ function VS::RemapValClamped( val, A, B, C, D )
 {
 	if( A == B ) return val >= B ? D : C;
 	local cVal = (val - A) / (B - A);
-	cVal = ::clamp( cVal, 0.0, 1.0 );
+	cVal = clamp( cVal, 0.0, 1.0 );
 	return C + (D - C) * cVal;
 }
 
@@ -684,13 +695,13 @@ function VS::RemapValClamped( val, A, B, C, D )
 //
 // With a biasAmt of 0.5, Bias returns X.
 //
-function VS::Bias( x, biasAmt )
+function VS::Bias( x, biasAmt ):(log,pow)
 {
 	local lastAmt = -1.0,
 	      lastExponent = 0.0;
 	if( lastAmt != biasAmt )
-		lastExponent = ::log(biasAmt) * -1.4427; // (-1.4427 = 1 / log(0.5))
-	return::pow(x, lastExponent);
+		lastExponent = log(biasAmt) * -1.4427; // (-1.4427 = 1 / log(0.5))
+	return pow(x, lastExponent);
 }
 
 //
@@ -750,9 +761,9 @@ function VS::Gain( x, biasAmt )
 // |___________________
 // 0                   1
 //
-function VS::SmoothCurve( x )
+function VS::SmoothCurve( x ):(cos)
 {
-	return (1.0 - ::cos(x * ::PI)) * 0.5;
+	return (1.0 - cos(x * ::PI)) * 0.5;
 }
 
 function VS::MovePeak( x, flPeakPos )
@@ -763,6 +774,9 @@ function VS::MovePeak( x, flPeakPos )
 		return 0.5 + 0.5 * (x - flPeakPos) / (1.0 - flPeakPos);
 }
 
+local MovePeak = ::VS.MovePeak;
+local Gain = ::VS.Gain;
+
 // This works like SmoothCurve, with two changes:
 //
 // 1. Instead of the curve peaking at 0.5, it will peak at flPeakPos.
@@ -770,7 +784,7 @@ function VS::MovePeak( x, flPeakPos )
 //
 // 2. flPeakSharpness is a 0-1 value controlling the sharpness of the peak.
 //    Low values blunt the peak and high values sharpen the peak.
-function VS::SmoothCurve_Tweak( x, flPeakPos, flPeakSharpness )
+function VS::SmoothCurve_Tweak( x, flPeakPos, flPeakSharpness ):(MovePeak,Gain)
 {
 	local flMovedPeak = MovePeak( x, flPeakPos );
 	local flSharpened = Gain( flMovedPeak, flPeakSharpness );
