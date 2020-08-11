@@ -3,9 +3,13 @@
 
 --------------------------------
 
+2020-08-11
+- Pushed missing files
+
 2020-08-07 [v2.36.10]
 - General cleanup, minor performance improvements
 - Bugfix on turret.nut (v0.5.2)
+- Minor improvements on glow.nut (v1.0.7) and fov.nut (v1.0.1)
 
 2020-07-11 [v2.36.9]
 - Added fov.nut (v1.0.0)

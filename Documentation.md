@@ -202,8 +202,6 @@ Included in `vs_library.nut`
 [`VS.AngleNormalize()`](#f_AngleNormalize)  
 [`VS.QAngleNormalize()`](#f_QAngleNormalize)  
 [`VS.SnapDirectionToAxis()`](#f_SnapDirectionToAxis)  
-[`VS.Dist()`](#f_Dist)  
-[`VS.DistSqr()`](#f_DistSqr)  
 [`VS.VectorCopy()`](#f_VectorCopy)  
 [`VS.VectorMin()`](#f_VectorMin)  
 [`VS.VectorMax()`](#f_VectorMax)  
@@ -665,20 +663,6 @@ function Think()
 
 </details>
 
-________________________________
-
-<a name="f_Dist"></a>
-```cpp
-float VS::Dist(Vector v1, Vector v2)
-```
-Distance between 2 vectors
-________________________________
-
-<a name="f_DistSqr"></a>
-```cpp
-float VS::DistSqr(Vector v1, Vector v2)
-```
-Distance squared between 2 vectors. Use for comparisons, cheaper than getting actual length
 ________________________________
 
 <a name="f_VectorCopy"></a>
@@ -2160,7 +2144,7 @@ ________________________________
 ```cpp
 void VS::Events::ValidateUseridAll(bool force = false)
 ```
-Make sure all player userids are validated
+Make sure all player userids are validated. Asynchronous.
 ________________________________
 
 ### [vs_log](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_log.nut)

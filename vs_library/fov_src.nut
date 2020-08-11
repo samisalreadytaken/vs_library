@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
 //                       github.com/samisalreadytaken
-//- v1.0.0 --------------------------------------------------------------
+//- v1.0.1 --------------------------------------------------------------
 //
 // ::SetPlayerFOV( hPlayer, iFOV, flSpeed = 0 )
 //
@@ -15,8 +15,11 @@ if(!("SetPlayerFOV" in ::getroottable()) || typeof::SetPlayerFOV != "function")
 	local sc = ENT_SCRIPT.GetScriptScope();
 	sc.m_iLastFOV <- 0.0;
 	sc.m_flLastFOVSpeed <- 0.0;
+	local VS = ::VS;
+	local AddEvent = ::DoEntFireByInstanceHandle;
+	local delay = ::delay;
 
-	::SetPlayerFOV <- function(hPlayer,iFOV,flSpeed = 0.0):(m_list,ENT_SCRIPT,sc)
+	::SetPlayerFOV <- function(hPlayer,iFOV,flSpeed = 0.0):(m_list,ENT_SCRIPT,sc,VS,AddEvent,delay)
 	{
 		local hView;
 
@@ -60,7 +63,7 @@ if(!("SetPlayerFOV" in ::getroottable()) || typeof::SetPlayerFOV != "function")
 		else
 		{
 			// 0 makes the transition smooth; 7 overrides existing view owner, if exists
-			hView = ::VS.CreateEntity("point_viewcontrol",{spawnflags=(1<<0)|(1<<7)},true);
+			hView = VS.CreateEntity("point_viewcontrol",{spawnflags=(1<<0)|(1<<7)},true);
 			hView.__KeyValueFromInt("effects",1<<5);
 			hView.__KeyValueFromInt("movetype",8);
 			hView.__KeyValueFromInt("renderamt",0);
@@ -74,9 +77,9 @@ if(!("SetPlayerFOV" in ::getroottable()) || typeof::SetPlayerFOV != "function")
 		// This script takes advantage of how hViewEntity->m_hPlayer is not
 		// nullified on disabling, and how ScriptSetFov() only calls pPlayer->SetFOV()
 		hView.SetOwner(hPlayer);
-		::DoEntFireByInstanceHandle(hView,"enable","",0.0,hPlayer,null);
-		::DoEntFireByInstanceHandle(hView,"disable","",0.0,hPlayer,null);
-		::delay("activator.SetFov(m_iLastFOV,m_flLastFOVSpeed)",0.0,ENT_SCRIPT,hView);
+		AddEvent(hView,"enable","",0.0,hPlayer,null);
+		AddEvent(hView,"disable","",0.0,hPlayer,null);
+		delay("activator.SetFov(m_iLastFOV,m_flLastFOVSpeed)",0.0,ENT_SCRIPT,hView);
 
 		return hView;
 	}

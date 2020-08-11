@@ -21,6 +21,10 @@ IncludeScript("vs_library/vs_math2");
 if( "IsBoxIntersectingRay" in ::VS )
 	return;;
 
+local fabs = ::fabs;
+local InvRSquared = ::VS.InvRSquared;
+local VectorMA = ::VS.VectorMA;
+
 //-----------------------------------------------------------------------------
 // Clears the trace
 //-----------------------------------------------------------------------------
@@ -35,12 +39,10 @@ function VS::Collision_ClearTrace( vecRayStart, vecRayDelta, pTrace )
 //-----------------------------------------------------------------------------
 // Compute the offset in t along the ray that we'll use for the collision
 //-----------------------------------------------------------------------------
-function VS::ComputeBoxOffset( ray )
+function VS::ComputeBoxOffset( ray ):(fabs,InvRSquared)
 {
 	if( ray.m_IsRay )
 		return 1.e-3;
-
-	local fabs = ::fabs;
 
 	// Find the projection of the box diagonal along the ray...
 	local offset = fabs(ray.m_Extents.x * ray.m_Delta.x) +
@@ -174,7 +176,7 @@ function VS::IsCircleIntersectingRectangle( boxMin, boxMax, center, radius )
 // returns true if there's an intersection between ray and sphere
 // flTolerance [0..1]
 //-----------------------------------------------------------------------------
-function VS::IsRayIntersectingSphere( vecRayOrigin, vecRayDelta, vecCenter, flRadius, flTolerance )
+function VS::IsRayIntersectingSphere( vecRayOrigin, vecRayDelta, vecCenter, flRadius, flTolerance ):(VectorMA)
 {
 	// For this algorithm, find a point on the ray  which is closest to the sphere origin
 	// Do this by making a plane passing through the sphere origin
@@ -208,39 +210,14 @@ function VS::IsRayIntersectingSphere( vecRayOrigin, vecRayDelta, vecCenter, flRa
 	};
 
 	local vecClosestPoint = VectorMA( vecRayOrigin, t, vecRayDelta );
-	return ( DistSqr( vecClosestPoint, vecCenter ) <= flRadius * flRadius );
-}
-
-//-----------------------------------------------------------------------------
-// Intersects a ray with a AABB, return true if they intersect
-// Input  : localMins, localMaxs
-//-----------------------------------------------------------------------------
-function VS::IsBoxIntersectingRay( origin, vecBoxMin, vecBoxMax, ray, flTolerance = 0.0 )
-{
-	if( !ray.m_IsSwept )
-	{
-		local rayMins = ray.m_Start - ray.m_Extents;
-		local rayMaxs = ray.m_Start + ray.m_Extents;
-		if( flTolerance )
-		{
-			rayMins.x -= flTolerance; rayMins.y -= flTolerance; rayMins.z -= flTolerance;
-			rayMaxs.x += flTolerance; rayMaxs.y += flTolerance; rayMaxs.z += flTolerance;
-		};
-		return IsBoxIntersectingBox( vecBoxMin, vecBoxMax, rayMins, rayMaxs );
-	};
-
-	// world
-	local vecExpandedBoxMin = vecBoxMin - ray.m_Extents + origin;
-	local vecExpandedBoxMax = vecBoxMax + ray.m_Extents + origin;
-
-	return IsBoxIntersectingRay2( vecExpandedBoxMin, vecExpandedBoxMax, ray.m_Start, ray.m_Delta, flTolerance );
+	return ( (vecClosestPoint-vecCenter).LengthSqr() <= flRadius * flRadius );
 }
 
 //-----------------------------------------------------------------------------
 // Intersects a ray with a AABB, return true if they intersect
 // Input  : worldMins, worldMaxs
 //-----------------------------------------------------------------------------
-function VS::IsBoxIntersectingRay2( boxMin, boxMax, origin, vecDelta, flTolerance )
+function VS::IsBoxIntersectingRay2( boxMin, boxMax, origin, vecDelta, flTolerance ):(fabs)
 {
 	// Assert( boxMin.x <= boxMax.x );
 	// Assert( boxMin.y <= boxMax.y );
@@ -249,8 +226,6 @@ function VS::IsBoxIntersectingRay2( boxMin, boxMax, origin, vecDelta, flToleranc
 	// FIXME: Surely there's a faster way
 	local tmin = FLT_MIN,
 	      tmax = FLT_MAX;
-
-	local fabs = ::fabs;
 
 	// Parallel case...
 	if( fabs(vecDelta.x) < 1.e-8 )
@@ -348,6 +323,34 @@ function VS::IsBoxIntersectingRay2( boxMin, boxMax, origin, vecDelta, flToleranc
 	};
 
 	return true;
+}
+
+local IsBoxIntersectingBox = ::VS.IsBoxIntersectingBox;
+local IsBoxIntersectingRay2 = ::VS.IsBoxIntersectingRay2;
+
+//-----------------------------------------------------------------------------
+// Intersects a ray with a AABB, return true if they intersect
+// Input  : localMins, localMaxs
+//-----------------------------------------------------------------------------
+function VS::IsBoxIntersectingRay( origin, vecBoxMin, vecBoxMax, ray, flTolerance = 0.0 ):(IsBoxIntersectingBox,IsBoxIntersectingRay2)
+{
+	if( !ray.m_IsSwept )
+	{
+		local rayMins = ray.m_Start - ray.m_Extents;
+		local rayMaxs = ray.m_Start + ray.m_Extents;
+		if( flTolerance )
+		{
+			rayMins.x -= flTolerance; rayMins.y -= flTolerance; rayMins.z -= flTolerance;
+			rayMaxs.x += flTolerance; rayMaxs.y += flTolerance; rayMaxs.z += flTolerance;
+		};
+		return IsBoxIntersectingBox( vecBoxMin, vecBoxMax, rayMins, rayMaxs );
+	};
+
+	// world
+	local vecExpandedBoxMin = vecBoxMin - ray.m_Extents + origin;
+	local vecExpandedBoxMax = vecBoxMax + ray.m_Extents + origin;
+
+	return IsBoxIntersectingRay2( vecExpandedBoxMin, vecExpandedBoxMax, ray.m_Start, ray.m_Delta, flTolerance );
 }
 
 /*

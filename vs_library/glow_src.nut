@@ -1,20 +1,25 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
 //                       github.com/samisalreadytaken
-//- v1.0.6 --------------------------------------------------------------
+//- v1.0.7 --------------------------------------------------------------
 //
 // Easy glow handling library.
 // Can be used on any entity that has a model.
 //
-//    Glow.Set(player, Vector(255,138,0), 1, 2048)
-//    Glow.Disable(player)
+// ::Glow.Set(hPlayer, color, nType, flDistance)
+// ::Glow.Disable(hPlayer)
 //
-//    Glow.DEBUG = true
+// ::Glow.DEBUG = true
 //
-//-----------------------------------------------------------------------
+
+IncludeScript("vs_library");
 
 if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow))
 {
+	local AddEvent = ::DoEntFireByInstanceHandle;
+	local Create = ::CreateProp;
+	local VS = ::VS;
+
 	::Glow <-
 	{
 		//-----------------------------------------------------------------------
@@ -29,19 +34,19 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 		//          float distance
 		// Output : handle glow_ent
 		//-----------------------------------------------------------------------
-		function Set(src,color,style,dist)
+		function Set(src,color,style,dist):(VS,Create)
 		{
 			local glow = Get(src);
 
 			if(glow)
 			{
-				if(DEBUG)::print("Glow::Set: Updating glow ["+src.entindex()+"]\n");
+				if(DEBUG)Msg("Glow::Set: Updating glow ["+src.entindex()+"]\n");
 			}
 			else
 			{
-				if(DEBUG)::print("Glow::Set: Setting glow ["+src.entindex()+"]\n");
+				if(DEBUG)Msg("Glow::Set: Setting glow ["+src.entindex()+"]\n");
 
-				foreach( e in _list ) if(e)
+				foreach( e in m_list ) if(e)
 					if(!e.GetMoveParent())
 					{
 						glow = e;
@@ -54,14 +59,14 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 				}
 				else
 				{
-					glow = ::CreateProp("prop_dynamic_glow", src.GetOrigin(), src.GetModelName(), 0);
-					_list.append(glow.weakref());
+					glow = Create("prop_dynamic_glow", src.GetOrigin(), src.GetModelName(), 0);
+					m_list.append(glow.weakref());
 				};
 
 				glow.__KeyValueFromInt("rendermode", 6);
 				glow.__KeyValueFromInt("renderamt", 0);
-				::VS.SetParent(glow, src);
-				::VS.MakePermanent(glow);
+				VS.SetParent(glow, src);
+				VS.MakePermanent(glow);
 			};
 
 			if( typeof color == "string" )
@@ -83,22 +88,22 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 		// Input  : handle src_ent
 		// Output : handle glow_ent
 		//-----------------------------------------------------------------------
-		function Disable(src)
+		function Disable(src):(VS,AddEvent)
 		{
 			local glow = Get(src);
 
 			if(glow)
 			{
 				glow.__KeyValueFromInt("effects", 18465); // EF_DEFAULT|EF_NODRAW
-				::VS.SetParent(glow, null);
-				::EntFireByHandle(glow,"setglowdisabled");
+				VS.SetParent(glow, null);
+				AddEvent(glow,"setglowdisabled","",0.0,null,null);
 				// glow.SetAbsOrigin(VEC_MAX);
 
-				if(DEBUG)::print("Glow::Disable: Disabled glow ["+src.entindex()+"]\n");
+				if(DEBUG)Msg("Glow::Disable: Disabled glow ["+src.entindex()+"]\n");
 			}
 			else
 			{
-				if(DEBUG)::print("Glow::Disable: No glow found ["+src.entindex()+"]\n");
+				if(DEBUG)Msg("Glow::Disable: No glow found ["+src.entindex()+"]\n");
 			};
 
 			return glow;
@@ -115,22 +120,23 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 			if( !src || !src.GetModelName().len() )
 				throw "Glow: Invalid source entity";
 
-			for( local i = _list.len(); i--; )
+			for( local i = m_list.len(); i--; )
 			{
-				local g = _list[i];
+				local g = m_list[i];
 				if(g)
 				{
 					if( g.GetMoveParent() == src )
 						return g;
 				}
-				else _list.remove(i);
+				else m_list.remove(i);
 			}
 		}
 
 		// VEC_MAX = Vector(MAX_COORD_FLOAT-1,MAX_COORD_FLOAT-1,MAX_COORD_FLOAT-1);
 		// EF_DEFAULT = (1<<0)|(1<<11)|(1<<14),
 		// EF_NODRAW = (1<<5),
+		Msg = ::print,
 		DEBUG = false,
-		_list = []
+		m_list = []
 	}
 };;
