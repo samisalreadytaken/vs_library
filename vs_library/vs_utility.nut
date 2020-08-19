@@ -10,31 +10,9 @@
 local Entities = ::Entities;
 local DebugDrawBox = ::DebugDrawBox;
 local DoUniqueString = ::DoUniqueString;
-local format = ::format;
 
 ::Ent  <- function( s, i = null ):(Entities){ return Entities.FindByName(i,s); }
 ::Entc <- function( s, i = null ):(Entities){ return Entities.FindByClassname(i,s); }
-
-//-----------------------------------------------------------------------
-// Input  : int / float
-// Output : string - .tointeger() or .tofloat() can be used on the result
-//-----------------------------------------------------------------------
-function VS::FormatPrecision(f, n):(format){ return format("%." +n+"f",f); }
-function VS::FormatExp(i, n):(format)      { return format("%." +n+"e",i); }
-
-//-----------------------------------------------------------------------
-// Input  : int
-// Output : string - .tointeger() or .tofloat() can be used on the result
-//-----------------------------------------------------------------------
-function VS::FormatHex(i, n):(format)      { return format("%#0"+n+"x",i); }
-
-//-----------------------------------------------------------------------
-// Input  : str/int/float
-//          int amount
-//          0 or " "
-// Output : string
-//-----------------------------------------------------------------------
-function VS::FormatWidth(i, n, s = " "):(format) { return format("%"+s+""+n+"s",i.tostring()); }
 
 //-----------------------------------------------------------------------
 // Input  : Vector
@@ -243,9 +221,7 @@ function VS::TraceLine::Ray( mins =::Vector(), maxs =::Vector() )
 //	// 1.0 gaussian, 0.0 is flat, -1.0 is inverse gaussian
 //	local shotBias = ( ( shotBiasMax - shotBiasMin ) * bias ) + shotBiasMin;
 //
-//	local flatness = ( ::fabs(shotBias) * 0.5 );
-//
-//	local RandomFloat = ::RandomFloat;
+//	local flatness = ( fabs(shotBias) * 0.5 );
 //
 //	do
 //	{
@@ -259,7 +235,7 @@ function VS::TraceLine::Ray( mins =::Vector(), maxs =::Vector() )
 //		z = x*x+y*y;
 //	} while (z > 1)
 //
-//	local vecRight = ::Vector(), vecUp = ::Vector();
+//	local vecRight = Vector(), vecUp = Vector();
 //	VectorVectors(vecShotDirection, vecRight, vecUp);
 //
 //	return vecShotDirection + x * vecSpread.x * vecRight + y * vecSpread.y * vecUp;
@@ -303,9 +279,11 @@ function VS::arrayApply( arr, func )
 // arr.map( func(v) )
 // Same as arrayApply, but return a new array. Doesn't modify the input array
 //-----------------------------------------------------------------------
-function VS::arrayMap( arr, func )
+local array = ::array;
+
+function VS::arrayMap( arr, func ):(array)
 {
-	local new =::array(arr.len());
+	local new = array(arr.len());
 
 	foreach( i, v in arr )
 		new[i] = func( v );
@@ -449,12 +427,12 @@ VS.GetCallerFunc <- ::compilestring("return(getstackinfos(3)[\"func\"])");
 // Input  : table
 // Output : array containing the input's directory
 //-----------------------------------------------------------------------
-function VS::GetTableDir(table)
+function VS::GetTableDir(input)
 {
-	if( typeof table != "table" )
-		throw "Invalid input type '" + typeof table + "' ; expected: 'table'";
+	if( typeof input != "table" )
+		throw "Invalid input type '" + typeof input + "' ; expected: 'table'";
 
-	local r = _f627f40d21a6([],table);
+	local r = _f627f40d21a6([],input);
 
 	if(r) r.append("roottable");
 	else r = ["roottable"];
@@ -544,22 +522,17 @@ function VS::_fb3k5S1r91t7(t, i, s = ::getroottable())
 	}
 }
 
-//-----------------------------------------------------------------------
-// Frame times:
-//
-// 64.0  tick : 0.01562500
-// 102.4 tick : 0.00976563
-// 128.0 tick : 0.00781250
-//-----------------------------------------------------------------------
-local flTickRate = 1.0 / ::FrameTime();
-function VS::GetTickrate():(flTickRate)
+if( ::ENT_SCRIPT <- ::Entc("worldspawn") )
 {
-	return flTickRate;
+	::ENT_SCRIPT.ValidateScriptScope();
+	::VS.slots_default.append(::VS.GetVarName(::ENT_SCRIPT.GetScriptScope()));
 }
-
-// defined in _resources
-// must be executed after 'GetVarName', before 'delay' declaration
-// _v0();
+else
+{
+	(::ENT_SCRIPT<-::VS.CreateEntity("soundent")).ValidateScriptScope();
+	::VS._ENT_SCRIPT <- ::ENT_SCRIPT;
+	::Msg("ERROR: Could not find worldspawn\n");
+};;
 
 //-----------------------------------------------------------------------
 // If you wish to delay the code in a specific entity scope,
@@ -574,12 +547,108 @@ function VS::GetTickrate():(flTickRate)
 //-----------------------------------------------------------------------
 
 local AddEvent = ::DoEntFireByInstanceHandle;
+
+::delay <- function(X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null):(AddEvent)
+	return AddEvent(E, "runscriptcode", ""+X, T, A, C);
+
+//-----------------------------------------------------------------------
+// Frame times:
+//
+// 64.0  tick : 0.01562500
+// 102.4 tick : 0.00976563
+// 128.0 tick : 0.00781250
+//-----------------------------------------------------------------------
+local flTickRate = 1.0 / ::FrameTime();
+function VS::GetTickrate():(flTickRate)
+{
+	return flTickRate;
+}
+
+if (!PORTAL2){
+
+// The initialisation of this function is asynchronous.
+// It takes 6 seconds to finalise on map spawn auto-load,
+// and 1-5 frames on manual execution on post map spawn.
+// VS.flCanCheckForDedicatedAfterSec can be used for delayed initialisation needs.
+// 		delay("Init()", VS.flCanCheckForDedicatedAfterSec)
+function VS::IsDedicatedServer()
+{
+	throw "not ready";
+}
+
+local ENT = ::ENT_SCRIPT;
+local TIMESTART = 4.0;
+local TIMEOUT = 6.0;
+local _TIMEOUT = TIMEOUT+FrameTime()*4;
+
+::VS.flCanCheckForDedicatedAfterSec <- fabs(clamp(Time(),0,_TIMEOUT)-_TIMEOUT);
+
+::_VS_DS_Init <- function():(TIMESTART,TIMEOUT,ENT)
+{
+	if (::_VS_DS_bInitDone)
+	{
+		::VS.flCanCheckForDedicatedAfterSec = 0.0;
+
+		delete::_VS_DS_Init;
+		delete::_VS_DS_IsListen;
+		delete::_VS_DS_bInitDone;
+		delete::_VS_DS_bExecOnce;
+		return;
+	};
+
+	local time = ::Time();
+
+	if ( time > TIMESTART )
+	{
+		::SendToConsole("script _VS_DS_IsListen()");
+
+		if ( time > TIMEOUT )
+		{
+			::VS.IsDedicatedServer = function() { return true; }
+			::_VS_DS_bInitDone = true;
+		};
+	};
+
+	::delay("::_VS_DS_Init()",0.1,ENT); // delay value should not be less than 5 frames (SendToConsole delay)
+}
+
+::_VS_DS_IsListen <- function()
+{
+	::VS.IsDedicatedServer = function() { return false; }
+	::_VS_DS_bInitDone = true;
+}
+
+// extra protection
+if (!("_VS_DS_bExecOnce" in ::getroottable()))
+{
+	::_VS_DS_bExecOnce <- true;
+	::_VS_DS_bInitDone <- false;
+};
+
+if (::_VS_DS_bExecOnce)
+{
+	local time = ::Time();
+
+	// on map load
+	if ( time < TIMESTART )
+	{
+		::delay("::_VS_DS_Init()",TIMESTART-time,ENT);
+	}
+	// late execution
+	else
+	{
+		::_VS_DS_Init();
+	};
+
+	::_VS_DS_bExecOnce = false;
+};
+
+};; // !PORTAL2
+
+if (!PORTAL2){
+
 local Chat = ::ScriptPrintMessageChatAll;
 local ChatTeam = ::ScriptPrintMessageChatTeam;
-
-::delay     <-
-function(X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null):(AddEvent)
-	return AddEvent(E, "runscriptcode", ""+X, T, A, C);
 
 ::Chat      <- function(s):(Chat) return Chat(" "+s);
 ::ChatTeam  <- function(i,s):(ChatTeam) return ChatTeam(i," "+s);
@@ -607,3 +676,5 @@ function(X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null):(AddEvent)
 	orangered  = "\x0f",
 	orange     = "\x10"
 }
+
+};; // !PORTAL2

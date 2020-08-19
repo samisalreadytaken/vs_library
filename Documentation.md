@@ -119,7 +119,7 @@ ________________________________
 
 ## Developer notes
 * Some wrapper functions such as EntFireByHandle return the final calls to take advantage of tail calls for (minor) performance gains.
-* Variables in large loops are saved in local variables to reduce variable lookups.
+* Free variables are used with static values to reduce variable lookups.
 * There will be some inconsistencies between the minified version and the source files:
 * * Some functions that should be 'inline' such as max() are manually replaced in the minified version to reduce function call overhead.
 * * Constant variables such as PI and DEG2RAD are replaced with their values in the minified version to reduce variable lookups.
@@ -248,10 +248,7 @@ Included in `vs_library.nut`
 [`txt`](#f_txt)  
 [`VecToString()`](#f_VecToString)  
 [`VS.GetTickrate()`](#f_GetTickrate)  
-[`VS.FormatPrecision()`](#f_FormatPrecision)  
-[`VS.FormatHex()`](#f_FormatHex)  
-[`VS.FormatExp()`](#f_FormatExp)  
-[`VS.FormatWidth()`](#f_FormatWidth)  
+[`VS.IsDedicatedServer()`](#f_IsDedicatedServer)  
 [`VS.DrawEntityBBox()`](#f_DrawEntityBBox)  
 [`VS.TraceLine`](#f_TraceLine)  
 [`VS.TraceLine.DidHit()`](#f_DidHit)  
@@ -314,7 +311,7 @@ Included in `vs_library.nut`
 
 ### [vs_events](#vs_events-1)
 [`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)  
-[`VS.Events.ForceValidateUserid()`](#f_ForceValidateUserid)
+[`VS.Events.ForceValidateUserid()`](#f_ForceValidateUserid)  
 [`VS.Events.ValidateUseridAll()`](#f_ValidateUseridAll)
 
 
@@ -1076,7 +1073,7 @@ if(!("__reloading"in::getroottable()))::__reloading<-false;;if(::__reloading)del
 Paste the line below to the console to test target time -> server time conversion. Change `0.1` in the end to your time
 
 ```cs
-script local _=function(i){delay("printl("+i+"+\" -> \"+(Time()-"+VS.FormatPrecision(Time(),9)+"))",i.tofloat())}( 0.1 )
+script local _=function(i){delay("printl("+i+"+\" -> \"+(Time()-"+format("%.9f",Time())+"))",i.tofloat())}( 0.1 )
 ```
 
 </details>
@@ -1216,103 +1213,13 @@ float VS::GetTickrate()
 Get server tickrate
 ________________________________
 
-<a name="f_FormatPrecision"></a>
+<a name="f_IsDedicatedServer"></a>
 ```cpp
-string VS::FormatPrecision(float f, int n)
+bool VS::IsDedicatedServer()
 ```
-.tointeger() or .tofloat() can be used on the result
+The initialisation of this function is asynchronous. It takes 6 seconds to finalise on map spawn auto-load, and 1-5 frames on manual execution on post map spawn. `VS.flCanCheckForDedicatedAfterSec` can be used for delayed initialisation needs.
 
-<details><summary>Example</summary>
-
-```lua
-local res = VS.FormatPrecision( 1.234, 6 )
-
-printl(res)
-```
-**Output:**
-```cpp
-1.234000
-```
-
-</details>
-
-________________________________
-
-<a name="f_FormatHex"></a>
-```cpp
-string VS::FormatHex(int i, int n)
-```
-.tointeger() or .tofloat() can be used on the result
-
-<details><summary>Example</summary>
-
-```lua
-local res  = VS.FormatHex( 62342, 8 )
-local res2 = VS.FormatHex( 62342, 0 )
-
-printl(res)
-printl(res2)
-```
-**Output:**
-```cpp
-0x00f386
-0xf386
-```
-
-</details>
-
-________________________________
-
-<a name="f_FormatExp"></a>
-```cpp
-string VS::FormatExp(float f, int n)
-```
-.tointeger() or .tofloat() can be used on the result
-
-<details><summary>Example</summary>
-
-```lua
-local res  = VS.FormatExp( 62342, 8 )
-local res2 = VS.FormatExp( 62342, 0 )
-
-printl(res)
-printl(res2)
-```
-**Output:**
-```cpp
-6.23420000e+04
-6e+04
-```
-
-</details>
-
-________________________________
-
-<a name="f_FormatWidth"></a>
-```cpp
-string VS::FormatWidth(string i, int n, string s = " ")
-```
-Parameter `s` can be either `0` or `" "`
-
-<details><summary>Example</summary>
-
-```lua
-local res  = VS.FormatWidth("test", 5, 0   )
-local res2 = VS.FormatWidth(123,    6, 0   )
-local res3 = VS.FormatWidth(123,    6, " " )
-
-printl(res)
-printl(res2)
-printl(res3)
-```
-**Output:**
-```cpp
-0test
-00123
-  123
-```
-</details>
-
+`delay("Init()", VS.flCanCheckForDedicatedAfterSec)`
 ________________________________
 
 <a name="f_DrawEntityBBox"></a>

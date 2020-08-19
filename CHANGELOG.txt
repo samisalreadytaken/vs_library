@@ -3,6 +3,16 @@
 
 --------------------------------
 
+2020-08-19
+- Pushed missing files
+
+2020-08-16 [v2.37.0]
+- Added native support for Portal 2
+- Added VS.IsDedicatedServer()
+- Removed Format functions
+- Event related functions and variables are now declared
+  only when eventlisteners exist on the map
+
 2020-08-11
 - Pushed missing files
 

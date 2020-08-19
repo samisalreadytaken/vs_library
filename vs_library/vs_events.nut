@@ -7,13 +7,15 @@
 // See <README.md> or <LICENSE> for details.
 //-----------------------------------------------------------------------
 
-local Entities = ::Entities;
-local gEventData = ::_xa9b2dfB7ffe;
+if (!PORTAL2){
 
 //-----------------------------------------------------------------------
 // Input  : int userid
 // Output : player handle
 //-----------------------------------------------------------------------
+
+local Entities = ::Entities;
+
 function VS::GetPlayerByUserid( userid ):(Entities)
 {
 	local ent;
@@ -25,6 +27,8 @@ function VS::GetPlayerByUserid( userid ):(Entities)
 			return ent;
 	}
 }
+
+if (EVENTS){
 
 // OnEvent player_connect
 // user function ::OnGameEvent_player_connect will still be called
@@ -38,8 +42,9 @@ function VS::GetPlayerByUserid( userid ):(Entities)
 //
 // When the limit is reached, the oldest 64 entries are deleted.
 
+local gEventData = ::_xa9b2dfB7ffe;
 local flTimeoutThold = ::FrameTime()*2;
-local Time = ::Time();
+local Time = ::Time;
 
 function VS::Events::player_connect(data):(gEventData,Time,flTimeoutThold)
 {
@@ -50,7 +55,7 @@ function VS::Events::player_connect(data):(gEventData,Time,flTimeoutThold)
 			for( local i = 64; i--; )
 				gEventData.remove(0);
 
-			::print("player_connect: ERROR!!! Player data is not being processed\n")
+			::Msg("player_connect: ERROR!!! Player data is not being processed\n")
 		};
 
 		gEventData.append(data);
@@ -70,7 +75,7 @@ function VS::Events::player_connect(data):(gEventData,Time,flTimeoutThold)
 			if( !("networkid" in _SV) )
 				_SV.networkid <- "";
 		}
-		else::print("player_connect: Unexpected error! "+dt+"\n");
+		else::Msg("player_connect: Unexpected error! "+dt+"\n");
 
 		_SV = null;
 		flValidateTime = 0.0;
@@ -87,9 +92,9 @@ function VS::Events::player_spawn(data):(gEventData)
 	{
 		local player = ::VS.GetPlayerByIndex(d.index+1);
 
-		if( !player.ValidateScriptScope() )
+		if( !player || !player.ValidateScriptScope() )
 		{
-			::print("player_connect: Invalid player entity\n");
+			::Msg("player_connect: Invalid player entity\n");
 			break;
 		};
 
@@ -97,20 +102,20 @@ function VS::Events::player_spawn(data):(gEventData)
 
 		if( "networkid" in scope )
 		{
-			::print("player_connect: BUG!!! Something has gone wrong. ");
+			::Msg("player_connect: BUG!!! Something has gone wrong. ");
 
 			if( scope.networkid==d.networkid )
 			{
-				::print("Duplicated data!\n");
+				::Msg("Duplicated data!\n");
 				gEventData.remove(i);
 			}
-			else::print("Conflicting data!\n");
+			else::Msg("Conflicting data!\n");
 
 			break;
 		};
 
 		if( !d.networkid.len() )
-			::print("player_connect: could not get event data\n");
+			::Msg("player_connect: could not get event data\n");
 
 		scope.userid <- d.userid;
 		scope.name <- d.name;
@@ -129,10 +134,7 @@ function VS::Events::player_spawn(data):(gEventData)
 function VS::Events::ForceValidateUserid(ent):(AddEvent,Time)
 {
 	if( !ent || !ent.IsValid() || ent.GetClassname() != "player" )
-		return::print("ForceValidateUserid: Invalid input: "+E+"\n");
-
-	if( !::Entc("logic_eventlistener") )
-		return::print("ForceValidateUserid: No eventlistener found\n");
+		return::Msg("ForceValidateUserid: Invalid input: "+E+"\n");
 
 	// todo: force reloading the library will overwrite this.
 	// I believe referencing it using a targetname is more prone to user errors compared to
@@ -165,3 +167,7 @@ function VS::Events::ValidateUseridAll(force = 0)
 		if( !("userid" in v.GetScriptScope()) || force )
 			delay("::VS.Events.ForceValidateUserid(activator)", i++*flFrameTime, ENT_SCRIPT, v);
 }
+
+}; // EVENTS
+
+};; // !PORTAL2

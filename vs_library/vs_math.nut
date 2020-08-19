@@ -19,7 +19,6 @@ local RandomFloat = ::RandomFloat;
 local sin = ::sin;
 local cos = ::cos;
 local floor = ::floor;
-local fabs = ::fabs;
 local atan2 = ::atan2;
 local exp = ::exp;
 local pow = ::pow;
@@ -258,27 +257,44 @@ function VS::VectorIsZero(v)
 //-----------------------------------------------------------------------
 // Vector equality with tolerance
 //-----------------------------------------------------------------------
-function VS::VectorsAreEqual( a, b, tolerance = 0.0 ):(fabs)
+function VS::VectorsAreEqual( a, b, tolerance = 0.0 )
 {
-	return ( fabs(a.x - b.x) <= tolerance &&
-	         fabs(a.y - b.y) <= tolerance &&
-	         fabs(a.z - b.z) <= tolerance );
+	local x = a.x - b.x;
+	if (x < 0) x = -x;
+
+	local y = a.y - b.y;
+	if (y < 0) y = -y;
+
+	local z = a.z - b.z;
+	if (z < 0) z = -z;
+
+	return ( x <= tolerance &&
+	         y <= tolerance &&
+	         z <= tolerance );
 }
 
 //-----------------------------------------------------------------------
 // Angle equality with tolerance
 //-----------------------------------------------------------------------
-function VS::AnglesAreEqual( a, b, tolerance = 0.0 ):(fabs)
+function VS::AnglesAreEqual( a, b, tolerance = 0.0 )
 {
-	return fabs(AngleDiff(a, b)) <= tolerance;
+	local d = AngleDiff(a, b)
+	if (d < 0)
+		d = -d;
+
+	return d <= tolerance;
 }
 
 //-----------------------------------------------------------------------
 // Equality with tolerance
 //-----------------------------------------------------------------------
-function VS::CloseEnough( a, b, e ):(fabs)
+function VS::CloseEnough( a, b, e )
 {
-	return fabs(a - b) <= e;
+	local d = a - b;
+	if (d < 0)
+		d = -d;
+
+	return d <= e;
 }
 
 function VS::Approach( target, value, speed )
@@ -313,14 +329,15 @@ function VS::ApproachVector( target, value, speed )
 }
 */
 
-function VS::ApproachAngle( target, value, speed ):(fabs)
+function VS::ApproachAngle( target, value, speed )
 {
 	target = AngleNormalize( target );
 	value = AngleNormalize( value );
 
 	local delta = AngleDiff( target, value );
 
-	speed = fabs(speed);
+	if (speed < 0)
+		speed = -speed;
 
 	if( delta > speed )
 		value += speed;
@@ -364,11 +381,11 @@ function VS::QAngleNormalize( vAng )
 // Snaps the input vector to the closest axis
 // input vector pointer [ normalised direction vector ]
 //-----------------------------------------------------------------------------
-function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 ):(fabs)
+function VS::SnapDirectionToAxis( vDirection, epsilon )
 {
 	local proj = 1.0 - epsilon;
 
-	if( fabs(vDirection.x) > proj )
+	if( (vDirection.x < 0 ? -vDirection.x : vDirection.x) > proj )
 	{
 		if( vDirection.x < 0.0 )
 			vDirection.x = -1.0;
@@ -380,7 +397,7 @@ function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 ):(fabs)
 		return vDirection;
 	};
 
-	if( fabs(vDirection.y) > proj )
+	if( (vDirection.y < 0 ? -vDirection.y : vDirection.y) > proj )
 	{
 		if( vDirection.y < 0.0 )
 			vDirection.y = -1.0;
@@ -392,7 +409,7 @@ function VS::SnapDirectionToAxis( vDirection, epsilon = 0.1 ):(fabs)
 		return vDirection;
 	};
 
-	if( fabs(vDirection.z) > proj )
+	if( (vDirection.z < 0 ? -vDirection.z : vDirection.z) > proj )
 	{
 		if( vDirection.z < 0.0 )
 			vDirection.z = -1.0;
@@ -439,11 +456,14 @@ function VS::VectorMax( a, b, o = _VEC )
 }
 
 // input vector pointer
-function VS::VectorAbs( v ):(fabs)
+function VS::VectorAbs( v )
 {
-	v.x = fabs(v.x);
-	v.y = fabs(v.y);
-	v.z = fabs(v.z);
+	if (v.x < 0)
+		v.x = -v.x;
+	if (v.y < 0)
+		v.y = -v.y;
+	if (v.z < 0)
+		v.z = -v.z;
 	return v;
 }
 

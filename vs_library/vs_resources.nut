@@ -8,8 +8,9 @@
 //-----------------------------------------------------------------------
 
 // Don't load if the library is already loaded
-if( "VS" in ::getroottable() && typeof::VS == "table" && "_xa9b2dfB7ffe" in ::getroottable() && !::VS._reload && ::ENT_SCRIPT.IsValid() )
-	return/*::printl("vs_library is already loaded.")*/;;
+if( "VS" in ::getroottable() && typeof::VS == "table" &&
+    "MAX_COORD_FLOAT" in ::getroottable() && !::VS._reload && ::ENT_SCRIPT.IsValid() )
+	return/*::print("vs_library is already loaded.\n")*/;;
 
 local _v2 = function(){}
 local _f = _v2.getinfos().src;
@@ -20,13 +21,16 @@ if( this != ::getroottable() )
 if( _f != "vs_library" )
 	::print("Loading vs_library...\n");;
 
+local PORTAL2 = "CPortal_Player" in ::getroottable() &&
+                "TurnOnPotatos" in ::CPortal_Player &&
+                ::CPortal_Player.TurnOnPotatos.getinfos().native;
+
+local EVENTS = ::Entities.FindByClassname(null,"logic_eventlistener") ? true : false;
+
 ::VS <-
 {
 	// entity scope
 	slots_entity = ["DispatchOnPostSpawn","self","__vname","PrecacheCallChain","OnPostSpawnCallChain","__vrefs","DispatchPrecache","activator","caller","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn"],
-
-	// root (CSGO)
-	slots_root = ["CHostage","split","Vector","print","_floatsize_","ScriptIsLocalPlayerUsingController","GetDeveloperLevel","ScriptGetBestTrainingCourseTime","exp","CSceneEntity","ScriptCoopMissionRespawnDeadPlayers","DispatchParticleEffect","CTriggerCamera","DoEntFire","seterrorhandler","RandomFloat","CBasePlayer","VSquirrel_OnReleaseScope","ScriptCoopMissionSetNextRespawnIn","assert","atan2","ScriptCoopMissionSpawnNextWave","DoUniqueString","_charsize_","asin","atan","CBaseAnimating","cos","ScriptPrintMessageCenterTeam","EntFireByHandle","PI","Entities","SendToConsole","TraceLine","strip","ScriptCoopMissionGetMissionNumber","newthread","lstrip","ScriptCoopSetBotQuotaAndRefreshSpawns","ScriptPrintMessageChatTeam","IncludeScript","format","rstrip","acos","ScriptGetPlayerCompletedTraining","Documentation","__DumpScope","CEntities","abs","PrintHelp","ScriptPrintMessageCenterAllWithParams","CBaseEntity","FrameTime","Time","Assert","ScriptCoopGiveC4sToCTs","DebugDrawBox","DebugDrawLine","ScriptHighlightAmmoCounter","Document","_intsize_","collectgarbage","setroottable","ScriptSetMiniScoreHidden","ScriptCoopCollectBonusCoin","CBaseFlex","ScriptPrintMessageCenterAll","ScriptSetRadarHidden","enabledebuginfo","setdebughook","ceil","log10","CGameSurvivalLogic","RecordAchievementEvent","RAND_MAX","rand","srand","GetFunctionSignature","suspend","ScriptIsWarmupPeriod","VSquirrel_OnCreateScope","ScriptShowFinishMsgBox","developer","CEnvEntityMaker","__ReplaceClosures","compilestring","RetrieveNativeSignature","ScriptShowExitDoorMsg","SendToConsoleServer","GetMapName","EntFire","Msg","UniqueString","sqrt","ScriptGetRoundsPlayed","floor","CreateSceneEntity","getstackinfos","ScriptGetGameType","log","fabs","dummy","DoIncludeScript","LateBinder","getroottable","tan","ShowMessage","array","LoopSinglePlayerMaps","_version_","ScriptGetValveTrainingCourseTime","setconsttable","CreateProp","printl","CFuncTrackTrain","sin","getconsttable","pow","CGameCoopMissionManager","ScriptSetPlayerCompletedTraining","CBaseMultiplayerPlayer","RegisterFunctionDocumentation","CPlayerVoiceListener","ScriptSetBestTrainingCourseTime","ScriptTrainingGivePlayerAmmo","ScriptCoopResetRoundStartTime","CScriptKeyValues","type","CCallChainer","CSimpleCallChainer","ScriptPrintMessageChatAll","ScriptGetGameMode","regexp","RandomInt","ScriptCoopMissionSpawnFirstEnemies","ScriptCoopExtendRoundDurationTime","ScriptCoopToggleEntityOutlineHighlights","ScriptMissionResetDangerZones","ScriptMissionCreateAndDetonateDangerZone","ScriptCoopMissionSetDeadPlayerRespawnEnabled"],
 
 	// root (vs_library)
 	slots_VS = ["_xa9b2dfB7ffe","VS","DoEntFireByInstanceHandle","ClearChat","Chat","ChatTeam","txt","Alert","AlertTeam","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","ENT_SCRIPT","HPlayer","SPlayer","Ent","Entc","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST","vs_library"],
@@ -37,22 +41,27 @@ if( _f != "vs_library" )
 	// combined ( +vs_library )
 	slots_default = [],
 
-	Events =
-	{
-		hProxy = null,
-		flValidateTime = 0.0,
-		_SV = null
-	},
 	Log =
 	{
 		condition = false,
 		export = false,
 		filePrefix = "vs.log",
-		L = [],
-		filter = "VFLTR"
+		filter = "VL",
+		L = []
 	},
+
 	_reload = false
 }
+
+if (!PORTAL2){
+
+VS.slots_root <- ["CHostage","split","Vector","print","_floatsize_","ScriptIsLocalPlayerUsingController","GetDeveloperLevel","ScriptGetBestTrainingCourseTime","exp","CSceneEntity","ScriptCoopMissionRespawnDeadPlayers","DispatchParticleEffect","CTriggerCamera","DoEntFire","seterrorhandler","RandomFloat","CBasePlayer","VSquirrel_OnReleaseScope","ScriptCoopMissionSetNextRespawnIn","assert","atan2","ScriptCoopMissionSpawnNextWave","DoUniqueString","_charsize_","asin","atan","CBaseAnimating","cos","ScriptPrintMessageCenterTeam","EntFireByHandle","PI","Entities","SendToConsole","TraceLine","strip","ScriptCoopMissionGetMissionNumber","newthread","lstrip","ScriptCoopSetBotQuotaAndRefreshSpawns","ScriptPrintMessageChatTeam","IncludeScript","format","rstrip","acos","ScriptGetPlayerCompletedTraining","Documentation","__DumpScope","CEntities","abs","PrintHelp","ScriptPrintMessageCenterAllWithParams","CBaseEntity","FrameTime","Time","Assert","ScriptCoopGiveC4sToCTs","DebugDrawBox","DebugDrawLine","ScriptHighlightAmmoCounter","Document","_intsize_","collectgarbage","setroottable","ScriptSetMiniScoreHidden","ScriptCoopCollectBonusCoin","CBaseFlex","ScriptPrintMessageCenterAll","ScriptSetRadarHidden","enabledebuginfo","setdebughook","ceil","log10","CGameSurvivalLogic","RecordAchievementEvent","RAND_MAX","rand","srand","GetFunctionSignature","suspend","ScriptIsWarmupPeriod","VSquirrel_OnCreateScope","ScriptShowFinishMsgBox","developer","CEnvEntityMaker","__ReplaceClosures","compilestring","RetrieveNativeSignature","ScriptShowExitDoorMsg","SendToConsoleServer","GetMapName","EntFire","Msg","UniqueString","sqrt","ScriptGetRoundsPlayed","floor","CreateSceneEntity","getstackinfos","ScriptGetGameType","log","fabs","dummy","DoIncludeScript","LateBinder","getroottable","tan","ShowMessage","array","LoopSinglePlayerMaps","_version_","ScriptGetValveTrainingCourseTime","setconsttable","CreateProp","printl","CFuncTrackTrain","sin","getconsttable","pow","CGameCoopMissionManager","ScriptSetPlayerCompletedTraining","CBaseMultiplayerPlayer","RegisterFunctionDocumentation","CPlayerVoiceListener","ScriptSetBestTrainingCourseTime","ScriptTrainingGivePlayerAmmo","ScriptCoopResetRoundStartTime","CScriptKeyValues","type","CCallChainer","CSimpleCallChainer","ScriptPrintMessageChatAll","ScriptGetGameMode","regexp","RandomInt","ScriptCoopMissionSpawnFirstEnemies","ScriptCoopExtendRoundDurationTime","ScriptCoopToggleEntityOutlineHighlights","ScriptMissionResetDangerZones","ScriptMissionCreateAndDetonateDangerZone","ScriptCoopMissionSetDeadPlayerRespawnEnabled"];
+
+}else{ // !PORTAL2
+
+VS.slots_root <- ["split","__ReplaceClosures","print","_floatsize_","getstackinfos","GetDeveloperLevel","exp","CSceneEntity","MarkMapComplete","CTriggerCamera","DoEntFire","seterrorhandler","RandomFloat","CBasePlayer","VSquirrel_OnReleaseScope","IsLevelComplete","atan2","CBaseMultiplayerPlayer","PrecacheMovie","_charsize_","asin","atan","CBaseAnimating","cos","GetNumMapsPlayed","EntFireByHandle","PI","Entities","SendToConsole","dummy","strip","newthread","lstrip","RegisterFunctionDocumentation","IncludeScript","format","rstrip","acos","SetMapAsPlayed","UpgradePlayerPortalgun","__DumpScope","CEntities","abs","PrintHelp","RetrieveNativeSignature","ScriptSteamShowURL","UpgradePlayerPotatogun","FrameTime","Time","Assert","RequestMapRating","PlayerVoiceListener","sqrt","DebugDrawBox","LoopSinglePlayerMaps","Document","_intsize_","collectgarbage","GetCoopSectionIndex","SetHaveSeenDLCTubesReveal","CoopSetMapRunTime","AddGladosSpokenFlags","CoopSetCameFromLastDLCMap","IsPlayerBranchComplete","CoopGladosBlowUpBots","IsBranchComplete","NotifySpeedRunSuccess","CoopGetNumPortalsPlaced","CoopGetBranchTotalLevelCount","GetNumPlayersConnected","IsLocalSplitScreen","GetPlayerDeathCount","GetGladosSpokenFlags","GetHaveSeenDLCTubesReveal","CoopGetLevelsCompletedThisBranch","GetCameFromLastDLCMap","SaveMPStatsData","setroottable","GivePlayerPortalgun","CLinkedPortalDoor","UniqueString","GetCoopBranchLevelIndex","SetDucking","CSimpleCallChainer","CCallChainer","GetPlayer","setdebughook","ceil","log10","RecordAchievementEvent","RAND_MAX","rand","IsMultiplayer","srand","GetFunctionSignature","IsPlayerLevelComplete","type","VSquirrel_OnCreateScope","developer","CEnvEntityMaker","GetPlayerSilenceDuration","compilestring","TryDLC1InstalledOrCatch","GetMapName","EntFire","Msg","setconsttable","floor","CreateSceneEntity","player","enabledebuginfo","AddCoopCreditsName","regexp","GetMapIndexInPlayOrder","log","getroottable","fabs","GetOrangePlayerIndex","array","CPortal_Player","_version_","CPlayerVoiceListener","LateBinder","tan","ShowMessage","CreateProp","TraceLine","sin","getconsttable","printl","ScriptShowHudMessageAll","DebugDrawLine","GetHighestActiveBranch","Documentation","CBaseEntity","CPropLinkedPortalDoor","pow","DoIncludeScript","CScriptKeyValues","suspend","GetBluePlayerIndex","DoUniqueString","assert","CBaseFlex","AddBranchLevelName","RandomInt","Vector"];
+
+};; // !PORTAL2
 
 VS.slots_valve.extend(VS.slots_entity);
 VS.slots_valve.extend(VS.slots_root);
@@ -75,32 +84,28 @@ if( ::EntFireByHandle.getinfos().native )
 // PI 3.14159265358979323846
 // RAND_MAX 0x7FFF
 
+if (!PORTAL2 && EVENTS){
+
+VS.Events <-
+{
+	hProxy = null,
+	flValidateTime = 0.0,
+	_SV = null
+}
+
 // array to store event data, user should never modify
 if( !("_xa9b2dfB7ffe" in getroottable()) )
-	::_xa9b2dfB7ffe <- [];;
+	::_xa9b2dfB7ffe <- [];
 
 if( !("OnGameEvent_player_spawn" in getroottable()) )
-	::OnGameEvent_player_spawn <- ::dummy;;
+	::OnGameEvent_player_spawn <- ::dummy;
+
 if( !("OnGameEvent_player_connect" in getroottable()) )
-	::OnGameEvent_player_connect <- ::dummy;;
+	::OnGameEvent_player_connect <- ::dummy;
 
-// wrapped to call later because it uses some functions declared later
-local _v0 = function()
-{
-	if( ::ENT_SCRIPT <- ::Entc("worldspawn") )
-	{
-		::ENT_SCRIPT.ValidateScriptScope();
-		::VS.slots_default.append(::VS.GetVarName(::ENT_SCRIPT.GetScriptScope()));
-	}
-	else
-	{
-		(::ENT_SCRIPT<-::VS.CreateEntity("soundent")).ValidateScriptScope();
-		::VS._ENT_SCRIPT <- ::ENT_SCRIPT;
-		::print("ERROR: Could not find worldspawn\n");
-	};
+};; // !PORTAL2
 
-	::collectgarbage();
-}
+::collectgarbage();
 
 function VS::ForceReload():(_f)
 {

@@ -17,26 +17,32 @@ local AddEvent = ::DoEntFireByInstanceHandle;
 	return AddEvent( target, action.tostring(), value.tostring(), delay, activator, caller );
 }
 
-//-----------------------------------------------------------------------
-
-::PrecacheModel <- function( str )
+::PrecacheModel <- function(str)
 {
 	::ENT_SCRIPT.PrecacheModel(str);
 }
 
-::PrecacheScriptSound <- function( str )
+::PrecacheScriptSound <- function(str)
 {
-	::ENT_SCRIPT.PrecacheScriptSound(str);
+	::ENT_SCRIPT.PrecacheSoundScript(str); // identical to PrecacheScriptSound on server
 }
 
 //-----------------------------------------------------------------------
 // Prevent the entity from being released every round
 // MakePersistent
 //-----------------------------------------------------------------------
-function VS::MakePermanent( handle )
+if (!PORTAL2){
+
+function VS::MakePermanent(ent)
 {
-	return handle.__KeyValueFromString( "classname", "soundent" );
+	return ent.__KeyValueFromString( "classname", "soundent" );
 }
+
+}else{ // !PORTAL2
+
+::VS.MakePermanent <- ::dummy;
+
+};; // !PORTAL2
 
 //-----------------------------------------------------------------------
 // Set child's parent
@@ -48,7 +54,7 @@ function VS::MakePermanent( handle )
 function VS::SetParent( hChild, hParent ):(AddEvent)
 {
 	if( hParent ) return AddEvent( hChild, "setparent", "!activator", 0.0, hParent, null );
-	return AddEvent( hChild, "setparent", "", 0.0, null, null );
+	return AddEvent( hChild, "clearparent", "", 0.0, null, null );
 }
 
 //-----------------------------------------------------------------------
@@ -164,7 +170,7 @@ function VS::Timer( bDisabled, flInterval, Func = null, tScope = null, bExecInEn
 {
 	if(!flInterval)
 	{
-		::print("\nERROR:\nRefire time cannot be null in VS.Timer\nUse VS.CreateTimer for randomised fire times.\n");
+		::Msg("\nERROR:\nRefire time cannot be null in VS.Timer\nUse VS.CreateTimer for randomised fire times.\n");
 		throw"NULL REFIRE TIME";
 	};
 
@@ -228,7 +234,7 @@ function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 
 	hEnt.ConnectOutput(sOutput, sOutput);
 
-	// print("** Adding output '" + sOutput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetVarName(tScope)) + ".'\n");
+	// Msg("** Adding output '" + sOutput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetVarName(tScope)) + ".'\n");
 
 	return r;
 }
@@ -362,7 +368,7 @@ function VS::DumpEnt( input = null ):(Entities)
 		while( ent = Entities.Next(ent) )
 		{
 			local s = ent.GetScriptScope();
-			if(s) ::print(ent + " :: " + s.__vname+"\n"); // GetVarName(s)
+			if(s) ::Msg(ent + " :: " + s.__vname+"\n"); // GetVarName(s)
 		}
 
 		return;
@@ -379,13 +385,13 @@ function VS::DumpEnt( input = null ):(Entities)
 			local s = input.GetScriptScope();
 			if(s)
 			{
-				::print("--- Script dump for entity "+input+"\n");
+				::Msg("--- Script dump for entity "+input+"\n");
 				DumpScope(s,0,1,0,1);
-				::print("--- End script dump\n");
+				::Msg("--- End script dump\n");
 			}
-			else return::print("Entity has no script scope! " + input + "\n");
+			else return::Msg("Entity has no script scope! " + input + "\n");
 		}
-		else return::print("Invalid entity!\n");
+		else return::Msg("Invalid entity!\n");
 	}
 
 	// dump all scopes
@@ -397,9 +403,9 @@ function VS::DumpEnt( input = null ):(Entities)
 			local s = ent.GetScriptScope();
 			if(s)
 			{
-				::print("\n--- Script dump for entity "+ent+"\n");
+				::Msg("\n--- Script dump for entity "+ent+"\n");
 				DumpScope(s,0,1,0,1);
-				::print("--- End script dump\n");
+				::Msg("--- End script dump\n");
 			};
 		}
 	};;
@@ -415,6 +421,8 @@ function VS::DumpEnt( input = null ):(Entities)
 //
 // scope.bot <- scope.networkid == "BOT";
 //
+if (!PORTAL2){
+
 function VS::GetPlayersAndBots():(Entities)
 {
 	local ent, ply = [], bot = [];
@@ -462,7 +470,7 @@ function VS::DumpPlayers( dumpscope = false )
 {
 	local a = GetPlayersAndBots(), p = a[0], b = a[1];
 
-	::print("\n=======================================\n" + p.len()+" players found\n" + b.len()+" bots found\n");
+	::Msg("\n=======================================\n" + p.len()+" players found\n" + b.len()+" bots found\n");
 
 	local c = function( _s, _a ):(dumpscope)
 	{
@@ -471,7 +479,7 @@ function VS::DumpPlayers( dumpscope = false )
 			local s = e.GetScriptScope();
 			if(s) s = GetVarName(s);
 			if(!s) s = "null";
-			::print( _s+"- " + e + " :: " + s +"\n");
+			::Msg( _s+"- " + e + " :: " + s +"\n");
 			if( dumpscope && s != "null" ) DumpEnt(e);
 		}
 	}
@@ -479,8 +487,10 @@ function VS::DumpPlayers( dumpscope = false )
 	c("[BOT]    ",b);
 	c("[PLAYER] ",p);
 
-	::print("=======================================\n");
+	::Msg("=======================================\n");
 }
+
+};; // !PORTAL2
 
 //-----------------------------------------------------------------------
 // return the only / the first connected player in the server
@@ -489,23 +499,55 @@ function VS::DumpPlayers( dumpscope = false )
 // handle HPlayer -> player handle
 // table  SPlayer -> player scope
 //-----------------------------------------------------------------------
+
+if (PORTAL2){
+
+// vscript in singleplayer games already puts the local player in ::player
+// and they also have native functions for getting it:
+// (Portal2) GetPlayer()
+// (Source2) Entities:GetLocalPlayer()
+function VS::GetLocalPlayer()
+{
+	local e;
+
+	if( ::IsMultiplayer() )
+	{
+		e = ::Entc("player");
+	}
+	else
+	{
+		e = ::GetPlayer();
+
+		if( e != ::player )
+			::Msg("GetLocalPlayer: Discrepancy detected!\n");
+	};
+
+	SetName(e, "localplayer");
+
+	// e.ValidateScriptScope()
+	// ::SPlayer <- e.GetScriptScope();
+	// ::HPlayer <- e.weakref();
+	return e;
+}
+
+}else{ // PORTAL2
+
 function VS::GetLocalPlayer()
 {
 	if( GetPlayersAndBots()[0].len() > 1 )
-		::print("GetLocalPlayer: More than 1 player detected!\n");
+		::Msg("GetLocalPlayer: More than 1 player detected!\n");
 
-	local e = Entc("player");
-
-	if( e != GetPlayerByIndex(1) )
-		::print("GetLocalPlayer: Discrepancy detected!\n");
+	local e = ::Entc("player");
 
 	if( !e || !e.IsValid() )
-		return::print("GetLocalPlayer: No player found!\n");
+		return::Msg("GetLocalPlayer: No player found!\n");
 
-	if( !e.ValidateScriptScope() )
-		return::print("GetLocalPlayer: Failed to validate player scope!\n");
+	if( e != GetPlayerByIndex(1) )
+		::Msg("GetLocalPlayer: Discrepancy detected!\n");
 
 	SetName(e, "localplayer");
+
+	e.ValidateScriptScope();
 
 	::SPlayer <- e.GetScriptScope();
 	::HPlayer <- e.weakref();
@@ -517,6 +559,8 @@ function VS::GetPlayerByIndex( entindex ):(Entities)
 {
 	local e; while( e = Entities.Next(e) ) if( e.GetClassname() == "player" ) if( e.entindex() == entindex ) return e;
 }
+
+};; // PORTAL2
 
 function VS::FindEntityByIndex( entindex, classname = "*" ):(Entities)
 {
@@ -571,7 +615,6 @@ function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassn
 	local bestDot = fThreshold,
 	      best_ent, ent;
 
-	// for( local ent; ent = ::Entities.Next(ent); )
 	while( ent = Entities.FindByClassname(ent,sClassname) )
 	{
 		local to_ent = ent.GetOrigin() - vOrigin;
@@ -608,7 +651,9 @@ function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, 
 	while( ent = Entities.FindByClassname(ent,sClassname) )
 	{
 		local to_ent = ent.GetOrigin() - vOrigin;
+
 		to_ent.Norm();
+
 		local dot = vFacing.Dot(to_ent);
 
 		if( dot > fThreshold )

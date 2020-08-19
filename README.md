@@ -1,9 +1,9 @@
 # VScript Library
 [![ver][]](CHANGELOG.txt) [![size][]](/../../raw/master/vs_library.nut)
 
-High-performance, powerful vscript libraries; written mainly for CSGO.
+High-performance, powerful vscript libraries; written mainly for CSGO, compatible with Portal 2.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.36.10-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.37.0-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation

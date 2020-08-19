@@ -23,18 +23,36 @@ function VS::Log::Clear():(L)
 	L.clear();
 }
 
+if (PORTAL2){
+
 function VS::Log::Run()
 {
-	if( !condition ) return;
+	if( !condition )
+		return;
 
 	return _Start();
 }
+
+}else{ // PORTAL2
+
+function VS::Log::Run()
+{
+	if( ::VS.IsDedicatedServer() )
+		throw "Log unavailable on dedicated servers";
+
+	if( !condition )
+		return;
+
+	return _Start();
+}
+
+};; // PORTAL2
 
 //-----------------------------------------------------------------------
 // Internal functions. Do not call these
 //-----------------------------------------------------------------------
 
-local Msg = ::print;
+local Msg = ::Msg;
 local delay = ::delay;
 local flFrameTime = ::FrameTime();
 
