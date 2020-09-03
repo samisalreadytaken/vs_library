@@ -387,16 +387,26 @@ bool VS::IsLookingAt(Vector source, Vector target, Vector direction, float toler
 ```cs
 function Think()
 {
-	local looking, eye = HPlayer.EyePosition(),
-	      target = Vector(-530.289490,-753.231506,123.932724)
+	local bLooking
+	local eye = HPlayer.EyePosition()
+	local target = Vector()
 
 	// only check if there is direct LOS with the target
 	if( !VS.TraceLine( eye, target ).DidHit() )
-		looking = VS.IsLookingAt( eye, target, HPlayerEye.GetForwardVector(), 0.9 )
+	{
+		bLooking = VS.IsLookingAt( eye, target, HPlayerEye.GetForwardVector(), VIEW_FIELD_NARROW )
+	}
 
-	VS.ShowHudHint( hHudHint, HPlayer, looking ? "LOOKING" : "NOT looking" )
-
-	DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 255, 255, 255, 255, flFrameTime2 )
+	if ( bLooking )
+	{
+		VS.ShowHudHint( hHudHint, HPlayer, "LOOKING" )
+		DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 0,255,0,255, flFrameTime2 )
+	}
+	else
+	{
+		VS.ShowHudHint( hHudHint, HPlayer, "NOT looking" )
+		DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 255,0,0,255, flFrameTime2 )
+	}
 }
 ```
 

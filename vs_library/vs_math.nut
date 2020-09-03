@@ -45,6 +45,11 @@ function VS::IsInteger( f ):(floor){ return floor(f) == f; }
 //-----------------------------------------------------------------------
 // IsLookingAt with tolerance
 // cosTolerance [-1..1]
+//
+// VIEW_FIELD_FULL         = -1.0 // +-180 degrees
+// VIEW_FIELD_WIDE         = -0.7 // +-135 degrees 0.1 // +-85 degrees
+// VIEW_FIELD_NARROW       =  0.7 // +-45 degrees
+// VIEW_FIELD_ULTRA_NARROW =  0.9 // +-25 degrees
 //-----------------------------------------------------------------------
 function VS::IsLookingAt( vSrc, vTarget, vDir, cosTolerance )
 {
