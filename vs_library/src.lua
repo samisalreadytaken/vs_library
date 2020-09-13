@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------
 --------------------- Copyright (c) samisalreadytaken -------------------
---- v0.1.0 --------------------------------------------------------------
+--- v0.1.1 --------------------------------------------------------------
 
-local VER = "v0.1.0"
+local VER = "v0.1.1"
 
 if not _VS then
 	_VS = {}
@@ -12,6 +12,8 @@ end
 
 local VS = {}
 _VS[VER] = VS
+
+-------------------------------------------------------------------------
 
 VS.MAX_COORD_FLOAT = 16384.0
 VS.MAX_TRACE_LENGTH = 56755.84086241697115430736
@@ -159,12 +161,48 @@ local function RunQueue()
 
 end
 
+local function FixLevelChange()
+
+	local bIsTools = IsInToolsMode()
+	local szMapName = GetMapName()
+
+	if szMapName == "a1_intro_world" then
+
+		local hCmd = Entities:FindByName(nil,"command_change_level")
+		if hCmd then hCmd:Kill() end
+
+		local ent = Entities:FindByName(nil,"relay_stun_player")
+		if ent then
+
+			ent:GetOrCreatePrivateScriptScope().OnTriggerLevelChange = function()
+
+				ent:SetContextThink("VS_LevelChange",function()
+
+					if bIsTools then
+						SendToConsole("addon_tools_map a1_intro_world_2")
+					else
+						SendToConsole("addon_play a1_intro_world_2")
+					end
+
+				end,1.5)
+
+			end
+
+			ent:RedirectOutput("OnTrigger","OnTriggerLevelChange",ent)
+
+		end
+
+	end
+
+end
+
 local function Destroy()
 
 	throw = nil
 	tQueue = nil
 	RunQueue = nil
 	nCompletedInQueue = nil
+	FixLevelChange = nil
 	Destroy = nil
 
 end
@@ -179,6 +217,8 @@ if not _VS.__iEventSpawn and not Entities:GetLocalPlayer()then
 			_VS.__hSpawnInit:Kill()
 			_VS.__hSpawnInit = nil
 		end
+
+		FixLevelChange()
 
 		if not RunQueue() then
 

@@ -1,11 +1,13 @@
 # VScript Library (HLVR)
 [![ver][]](CHANGELOG.txt)
 
-[ver]: https://img.shields.io/badge/vs__library-v0.1.0-informational
+[ver]: https://img.shields.io/badge/vs__library-v0.1.1-informational
 
 The scope and structure of this library is tailored for Half-Life Alyx and its addon system.
 
 The issues with the system is talked about in [this Steam guide](https://steamcommunity.com/sharedfiles/filedetails/?id=2187633818).
+
+This also fixes the a1_intro_world transition issue.
 
 ## Installation
 
