@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2020-09-19
+- Removed ::SPlayer
+
 2020-08-19
 - Pushed missing files
 

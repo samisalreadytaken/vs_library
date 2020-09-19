@@ -27,10 +27,10 @@ See [README.md](https://github.com/samisalreadytaken/vs_library/blob/master/READ
 ________________________________
 
 ## Developer notes
-* Some wrapper functions such as EntFireByHandle return the final calls to take advantage of tail calls for (minor) performance gains.
+* Wrapper functions such as EntFireByHandle return the final calls to take advantage of tail calls for (minor) performance gains.
 * Free variables are used with static values to reduce variable lookups.
 * There will be some inconsistencies between the minified version and the source files:
-* * Some functions that should be 'inline' such as max() are manually replaced in the minified version to reduce function call overhead.
+* * Some functions that should be 'inline' such as max() and clamp() are manually replaced in the minified version to reduce function call overhead.
 * * Constant variables such as PI and DEG2RAD are replaced with their values in the minified version to reduce variable lookups.
 ________________________________
 
@@ -1865,8 +1865,7 @@ handle VS::GetLocalPlayer()
 return the only / the first connected player in the server
 
 exposes:  
-`handle HPlayer`: player handle  
-`table  SPlayer`: player scope
+`handle HPlayer`: player handle
 ________________________________
 
 <a name="f_GetPlayerByIndex"></a>

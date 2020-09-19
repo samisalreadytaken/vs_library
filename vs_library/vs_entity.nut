@@ -497,7 +497,6 @@ function VS::DumpPlayers( dumpscope = false )
 //
 // exposes:
 // handle HPlayer -> player handle
-// table  SPlayer -> player scope
 //-----------------------------------------------------------------------
 
 if (PORTAL2){
@@ -525,7 +524,6 @@ function VS::GetLocalPlayer()
 	SetName(e, "localplayer");
 
 	// e.ValidateScriptScope()
-	// ::SPlayer <- e.GetScriptScope();
 	// ::HPlayer <- e.weakref();
 	return e;
 }
@@ -549,7 +547,6 @@ function VS::GetLocalPlayer()
 
 	e.ValidateScriptScope();
 
-	::SPlayer <- e.GetScriptScope();
 	::HPlayer <- e.weakref();
 
 	return e;

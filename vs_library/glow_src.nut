@@ -97,7 +97,7 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 				glow.__KeyValueFromInt("effects", 18465); // EF_DEFAULT|EF_NODRAW
 				VS.SetParent(glow, null);
 				AddEvent(glow,"setglowdisabled","",0.0,null,null);
-				// glow.SetAbsOrigin(VEC_MAX);
+				// glow.SetAbsOrigin(MAX_COORD_VEC);
 
 				if(DEBUG)Msg("Glow::Disable: Disabled glow ["+src.entindex()+"]\n");
 			}
@@ -132,7 +132,7 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 			}
 		}
 
-		// VEC_MAX = Vector(MAX_COORD_FLOAT-1,MAX_COORD_FLOAT-1,MAX_COORD_FLOAT-1);
+		// MAX_COORD_VEC = Vector(MAX_COORD_FLOAT-1,MAX_COORD_FLOAT-1,MAX_COORD_FLOAT-1);
 		// EF_DEFAULT = (1<<0)|(1<<11)|(1<<14),
 		// EF_NODRAW = (1<<5),
 		Msg = ::print,
