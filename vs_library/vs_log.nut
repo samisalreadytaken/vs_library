@@ -33,7 +33,7 @@ function VS::Log::Run()
 	return _Start();
 }
 
-}else{ // PORTAL2
+}else{ // !PORTAL2
 
 function VS::Log::Run()
 {
@@ -91,7 +91,7 @@ function VS::Log::_Start():(flFrameTime)
 
 	if( export )
 	{
-		local file = filePrefix[0] == ':' ? filePrefix.slice(1) : filePrefix + "_" + ::VS.UniqueString();
+		local file = file_prefix[0] == ':' ? file_prefix.slice(1) : file_prefix + "_" + ::VS.UniqueString();
 		_d <- ::developer();
 		::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\""+filter+"\";con_filter_text\"\";con_logfile\""+file+".log\";script delay(\"::VS.Log._Print(1)\","+flFrameTime*4.0+")");
 		return file;

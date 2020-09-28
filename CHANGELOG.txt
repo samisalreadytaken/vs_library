@@ -3,7 +3,14 @@
 
 --------------------------------
 
-2020-09-19
+2020-09-27 [v2.38.0]
+- Improved performance on GetPlayerByUserid, GetPlayerByIndex, GetPlayersAndBots, GetAllPlayers, VectorIsZero
+- Renamed VS.Log.filePrefix to file_prefix
+- Renamed MakePermanent to MakePersistent
+- Renamed SetKey to SetKeyValue
+- Cleanup
+
+2020-09-19 [v2.37.1]
 - Removed ::SPlayer
 
 2020-08-19

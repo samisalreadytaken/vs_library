@@ -119,20 +119,20 @@ function VS::TraceLine::DidHit()
 }
 
 // return hit entity handle, null if none
-function VS::TraceLine::GetEnt( radius = 1.0 )
+function VS::TraceLine::GetEnt( radius )
 {
 	return GetEntByClassname( "*", radius );
 }
 
 // GetEnt, find by name
-function VS::TraceLine::GetEntByName( targetname, radius = 1.0 ):(Entities)
+function VS::TraceLine::GetEntByName( targetname, radius ):(Entities)
 {
 	if( !hitpos ) GetPos();
 	return Entities.FindByNameNearest( targetname, hitpos, radius );
 }
 
 // GetEnt, find by classname
-function VS::TraceLine::GetEntByClassname( classname, radius = 1.0 ):(Entities)
+function VS::TraceLine::GetEntByClassname( classname, radius ):(Entities)
 {
 	if( !hitpos ) GetPos();
 	return Entities.FindByClassnameNearest( classname, hitpos, radius );
@@ -418,10 +418,10 @@ function VS::GetStackInfo( deepprint = false, printall = false )
 }
 
 // return caller table
-VS.GetCaller <- ::compilestring("return(getstackinfos(3)[\"locals\"][\"this\"])");
+VS.GetCaller <- ::compilestring("return(getstackinfos(3).locals[\"this\"])");
 
 // (DEBUG) return caller function as string
-VS.GetCallerFunc <- ::compilestring("return(getstackinfos(3)[\"func\"])");
+VS.GetCallerFunc <- ::compilestring("return(getstackinfos(3).func)");
 
 //-----------------------------------------------------------------------
 // Input  : table
@@ -549,7 +549,7 @@ else
 local AddEvent = ::DoEntFireByInstanceHandle;
 
 ::delay <- function(X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null):(AddEvent)
-	return AddEvent(E, "runscriptcode", ""+X, T, A, C);
+	return AddEvent(E, "RunScriptCode", ""+X, T, A, C);
 
 //-----------------------------------------------------------------------
 // Frame times:

@@ -191,7 +191,7 @@ Included in `vs_library.nut`
 [`EntFireByHandle()`](#f_EntFireByHandle)  
 [`PrecacheModel()`](#f_PrecacheModel)  
 [`PrecacheScriptSound()`](#f_PrecacheScriptSound)  
-[`VS.MakePermanent()`](#f_MakePermanent)  
+[`VS.MakePersistent()`](#f_MakePersistent)  
 [`VS.SetParent()`](#f_SetParent)  
 [`VS.ShowGameText()`](#f_ShowGameText)  
 [`VS.ShowHudHint()`](#f_ShowHudHint)  
@@ -204,7 +204,7 @@ Included in `vs_library.nut`
 [`VS.AddOutput()`](#f_AddOutput)  
 [`VS.AddOutput2()`](#f_AddOutput2)  
 [`VS.CreateEntity()`](#f_CreateEntity)  
-[`VS.SetKey()`](#f_SetKey)  
+[`VS.SetKeyValue()`](#f_SetKeyValue)  
 [`VS.SetName()`](#f_SetName)  
 [`VS.GetPlayersAndBots()`](#f_GetPlayersAndBots)  
 [`VS.GetAllPlayers()`](#f_GetAllPlayers)  
@@ -227,7 +227,7 @@ Included in `vs_library.nut`
 ### [vs_log](#vs_log-1)
 [`VS.Log.condition`](#f_Logcondition)  
 [`VS.Log.export`](#f_Logexport)  
-[`VS.Log.filePrefix`](#f_LogfilePrefix)  
+[`VS.Log.file_prefix`](#f_Logfile_prefix)  
 [`VS.Log.Add()`](#f_LogAdd)  
 [`VS.Log.Clear()`](#f_LogClear)  
 [`VS.Log.Run()`](#f_LogRun)  
@@ -1547,9 +1547,9 @@ void PrecacheScriptSound(string sound)
 
 ________________________________
 
-<a name="f_MakePermanent"></a>
+<a name="f_MakePersistent"></a>
 ```cpp
-void VS::MakePermanent(handle ent)
+void VS::MakePersistent(handle ent)
 ```
 Prevent the entity from being released every round
 ________________________________
@@ -1588,7 +1588,7 @@ ________________________________
 
 <a name="f_CreateMeasure"></a>
 ```cpp
-handle VS::CreateMeasure(string targetTargetname, string refTargetname = null, bool makePermanent = false, bool measureEye = true, float scale = 1.0)
+handle VS::CreateMeasure(string targetTargetname, string refTargetname = null, bool bMakePersistent = false, bool measureEye = true, float scale = 1.0)
 ```
 Create and return an eye angle measuring entity
 
@@ -1646,7 +1646,7 @@ This function creates an entity to measure player eye angles `logic_measure_move
 
 `"refname"` in the example above refers to the reference entity's targetname.
 
-The `makePermanent` paramater ensures the entity is not released on round end. However, while using it, make sure to include a check to prevent spawning over and over again. Shown in the example above.
+The `bMakePersistent` paramater ensures the entity is not released on round end. However, while using it, make sure to include a check to prevent spawning over and over again. Shown in the example above.
 
 </details>
 
@@ -1681,7 +1681,7 @@ ________________________________
 
 <a name="f_CreateTimer"></a>
 ```cpp
-handle VS::CreateTimer(bool bDisabled, float flInterval, float flLower = null, float flUpper = null, bool bOscillator = false, bool bMakePerm = false)
+handle VS::CreateTimer(bool bDisabled, float flInterval, float flLower = null, float flUpper = null, bool bOscillator = false, bool bMakePersistent = false)
 ```
 Create and return a logic_timer entity
 
@@ -1690,7 +1690,7 @@ ________________________________
 
 <a name="f_Timer"></a>
 ```cpp
-handle VS::Timer(bool bDisabled, float flInterval, TYPE func = null, table scope = null, bool bExecInEnt = false, bool bMakePerm = false)
+handle VS::Timer(bool bDisabled, float flInterval, TYPE func = null, table scope = null, bool bExecInEnt = false, bool bMakePersistent = false)
 ```
 Create and return a timer that executes func
 
@@ -1773,7 +1773,7 @@ ________________________________
 
 <a name="f_CreateEntity"></a>
 ```cpp
-handle VS::CreateEntity(string classname, table keyvalues = null, bool perm = false)
+handle VS::CreateEntity(string classname, table keyvalues = null, bool preserve = false)
 ```
 CreateByClassname, set keyvalues, return handle
 
@@ -1801,7 +1801,7 @@ CreateByClassname, set keyvalues, return handle
 
 <details><summary><code>point_worldtext</code></summary>
 
-If changing the text from script, create in script (and make perm); else if text is static, doesn't matter
+If changing the text from script, create in script (and make persistent); else if text is static, doesn't matter
 
 ```cs
 	VS.CreateEntity("point_worldtext", 
@@ -1819,9 +1819,9 @@ If changing the text from script, create in script (and make perm); else if text
 
 ________________________________
 
-<a name="f_SetKey"></a>
+<a name="f_SetKeyValue"></a>
 ```cpp
-bool VS::SetKey(handle ent, string key, TYPE val)
+bool VS::SetKeyValue(handle ent, string key, TYPE val)
 ```
 `KeyValueFrom`
 
@@ -1841,14 +1841,9 @@ handle[2][] VS::GetPlayersAndBots()
 ```
 Return an array of player and bot arrays.
 
-<details><summary>Details</summary>
+If bots have targetnames, they 'become' humans.
 
-If bots have targetnames, they 'become' humans
-
-If the event listeners are not set up, named bots will be shown as players
-
-</details>
-
+If the event listeners are not set up, named bots will be shown as players.
 ________________________________
 
 <a name="f_GetAllPlayers"></a>
@@ -1997,15 +1992,15 @@ Export the log?
 if( condition && !export ) then print the log in the console
 ________________________________
 
-<a name="f_LogfilePrefix"></a>
+<a name="f_Logfile_prefix"></a>
 ```cpp
-VS.Log.filePrefix = "vs.log"
+VS.Log.file_prefix = "vs.log"
 ```
 The exported log file name prefix.
 
-By default, every file is appended with random strings to make each exported file unique. Putting `:` in the beginning will remove this suffix, and each export will overwrite the previously exported file. E.g.: `VS.Log.filePrefix = ":vs.log"`
+By default, every file is appended with random strings to make each exported file unique. Putting `:` in the beginning will remove this suffix, and each export will overwrite the previously exported file. E.g.: `VS.Log.file_prefix = ":vs.log"`
 
-The user can specify export directories by using `/`. E.g.: `VS.Log.filePrefix = "bin/vs.log"`
+The user can specify export directories by using `/`. E.g.: `VS.Log.file_prefix = "bin/vs.log"`
 
 Example file name: `vs.log_c9ae41f5d8d.log`
 ________________________________
@@ -2041,7 +2036,7 @@ ________________________________
 
 <a name="f_Logfilter"></a>
 ```cpp
-VS.Log.filter = "VFLTR"
+VS.Log.filter = "VL"
 ```
 Export filter
 ________________________________

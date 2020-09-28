@@ -19,8 +19,14 @@ local Entities = ::Entities;
 function VS::GetPlayerByUserid( userid ):(Entities)
 {
 	local ent;
-
-	while( ent = Entities.Next(ent) ) if( ent.GetClassname() == "player" )
+	while( ent = Entities.FindByClassname(ent,"player") )
+	{
+		local s = ent.GetScriptScope();
+		if( "userid" in s && s.userid == userid )
+			return ent;
+	}
+	ent = null;
+	while( ent = Entities.FindByClassname(ent,"cs_bot") )
 	{
 		local s = ent.GetScriptScope();
 		if( "userid" in s && s.userid == userid )
@@ -90,7 +96,7 @@ function VS::Events::player_spawn(data):(gEventData)
 {
 	if( gEventData.len() ) foreach( i, d in gEventData ) if( d.userid == data.userid )
 	{
-		local player = ::VS.GetPlayerByIndex(d.index+1);
+		local player = GetPlayerByIndex(d.index+1);
 
 		if( !player || !player.ValidateScriptScope() )
 		{
@@ -104,12 +110,15 @@ function VS::Events::player_spawn(data):(gEventData)
 		{
 			::Msg("player_connect: BUG!!! Something has gone wrong. ");
 
-			if( scope.networkid==d.networkid )
+			if( scope.networkid == d.networkid )
 			{
 				::Msg("Duplicated data!\n");
 				gEventData.remove(i);
 			}
-			else::Msg("Conflicting data!\n");
+			else
+			{
+				::Msg("Conflicting data!\n");
+			};
 
 			break;
 		};
@@ -136,13 +145,13 @@ function VS::Events::ForceValidateUserid(ent):(AddEvent,Time)
 	if( !ent || !ent.IsValid() || ent.GetClassname() != "player" )
 		return::Msg("ForceValidateUserid: Invalid input: "+E+"\n");
 
-	// todo: force reloading the library will overwrite this.
+	// TODO: force reloading the library will overwrite this.
 	// I believe referencing it using a targetname is more prone to user errors compared to
 	// the rare case of the execution of VS.ForceReload()
 	// ForceReload could be rewritten to clear instead of overwriting everything.
 	if( !hProxy )
 	{
-		hProxy = ::VS.CreateEntity("info_game_event_proxy", {event_name = "player_connect"}, true).weakref();
+		hProxy = CreateEntity("info_game_event_proxy", {event_name = "player_connect"}, true).weakref();
 	};
 
 	flValidateTime = Time();
@@ -153,18 +162,18 @@ function VS::Events::ForceValidateUserid(ent):(AddEvent,Time)
 	// don't quit, overwrite previous userid if exists
 	// if( "userid" in _SV ) return
 
-	AddEvent(hProxy, "generategameevent", "", 0, ent, null);
+	AddEvent(hProxy, "GenerateGameEvent", "", 0, ent, null);
 }
 
-function VS::Events::ValidateUseridAll(force = 0)
+function VS::Events::ValidateUseridAll(bForce = 0)
 {
 	local flFrameTime = ::FrameTime();
 	local delay = ::delay;
 	local ENT_SCRIPT = ::ENT_SCRIPT;
 	local i = 0;
 
-	foreach( v in ::VS.GetAllPlayers() )
-		if( !("userid" in v.GetScriptScope()) || force )
+	foreach( v in GetAllPlayers() )
+		if( !("userid" in v.GetScriptScope()) || bForce )
 			delay("::VS.Events.ForceValidateUserid(activator)", i++*flFrameTime, ENT_SCRIPT, v);
 }
 

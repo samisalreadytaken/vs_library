@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
 //                       github.com/samisalreadytaken
-//- v1.0.7 --------------------------------------------------------------
+//- v1.0.8 --------------------------------------------------------------
 //
 // Easy glow handling library.
 // Can be used on any entity that has a model.
@@ -18,7 +18,6 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 {
 	local AddEvent = ::DoEntFireByInstanceHandle;
 	local Create = ::CreateProp;
-	local VS = ::VS;
 
 	::Glow <-
 	{
@@ -34,7 +33,7 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 		//          float distance
 		// Output : handle glow_ent
 		//-----------------------------------------------------------------------
-		function Set(src,color,style,dist):(VS,Create)
+		function Set(src,color,style,dist):(Create)
 		{
 			local glow = Get(src);
 
@@ -65,8 +64,8 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 
 				glow.__KeyValueFromInt("rendermode", 6);
 				glow.__KeyValueFromInt("renderamt", 0);
-				VS.SetParent(glow, src);
-				VS.MakePermanent(glow);
+				::VS.SetParent(glow, src);
+				::VS.MakePersistent(glow);
 			};
 
 			if( typeof color == "string" )
@@ -88,14 +87,14 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 		// Input  : handle src_ent
 		// Output : handle glow_ent
 		//-----------------------------------------------------------------------
-		function Disable(src):(VS,AddEvent)
+		function Disable(src):(AddEvent)
 		{
 			local glow = Get(src);
 
 			if(glow)
 			{
 				glow.__KeyValueFromInt("effects", 18465); // EF_DEFAULT|EF_NODRAW
-				VS.SetParent(glow, null);
+				::VS.SetParent(glow, null);
 				AddEvent(glow,"setglowdisabled","",0.0,null,null);
 				// glow.SetAbsOrigin(MAX_COORD_VEC);
 

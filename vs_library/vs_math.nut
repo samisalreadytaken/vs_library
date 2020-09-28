@@ -27,15 +27,17 @@ local log = ::log;
 ::max <- function( a, b ){ return a > b ? a : b; }
 ::min <- function( a, b ){ return a < b ? a : b; }
 
-::clamp <- function( v, lo, hi )
+::clamp <- function(val,min,max)
 {
-	if( hi < lo )
-	{
-		local t = hi;
-		hi = lo;
-		lo = t;
-	};
-	return (v < lo) ? lo : (hi < v) ? hi : v;
+	if ( max < min )
+		return max;
+	else if( val < min )
+		return min;
+	else if( val > max )
+		return max;
+	else
+		return val;;;
+	// (v < min) ? min : (max < v) ? max : v
 }
 
 // VS.IsInteger(1.0) is true
@@ -256,7 +258,7 @@ function VS::VecToPitch( vec ):(atan2)
 
 function VS::VectorIsZero(v)
 {
-	return v.x == v.y && v.y == v.z && v.z == 0.0;
+	return v.x == 0.0 && v.y == 0.0 && v.z == 0.0;
 }
 
 //-----------------------------------------------------------------------
@@ -265,13 +267,13 @@ function VS::VectorIsZero(v)
 function VS::VectorsAreEqual( a, b, tolerance = 0.0 )
 {
 	local x = a.x - b.x;
-	if (x < 0) x = -x;
+	if (x < 0.0) x = -x;
 
 	local y = a.y - b.y;
-	if (y < 0) y = -y;
+	if (y < 0.0) y = -y;
 
 	local z = a.z - b.z;
-	if (z < 0) z = -z;
+	if (z < 0.0) z = -z;
 
 	return ( x <= tolerance &&
 	         y <= tolerance &&
@@ -284,7 +286,7 @@ function VS::VectorsAreEqual( a, b, tolerance = 0.0 )
 function VS::AnglesAreEqual( a, b, tolerance = 0.0 )
 {
 	local d = AngleDiff(a, b)
-	if (d < 0)
+	if (d < 0.0)
 		d = -d;
 
 	return d <= tolerance;
@@ -296,7 +298,7 @@ function VS::AnglesAreEqual( a, b, tolerance = 0.0 )
 function VS::CloseEnough( a, b, e )
 {
 	local d = a - b;
-	if (d < 0)
+	if (d < 0.0)
 		d = -d;
 
 	return d <= e;
@@ -341,7 +343,7 @@ function VS::ApproachAngle( target, value, speed )
 
 	local delta = AngleDiff( target, value );
 
-	if (speed < 0)
+	if (speed < 0.0)
 		speed = -speed;
 
 	if( delta > speed )
@@ -390,7 +392,7 @@ function VS::SnapDirectionToAxis( vDirection, epsilon )
 {
 	local proj = 1.0 - epsilon;
 
-	if( (vDirection.x < 0 ? -vDirection.x : vDirection.x) > proj )
+	if( (vDirection.x < 0.0 ? -vDirection.x : vDirection.x) > proj )
 	{
 		if( vDirection.x < 0.0 )
 			vDirection.x = -1.0;
@@ -402,7 +404,7 @@ function VS::SnapDirectionToAxis( vDirection, epsilon )
 		return vDirection;
 	};
 
-	if( (vDirection.y < 0 ? -vDirection.y : vDirection.y) > proj )
+	if( (vDirection.y < 0.0 ? -vDirection.y : vDirection.y) > proj )
 	{
 		if( vDirection.y < 0.0 )
 			vDirection.y = -1.0;
@@ -414,7 +416,7 @@ function VS::SnapDirectionToAxis( vDirection, epsilon )
 		return vDirection;
 	};
 
-	if( (vDirection.z < 0 ? -vDirection.z : vDirection.z) > proj )
+	if( (vDirection.z < 0.0 ? -vDirection.z : vDirection.z) > proj )
 	{
 		if( vDirection.z < 0.0 )
 			vDirection.z = -1.0;
@@ -463,11 +465,11 @@ function VS::VectorMax( a, b, o = _VEC )
 // input vector pointer
 function VS::VectorAbs( v )
 {
-	if (v.x < 0)
+	if (v.x < 0.0)
 		v.x = -v.x;
-	if (v.y < 0)
+	if (v.y < 0.0)
 		v.y = -v.y;
-	if (v.z < 0)
+	if (v.z < 0.0)
 		v.z = -v.z;
 	return v;
 }
