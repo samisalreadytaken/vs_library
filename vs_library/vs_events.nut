@@ -140,7 +140,7 @@ function VS::Events::player_spawn(data):(gEventData)
 //
 // Calling multiple times in a frame will cause problems; either delay, or use ValidateUseridAll.
 //
-function VS::Events::ForceValidateUserid(ent):(AddEvent,Time)
+function VS::ForceValidateUserid(ent):(AddEvent,Time)
 {
 	if( !ent || !ent.IsValid() || ent.GetClassname() != "player" )
 		return::Msg("ForceValidateUserid: Invalid input: "+E+"\n");
@@ -165,7 +165,7 @@ function VS::Events::ForceValidateUserid(ent):(AddEvent,Time)
 	AddEvent(hProxy, "GenerateGameEvent", "", 0, ent, null);
 }
 
-function VS::Events::ValidateUseridAll(bForce = 0)
+function VS::ValidateUseridAll(bForce = 0)
 {
 	local flFrameTime = ::FrameTime();
 	local delay = ::delay;
@@ -174,8 +174,11 @@ function VS::Events::ValidateUseridAll(bForce = 0)
 
 	foreach( v in GetAllPlayers() )
 		if( !("userid" in v.GetScriptScope()) || bForce )
-			delay("::VS.Events.ForceValidateUserid(activator)", i++*flFrameTime, ENT_SCRIPT, v);
+			delay("::VS.ForceValidateUserid(activator)", i++*flFrameTime, ENT_SCRIPT, v);
 }
+
+VS.Events.ForceValidateUserid <- VS.ForceValidateUserid.weakref();
+VS.Events.ValidateUseridAll <- VS.ValidateUseridAll.weakref();
 
 }; // EVENTS
 

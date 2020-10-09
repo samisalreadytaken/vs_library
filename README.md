@@ -5,7 +5,7 @@ High-performance, powerful vscript libraries; written mainly for CSGO, compatibl
 
 See the [hlvr](https://github.com/samisalreadytaken/vs_library/tree/hlvr) branch for usage in Half-Life Alyx.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.38.0-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.38.3-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation
@@ -102,7 +102,7 @@ The player_connect event is fired only once when a player connects to the server
 
 This is not an issue for singleplayer and coop maps that are locally hosted (unless the map is changed while another is loaded).
 
-This also breaks automatic userid validation, requiring manual work. To manually validate every player, execute `VS.Events.ValidateUseridAll()` on the `round_start` event (or `round_freeze_end`, this is dependant on your map and how the data is used). Note that this validation is asynchronous, meaning you cannot access player userids in the same frame as validating them.
+This also breaks automatic userid validation, requiring manual work. To manually validate every player, execute `VS.ValidateUseridAll()` on the `round_start` event (or `round_freeze_end`, this is dependant on your map and how the data is used). Note that this validation is asynchronous, meaning you cannot access player userids in the same frame as validating them.
 
 ## Changelog
 See [CHANGELOG.txt](CHANGELOG.txt)

@@ -210,8 +210,7 @@ Included in `vs_library.nut`
 [`VS.GetAllPlayers()`](#f_GetAllPlayers)  
 [`VS.GetLocalPlayer()`](#f_GetLocalPlayer)  
 [`VS.GetPlayerByIndex()`](#f_GetPlayerByIndex)  
-[`VS.FindEntityByIndex()`](#f_FindEntityByIndex)  
-[`VS.FindEntityByString()`](#f_FindEntityByString)  
+[`VS.GetEntityByIndex()`](#f_GetEntityByIndex)  
 [`VS.IsPointSized()`](#f_IsPointSized)  
 [`VS.FindEntityClassNearestFacing()`](#f_FindEntityClassNearestFacing)  
 [`VS.FindEntityNearestFacing()`](#f_FindEntityNearestFacing)  
@@ -220,12 +219,12 @@ Included in `vs_library.nut`
 
 ### [vs_events](#vs_events-1)
 [`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)  
-[`VS.Events.ForceValidateUserid()`](#f_ForceValidateUserid)  
-[`VS.Events.ValidateUseridAll()`](#f_ValidateUseridAll)
+[`VS.ForceValidateUserid()`](#f_ForceValidateUserid)  
+[`VS.ValidateUseridAll()`](#f_ValidateUseridAll)
 
 
 ### [vs_log](#vs_log-1)
-[`VS.Log.condition`](#f_Logcondition)  
+[`VS.Log.enabled`](#f_Logenabled)  
 [`VS.Log.export`](#f_Logexport)  
 [`VS.Log.file_prefix`](#f_Logfile_prefix)  
 [`VS.Log.Add()`](#f_LogAdd)  
@@ -1175,8 +1174,6 @@ ________________________________
 trace_t VS::TraceLine(Vector start = null, Vector end = null, handle ignore = null)
 ```
 Note: This doesn't hit entities. To calculate LOS with them, iterate through every entity type you want and trace individually.
-
-Example can be found in `aimbot.nut` at github.com/samisalreadytaken/vscripts
 ________________________________
 
 <a name="f_DidHit"></a>
@@ -1517,7 +1514,7 @@ ________________________________
 ```cpp
 void VS::ForceReload()
 ```
-Force reload the library
+Force reload the library. This may break some scripts.
 ________________________________
 
 ### [vs_entity](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_entity.nut)
@@ -1855,11 +1852,11 @@ ________________________________
 
 <a name="f_GetLocalPlayer"></a>
 ```cpp
-handle VS::GetLocalPlayer()
+handle VS::GetLocalPlayer(bool)
 ```
 return the only / the first connected player in the server
 
-exposes:  
+if param is true, add to root:  
 `handle HPlayer`: player handle
 ________________________________
 
@@ -1870,42 +1867,10 @@ handle VS::GetPlayerByIndex(int entindex)
 Not to be confused with [`GetPlayerByUserid`](#f_GetPlayerByUserid)
 ________________________________
 
-<a name="f_FindEntityByIndex"></a>
+<a name="f_GetEntityByIndex"></a>
 ```cpp
-handle VS::FindEntityByIndex(int entindex, string classname = null)
+handle VS::GetEntityByIndex(int entindex, string classname = null)
 ```
-
-________________________________
-
-<a name="f_FindEntityByString"></a>
-```cpp
-handle VS::FindEntityByString(string str)
-```
-String input such as `"([2] player)"` and `"([88] func_button: targetname)"`
-
-<details><summary>Example</summary>
-
-```cs
-local str = HPlayer.tostring()
-
-printl(typeof str)
-printl(str)
-
-local handle = VS.FindEntityByString( str )
-
-printl(typeof handle)
-printl(handle)
-```
-**Output:**
-```
-string
-([1] player)
-
-instance
-([1] player)
-```
-
-</details>
 
 ________________________________
 
@@ -1953,7 +1918,7 @@ ________________________________
 
 <a name="f_ForceValidateUserid"></a>
 ```cpp
-void VS::Events::ForceValidateUserid(handle player)
+void VS::ForceValidateUserid(handle player)
 ```
 if something has gone wrong with automatic validation, force add userid. 
 
@@ -1962,7 +1927,7 @@ ________________________________
 
 <a name="f_ValidateUseridAll"></a>
 ```cpp
-void VS::Events::ValidateUseridAll(bool force = false)
+void VS::ValidateUseridAll(bool force = false)
 ```
 Make sure all player userids are validated. Asynchronous.
 ________________________________
@@ -1976,9 +1941,9 @@ Overrides the user con_filter settings but if the user cares about this at all, 
 Works for listen server host (local player) only.
 ________________________________
 
-<a name="f_Logcondition"></a>
+<a name="f_Logenabled"></a>
 ```cpp
-VS.Log.condition = true
+VS.Log.enabled = true
 ```
 Print the log?
 ________________________________
@@ -1989,7 +1954,7 @@ VS.Log.export = true
 ```
 Export the log?
 
-if( condition && !export ) then print the log in the console
+if( enabled && !export ) then print the log in the console
 ________________________________
 
 <a name="f_Logfile_prefix"></a>

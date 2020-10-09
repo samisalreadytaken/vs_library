@@ -3,9 +3,15 @@
 
 --------------------------------
 
+2020-10-08 [v2.38.3]
+- Renamed FindEntityByIndex to GetEntityByIndex
+- Removed FindEntityByString
+- Increased IsDedicatedServer init timeout to 12 from 6
+- "Fixed" rare case of Log not working on listen servers
+
 2020-09-27 [v2.38.0]
 - Improved performance on GetPlayerByUserid, GetPlayerByIndex, GetPlayersAndBots, GetAllPlayers, VectorIsZero
-- Renamed VS.Log.filePrefix to file_prefix
+- Renamed VS.Log.filePrefix to file_prefix, VS.Log.condition to enabled
 - Renamed MakePermanent to MakePersistent
 - Renamed SetKey to SetKeyValue
 - Cleanup

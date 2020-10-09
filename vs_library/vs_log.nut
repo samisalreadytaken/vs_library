@@ -27,7 +27,7 @@ if (PORTAL2){
 
 function VS::Log::Run()
 {
-	if( !condition )
+	if( !enabled )
 		return;
 
 	return _Start();
@@ -38,9 +38,9 @@ function VS::Log::Run()
 function VS::Log::Run()
 {
 	if( ::VS.IsDedicatedServer() )
-		throw "Log unavailable on dedicated servers";
+		::Msg("!!! VS.Log unavailable on dedicated servers\n");
 
-	if( !condition )
+	if( !enabled )
 		return;
 
 	return _Start();
@@ -98,7 +98,8 @@ function VS::Log::_Start():(flFrameTime)
 	}
 	else
 	{
-		_Print(0);
+		// Do it all on client so I can remove the DS exception
+		::SendToConsole("script VS.Log._Print(0)");
 	};
 }
 

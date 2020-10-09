@@ -375,7 +375,12 @@ function VS::DumpEnt( input = null ):(Entities)
 	};
 
 	if( typeof input == "string" )
-		input = FindEntityByString(input);
+	{
+		local ent;
+		while( ent = Entities.Next(ent) )
+			if (ent+"" == input)
+				input = ent;
+	};
 
 	// dump input scope
 	if( typeof input == "instance" )
@@ -530,7 +535,7 @@ function VS::GetLocalPlayer()
 
 }else{ // !PORTAL2
 
-function VS::GetLocalPlayer()
+function VS::GetLocalPlayer( bAddGlobal = true )
 {
 	if( GetPlayersAndBots()[0].len() > 1 )
 		::Msg("GetLocalPlayer: More than 1 player detected!\n");
@@ -545,7 +550,8 @@ function VS::GetLocalPlayer()
 
 	SetName(e, "localplayer");
 
-	::HPlayer <- e.weakref();
+	if (bAddGlobal)
+		::HPlayer <- e.weakref();
 
 	return e;
 }
@@ -564,23 +570,11 @@ function VS::GetPlayerByIndex( entindex ):(Entities)
 
 };; // PORTAL2
 
-function VS::FindEntityByIndex( entindex, classname = "*" ):(Entities)
+function VS::GetEntityByIndex( entindex, classname = "*" ):(Entities)
 {
 	local e;
 	while( e = Entities.FindByClassname(e, classname) )
 		if( e.entindex() == entindex )
-			return e;
-}
-
-//-----------------------------------------------------------------------
-// String input such as "([2] player)" and "([88] func_button: targetname)"
-// Return entity handle
-//-----------------------------------------------------------------------
-function VS::FindEntityByString( str ):(Entities)
-{
-	local e;
-	while( e = Entities.Next(e) )
-		if( e+"" == str )
 			return e;
 }
 

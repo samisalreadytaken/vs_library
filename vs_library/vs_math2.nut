@@ -84,12 +84,6 @@ class::matrix3x4
 // matrix4x4
 // class VMatrix{}
 
-if( VS.arrayFind(VS.slots_default,"Quaternion") == null )
-{
-	VS.slots_default.append("Quaternion");
-	VS.slots_default.append("matrix3x4");
-};;
-
 local _VEC =::Vector();
 local _QUAT =::Quaternion();
 local Vector = ::Vector;

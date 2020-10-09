@@ -299,7 +299,7 @@ function VS::arrayMap( arr, func ):(array)
 //          bool [ --- ]
 //          integer [ indent ]
 //-----------------------------------------------------------------------
-function VS::DumpScope( table, printall = false, deepprint = true, guides = true, depth = 0 )
+function VS::DumpScope( table, printall = false, deepprint = true, guides = true, depth = 0 ):(slots_default)
 {
 	local indent = function(count) for( local i = 0; i < count; ++i ) ::print("   ");
 	if( guides ) ::print(" ------------------------------\n");
@@ -525,12 +525,12 @@ function VS::_fb3k5S1r91t7(t, i, s = ::getroottable())
 if( ::ENT_SCRIPT <- ::Entc("worldspawn") )
 {
 	::ENT_SCRIPT.ValidateScriptScope();
-	::VS.slots_default.append(::VS.GetVarName(::ENT_SCRIPT.GetScriptScope()));
+	slots_default.append(::VS.GetVarName(::ENT_SCRIPT.GetScriptScope()));
 }
 else
 {
 	(::ENT_SCRIPT<-::VS.CreateEntity("soundent")).ValidateScriptScope();
-	::VS._ENT_SCRIPT <- ::ENT_SCRIPT;
+	::VS.ENT_SCRIPT <- ::ENT_SCRIPT;
 	::Msg("ERROR: Could not find worldspawn\n");
 };;
 
@@ -567,7 +567,7 @@ function VS::GetTickrate():(flTickRate)
 if (!PORTAL2){
 
 // The initialisation of this function is asynchronous.
-// It takes 6 seconds to finalise on map spawn auto-load,
+// It takes 12 seconds to finalise on map spawn auto-load,
 // and 1-5 frames on manual execution on post map spawn.
 // VS.flCanCheckForDedicatedAfterSec can be used for delayed initialisation needs.
 // 		delay("Init()", VS.flCanCheckForDedicatedAfterSec)
@@ -578,7 +578,7 @@ function VS::IsDedicatedServer()
 
 local ENT = ::ENT_SCRIPT;
 local TIMESTART = 4.0;
-local TIMEOUT = 6.0;
+local TIMEOUT = 12.0;
 local _TIMEOUT = TIMEOUT+FrameTime()*4;
 
 ::VS.flCanCheckForDedicatedAfterSec <- fabs(clamp(Time(),0,_TIMEOUT)-_TIMEOUT);
@@ -604,7 +604,7 @@ local _TIMEOUT = TIMEOUT+FrameTime()*4;
 
 		if ( time > TIMEOUT )
 		{
-			::VS.IsDedicatedServer = function() { return true; }
+			::VS.IsDedicatedServer = function() return true;
 			::_VS_DS_bInitDone = true;
 		};
 	};
@@ -614,7 +614,7 @@ local _TIMEOUT = TIMEOUT+FrameTime()*4;
 
 ::_VS_DS_IsListen <- function()
 {
-	::VS.IsDedicatedServer = function() { return false; }
+	::VS.IsDedicatedServer = function() return false;
 	::_VS_DS_bInitDone = true;
 }
 

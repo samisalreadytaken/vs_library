@@ -388,7 +388,7 @@ function VS::QAngleNormalize( vAng )
 // Snaps the input vector to the closest axis
 // input vector pointer [ normalised direction vector ]
 //-----------------------------------------------------------------------------
-function VS::SnapDirectionToAxis( vDirection, epsilon )
+function VS::SnapDirectionToAxis( vDirection, epsilon = 0.002 )
 {
 	local proj = 1.0 - epsilon;
 

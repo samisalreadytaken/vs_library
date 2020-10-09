@@ -25,7 +25,7 @@ local PORTAL2 = "CPortal_Player" in ::getroottable() &&
                 "TurnOnPotatos" in ::CPortal_Player &&
                 ::CPortal_Player.TurnOnPotatos.getinfos().native;
 
-local EVENTS = ::Entities.FindByClassname(null,"logic_eventlistener") ? true : false;
+local EVENTS = !!::Entities.FindByClassname(null,"logic_eventlistener");
 
 ::VS <-
 {
@@ -41,6 +41,7 @@ local EVENTS = ::Entities.FindByClassname(null,"logic_eventlistener") ? true : f
 	_reload = false
 }
 
+local slots_default;
 {
 	// root (SQ)
 	local slots_sq = ["split","print","_floatsize_","exp","seterrorhandler","assert","atan2","_charsize_","asin","atan","cos","PI","strip","newthread","lstrip","format","rstrip","acos","abs","_intsize_","collectgarbage","setroottable","enabledebuginfo","setdebughook","ceil","log10","RAND_MAX","rand","srand","suspend","compilestring","sqrt","floor","getstackinfos","log","fabs","dummy","getroottable","tan","array","_version_","setconsttable","sin","getconsttable","pow","type","regexp"];
@@ -49,7 +50,7 @@ local EVENTS = ::Entities.FindByClassname(null,"logic_eventlistener") ? true : f
 	local slots_ent = ["DispatchOnPostSpawn","self","__vname","PrecacheCallChain","OnPostSpawnCallChain","__vrefs","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn"];
 
 	// root (vs_library)
-	local slots_VS = ["_xa9b2dfB7ffe","VS","DoEntFireByInstanceHandle","ClearChat","Chat","ChatTeam","txt","Alert","AlertTeam","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","ENT_SCRIPT","HPlayer","Ent","Entc","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST","vs_library"];
+	local slots_VS = ["_xa9b2dfB7ffe","VS","DoEntFireByInstanceHandle","ClearChat","Chat","ChatTeam","txt","Alert","AlertTeam","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","ENT_SCRIPT","HPlayer","Ent","Entc","Quaternion","matrix3x4","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST","vs_library"];
 
 	local slots_root;
 
@@ -64,12 +65,12 @@ if (!PORTAL2){
 
 };; // !PORTAL2
 
-	VS.slots_default <- [];
+	slots_default = [];
 
-	VS.slots_default.extend(slots_sq);
-	VS.slots_default.extend(slots_ent);
-	VS.slots_default.extend(slots_root);
-	VS.slots_default.extend(slots_VS);
+	slots_default.extend(slots_sq);
+	slots_default.extend(slots_ent);
+	slots_default.extend(slots_root);
+	slots_default.extend(slots_VS);
 }
 
 // reduce a call on Msg
