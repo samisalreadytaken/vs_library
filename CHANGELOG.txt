@@ -3,6 +3,10 @@
 
 --------------------------------
 
+2020-10-19 [v2.38.4]
+- Renamed VS.TraceLine.hIgnore to 'ignore'.
+- More pointless minor performance improvements.
+
 2020-10-08 [v2.38.3]
 - Renamed FindEntityByIndex to GetEntityByIndex
 - Removed FindEntityByString

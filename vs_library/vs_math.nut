@@ -850,8 +850,8 @@ function VS::IsPointInBox( vec, boxmin, boxmax )
 // Return true of the boxes intersect (but not if they just touch)
 function VS::IsBoxIntersectingBox( boxMin1, boxMax1, boxMin2, boxMax2 )
 {
-	if( ( boxMin1.x > boxMax2.x ) || ( boxMax1.x < boxMin2.x ) ) return false;
-	if( ( boxMin1.y > boxMax2.y ) || ( boxMax1.y < boxMin2.y ) ) return false;
-	if( ( boxMin1.z > boxMax2.z ) || ( boxMax1.z < boxMin2.z ) ) return false;
-	return true;
+	if      ( ( boxMin1.x > boxMax2.x ) || ( boxMax1.x < boxMin2.x ) ) return false;
+	else if ( ( boxMin1.y > boxMax2.y ) || ( boxMax1.y < boxMin2.y ) ) return false;
+	else if ( ( boxMin1.z > boxMax2.z ) || ( boxMax1.z < boxMin2.z ) ) return false;
+	else return true;
 }

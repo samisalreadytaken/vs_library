@@ -63,15 +63,15 @@ class::VS.TraceLine
 			local v = Vector();
 			startpos = v;
 			endpos = v;
-			hIgnore = ent;
+			ignore = ent;
 			fraction = 1.0;
 			return;
 		};
 
 		startpos = start;
 		endpos = end;
-		hIgnore = ent;
-		fraction = Trace( startpos, endpos, hIgnore );
+		ignore = ent;
+		fraction = Trace( startpos, endpos, ignore );
 	}
 
 	function _cmp(d) { if( fraction < d.fraction ) return -1; if( fraction > d.fraction ) return 1; return 0; }
@@ -85,7 +85,7 @@ class::VS.TraceLine
 
 	startpos = null;
 	endpos = null;
-	hIgnore = null;
+	ignore = null;
 	fraction = 0.0;
 	hitpos = null;
 	normal = null;

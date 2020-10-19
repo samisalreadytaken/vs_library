@@ -1155,7 +1155,7 @@ class VS::TraceLine
 {
 	startpos
 	endpos
-	hIgnore
+	ignore
 	fraction
 	hitpos
 	normal
