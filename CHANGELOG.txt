@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2020-10-27 [v2.38.5]
+- A better method of loading
+
 2020-10-19 [v2.38.4]
 - Renamed VS.TraceLine.hIgnore to 'ignore'.
 - More pointless minor performance improvements.

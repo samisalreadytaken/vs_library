@@ -1,10 +1,6 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
-//
 //                       github.com/samisalreadytaken
-//
-// This project is licensed under the terms of the MIT License.
-// See <README.md> or <LICENSE> for details.
 //-----------------------------------------------------------------------
 
 if (!PORTAL2){
@@ -182,4 +178,4 @@ VS.Events.ValidateUseridAll <- VS.ValidateUseridAll.weakref();
 
 }; // EVENTS
 
-};; // !PORTAL2
+}; // !PORTAL2

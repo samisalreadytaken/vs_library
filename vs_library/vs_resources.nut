@@ -1,25 +1,24 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
-//
 //                       github.com/samisalreadytaken
-//
-// This project is licensed under the terms of the MIT License.
-// See <README.md> or <LICENSE> for details.
 //-----------------------------------------------------------------------
 
+local _ = ::getroottable();
+
 // Don't load if the library is already loaded
-if( "VS" in ::getroottable() && typeof::VS == "table" &&
-    "MAX_COORD_FLOAT" in ::getroottable() && !::VS._reload && ::ENT_SCRIPT.IsValid() )
+if( "VS" in _ && typeof::VS == "table" &&
+    "MAX_COORD_FLOAT" in _ && !::VS._reload && ::ENT_SCRIPT.IsValid() )
 	return;;
 
-local _v2 = function(){}
-local _f = _v2.getinfos().src;
+local __ = function(){}
+local _f = __.getinfos().src;
 _f = _f.slice(0,_f.find(".nut"));
 
-if( this != ::getroottable() )
-	return::DoIncludeScript(_f,::getroottable());;
+// The rest is wrapped in this in the minified file.
+// __ = function():(_f){}.call(_);
+
 if( _f != "vs_library" )
-	::print("Loading vs_library...\n");;
+	::print("Loading vs_library...\n");
 
 local PORTAL2 = "CPortal_Player" in ::getroottable() &&
                 "TurnOnPotatos" in ::CPortal_Player &&
@@ -63,7 +62,7 @@ if (!PORTAL2){
 
 	slots_root = ["__ReplaceClosures","GetDeveloperLevel","CSceneEntity","MarkMapComplete","CTriggerCamera","DoEntFire","RandomFloat","CBasePlayer","VSquirrel_OnReleaseScope","IsLevelComplete","CBaseMultiplayerPlayer","PrecacheMovie","CBaseAnimating","GetNumMapsPlayed","EntFireByHandle","Entities","SendToConsole","RegisterFunctionDocumentation","IncludeScript","SetMapAsPlayed","UpgradePlayerPortalgun","__DumpScope","CEntities","PrintHelp","RetrieveNativeSignature","ScriptSteamShowURL","UpgradePlayerPotatogun","FrameTime","Time","Assert","RequestMapRating","PlayerVoiceListener","DebugDrawBox","LoopSinglePlayerMaps","Document","GetCoopSectionIndex","SetHaveSeenDLCTubesReveal","CoopSetMapRunTime","AddGladosSpokenFlags","CoopSetCameFromLastDLCMap","IsPlayerBranchComplete","CoopGladosBlowUpBots","IsBranchComplete","NotifySpeedRunSuccess","CoopGetNumPortalsPlaced","CoopGetBranchTotalLevelCount","GetNumPlayersConnected","IsLocalSplitScreen","GetPlayerDeathCount","GetGladosSpokenFlags","GetHaveSeenDLCTubesReveal","CoopGetLevelsCompletedThisBranch","GetCameFromLastDLCMap","SaveMPStatsData","GivePlayerPortalgun","CLinkedPortalDoor","UniqueString","GetCoopBranchLevelIndex","SetDucking","CSimpleCallChainer","CCallChainer","GetPlayer","RecordAchievementEvent","IsMultiplayer","GetFunctionSignature","IsPlayerLevelComplete","VSquirrel_OnCreateScope","developer","CEnvEntityMaker","GetPlayerSilenceDuration","TryDLC1InstalledOrCatch","GetMapName","EntFire","Msg","CreateSceneEntity","player","AddCoopCreditsName","GetMapIndexInPlayOrder","GetOrangePlayerIndex","CPortal_Player","CPlayerVoiceListener","LateBinder","ShowMessage","CreateProp","TraceLine","printl","ScriptShowHudMessageAll","DebugDrawLine","GetHighestActiveBranch","Documentation","CBaseEntity","CPropLinkedPortalDoor","DoIncludeScript","CScriptKeyValues","GetBluePlayerIndex","DoUniqueString","CBaseFlex","AddBranchLevelName","RandomInt","Vector"];
 
-};; // !PORTAL2
+}; // !PORTAL2
 
 	slots_default = [];
 
@@ -75,10 +74,10 @@ if (!PORTAL2){
 
 // reduce a call on Msg
 if( ::print.getinfos().native )
-	::Msg <- ::print;;
+	::Msg <- ::print;
 
 if( ::EntFireByHandle.getinfos().native )
-	::DoEntFireByInstanceHandle <- ::EntFireByHandle;;
+	::DoEntFireByInstanceHandle <- ::EntFireByHandle;
 
 ::CONST <- getconsttable();
 ::vs_library <- "vs_library v#.#.#";
@@ -108,7 +107,7 @@ if( !("OnGameEvent_player_spawn" in getroottable()) )
 if( !("OnGameEvent_player_connect" in getroottable()) )
 	::OnGameEvent_player_connect <- ::dummy;
 
-};; // !PORTAL2 && EVENTS
+}; // !PORTAL2 && EVENTS
 
 ::collectgarbage();
 

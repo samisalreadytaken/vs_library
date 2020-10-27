@@ -1,10 +1,6 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
-//
 //                       github.com/samisalreadytaken
-//
-// This project is licensed under the terms of the MIT License.
-// See <README.md> or <LICENSE> for details.
 //-----------------------------------------------------------------------
 
 local Entities = ::Entities;
@@ -532,7 +528,7 @@ else
 	(::ENT_SCRIPT<-::VS.CreateEntity("soundent")).ValidateScriptScope();
 	::VS.ENT_SCRIPT <- ::ENT_SCRIPT;
 	::Msg("ERROR: Could not find worldspawn\n");
-};;
+};
 
 //-----------------------------------------------------------------------
 // If you wish to delay the code in a specific entity scope,
@@ -643,7 +639,7 @@ if (::_VS_DS_bExecOnce)
 	::_VS_DS_bExecOnce = false;
 };
 
-};; // !PORTAL2
+}; // !PORTAL2
 
 if (!PORTAL2){
 
@@ -677,4 +673,4 @@ local ChatTeam = ::ScriptPrintMessageChatTeam;
 	orange     = "\x10"
 }
 
-};; // !PORTAL2
+}; // !PORTAL2

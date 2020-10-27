@@ -1,10 +1,6 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
-//
 //                       github.com/samisalreadytaken
-//
-// This project is licensed under the terms of the MIT License.
-// See <README.md> or <LICENSE> for details.
 //-----------------------------------------------------------------------
 //
 // Print and export custom log lines.
@@ -46,7 +42,7 @@ function VS::Log::Run()
 	return _Start();
 }
 
-};; // PORTAL2
+}; // PORTAL2
 
 //-----------------------------------------------------------------------
 // Internal functions. Do not call these

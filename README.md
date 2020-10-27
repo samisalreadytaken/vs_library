@@ -3,9 +3,9 @@
 
 High-performance, powerful vscript libraries; written mainly for CSGO, compatible with Portal 2.
 
-See the [hlvr](https://github.com/samisalreadytaken/vs_library/tree/hlvr) branch for usage in Half-Life Alyx.
+See the [**hlvr**](https://github.com/samisalreadytaken/vs_library/tree/hlvr) branch for usage in Half-Life Alyx.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.38.4-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.38.5-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation

@@ -1,10 +1,6 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
-//
 //                       github.com/samisalreadytaken
-//
-// This project is licensed under the terms of the MIT License.
-// See <README.md> or <LICENSE> for details.
 //-----------------------------------------------------------------------
 
 local AddEvent = ::DoEntFireByInstanceHandle;
@@ -42,7 +38,7 @@ function VS::MakePersistent(ent)
 
 ::VS.MakePersistent <- ::dummy;
 
-};; // !PORTAL2
+}; // !PORTAL2
 
 //-----------------------------------------------------------------------
 // Set child's parent
@@ -497,7 +493,7 @@ function VS::DumpPlayers( dumpscope = false )
 	::Msg("=======================================\n");
 }
 
-};; // !PORTAL2
+}; // !PORTAL2
 
 //-----------------------------------------------------------------------
 // return the only / the first connected player in the server
@@ -568,7 +564,7 @@ function VS::GetPlayerByIndex( entindex ):(Entities)
 				return e;
 }
 
-};; // PORTAL2
+}; // PORTAL2
 
 function VS::GetEntityByIndex( entindex, classname = "*" ):(Entities)
 {
