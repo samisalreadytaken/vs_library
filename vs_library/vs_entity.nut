@@ -49,7 +49,7 @@ function VS::MakePersistent(ent)
 //-----------------------------------------------------------------------
 function VS::SetParent( hChild, hParent ):(AddEvent)
 {
-	if( hParent ) return AddEvent( hChild, "SetParent", "!activator", 0.0, hParent, null );
+	if ( hParent ) return AddEvent( hChild, "SetParent", "!activator", 0.0, hParent, null );
 	return AddEvent( hChild, "ClearParent", "", 0.0, null, null );
 }
 
@@ -59,7 +59,7 @@ function VS::SetParent( hChild, hParent ):(AddEvent)
 //-----------------------------------------------------------------------
 function VS::ShowGameText( hEnt, hTarget, msg = null, delay = 0.0 ):(AddEvent)
 {
-	if( msg ) hEnt.__KeyValueFromString( "message", ""+msg );
+	if ( msg ) hEnt.__KeyValueFromString( "message", ""+msg );
 	return AddEvent( hEnt, "Display", "", delay, hTarget, null );
 }
 
@@ -69,7 +69,7 @@ function VS::ShowGameText( hEnt, hTarget, msg = null, delay = 0.0 ):(AddEvent)
 //-----------------------------------------------------------------------
 function VS::ShowHudHint( hEnt, hTarget, msg = null, delay = 0.0 ):(AddEvent)
 {
-	if( msg ) hEnt.__KeyValueFromString( "message", ""+msg );
+	if ( msg ) hEnt.__KeyValueFromString( "message", ""+msg );
 	return AddEvent( hEnt, "ShowHudHint", "", delay, hTarget, null );
 }
 
@@ -95,7 +95,7 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 ):(AddEven
 {
 	local r = e ? n ? n+"" : "vs.ref_"+UniqueString() : n ? n+"" : null;
 
-	if(!r || !r.len()) throw "Invalid targetname";
+	if ( !r || !r.len() ) throw "Invalid targetname";
 
 	local e = CreateEntity( "logic_measure_movement",
 	                        { measuretype = e ? 1 : 0,
@@ -106,11 +106,11 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 ):(AddEven
 	                          targetscale = s.tofloat(),
 	                          targetname = e?r:null }, p );
 
-	AddEvent(e,"SetMeasureReference",r,0.0,null,null);
+	AddEvent( e, "SetMeasureReference", r, 0.0, null, null );
 
-	AddEvent(e,"SetMeasureTarget",g,0.0,null,null);
+	AddEvent( e, "SetMeasureTarget", g, 0.0, null, null );
 
-	AddEvent(e,"Enable","",0.0,null,null);
+	AddEvent( e, "Enable", "" , 0.0, null, null );
 
 	return e;
 }
@@ -124,7 +124,7 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 ):(AddEven
 //-----------------------------------------------------------------------
 function VS::SetMeasure(h,s):(AddEvent)
 {
-	return AddEvent(h,"SetMeasureTarget",s,0.0,null,null);
+	return AddEvent( h, "SetMeasureTarget", s, 0.0, null, null );
 }
 
 //-----------------------------------------------------------------------
@@ -140,7 +140,7 @@ function VS::CreateTimer( bDisabled, flInterval, flLower = null, flUpper = null,
 {
 	local ent = CreateEntity( "logic_timer", null, bMakePersistent );
 
-	if( flInterval )
+	if ( flInterval != null )
 	{
 		ent.__KeyValueFromInt( "UseRandomTime", 0 );
 		ent.__KeyValueFromFloat( "RefireTime", flInterval.tofloat() );
@@ -164,14 +164,14 @@ function VS::CreateTimer( bDisabled, flInterval, flLower = null, flUpper = null,
 //-----------------------------------------------------------------------
 function VS::Timer( bDisabled, flInterval, Func = null, tScope = null, bExecInEnt = false, bMakePersistent = false )
 {
-	if(!flInterval)
+	if ( flInterval == null )
 	{
 		::Msg("\nERROR:\nRefire time cannot be null in VS.Timer\nUse VS.CreateTimer for randomised fire times.\n");
-		throw"NULL REFIRE TIME";
+		throw "NULL REFIRE TIME";
 	};
 
-	local h = CreateTimer(bDisabled, flInterval, null, null, null, bMakePersistent);
-	OnTimer(h, Func, tScope ? tScope : GetCaller(), bExecInEnt);
+	local h = CreateTimer( bDisabled, flInterval, null, null, null, bMakePersistent );
+	OnTimer( h, Func, tScope ? tScope : GetCaller(), bExecInEnt );
 	return h;
 }
 
@@ -202,18 +202,18 @@ function VS::OnTimer( hEnt, Func, tScope = null, bExecInEnt = false )
 local compile = ::compilestring;
 function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false ):(compile)
 {
-	if( !tScope ) tScope = GetCaller();
+	if ( !tScope ) tScope = GetCaller();
 
-	if( Func )
+	if ( Func )
 	{
-		if( typeof Func == "string" )
+		if ( typeof Func == "string" )
 		{
-			if( Func.find("(") != null )
+			if ( Func.find("(") != null )
 				Func = compile(Func);
 			else
 				Func = tScope[Func];
 		}
-		else if( typeof Func != "function" )
+		else if ( typeof Func != "function" )
 			throw "Invalid function type " + typeof Func;;
 	}
 	else
@@ -238,17 +238,17 @@ function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 // This could still be useful in specific scenarios
 function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false ):(AddEvent)
 {
-	if( hEnt.GetScriptScope() || typeof Func == "function" )
+	if ( hEnt.GetScriptScope() || typeof Func == "function" )
 		return AddOutput( hEnt, sOutput, Func, tScope, bExecInEnt );
 
-	if( typeof Func != "string" )
+	if ( typeof Func != "string" )
 		throw "Invalid function type " + typeof Func;
 
-	if( !tScope ) tScope = GetCaller();
+	if ( !tScope ) tScope = GetCaller();
 
-	if( !bExecInEnt )
+	if ( !bExecInEnt )
 	{
-		if( !("self" in tScope) )
+		if ( !("self" in tScope) )
 		{
 			throw "Invalid function path. Not an entity";
 		};
@@ -258,7 +258,7 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 	else
 	{
 		local name = hEnt.GetName();
-		if( !name.len() )
+		if ( !name.len() )
 		{
 			name = UniqueString();
 			SetName(hEnt, name);
@@ -279,8 +279,8 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 function VS::CreateEntity( classname, keyvalues = null, preserve = false ):(Entities)
 {
 	local ent = Entities.CreateByClassname(classname);
-	if( typeof keyvalues == "table" ) foreach( k, v in keyvalues ) SetKeyValue(ent, k, v);
-	if(preserve) MakePersistent(ent);
+	if ( typeof keyvalues == "table" ) foreach( k, v in keyvalues ) SetKeyValue(ent, k, v);
+	if (preserve) MakePersistent(ent);
 	return ent;
 
 	// It is better to use entity weak references to store entity handles.
@@ -358,33 +358,33 @@ function VS::SetName( ent, name )
 function VS::DumpEnt( input = null ):(Entities)
 {
 	// dump only scope names
-	if( !input )
+	if ( !input )
 	{
 		local ent;
-		while( ent = Entities.Next(ent) )
+		while ( ent = Entities.Next(ent) )
 		{
 			local s = ent.GetScriptScope();
-			if(s) ::Msg(ent + " :: " + s.__vname+"\n"); // GetVarName(s)
+			if (s) ::Msg(ent + " :: " + s.__vname+"\n"); // GetVarName(s)
 		}
 
 		return;
 	};
 
-	if( typeof input == "string" )
+	if ( typeof input == "string" )
 	{
 		local ent;
-		while( ent = Entities.Next(ent) )
+		while ( ent = Entities.Next(ent) )
 			if (ent+"" == input)
 				input = ent;
 	};
 
 	// dump input scope
-	if( typeof input == "instance" )
+	if ( typeof input == "instance" )
 	{
-		if(input.IsValid())
+		if (input.IsValid())
 		{
 			local s = input.GetScriptScope();
-			if(s)
+			if (s)
 			{
 				::Msg("--- Script dump for entity "+input+"\n");
 				DumpScope(s,0,1,0,1);
@@ -396,13 +396,13 @@ function VS::DumpEnt( input = null ):(Entities)
 	}
 
 	// dump all scopes
-	else if( input )
+	else if ( input )
 	{
 		local ent;
-		while( ent = Entities.Next(ent) )
+		while ( ent = Entities.Next(ent) )
 		{
 			local s = ent.GetScriptScope();
-			if(s)
+			if (s)
 			{
 				::Msg("\n--- Script dump for entity "+ent+"\n");
 				DumpScope(s,0,1,0,1);
@@ -428,18 +428,18 @@ function VS::GetPlayersAndBots():(Entities)
 {
 	local ent, ply = [], bot = [];
 
-	while( ent = Entities.FindByClassname(ent, "cs_bot") )
+	while ( ent = Entities.FindByClassname(ent, "cs_bot") )
 	{
 		bot.append(ent.weakref());
 	}
 
 	ent = null;
 
-	while( ent = Entities.FindByClassname(ent, "player") )
+	while ( ent = Entities.FindByClassname(ent, "player") )
 	{
 		local s = ent.GetScriptScope();
 
-		if( "networkid" in s && s.networkid == "BOT" )
+		if ( "networkid" in s && s.networkid == "BOT" )
 			bot.append(ent.weakref());
 		else
 			ply.append(ent.weakref());
@@ -454,10 +454,10 @@ function VS::GetPlayersAndBots():(Entities)
 function VS::GetAllPlayers():(Entities)
 {
 	local e, a = [];
-	while( e = Entities.FindByClassname(e,"player") )
+	while ( e = Entities.FindByClassname(e,"player") )
 		a.append(e.weakref());
 	e = null;
-	while( e = Entities.FindByClassname(e,"cs_bot") )
+	while ( e = Entities.FindByClassname(e,"cs_bot") )
 		a.append(e.weakref());
 	return a;
 }
@@ -480,10 +480,10 @@ function VS::DumpPlayers( dumpscope = false )
 		foreach( e in _a )
 		{
 			local s = e.GetScriptScope();
-			if(s) s = GetVarName(s);
-			if(!s) s = "null";
+			if (s) s = GetVarName(s);
+			if (!s) s = "null";
 			::Msg( _s+"- " + e + " :: " + s +"\n");
-			if( dumpscope && s != "null" ) DumpEnt(e);
+			if ( dumpscope && s != "null" ) DumpEnt(e);
 		}
 	}
 
@@ -512,7 +512,7 @@ function VS::GetLocalPlayer()
 {
 	local e;
 
-	if( ::IsMultiplayer() )
+	if ( ::IsMultiplayer() )
 	{
 		e = ::Entc("player");
 	}
@@ -520,7 +520,7 @@ function VS::GetLocalPlayer()
 	{
 		e = ::GetPlayer();
 
-		if( e != ::player )
+		if ( e != ::player )
 			::Msg("GetLocalPlayer: Discrepancy detected!\n");
 	};
 
@@ -533,15 +533,15 @@ function VS::GetLocalPlayer()
 
 function VS::GetLocalPlayer( bAddGlobal = true )
 {
-	if( GetPlayersAndBots()[0].len() > 1 )
+	if ( GetPlayersAndBots()[0].len() > 1 )
 		::Msg("GetLocalPlayer: More than 1 player detected!\n");
 
 	local e = ::Entc("player");
 
-	if( !e )
+	if ( !e )
 		return::Msg("GetLocalPlayer: No player found!\n");
 
-	if( e != GetPlayerByIndex(1) )
+	if ( e != GetPlayerByIndex(1) )
 		::Msg("GetLocalPlayer: Discrepancy detected!\n");
 
 	SetName(e, "localplayer");
@@ -555,12 +555,12 @@ function VS::GetLocalPlayer( bAddGlobal = true )
 function VS::GetPlayerByIndex( entindex ):(Entities)
 {
 	local e;
-	while( e = Entities.FindByClassname(e,"player") )
-			if( e.entindex() == entindex )
+	while ( e = Entities.FindByClassname(e,"player") )
+			if ( e.entindex() == entindex )
 				return e;
 	e = null;
-	while( e = Entities.FindByClassname(e,"cs_bot") )
-			if( e.entindex() == entindex )
+	while ( e = Entities.FindByClassname(e,"cs_bot") )
+			if ( e.entindex() == entindex )
 				return e;
 }
 
@@ -569,8 +569,8 @@ function VS::GetPlayerByIndex( entindex ):(Entities)
 function VS::GetEntityByIndex( entindex, classname = "*" ):(Entities)
 {
 	local e;
-	while( e = Entities.FindByClassname(e, classname) )
-		if( e.entindex() == entindex )
+	while ( e = Entities.FindByClassname(e, classname) )
+		if ( e.entindex() == entindex )
 			return e;
 }
 
@@ -584,13 +584,13 @@ function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold ):(Entities)
 	local bestDot = fThreshold,
 	      best_ent, ent = Entities.First();
 
-	while( ent = Entities.Next(ent) )
+	while ( ent = Entities.Next(ent) )
 	{
 		// skip all point sized entitites
-		if( IsPointSized(ent) ) continue;
+		if ( IsPointSized(ent) ) continue;
 
 		// skip only worldspawn and soundent
-		// if( ent.GetClassname() == "worldspawn" || ent.GetClassname() == "soundent" ) continue;
+		// if ( ent.GetClassname() == "worldspawn" || ent.GetClassname() == "soundent" ) continue;
 
 		local to_ent = ent.GetOrigin() - vOrigin;
 
@@ -598,7 +598,7 @@ function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold ):(Entities)
 
 		local dot = vFacing.Dot(to_ent);
 
-		if( dot > bestDot )
+		if ( dot > bestDot )
 		{
 			bestDot = dot;
 			best_ent = ent;
@@ -613,7 +613,7 @@ function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassn
 	local bestDot = fThreshold,
 	      best_ent, ent;
 
-	while( ent = Entities.FindByClassname(ent,sClassname) )
+	while ( ent = Entities.FindByClassname(ent,sClassname) )
 	{
 		local to_ent = ent.GetOrigin() - vOrigin;
 
@@ -621,7 +621,7 @@ function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassn
 
 		local dot = vFacing.Dot(to_ent);
 
-		if( dot > bestDot )
+		if ( dot > bestDot )
 		{
 			bestDot = dot;
 			best_ent = ent;
@@ -637,7 +637,7 @@ function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, 
 {
 	local flMaxDistSqr, best_ent, ent;
 
-	if( flRadius )
+	if ( flRadius )
 	{
 		flMaxDistSqr = flRadius * flRadius;
 	}
@@ -646,7 +646,7 @@ function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, 
 		flMaxDistSqr = 3.22122e+09; // MAX_TRACE_LENGTH * MAX_TRACE_LENGTH
 	};
 
-	while( ent = Entities.FindByClassname(ent,sClassname) )
+	while ( ent = Entities.FindByClassname(ent,sClassname) )
 	{
 		local to_ent = ent.GetOrigin() - vOrigin;
 
@@ -654,11 +654,11 @@ function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, 
 
 		local dot = vFacing.Dot(to_ent);
 
-		if( dot > fThreshold )
+		if ( dot > fThreshold )
 		{
 			local flDistSqr = (ent.GetOrigin() - vOrigin).LengthSqr();
 
-			if( flMaxDistSqr > flDistSqr )
+			if ( flMaxDistSqr > flDistSqr )
 			{
 				best_ent = ent;
 				flMaxDistSqr = flDistSqr;

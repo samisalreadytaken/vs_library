@@ -3,6 +3,11 @@
 
 --------------------------------
 
+2020-11-05 [v2.39.0]
+- Added EventQueue
+- Consistent formatting
+- Removed ClearChat
+
 2020-10-27 [v2.38.5]
 - A better method of loading
 

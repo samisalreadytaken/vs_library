@@ -54,7 +54,7 @@ class::VS.TraceLine
 {
 	constructor( start = null, end = null, ent = null ):(Vector,Trace)
 	{
-		if( !start )
+		if ( !start )
 		{
 			local v = Vector();
 			startpos = v;
@@ -70,7 +70,7 @@ class::VS.TraceLine
 		fraction = Trace( startpos, endpos, ignore );
 	}
 
-	function _cmp(d) { if( fraction < d.fraction ) return -1; if( fraction > d.fraction ) return 1; return 0; }
+	function _cmp(d) { if ( fraction < d.fraction ) return -1; if ( fraction > d.fraction ) return 1; return 0; }
 	function _add(d) { return fraction + d.fraction; }
 	function _sub(d) { return fraction - d.fraction; }
 	function _mul(d) { return fraction * d.fraction; }
@@ -123,23 +123,23 @@ function VS::TraceLine::GetEnt( radius )
 // GetEnt, find by name
 function VS::TraceLine::GetEntByName( targetname, radius ):(Entities)
 {
-	if( !hitpos ) GetPos();
+	if ( !hitpos ) GetPos();
 	return Entities.FindByNameNearest( targetname, hitpos, radius );
 }
 
 // GetEnt, find by classname
 function VS::TraceLine::GetEntByClassname( classname, radius ):(Entities)
 {
-	if( !hitpos ) GetPos();
+	if ( !hitpos ) GetPos();
 	return Entities.FindByClassnameNearest( classname, hitpos, radius );
 }
 
 // return hit position (hitpos)
 function VS::TraceLine::GetPos()
 {
-	if( !hitpos )
+	if ( !hitpos )
 	{
-		if( DidHit() ) hitpos = startpos + (endpos - startpos) * fraction;
+		if ( DidHit() ) hitpos = startpos + (endpos - startpos) * fraction;
 		else hitpos = endpos;
 	};
 	return hitpos;
@@ -162,7 +162,7 @@ local TraceDir = ::VS.TraceDir;
 // Get surface normal
 function VS::TraceLine::GetNormal():(Vector,TraceDir)
 {
-	if( !normal )
+	if ( !normal )
 	{
 		local u = Vector(0.0,0.0,0.5),
 			  d = endpos - startpos;
@@ -206,9 +206,9 @@ function VS::TraceLine::Ray( mins =::Vector(), maxs =::Vector() )
 //	// get circular gaussian spread
 //	local x, y, z;
 //
-//	if( bias > 1.0 )
+//	if ( bias > 1.0 )
 //		bias = 1.0;
-//	else if( bias < 0.0 )
+//	else if ( bias < 0.0 )
 //		bias = 0.0;;
 //
 //	local shotBiasMin = -1.0;
@@ -257,7 +257,7 @@ function VS::UniqueString():(DoUniqueString)
 function VS::arrayFind( arr, val )
 {
 	foreach( i, v in arr )
-		if( v == val )
+		if ( v == val )
 			return i;
 }
 
@@ -297,16 +297,16 @@ function VS::arrayMap( arr, func ):(array)
 //-----------------------------------------------------------------------
 function VS::DumpScope( table, printall = false, deepprint = true, guides = true, depth = 0 ):(slots_default)
 {
-	local indent = function(count) for( local i = 0; i < count; ++i ) ::print("   ");
-	if( guides ) ::print(" ------------------------------\n");
-	if( table )
+	local indent = function(count) for( local i = count; i--; ) ::print("   ");
+	if ( guides ) ::print(" ------------------------------\n");
+	if ( table )
 	{
 		foreach( key, val in table )
 		{
 			local isdefault = false;
-			if( !printall ){ foreach( k in slots_default ) if( key == k ) isdefault = true }
-			else if( key == "VS" || key == "Documentation" ) isdefault = true;;
-			if( !isdefault )
+			if ( !printall ){ foreach( k in slots_default ) if ( key == k ) isdefault = true }
+			else if ( key == "VS" || key == "Documentation" ) isdefault = true;;
+			if ( !isdefault )
 			{
 				indent(depth);
 				::print(key);
@@ -314,7 +314,7 @@ function VS::DumpScope( table, printall = false, deepprint = true, guides = true
 				{
 					case "table":
 						::print("(TABLE) : "+val.len());
-						if(!deepprint) break;
+						if (!deepprint) break;
 						::print("\n");
 						indent(depth);
 						::print("{\n");
@@ -324,7 +324,7 @@ function VS::DumpScope( table, printall = false, deepprint = true, guides = true
 						break;
 					case "array":
 						::print("(ARRAY) : "+val.len());
-						if(!deepprint) break;
+						if (!deepprint) break;
 						::print("\n");
 						indent(depth);
 						::print("[\n");
@@ -346,7 +346,7 @@ function VS::DumpScope( table, printall = false, deepprint = true, guides = true
 		}
 	}
 	else ::print("null\n");
-	if( guides ) ::print(" ------------------------------\n");
+	if ( guides ) ::print(" ------------------------------\n");
 }
 
 //-----------------------------------------------------------------------
@@ -391,24 +391,26 @@ function VS::GetStackInfo( deepprint = false, printall = false )
 	local s, j = 2;
 	while( s =::getstackinfos(j++) )
 	{
-		if( s.func == "pcall" && s.src == "NATIVE" ) break;
+		if ( s.func == "pcall" && s.src == "NATIVE" ) break;
 		::print(" ("+(j-1)+")\n");
 		local w, m = s.locals;
-		if( "this" in m && typeof m["this"] == "table" )
+		if ( "this" in m && typeof m["this"] == "table" )
 		{
-			if(m["this"] == ::getroottable())
+			if (m["this"] == ::getroottable())
 			{
 				w = "roottable";
 			}
 			else
 			{
-				w = GetVarName(m["this"]);
-				m[w] <- delete m["this"];
+				if ( w = GetVarName(m["this"]) )
+				{
+					m[w] <- delete m["this"];
+				};
 			};
 		};
-		if( w == "roottable" ) DumpScope(s, printall, 0, 0);
+		if ( w == "roottable" ) DumpScope(s, printall, 0, 0);
 		else DumpScope(s, printall, deepprint, 0);
-		if(w)::print("scope = \""+w+"\"\n");
+		if (w)::print("scope = \""+w+"\"\n");
 	}
 	::print(" --- STACKINFO ----------------\n");
 }
@@ -425,12 +427,12 @@ VS.GetCallerFunc <- ::compilestring("return(getstackinfos(3).func)");
 //-----------------------------------------------------------------------
 function VS::GetTableDir(input)
 {
-	if( typeof input != "table" )
+	if ( typeof input != "table" )
 		throw "Invalid input type '" + typeof input + "' ; expected: 'table'";
 
 	local r = _f627f40d21a6([],input);
 
-	if(r) r.append("roottable");
+	if (r) r.append("roottable");
 	else r = ["roottable"];
 
 	r.reverse();
@@ -441,9 +443,9 @@ function VS::GetTableDir(input)
 function VS::_f627f40d21a6(bF, t, l = ::getroottable())
 {
 	foreach(v, u in l)
-		if(typeof u == "table")
-			if(v != "VS" && v != "Documentation")
-				if(u == t)
+		if (typeof u == "table")
+			if (v != "VS" && v != "Documentation")
+				if (u == t)
 				{
 					bF.append(v);
 					return bF;
@@ -451,7 +453,7 @@ function VS::_f627f40d21a6(bF, t, l = ::getroottable())
 				else
 				{
 					local r = _f627f40d21a6(bF, t, u);
-					if(r)
+					if (r)
 					{
 						bF.append(v);
 						return r;
@@ -465,7 +467,7 @@ function VS::_f627f40d21a6(bF, t, l = ::getroottable())
 //-----------------------------------------------------------------------
 function VS::FindVarByName(S)
 {
-	if(typeof S != "string")
+	if (typeof S != "string")
 		throw "Invalid input type '" + typeof S + "' ; expected: 'string'";
 
 	return _fb3k55Ir91t7(S);
@@ -474,15 +476,15 @@ function VS::FindVarByName(S)
 // exclusive recursion function
 function VS::_fb3k55Ir91t7(t, l = ::getroottable())
 {
-	if(t in l)
+	if (t in l)
 		return l[t];
 	else
 		foreach(v, u in l)
-			if(typeof u == "table")
-				if(v != "VS" && v != "Documentation")
+			if (typeof u == "table")
+				if (v != "VS" && v != "Documentation")
 				{
 					local r = _fb3k55Ir91t7(t, u);
-					if(r) return r;
+					if (r) return r;
 				};;;
 }
 
@@ -495,7 +497,7 @@ function VS::GetVarName(v)
 {
 	local t = typeof v;
 
-	if( t == "function" || t == "native function" )
+	if ( t == "function" || t == "native function" )
 		return v.getinfos().name;
 
 	return _fb3k5S1r91t7(t, v);
@@ -506,19 +508,19 @@ function VS::_fb3k5S1r91t7(t, i, s = ::getroottable())
 {
 	foreach(k, v in s)
 	{
-		if(v == i)
+		if (v == i)
 			return k;
 
-		if(typeof v == "table")
-			if(k != "VS" && k != "Documentation")
+		if (typeof v == "table")
+			if (k != "VS" && k != "Documentation")
 			{
 				local r = _fb3k5S1r91t7(t, i, v);
-				if(r) return r;
+				if (r) return r;
 			};;
 	}
 }
 
-if( ::ENT_SCRIPT <- ::Entc("worldspawn") )
+if ( ::ENT_SCRIPT <- ::Entc("worldspawn") )
 {
 	::ENT_SCRIPT.ValidateScriptScope();
 	slots_default.append(::VS.GetVarName(::ENT_SCRIPT.GetScriptScope()));
@@ -531,21 +533,197 @@ else
 };
 
 //-----------------------------------------------------------------------
-// If you wish to delay the code in a specific entity scope,
-// set the third parameter to the entity, or 'self'.
+// Deprecated. Use VS.EventQueue.AddEvent instead.
 //
-// If you wish to delay the code in a specific scope,
-// you need to know the name of the table.
-// Using VS.DumpScope(VS.GetTableDir(tableInput)), you can find
-// in which table your desired scope is, and execute the code.
+//  	VS.EventQueue.AddEvent( MyFunc, 0.5 )
+//  	VS.EventQueue.AddEvent( MyFunc, 0.5, this )
+//  	VS.EventQueue.AddEvent( MyFunc, 0.5, null )
+//  	VS.EventQueue.AddEvent( MyFunc, 0.5, [ this, "param1", "param2" ] )
+//  	VS.EventQueue.AddEvent( MyFunc, 0.5, [ this, "param1", "param2" ], activator, caller )
 //
-// You can use activators and callers to easily access entity handles
+//
+// Each string is allocated and added to the game string pool.
+//-----------------------------------------------------------------------
+local AddEvent = ::DoEntFireByInstanceHandle;
+::delay <- function( X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null ):(AddEvent)
+	return AddEvent( E, "RunScriptCode", ""+X, T, A, C );
+
+
+//-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
 
-local AddEvent = ::DoEntFireByInstanceHandle;
 
-::delay <- function(X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null):(AddEvent)
-	return AddEvent(E, "RunScriptCode", ""+X, T, A, C);
+{
+VS.EventQueue <- delegate VS :
+{
+	m_Events      = [null],
+	m_flNextQueue = -1.0,
+	m_flLastQueue = -1.0
+}
+
+// enum
+local m_flFireTime = 0;
+local m_hFunc      = 1;
+local m_argv       = 2;
+local m_Env        = 3;
+local m_activator  = 4;
+local m_caller     = 5;
+local curtime = ::Time;
+local ENT=::ENT_SCRIPT;
+
+VS.EventQueue.Dump <- function() : ( m_flFireTime, m_hFunc, m_argv, m_Env, m_activator, m_caller, curtime )
+{
+	if ( !("m_Events" in this) )
+		return Msg("VS::EventQueue::Dump: FAILED\n");
+
+	local get = function(i)
+	{
+		if ( i == null )
+			return "(NULL)";
+		local s = "" + i;
+		local t = s.find("0x");
+		if ( t == null )
+			return s;
+		return "(" + s.slice( t, s.len()-1 ) + ")";
+	}
+
+	Msg( "VS::EventQueue::Dump: " + curtime() + " : next(" + m_flNextQueue + "), last(" + m_flLastQueue + ")\n" );
+	for ( local i = 0, l = m_Events.len() - 1; i < l; ++i )
+	{
+		local ev = m_Events[i];
+		Msg(format( "   (%.2f) func '%s', env '%s', activator '%s', caller '%s'\n",
+			ev[m_flFireTime],
+			get(ev[m_hFunc]),
+			get(ev[m_Env]),
+			get(ev[m_activator]),
+			get(ev[m_caller]) ));
+	}
+	Msg( "VS::EventQueue::Dump: end.\n" );
+
+}.bindenv(VS.EventQueue);
+
+VS.EventQueue.Clear <- function()
+{
+	m_Events.clear();
+	m_Events.append(null);
+	m_flNextQueue = -1.0;
+	m_flLastQueue = -1.0;
+
+}.bindenv(VS.EventQueue);
+
+VS.EventQueue.CancelEventsByInput <- function( f ) : ( m_hFunc )
+{
+	for ( local i = m_Events.len() - 1; i--; )
+	{
+		if ( f == m_Events[i][m_hFunc] )
+		{
+			m_Events.remove(i);
+		};
+	}
+}.bindenv(VS.EventQueue);
+
+VS.EventQueue.RemoveEvent <- function( ev )
+{
+	if ( typeof ev == "weakref" )
+		ev = ev.ref();
+
+	for ( local i = m_Events.len() - 1; i--; )
+	{
+		if ( ev == m_Events[i] )
+		{
+			m_Events.remove(i);
+			return;
+		};
+	}
+}.bindenv(VS.EventQueue);
+
+VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = null, caller = null ) :
+( ENT, AddEvent, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime )
+{
+	local event = [null,null,null,null,null,null];
+
+	event[ m_flFireTime ] = curtime() + flDelay;
+	event[ m_hFunc ] = hFunc;
+	event[ m_activator ] = activator;
+	event[ m_caller ] = caller;
+
+	local typeofArgs = typeof argv;
+	if ( typeofArgs == "table" )
+	{
+		event[ m_Env ] = argv;
+	}
+	else if ( typeofArgs == "array" )
+	{
+		event[ m_argv ] = argv;
+	}
+	else
+	{
+		event[ m_Env ] = GetCaller();
+	};;
+
+	local i = 0, v = m_Events.len() - 1;
+	while ( i < v )
+	{
+		if ( event[ m_flFireTime ] < m_Events[i][ m_flFireTime ] )
+		{
+			v = i;
+			break;
+		};
+		++i;
+	}
+	m_Events.insert( v, event );
+
+	if ( (m_flNextQueue == -1.0) || (flDelay < m_flNextQueue) )
+	{
+		AddEvent( ENT, "RunScriptCode", "::VS.EventQueue.ServiceEvents()", 0.0, activator, caller );
+		m_flNextQueue = flDelay;
+	};
+	// SetNextThink( 1 );
+
+	return event.weakref();
+
+}.bindenv(VS.EventQueue);
+
+VS.EventQueue.ServiceEvents <- function() : ( ENT, AddEvent, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime )
+{
+	local curtime = curtime();
+
+	if ( m_flLastQueue == curtime )
+		return; m_flLastQueue = curtime;
+
+	local ev;
+	while ( ev = m_Events[0] )
+	{
+		local f = ev[m_flFireTime];
+		if ( f <= curtime )
+		{
+			local f = ev[m_hFunc];
+			if ( f )
+			{
+				local p = ev[ m_argv ];
+				if ( p ) f.acall( p );
+				else f.call( ev[ m_Env ] );
+			};
+			m_Events.remove(0);
+		}
+		else
+		{
+			local next = f - curtime;
+			m_flNextQueue = next;
+			AddEvent( ENT, "RunScriptCode", "::VS.EventQueue.ServiceEvents()", next, ev[m_activator], ev[m_caller] );
+			return;
+		};
+	}
+	m_flNextQueue = -1.0;
+	// SetNextThink( -1 );
+
+}.bindenv(VS.EventQueue);
+}
+
+
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+
 
 //-----------------------------------------------------------------------
 // Frame times:
@@ -566,20 +744,19 @@ if (!PORTAL2){
 // It takes 12 seconds to finalise on map spawn auto-load,
 // and 1-5 frames on manual execution on post map spawn.
 // VS.flCanCheckForDedicatedAfterSec can be used for delayed initialisation needs.
-// 		delay("Init()", VS.flCanCheckForDedicatedAfterSec)
+// 		VS.EventQueue.AddEvent( Init, VS.flCanCheckForDedicatedAfterSec, this )
 function VS::IsDedicatedServer()
 {
 	throw "not ready";
 }
 
-local ENT = ::ENT_SCRIPT;
 local TIMESTART = 4.0;
 local TIMEOUT = 12.0;
 local _TIMEOUT = TIMEOUT+FrameTime()*4;
 
 ::VS.flCanCheckForDedicatedAfterSec <- fabs(clamp(Time(),0,_TIMEOUT)-_TIMEOUT);
 
-::_VS_DS_Init <- function():(TIMESTART,TIMEOUT,ENT)
+::_VS_DS_Init <- function():(TIMESTART,TIMEOUT)
 {
 	if (::_VS_DS_bInitDone)
 	{
@@ -605,7 +782,7 @@ local _TIMEOUT = TIMEOUT+FrameTime()*4;
 		};
 	};
 
-	::delay("::_VS_DS_Init()",0.1,ENT); // delay value should not be less than 5 frames (SendToConsole delay)
+	::VS.EventQueue.AddEvent( ::_VS_DS_Init, 0.1, this ); // delay value should not be less than 5 frames (SendToConsole delay)
 }
 
 ::_VS_DS_IsListen <- function()
@@ -615,7 +792,7 @@ local _TIMEOUT = TIMEOUT+FrameTime()*4;
 }
 
 // extra protection
-if (!("_VS_DS_bExecOnce" in ::getroottable()))
+if ( !("_VS_DS_bExecOnce" in ::getroottable()) )
 {
 	::_VS_DS_bExecOnce <- true;
 	::_VS_DS_bInitDone <- false;
@@ -628,7 +805,7 @@ if (::_VS_DS_bExecOnce)
 	// on map load
 	if ( time < TIMESTART )
 	{
-		::delay("::_VS_DS_Init()",TIMESTART-time,ENT);
+		::VS.EventQueue.AddEvent( ::_VS_DS_Init, TIMESTART-time, this );
 	}
 	// late execution
 	else
@@ -650,7 +827,6 @@ local ChatTeam = ::ScriptPrintMessageChatTeam;
 ::ChatTeam  <- function(i,s):(ChatTeam) return ChatTeam(i," "+s);
 ::Alert     <- ::ScriptPrintMessageCenterAll;
 ::AlertTeam <- ::ScriptPrintMessageCenterTeam;
-::ClearChat <- function():(Chat) for( local i = 9; i--; ) Chat(" ");
 
 ::txt <-
 {

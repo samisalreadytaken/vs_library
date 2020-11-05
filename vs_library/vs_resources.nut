@@ -28,15 +28,6 @@ local EVENTS = !!::Entities.FindByClassname(null,"logic_eventlistener");
 
 ::VS <-
 {
-	Log =
-	{
-		condition = false,
-		export = false,
-		file_prefix = "vs.log",
-		filter = "VL",
-		L = []
-	},
-
 	_reload = false
 }
 
@@ -49,7 +40,7 @@ local slots_default;
 	local slots_ent = ["DispatchOnPostSpawn","self","__vname","PrecacheCallChain","OnPostSpawnCallChain","__vrefs","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn"];
 
 	// root (vs_library)
-	local slots_VS = ["_xa9b2dfB7ffe","VS","DoEntFireByInstanceHandle","ClearChat","Chat","ChatTeam","txt","Alert","AlertTeam","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","ENT_SCRIPT","HPlayer","Ent","Entc","Quaternion","matrix3x4","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST","vs_library"];
+	local slots_VS = ["_xa9b2dfB7ffe","VS","DoEntFireByInstanceHandle","Chat","ChatTeam","txt","Alert","AlertTeam","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","ENT_SCRIPT","HPlayer","Ent","Entc","Quaternion","matrix3x4","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST","vs_library"];
 
 	local slots_root;
 
@@ -87,27 +78,6 @@ if( ::EntFireByHandle.getinfos().native )
 ::RAD2DEG <- 57.29577951; 				// 57.29577951308232087679
 // PI 									3.14159265358979323846
 // RAND_MAX 							0x7FFF
-
-if (!PORTAL2 && EVENTS){
-
-VS.Events <- delegate VS :
-{
-	hProxy = null,
-	flValidateTime = 0.0,
-	_SV = null
-}
-
-// array to store event data, user should never modify
-if( !("_xa9b2dfB7ffe" in getroottable()) )
-	::_xa9b2dfB7ffe <- [];
-
-if( !("OnGameEvent_player_spawn" in getroottable()) )
-	::OnGameEvent_player_spawn <- ::dummy;
-
-if( !("OnGameEvent_player_connect" in getroottable()) )
-	::OnGameEvent_player_connect <- ::dummy;
-
-}; // !PORTAL2 && EVENTS
 
 ::collectgarbage();
 

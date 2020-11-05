@@ -45,7 +45,7 @@ ________________________________
 | `table`               | `{}`                                                                                |
 | `array`               | `[]`                                                                                |
 | `closure`, `function` | function                                                                            |
-| `handle`              | Entity script handle                                                                |
+| `handle`,`CBaseEntity`| Entity script handle                                                                |
 | `Vector`, `vec3_t`    | `Vector(0,1,2)`                                                                     |
 | `QAngle`              | `Vector(0,1,2)`, `(pitch, yaw, roll)` Euler angle. Vector, **not a different type** |
 | `Quaternion`          | `Quaternion(0,1,2,3)`                                                               |
@@ -153,7 +153,6 @@ Included in `vs_library.nut`
 [`ChatTeam()`](#f_ChatTeam)  
 [`Alert()`](#f_Alert)  
 [`AlertTeam()`](#f_AlertTeam)  
-[`ClearChat()`](#f_ClearChat)  
 [`txt`](#f_txt)  
 [`VecToString()`](#f_VecToString)  
 [`VS.GetTickrate()`](#f_GetTickrate)  
@@ -171,6 +170,11 @@ Included in `vs_library.nut`
 [`VS.TraceLine.Ray()`](#f_Ray)  
 [`VS.TraceDir()`](#f_TraceDir)  
 [`VS.UniqueString()`](#f_UniqueString)  
+[`VS.EventQueue.Clear()`](#f_EventQueueClear)  
+[`VS.EventQueue.AddEvent()`](#f_EventQueueAddEvent)  
+[`VS.EventQueue.CancelEventsByInput()`](#f_EventQueueCancelEventsByInput)  
+[`VS.EventQueue.RemoveEvent()`](#f_EventQueueRemoveEvent)  
+[`VS.EventQueue.Dump()`](#f_EventQueueDump)  
 [`VS.arrayFind()`](#f_arrayFind)  
 [`VS.arrayApply()`](#f_arrayApply)  
 [`VS.arrayMap()`](#f_arrayMap)  
@@ -972,30 +976,6 @@ ________________________________
 
 ### [vs_utility](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_utility.nut)
 
-<details><summary>Snippet</summary>
-
-```cs
-// Reload the script file this is put in once again
-// Can be used to "apply" the const variables compiled from another file
-/*
-
-if(!("__reloading"in::getroottable()))::__reloading<-false;;if(::__reloading)delete::__reloading;else{local _=function(){};::__reloading=true;return::DoIncludeScript(_.getinfos().src,this)};;
-
-*/
-```
-
-</details>
-
-<details><summary>Snippet</summary>
-
-Paste the line below to the console to test target time -> server time conversion. Change `0.1` in the end to your time
-
-```cs
-script local _=function(i){delay("printl("+i+"+\" -> \"+(Time()-"+format("%.9f",Time())+"))",i.tofloat())}( 0.1 )
-```
-
-</details>
-
 ________________________________
 
 <a name="f_Ent"></a>
@@ -1028,23 +1008,7 @@ ________________________________
 ```cpp
 void delay(string exec, float time = 0.0, handle ent = ENT_SCRIPT, handle activator = null, handle caller = null)
 ```
-Execute `exec` in the scope of `ent`
-
-`delay( "SomeFunc()", 2.5 )`
-
-<details><summary>Details</summary>
-
-If you wish to delay the code in a specific entity scope, set the third parameter to the entity, or 'self'.
-
-If you wish to delay the code in a specific scope, you need to know the name of the table. Using `VS.DumpScope(VS.GetTableDir(tableInput))`, you can find in which table your desired scope is, and execute the code.
-
-You can use activators and callers to easily access entity handles
-
-```cs
-::delay("DoSomething(activator,caller)", 2.5, ::ENT_SCRIPT, hSomeEntity, hOtherEntity)
-```
-
-</details>
+Deprecated. Use [`VS.EventQueue.AddEvent`](#f_EventQueueAddEvent).
 
 ________________________________
 
@@ -1082,13 +1046,6 @@ ________________________________
 void AlertTeam(int team, string s)
 ```
 Shorter name for `ScriptPrintMessageCenterTeam`
-________________________________
-
-<a name="f_ClearChat"></a>
-```cpp
-void ClearChat()
-```
-Execute `Chat("")` 9 times
 ________________________________
 
 <a name="f_txt"></a>
@@ -1137,7 +1094,7 @@ bool VS::IsDedicatedServer()
 ```
 The initialisation of this function is asynchronous. It takes 6 seconds to finalise on map spawn auto-load, and 1-5 frames on manual execution on post map spawn. `VS.flCanCheckForDedicatedAfterSec` can be used for delayed initialisation needs.
 
-`delay("Init()", VS.flCanCheckForDedicatedAfterSec)`
+`VS.EventQueue.AddEvent( Init, VS.flCanCheckForDedicatedAfterSec, this )`
 ________________________________
 
 <a name="f_DrawEntityBBox"></a>
@@ -1293,6 +1250,66 @@ ________________________________
 string VS::UniqueString()
 ```
 UniqueString without `_` in the end
+________________________________
+
+<a name="f_EventQueueClear"></a>
+```cpp
+void VS::EventQueue::Clear()
+```
+Reset the queue.
+________________________________
+
+<a name="f_EventQueueAddEvent"></a>
+```cpp
+QueuedEvent_t VS::EventQueue::AddEvent( closure hFunc, float flDelay, table|array argv = null, handle activator = null, handle caller = null )
+```
+Add new function callback to the queue.
+
+`argv` can be a table for call environment (e.g. `this`), or an array for parameters to pass to the function call.
+
+The array parameter needs to have its first index as the call environment (e.g. `[this, "param1", "param2"]`).
+
+```cs
+function MyFunc()
+{
+	Msg("Message 1\n")
+}
+
+function MyFunc2( a, b, c )
+{
+	Msg(a + ", " + b + ", " + c + "\n")
+}
+
+VS.EventQueue.AddEvent( MyFunc, 2.0 )
+VS.EventQueue.AddEvent( MyFunc, 2.5, this )
+VS.EventQueue.AddEvent( Msg, 1.0, [null, "Message 2\n"] )
+VS.EventQueue.AddEvent( MyFunc2, 4.0, [this, "x", "y", "z"] )
+VS.EventQueue.AddEvent( function()
+{
+	Msg("Message 3\n")
+}, 0.5, this )
+```
+________________________________
+
+<a name="f_EventQueueCancelEventsByInput"></a>
+```cpp
+void VS::EventQueue::CancelEventsByInput( QueuedEvent_t input )
+```
+Remove events in queue by matching callback function.
+________________________________
+
+<a name="f_EventQueueRemoveEvent"></a>
+```cpp
+void VS::EventQueue::RemoveEvent( QueuedEvent_t input )
+```
+Remove event in queue.
+________________________________
+
+<a name="f_EventQueueDump"></a>
+```cpp
+void VS::EventQueue::Dump()
+```
+(debug) Dump events in the queue.
 ________________________________
 
 <a name="f_arrayFind"></a>

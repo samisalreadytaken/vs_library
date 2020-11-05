@@ -7,6 +7,15 @@
 //
 //-----------------------------------------------------------------------
 
+VS.Log <-
+{
+	enabled     = false,
+	export      = false,
+	file_prefix = "vs.log",
+	filter      = "VL",
+	L           = []
+}
+
 local L = ::VS.Log.L;
 
 function VS::Log::Add(s):(L)
@@ -23,7 +32,7 @@ if (PORTAL2){
 
 function VS::Log::Run()
 {
-	if( !enabled )
+	if ( !enabled )
 		return;
 
 	return _Start();
@@ -33,10 +42,10 @@ function VS::Log::Run()
 
 function VS::Log::Run()
 {
-	if( ::VS.IsDedicatedServer() )
+	if ( ::VS.IsDedicatedServer() )
 		::Msg("!!! VS.Log unavailable on dedicated servers\n");
 
-	if( !enabled )
+	if ( !enabled )
 		return;
 
 	return _Start();
@@ -49,24 +58,26 @@ function VS::Log::Run()
 //-----------------------------------------------------------------------
 
 local Msg = ::Msg;
-local delay = ::delay;
+local delay = ::VS.EventQueue.AddEvent;
 local flFrameTime = ::FrameTime();
+local developer = ::developer;
+local clamp = ::clamp;
 
-function VS::Log::_Print(f):(Msg,L,delay,flFrameTime)
+function VS::Log::_Print():(Msg,L,delay,flFrameTime,clamp)
 {
 	local t = filter, p = Msg, L = L;
 
-	if( !f )
-		for( local i = nC; i < nN; ++i )p( L[i] );
+	if ( !export )
+		for ( local i = nC; i < nN; ++i ) p( L[i] );
 	else
-		for( local i = nC; i < nN; ++i )p( t + L[i] );
+		for ( local i = nC; i < nN; ++i ) p( t + L[i] );
 
 	nC += nD;
-	nN = ::clamp( nN + nD, 0, nL );
+	nN = clamp( nN + nD, 0, nL );
 
-	if( nC >= nN )
+	if ( nC >= nN )
 	{
-		if( f ) _Stop();
+		if ( export ) _Stop();
 		nL = null;
 		nD = null;
 		nC = null;
@@ -74,10 +85,10 @@ function VS::Log::_Print(f):(Msg,L,delay,flFrameTime)
 		return;
 	};
 
-	return delay("::VS.Log._Print("+f+")", flFrameTime);
+	return delay( _Print, flFrameTime, this );
 }
 
-function VS::Log::_Start():(flFrameTime)
+function VS::Log::_Start():(developer,flFrameTime)
 {
 	nL <- L.len();
 	nD <- 2000;
@@ -85,11 +96,11 @@ function VS::Log::_Start():(flFrameTime)
 	nC <- 0;
 	nN <- ::clamp( nD, 0, nL );
 
-	if( export )
+	if ( export )
 	{
 		local file = file_prefix[0] == ':' ? file_prefix.slice(1) : file_prefix + "_" + ::VS.UniqueString();
-		_d <- ::developer();
-		::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\""+filter+"\";con_filter_text\"\";con_logfile\""+file+".log\";script delay(\"::VS.Log._Print(1)\","+flFrameTime*4.0+")");
+		_d <- developer();
+		::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\"" + filter + "\";con_filter_text\"\";con_logfile\"" + file + ".log\";script VS.EventQueue.AddEvent(VS.Log._Print," + flFrameTime*4.0 + ",VS.Log)");
 		return file;
 	}
 	else
