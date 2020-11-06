@@ -1261,7 +1261,7 @@ ________________________________
 
 <a name="f_EventQueueAddEvent"></a>
 ```cpp
-QueuedEvent_t VS::EventQueue::AddEvent( closure hFunc, float flDelay, table|array argv = null, handle activator = null, handle caller = null )
+EventQueuePrioritizedEvent_t VS::EventQueue::AddEvent( closure hFunc, float flDelay, table|array argv = null, handle activator = null, handle caller = null )
 ```
 Add new function callback to the queue.
 
@@ -1293,14 +1293,14 @@ ________________________________
 
 <a name="f_EventQueueCancelEventsByInput"></a>
 ```cpp
-void VS::EventQueue::CancelEventsByInput( QueuedEvent_t input )
+void VS::EventQueue::CancelEventsByInput( closure input )
 ```
 Remove events in queue by matching callback function.
 ________________________________
 
 <a name="f_EventQueueRemoveEvent"></a>
 ```cpp
-void VS::EventQueue::RemoveEvent( QueuedEvent_t input )
+void VS::EventQueue::RemoveEvent( EventQueuePrioritizedEvent_t input )
 ```
 Remove event in queue.
 ________________________________

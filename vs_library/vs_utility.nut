@@ -640,9 +640,10 @@ VS.EventQueue.RemoveEvent <- function( ev )
 VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = null, caller = null ) :
 ( ENT, AddEvent, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime )
 {
+	local curtime = curtime();
 	local event = [null,null,null,null,null,null];
 
-	event[ m_flFireTime ] = curtime() + flDelay;
+	event[ m_flFireTime ] = curtime + flDelay;
 	event[ m_hFunc ] = hFunc;
 	event[ m_activator ] = activator;
 	event[ m_caller ] = caller;
@@ -673,6 +674,9 @@ VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = nul
 	}
 	m_Events.insert( v, event );
 
+	if ( m_flLastQueue == curtime )
+		return event.weakref(); m_flLastQueue = curtime;
+
 	if ( (m_flNextQueue == -1.0) || (flDelay < m_flNextQueue) )
 	{
 		AddEvent( ENT, "RunScriptCode", "::VS.EventQueue.ServiceEvents()", 0.0, activator, caller );
@@ -687,10 +691,6 @@ VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = nul
 VS.EventQueue.ServiceEvents <- function() : ( ENT, AddEvent, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime )
 {
 	local curtime = curtime();
-
-	if ( m_flLastQueue == curtime )
-		return; m_flLastQueue = curtime;
-
 	local ev;
 	while ( ev = m_Events[0] )
 	{
