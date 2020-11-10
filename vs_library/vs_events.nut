@@ -13,13 +13,13 @@ VS.Events <- delegate VS :
 }
 
 // array to store event data, user should never modify
-if ( !("_xa9b2dfB7ffe" in getroottable()) )
+if ( !("_xa9b2dfB7ffe" in ROOT) )
 	::_xa9b2dfB7ffe <- [];
 
-if ( !("OnGameEvent_player_spawn" in getroottable()) )
+if ( !("OnGameEvent_player_spawn" in ROOT) )
 	::OnGameEvent_player_spawn <- ::dummy;
 
-if ( !("OnGameEvent_player_connect" in getroottable()) )
+if ( !("OnGameEvent_player_connect" in ROOT) )
 	::OnGameEvent_player_connect <- ::dummy;
 
 }; // !PORTAL2 && EVENTS

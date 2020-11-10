@@ -103,7 +103,7 @@ class::VS.TraceLine
 //-----------------------------------------------------------------------
 local CTrace = ::VS.TraceLine;
 
-function VS::TraceDir( v1, vDir, f = ::MAX_TRACE_LENGTH, hEnt = null ):(CTrace)
+function VS::TraceDir( v1, vDir, f = MAX_TRACE_LENGTH, hEnt = null ):(CTrace)
 {
 	return CTrace( v1, v1 + (vDir * f), hEnt );
 }
@@ -415,11 +415,13 @@ function VS::GetStackInfo( deepprint = false, printall = false )
 	::print(" --- STACKINFO ----------------\n");
 }
 
+local Stack = ::getstackinfos;
+
 // return caller table
-VS.GetCaller <- ::compilestring("return(getstackinfos(3).locals[\"this\"])");
+function VS::GetCaller():(Stack) return Stack(3).locals["this"];
 
 // (DEBUG) return caller function as string
-VS.GetCallerFunc <- ::compilestring("return(getstackinfos(3).func)");
+function VS::GetCallerFunc():(Stack) return Stack(3).func;
 
 //-----------------------------------------------------------------------
 // Input  : table
@@ -440,7 +442,7 @@ function VS::GetTableDir(input)
 }
 
 // exclusive recursion function
-function VS::_f627f40d21a6(bF, t, l = ::getroottable())
+function VS::_f627f40d21a6(bF, t, l = ROOT)
 {
 	foreach(v, u in l)
 		if (typeof u == "table")
@@ -474,7 +476,7 @@ function VS::FindVarByName(S)
 }
 
 // exclusive recursion function
-function VS::_fb3k55Ir91t7(t, l = ::getroottable())
+function VS::_fb3k55Ir91t7(t, l = ROOT)
 {
 	if (t in l)
 		return l[t];
@@ -504,7 +506,7 @@ function VS::GetVarName(v)
 }
 
 // exclusive recursion function
-function VS::_fb3k5S1r91t7(t, i, s = ::getroottable())
+function VS::_fb3k5S1r91t7(t, i, s = ROOT)
 {
 	foreach(k, v in s)
 	{
@@ -520,17 +522,18 @@ function VS::_fb3k5S1r91t7(t, i, s = ::getroottable())
 	}
 }
 
-if ( ::ENT_SCRIPT <- ::Entc("worldspawn") )
+local World;
 {
-	::ENT_SCRIPT.ValidateScriptScope();
-	slots_default.append(::VS.GetVarName(::ENT_SCRIPT.GetScriptScope()));
+	local e = Entc("worldspawn");
+	if ( !e )
+	{
+		Msg("ERROR: could not find worldspawn\n");
+		e = VS.CreateEntity("soundent");
+	};
+	if ( e.ValidateScriptScope() )
+		slots_default.append( e.GetScriptScope().__vname );
+	World = e;
 }
-else
-{
-	(::ENT_SCRIPT<-::VS.CreateEntity("soundent")).ValidateScriptScope();
-	::VS.ENT_SCRIPT <- ::ENT_SCRIPT;
-	::Msg("ERROR: Could not find worldspawn\n");
-};
 
 //-----------------------------------------------------------------------
 // Deprecated. Use VS.EventQueue.AddEvent instead.
@@ -545,7 +548,7 @@ else
 // Each string is allocated and added to the game string pool.
 //-----------------------------------------------------------------------
 local AddEvent = ::DoEntFireByInstanceHandle;
-::delay <- function( X, T = 0.0, E = ::ENT_SCRIPT, A = null, C = null ):(AddEvent)
+::delay <- function( X, T = 0.0, E = World, A = null, C = null ):(AddEvent)
 	return AddEvent( E, "RunScriptCode", ""+X, T, A, C );
 
 
@@ -569,7 +572,6 @@ local m_Env        = 3;
 local m_activator  = 4;
 local m_caller     = 5;
 local curtime = ::Time;
-local ENT=::ENT_SCRIPT;
 
 VS.EventQueue.Dump <- function() : ( m_flFireTime, m_hFunc, m_argv, m_Env, m_activator, m_caller, curtime )
 {
@@ -638,7 +640,7 @@ VS.EventQueue.RemoveEvent <- function( ev )
 }.bindenv(VS.EventQueue);
 
 VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = null, caller = null ) :
-( ENT, AddEvent, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime )
+( World, AddEvent, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime, ROOT )
 {
 	local curtime = curtime();
 	local event = [null,null,null,null,null,null];
@@ -659,7 +661,7 @@ VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = nul
 	}
 	else
 	{
-		event[ m_Env ] = GetCaller();
+		event[ m_Env ] = ROOT;
 	};;
 
 	local i = 0, v = m_Events.len() - 1;
@@ -679,7 +681,7 @@ VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = nul
 
 	if ( (m_flNextQueue == -1.0) || (flDelay < m_flNextQueue) )
 	{
-		AddEvent( ENT, "RunScriptCode", "::VS.EventQueue.ServiceEvents()", 0.0, activator, caller );
+		AddEvent( World, "RunScriptCode", "::VS.EventQueue.ServiceEvents()", 0.0, activator, caller );
 		m_flNextQueue = flDelay;
 	};
 	// SetNextThink( 1 );
@@ -688,7 +690,7 @@ VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = nul
 
 }.bindenv(VS.EventQueue);
 
-VS.EventQueue.ServiceEvents <- function() : ( ENT, AddEvent, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime )
+VS.EventQueue.ServiceEvents <- function() : ( World, AddEvent, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime )
 {
 	local curtime = curtime();
 	local ev;
@@ -710,7 +712,7 @@ VS.EventQueue.ServiceEvents <- function() : ( ENT, AddEvent, m_flFireTime, m_hFu
 		{
 			local next = f - curtime;
 			m_flNextQueue = next;
-			AddEvent( ENT, "RunScriptCode", "::VS.EventQueue.ServiceEvents()", next, ev[m_activator], ev[m_caller] );
+			AddEvent( World, "RunScriptCode", "::VS.EventQueue.ServiceEvents()", next, ev[m_activator], ev[m_caller] );
 			return;
 		};
 	}
@@ -792,7 +794,7 @@ local _TIMEOUT = TIMEOUT+FrameTime()*4;
 }
 
 // extra protection
-if ( !("_VS_DS_bExecOnce" in ::getroottable()) )
+if ( !("_VS_DS_bExecOnce" in ROOT) )
 {
 	::_VS_DS_bExecOnce <- true;
 	::_VS_DS_bInitDone <- false;

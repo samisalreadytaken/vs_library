@@ -6,15 +6,15 @@
 // Easy glow handling library.
 // Can be used on any entity that has a model.
 //
-// ::Glow.Set(hPlayer, color, nType, flDistance)
-// ::Glow.Disable(hPlayer)
+// ::Glow.Set( hPlayer, color, nType, flDistance )
+// ::Glow.Disable( hPlayer )
 //
 // ::Glow.DEBUG = true
 //
 
 IncludeScript("vs_library");
 
-if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow))
+if( !("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow) )
 {
 	local AddEvent = ::DoEntFireByInstanceHandle;
 	local Create = ::CreateProp;
@@ -33,50 +33,50 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 		//          float distance
 		// Output : handle glow_ent
 		//-----------------------------------------------------------------------
-		function Set(src,color,style,dist):(Create)
+		function Set( src, color, style, dist ) : (Create)
 		{
 			local glow = Get(src);
 
-			if(glow)
+			if (glow)
 			{
-				if(DEBUG)Msg("Glow::Set: Updating glow ["+src.entindex()+"]\n");
+				if (DEBUG) Msg("Glow::Set: Updating glow ["+src.entindex()+"]\n");
 			}
 			else
 			{
-				if(DEBUG)Msg("Glow::Set: Setting glow ["+src.entindex()+"]\n");
+				if (DEBUG) Msg("Glow::Set: Setting glow ["+src.entindex()+"]\n");
 
 				foreach( e in m_list ) if(e)
-					if(!e.GetMoveParent())
+					if( !e.GetMoveParent() )
 					{
 						glow = e;
 						break;
 					};;
 
-				if(glow)
+				if (glow)
 				{
-					glow.SetModel(src.GetModelName());
+					glow.SetModel( src.GetModelName() );
 				}
 				else
 				{
-					glow = Create("prop_dynamic_glow", src.GetOrigin(), src.GetModelName(), 0);
-					m_list.append(glow.weakref());
+					glow = Create( "prop_dynamic_glow", src.GetOrigin(), src.GetModelName(), 0 );
+					m_list.append( glow.weakref() );
 				};
 
-				glow.__KeyValueFromInt("rendermode", 6);
-				glow.__KeyValueFromInt("renderamt", 0);
-				::VS.SetParent(glow, src);
-				::VS.MakePersistent(glow);
+				glow.__KeyValueFromInt( "rendermode", 6 );
+				glow.__KeyValueFromInt( "renderamt", 0 );
+				::VS.SetParent( glow, src );
+				::VS.MakePersistent( glow );
 			};
 
 			if( typeof color == "string" )
-				glow.__KeyValueFromString("glowcolor", color);
+				glow.__KeyValueFromString( "glowcolor", color );
 			else if( typeof color == "Vector" )
-				glow.__KeyValueFromVector("glowcolor", color);
+				glow.__KeyValueFromVector( "glowcolor", color );
 			else throw "parameter 2 has an invalid type '" + typeof color + "' ; expected 'string|Vector'";;
-			glow.__KeyValueFromInt("glowstyle", style);
-			glow.__KeyValueFromFloat("glowdist", dist);
-			glow.__KeyValueFromInt("glowenabled", 1);
-			glow.__KeyValueFromInt("effects", 18433); // EF_DEFAULT
+			glow.__KeyValueFromInt( "glowstyle", style );
+			glow.__KeyValueFromFloat( "glowdist", dist );
+			glow.__KeyValueFromInt( "glowenabled", 1 );
+			glow.__KeyValueFromInt( "effects", 18433 ); // EF_DEFAULT
 
 			return glow;
 		}
@@ -87,22 +87,22 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 		// Input  : handle src_ent
 		// Output : handle glow_ent
 		//-----------------------------------------------------------------------
-		function Disable(src):(AddEvent)
+		function Disable( src ) : (AddEvent)
 		{
 			local glow = Get(src);
 
-			if(glow)
+			if (glow)
 			{
-				glow.__KeyValueFromInt("effects", 18465); // EF_DEFAULT|EF_NODRAW
-				::VS.SetParent(glow, null);
-				AddEvent(glow,"setglowdisabled","",0.0,null,null);
+				glow.__KeyValueFromInt( "effects", 18465 ); // EF_DEFAULT|EF_NODRAW
+				::VS.SetParent( glow, null );
+				AddEvent( glow, "SetGlowDisabled", "", 0.0, null, null );
 				// glow.SetAbsOrigin(MAX_COORD_VEC);
 
-				if(DEBUG)Msg("Glow::Disable: Disabled glow ["+src.entindex()+"]\n");
+				if (DEBUG) Msg("Glow::Disable: Disabled glow ["+src.entindex()+"]\n");
 			}
 			else
 			{
-				if(DEBUG)Msg("Glow::Disable: No glow found ["+src.entindex()+"]\n");
+				if (DEBUG) Msg("Glow::Disable: No glow found ["+src.entindex()+"]\n");
 			};
 
 			return glow;
@@ -114,7 +114,7 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 		// Input  : handle src_ent
 		// Output : handle glow_ent
 		//-----------------------------------------------------------------------
-		function Get(src)
+		function Get( src )
 		{
 			if( !src || !src.GetModelName().len() )
 				throw "Glow: Invalid source entity";
@@ -122,7 +122,7 @@ if(!("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Glow
 			for( local i = m_list.len(); i--; )
 			{
 				local g = m_list[i];
-				if(g)
+				if (g)
 				{
 					if( g.GetMoveParent() == src )
 						return g;

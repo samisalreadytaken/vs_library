@@ -13,14 +13,14 @@ local AddEvent = ::DoEntFireByInstanceHandle;
 	return AddEvent( target, action+"", value+"", delay, activator, caller );
 }
 
-::PrecacheModel <- function(str)
+::PrecacheModel <- function(s) : (World)
 {
-	::ENT_SCRIPT.PrecacheModel(str);
+	World.PrecacheModel(s);
 }
 
-::PrecacheScriptSound <- function(str)
+::PrecacheScriptSound <- function(s) : (World)
 {
-	::ENT_SCRIPT.PrecacheSoundScript(str); // identical to PrecacheScriptSound on server
+	World.PrecacheSoundScript(s); // identical to PrecacheScriptSound on server
 }
 
 //-----------------------------------------------------------------------

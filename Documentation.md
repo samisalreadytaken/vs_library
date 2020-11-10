@@ -1006,7 +1006,7 @@ ________________________________
 
 <a name="f_delay"></a>
 ```cpp
-void delay(string exec, float time = 0.0, handle ent = ENT_SCRIPT, handle activator = null, handle caller = null)
+void delay(string exec, float time = 0.0, handle ent = World, handle activator = null, handle caller = null)
 ```
 Deprecated. Use [`VS.EventQueue.AddEvent`](#f_EventQueueAddEvent).
 
@@ -1612,25 +1612,34 @@ player_eye_reference <- VS.CreateMeasure("player_targetname")
 
 If `measureEye` is false then measure `targetTargetname` and set `refTargetname` as reference (entity to move)
 
+Starting to measure is asynchronous, you cannot measure the angles in the same frame as creating or setting the measure entity.
+
 <details><summary>Example</summary>
 
 Example get player eye angles:
 ```lua
-hPlayer <- VS.GetLocalPlayer()
-hPlayerEye <- VS.CreateMeasure(hPlayer.GetName())
-
-printl("Player eye angles: " + VecToString(hPlayerEye.GetAngles()))
-```
-
-Example check to prevent spawning if the entities are already spawned
-```lua
-if( !Ent("vs.ref_*") )
+function InitEntities()
 {
-	hPlayerEye <- VS.CreateMeasure( "playername", null, true )
+	if ( "hPlayerEye" in this && hPlayerEye )
+		return
+
+	hPlayer <- VS.GetLocalPlayer().weakref()
+	hPlayerEye <- VS.CreateMeasure( hPlayer.GetName() ).weakref()
+}
+
+function PrintEyeAngles()
+{
+	printl( "Player eye angles: " + VecToString( hPlayerEye.GetAngles() ) )
 }
 ```
 
-Or being specific
+Init now, and print in the next frame
+```cs
+InitEntities()
+VS.EventQueue.AddEvent( PrintEyeAngles, 0, this )
+```
+
+Example check to prevent spawning if the entities are already spawned
 ```lua
 if( !Ent("refname") )
 {
@@ -1649,7 +1658,7 @@ if( !("hPlayerEye" in getroottable()) )
 You can disable the reference entity to stop the measure. The reference will keep the last measured values.
 
 ```lua
-EntFireByHandle( hPlayerEye, "disable" )
+EntFireByHandle( hPlayerEye, "Disable" )
 ```
 
 </details>

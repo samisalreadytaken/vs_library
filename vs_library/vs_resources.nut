@@ -7,7 +7,7 @@ local _ = ::getroottable();
 
 // Don't load if the library is already loaded
 if( "VS" in _ && typeof::VS == "table" &&
-    "MAX_COORD_FLOAT" in _ && !::VS._reload && ::ENT_SCRIPT.IsValid() )
+    "MAX_COORD_FLOAT" in _ && !::VS._reload )
 	return;;
 
 local __ = function(){}
@@ -28,6 +28,7 @@ local EVENTS = !!::Entities.FindByClassname(null,"logic_eventlistener");
 
 ::VS <-
 {
+	version = "vs_library v#.#.#",
 	_reload = false
 }
 
@@ -40,7 +41,7 @@ local slots_default;
 	local slots_ent = ["DispatchOnPostSpawn","self","__vname","PrecacheCallChain","OnPostSpawnCallChain","__vrefs","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn"];
 
 	// root (vs_library)
-	local slots_VS = ["_xa9b2dfB7ffe","VS","DoEntFireByInstanceHandle","Chat","ChatTeam","txt","Alert","AlertTeam","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","ENT_SCRIPT","HPlayer","Ent","Entc","Quaternion","matrix3x4","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST","vs_library"];
+	local slots_VS = ["_xa9b2dfB7ffe","VS","DoEntFireByInstanceHandle","Chat","ChatTeam","txt","Alert","AlertTeam","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","HPlayer","Ent","Entc","Quaternion","matrix3x4","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
 
 	local slots_root;
 
@@ -70,8 +71,8 @@ if( ::print.getinfos().native )
 if( ::EntFireByHandle.getinfos().native )
 	::DoEntFireByInstanceHandle <- ::EntFireByHandle;
 
+local ROOT = getroottable();
 ::CONST <- getconsttable();
-::vs_library <- "vs_library v#.#.#";
 ::MAX_COORD_FLOAT <- 16384.0;
 ::MAX_TRACE_LENGTH <- 56755.84086241; 	// sqrt(0x0003) * 0x0002 * 0x4000 = 56755.84086241697115430736
 ::DEG2RAD <- 0.01745329;				// 0.01745329251994329576

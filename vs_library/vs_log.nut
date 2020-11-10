@@ -12,7 +12,7 @@ VS.Log <-
 	enabled     = false,
 	export      = false,
 	file_prefix = "vs.log",
-	filter      = "VL",
+	filter      = "L",
 	L           = []
 }
 
@@ -61,9 +61,10 @@ local Msg = ::Msg;
 local delay = ::VS.EventQueue.AddEvent;
 local flFrameTime = ::FrameTime();
 local developer = ::developer;
+local ClientCommand = ::SendToConsole;
 local clamp = ::clamp;
 
-function VS::Log::_Print():(Msg,L,delay,flFrameTime,clamp)
+function VS::Log::_Print() : ( Msg, L, delay, clamp )
 {
 	local t = filter, p = Msg, L = L;
 
@@ -85,32 +86,32 @@ function VS::Log::_Print():(Msg,L,delay,flFrameTime,clamp)
 		return;
 	};
 
-	return delay( _Print, flFrameTime, this );
+	return delay( _Print, 0.0, this );
 }
 
-function VS::Log::_Start():(developer,flFrameTime)
+function VS::Log::_Start() : ( ClientCommand, developer, clamp, flFrameTime )
 {
 	nL <- L.len();
 	nD <- 2000;
 	// nS <- ceil( nL / nD.tofloat() );
 	nC <- 0;
-	nN <- ::clamp( nD, 0, nL );
+	nN <- clamp( nD, 0, nL );
 
 	if ( export )
 	{
 		local file = file_prefix[0] == ':' ? file_prefix.slice(1) : file_prefix + "_" + ::VS.UniqueString();
 		_d <- developer();
-		::SendToConsole("developer 0;con_filter_enable 1;con_filter_text_out\"" + filter + "\";con_filter_text\"\";con_logfile\"" + file + ".log\";script VS.EventQueue.AddEvent(VS.Log._Print," + flFrameTime*4.0 + ",VS.Log)");
+		ClientCommand("developer 0;con_filter_enable 1;con_filter_text_out\"" + filter + "\";con_filter_text\"\";con_logfile\"" + file + ".log\";script VS.EventQueue.AddEvent(VS.Log._Print," + flFrameTime*4.0 + ",VS.Log)");
 		return file;
 	}
 	else
 	{
 		// Do it all on client so I can remove the DS exception
-		::SendToConsole("script VS.Log._Print(0)");
+		ClientCommand("script VS.Log._Print(0)");
 	};
 }
 
-function VS::Log::_Stop()
+function VS::Log::_Stop():(ClientCommand)
 {
-	::SendToConsole("con_logfile\"\";con_filter_text_out\"\";con_filter_text\"\";con_filter_enable 0;developer "+_d);
+	ClientCommand("con_logfile\"\";con_filter_text_out\"\";con_filter_text\"\";con_filter_enable 0;developer "+_d);
 }
