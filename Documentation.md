@@ -188,7 +188,6 @@ Included in `vs_library.nut`
 [`VS.GetTableDir()`](#f_GetTableDir)  
 [`VS.FindVarByName()`](#f_FindVarByName)  
 [`VS.GetVarName()`](#f_GetVarName)  
-[`VS.ForceReload()`](#f_ForceReload)  
 
 
 ### [vs_entity](#vs_entity-1)
@@ -1289,6 +1288,12 @@ VS.EventQueue.AddEvent( function()
 	Msg("Message 3\n")
 }, 0.5, this )
 ```
+
+The internal function can also be called with a premade event object.
+
+```cs
+VS.EventQueue.AddEventInternal( event, delay, curtime )
+```
 ________________________________
 
 <a name="f_EventQueueCancelEventsByInput"></a>
@@ -1525,13 +1530,6 @@ printl( VS.GetVarName(somefunc) )
 
 </details>
 
-________________________________
-
-<a name="f_ForceReload"></a>
-```cpp
-void VS::ForceReload()
-```
-Force reload the library. This may break some scripts.
 ________________________________
 
 ### [vs_entity](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_entity.nut)
@@ -1882,7 +1880,7 @@ handle VS::GetLocalPlayer(bool)
 ```
 return the only / the first connected player in the server
 
-if param is true, add to root:  
+if param is true, add to root:
 `handle HPlayer`: player handle
 ________________________________
 
@@ -1890,6 +1888,8 @@ ________________________________
 ```cpp
 handle VS::GetPlayerByIndex(int entindex)
 ```
+`PlayerInstanceFromIndex`
+
 Not to be confused with [`GetPlayerByUserid`](#f_GetPlayerByUserid)
 ________________________________
 
@@ -1897,7 +1897,7 @@ ________________________________
 ```cpp
 handle VS::GetEntityByIndex(int entindex, string classname = null)
 ```
-
+`EntIndexToHScript`
 ________________________________
 
 <a name="f_IsPointSized"></a>
@@ -1946,7 +1946,7 @@ ________________________________
 ```cpp
 void VS::ForceValidateUserid(handle player)
 ```
-if something has gone wrong with automatic validation, force add userid. 
+if something has gone wrong with automatic validation, force add userid.
 
 Calling multiple times in a frame will cause problems; either delay, or use ValidateUseridAll.
 ________________________________

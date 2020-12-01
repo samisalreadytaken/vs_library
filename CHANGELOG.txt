@@ -3,6 +3,10 @@
 
 --------------------------------
 
+2020-12-01 [v2.39.4]
+- Improved performance on EventQueue
+- Removed ForceReload. It can be replicated with: `VS._reload = true; IncludeScript("vs_library")`
+
 2020-11-14 [v2.39.3]
 - Removed ENT_SCRIPT as it is no longer needed since 2.39.0
 

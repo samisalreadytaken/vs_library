@@ -309,6 +309,7 @@ function VS::CreateEntity( classname, keyvalues = null, preserve = false ):(Enti
 	//   e.GetOrigin()
 	//
 	// So, the user has to manage this themselves.
+	//
 
 	// return ent.weakref();
 }
@@ -552,6 +553,9 @@ function VS::GetLocalPlayer( bAddGlobal = true )
 	return e;
 }
 
+//-----------------------------------------------------------------------
+// PlayerInstanceFromIndex
+//-----------------------------------------------------------------------
 function VS::GetPlayerByIndex( entindex ):(Entities)
 {
 	local e;
@@ -566,6 +570,9 @@ function VS::GetPlayerByIndex( entindex ):(Entities)
 
 }; // PORTAL2
 
+//-----------------------------------------------------------------------
+// EntIndexToHScript
+//-----------------------------------------------------------------------
 function VS::GetEntityByIndex( entindex, classname = "*" ):(Entities)
 {
 	local e;

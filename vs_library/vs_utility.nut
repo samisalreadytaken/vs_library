@@ -295,7 +295,7 @@ function VS::arrayMap( arr, func ):(array)
 //          bool [ --- ]
 //          integer [ indent ]
 //-----------------------------------------------------------------------
-function VS::DumpScope( table, printall = false, deepprint = true, guides = true, depth = 0 ):(slots_default)
+function VS::DumpScope( table, printall = false, deepprint = true, guides = true, depth = 0 ):(_default)
 {
 	local indent = function(count) for( local i = count; i--; ) ::print("   ");
 	if ( guides ) ::print(" ------------------------------\n");
@@ -304,7 +304,7 @@ function VS::DumpScope( table, printall = false, deepprint = true, guides = true
 		foreach( key, val in table )
 		{
 			local isdefault = false;
-			if ( !printall ){ foreach( k in slots_default ) if ( key == k ) isdefault = true }
+			if ( !printall ){ foreach( k in _default ) if ( key == k ) isdefault = true }
 			else if ( key == "VS" || key == "Documentation" ) isdefault = true;;
 			if ( !isdefault )
 			{
@@ -531,7 +531,7 @@ local World;
 		e = VS.CreateEntity("soundent");
 	};
 	if ( e.ValidateScriptScope() )
-		slots_default.append( e.GetScriptScope().__vname );
+		_default.append( e.GetScriptScope().__vname );
 	World = e;
 }
 
@@ -559,25 +559,27 @@ local AddEvent = ::DoEntFireByInstanceHandle;
 {
 VS.EventQueue <- delegate VS :
 {
-	m_Events      = [null],
 	m_flNextQueue = -1.0,
 	m_flLastQueue = -1.0
 }
 
 // enum
-local m_flFireTime = 0;
-local m_hFunc      = 1;
-local m_argv       = 2;
-local m_Env        = 3;
-local m_activator  = 4;
-local m_caller     = 5;
+local m_pNext      = 0;
+local m_flFireTime = 1;
+local m_pPrev      = 2;
+local m_hFunc      = 3;
+local m_argv       = 4;
+local m_Env        = 5;
+local m_activator  = 6;
+local m_caller     = 7;
 local curtime = ::Time;
 
-VS.EventQueue.Dump <- function() : ( m_flFireTime, m_hFunc, m_argv, m_Env, m_activator, m_caller, curtime )
-{
-	if ( !("m_Events" in this) )
-		return Msg("VS::EventQueue::Dump: FAILED\n");
+local m_Events     = [null,null];
+m_Events[ m_flFireTime ] = (-0x7FFFFFFF).tofloat();
 
+VS.EventQueue.Dump <- function() :
+( m_Events, m_flFireTime, m_pNext, m_hFunc, m_argv, m_Env, m_activator, m_caller, curtime )
+{
 	local get = function(i)
 	{
 		if ( i == null )
@@ -590,60 +592,114 @@ VS.EventQueue.Dump <- function() : ( m_flFireTime, m_hFunc, m_argv, m_Env, m_act
 	}
 
 	Msg( "VS::EventQueue::Dump: " + curtime() + " : next(" + m_flNextQueue + "), last(" + m_flLastQueue + ")\n" );
-	for ( local i = 0, l = m_Events.len() - 1; i < l; ++i )
+	for ( local ev = m_Events; ev = ev[ m_pNext ]; )
 	{
-		local ev = m_Events[i];
 		Msg(format( "   (%.2f) func '%s', env '%s', activator '%s', caller '%s'\n",
 			ev[m_flFireTime],
-			get(ev[m_hFunc]),
-			get(ev[m_Env]),
-			get(ev[m_activator]),
-			get(ev[m_caller]) ));
+			get( ev[m_hFunc] ),
+			get( ((typeof ev[m_argv] == "array") && ev[m_argv].len()) ? ev[m_argv][0] : ev[m_Env] ),
+			get( ev[m_activator] ),
+			get( ev[m_caller] ) ));
 	}
 	Msg( "VS::EventQueue::Dump: end.\n" );
 
 }.bindenv(VS.EventQueue);
 
-VS.EventQueue.Clear <- function()
+VS.EventQueue.Clear <- function() : ( m_Events, m_pNext, m_pPrev )
 {
-	m_Events.clear();
-	m_Events.append(null);
+	local ev = m_Events[ m_pNext ];
+	while ( ev )
+	{
+		local next = ev[ m_pNext ];
+		ev[ m_pNext ] = null;
+		ev[ m_pPrev ] = null;
+		ev = next;
+	}
+	m_Events[ m_pNext ] = null;
 	m_flNextQueue = -1.0;
 	m_flLastQueue = -1.0;
 
 }.bindenv(VS.EventQueue);
 
-VS.EventQueue.CancelEventsByInput <- function( f ) : ( m_hFunc )
+VS.EventQueue.CancelEventsByInput <- function( f ) : ( m_Events, m_pNext, m_pPrev, m_hFunc )
 {
-	for ( local i = m_Events.len() - 1; i--; )
+	local ev = m_Events;
+	while ( ev = ev[ m_pNext ] )
 	{
-		if ( f == m_Events[i][m_hFunc] )
+		if ( f == ev[ m_hFunc ] )
 		{
-			m_Events.remove(i);
+			ev[ m_pPrev ][ m_pNext ] = ev[ m_pNext ];
+			if ( ev[ m_pNext ] )
+				ev[ m_pNext ][ m_pPrev ] = ev[ m_pPrev ];
 		};
 	}
+
+	if ( !m_Events[m_pNext] )
+		m_flNextQueue = -1.0;
+
 }.bindenv(VS.EventQueue);
 
-VS.EventQueue.RemoveEvent <- function( ev )
+VS.EventQueue.RemoveEvent <- function( ev ) : ( m_Events, m_pNext, m_pPrev )
 {
 	if ( typeof ev == "weakref" )
 		ev = ev.ref();
 
-	for ( local i = m_Events.len() - 1; i--; )
+	local pe = m_Events;
+	while ( pe = pe[ m_pNext ] )
 	{
-		if ( ev == m_Events[i] )
+		if ( ev == pe )
 		{
-			m_Events.remove(i);
+			ev[ m_pPrev ][ m_pNext ] = ev[ m_pNext ];
+			if ( ev[ m_pNext ] )
+				ev[ m_pNext ][ m_pPrev ] = ev[ m_pPrev ];
+
+			if ( !m_Events[m_pNext] )
+				m_flNextQueue = -1.0;
+
 			return;
 		};
 	}
 }.bindenv(VS.EventQueue);
 
+VS.EventQueue.AddEventInternal <- function( event, flDelay, curtime ) :
+( World, AddEvent, m_Events, m_pNext, m_pPrev, m_flFireTime, m_activator, m_caller )
+{
+	local ev = m_Events;
+	while ( ev[ m_pNext ] )
+	{
+		if ( event[ m_flFireTime ] < ev[ m_pNext ][ m_flFireTime ] )
+		{
+			break;
+		};
+		ev = ev[ m_pNext ];
+	}
+
+	event[ m_pNext ] = ev[ m_pNext ];
+	event[ m_pPrev ] = ev;
+	ev[ m_pNext ] = event;
+
+	if ( m_flLastQueue != curtime )
+	{
+		m_flLastQueue = curtime;
+
+		if ( (m_flNextQueue == -1.0) || (flDelay < m_flNextQueue) )
+		{
+			AddEvent( World, "RunScriptCode", "::VS.EventQueue.ServiceEvents()", 0.0, event[m_activator], event[m_caller] );
+			m_flNextQueue = flDelay;
+		};
+	};
+
+	return event.weakref();
+
+}.bindenv(VS.EventQueue);
+
+local AddEventInternal = VS.EventQueue.AddEventInternal;
+
 VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = null, caller = null ) :
-( World, AddEvent, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime, ROOT )
+( AddEventInternal, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime, ROOT )
 {
 	local curtime = curtime();
-	local event = [null,null,null,null,null,null];
+	local event = [null,null,null,null,null,null,null,null];
 
 	event[ m_flFireTime ] = curtime + flDelay;
 	event[ m_hFunc ] = hFunc;
@@ -664,49 +720,31 @@ VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = nul
 		event[ m_Env ] = ROOT;
 	};;
 
-	local i = 0, v = m_Events.len() - 1;
-	while ( i < v )
-	{
-		if ( event[ m_flFireTime ] < m_Events[i][ m_flFireTime ] )
-		{
-			v = i;
-			break;
-		};
-		++i;
-	}
-	m_Events.insert( v, event );
-
-	if ( m_flLastQueue == curtime )
-		return event.weakref(); m_flLastQueue = curtime;
-
-	if ( (m_flNextQueue == -1.0) || (flDelay < m_flNextQueue) )
-	{
-		AddEvent( World, "RunScriptCode", "::VS.EventQueue.ServiceEvents()", 0.0, activator, caller );
-		m_flNextQueue = flDelay;
-	};
-	// SetNextThink( 1 );
-
-	return event.weakref();
+	return AddEventInternal( event, flDelay, curtime );
 
 }.bindenv(VS.EventQueue);
 
-VS.EventQueue.ServiceEvents <- function() : ( World, AddEvent, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime )
+VS.EventQueue.ServiceEvents <- function() :
+( World, AddEvent, m_Events, m_pNext, m_pPrev, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime )
 {
 	local curtime = curtime();
-	local ev;
-	while ( ev = m_Events[0] )
+	local ev = m_Events;
+	while ( ev = ev[ m_pNext ] )
 	{
-		local f = ev[m_flFireTime];
+		local f = ev[ m_flFireTime ];
 		if ( f <= curtime )
 		{
-			local f = ev[m_hFunc];
+			local f = ev[ m_hFunc ];
 			if ( f )
 			{
 				local p = ev[ m_argv ];
 				if ( p ) f.acall( p );
 				else f.call( ev[ m_Env ] );
 			};
-			m_Events.remove(0);
+			ev[ m_pPrev ][ m_pNext ] = ev[ m_pNext ];
+			if ( ev[ m_pNext ] )
+				ev[ m_pNext ][ m_pPrev ] = ev[ m_pPrev ];
+			ev = m_Events;
 		}
 		else
 		{
@@ -717,7 +755,6 @@ VS.EventQueue.ServiceEvents <- function() : ( World, AddEvent, m_flFireTime, m_h
 		};
 	}
 	m_flNextQueue = -1.0;
-	// SetNextThink( -1 );
 
 }.bindenv(VS.EventQueue);
 }

@@ -32,7 +32,7 @@ local EVENTS = !!::Entities.FindByClassname(null,"logic_eventlistener");
 	_reload = false
 }
 
-local slots_default;
+local _default;
 {
 	// root (SQ)
 	local slots_sq = ["split","print","_floatsize_","exp","seterrorhandler","assert","atan2","_charsize_","asin","atan","cos","PI","strip","newthread","lstrip","format","rstrip","acos","abs","_intsize_","collectgarbage","setroottable","enabledebuginfo","setdebughook","ceil","log10","RAND_MAX","rand","srand","suspend","compilestring","sqrt","floor","getstackinfos","log","fabs","dummy","getroottable","tan","array","_version_","setconsttable","sin","getconsttable","pow","type","regexp"];
@@ -56,12 +56,12 @@ if (!PORTAL2){
 
 }; // !PORTAL2
 
-	slots_default = [];
+	_default = [];
 
-	slots_default.extend(slots_sq);
-	slots_default.extend(slots_ent);
-	slots_default.extend(slots_root);
-	slots_default.extend(slots_VS);
+	_default.extend(slots_sq);
+	_default.extend(slots_ent);
+	_default.extend(slots_root);
+	_default.extend(slots_VS);
 }
 
 // reduce a call on Msg
@@ -81,10 +81,3 @@ local ROOT = getroottable();
 // RAND_MAX 							0x7FFF
 
 ::collectgarbage();
-
-function VS::ForceReload():(_f)
-{
-	_reload = true;
-	::print("Reloading vs_library...\n");
-	return::DoIncludeScript(_f,::getroottable());
-}

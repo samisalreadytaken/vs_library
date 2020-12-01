@@ -6,10 +6,10 @@ ECHO.&&ECHO.
 ECHO                     [1mgithub.com/samisalreadytaken/%projectname%[0m
 ECHO.&&ECHO.
 
-REG QUERY "HKEY_CURRENT_USER\Software\Valve\Steam">NUL 2>NUL
+REG QUERY "HKCU\Software\Valve\Steam">NUL 2>NUL
 IF ERRORLEVEL 1 GOTO NOREG
 
-FOR /F "tokens=2* skip=2" %%a IN ('REG QUERY "HKEY_CURRENT_USER\Software\Valve\Steam" /v "SteamPath"') DO SET csgo=%%b
+FOR /F "tokens=2* skip=2" %%a IN ('REG QUERY "HKCU\Software\Valve\Steam" /v "SteamPath"') DO SET csgo=%%b
 
 :CHECKDIR
 SET "csgo=%csgo%/steamapps/common/counter-strike global offensive/csgo/scripts/vscripts/"
@@ -41,7 +41,7 @@ ECHO.
 ECHO [91mERROR:[0m Could not find game directory at:
 ECHO        %csgo%
 ECHO.
-ECHO Please enter your CS:GO Steam library directory: (E.g. '[1mD:/Steam Games[0m')
+ECHO Enter your CS:GO Steam library directory: (E.g. '[1mD:/SteamLibrary[0m')
 SET /p csgo=[7m^>: 
 ECHO [0m
 GOTO CHECKDIR
