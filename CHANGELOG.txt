@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2020-12-12 [v2.39.5]
+- Reduced file size and memory usage
+
 2020-12-01 [v2.39.4]
 - Improved performance on EventQueue
 - Removed ForceReload. It can be replicated with: `VS._reload = true; IncludeScript("vs_library")`

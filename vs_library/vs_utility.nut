@@ -287,66 +287,120 @@ function VS::arrayMap( arr, func ):(array)
 }
 
 //-----------------------------------------------------------------------
-// < VS.DumpScope(input, 1, 1, 0, depth) > is equivalent to <__DumpScope(depth, input)>
+// Debug dump scope. expensive
+//
+// < VS.DumpScope(input, 1, 1, 0, nDepth) > is equivalent to <__DumpScope(nDepth, input)>
 //
 // Input  : array/table [ array or table to dump ]
-//          bool [ print default keys ]
+//          bool [ print default (native) variables ]
 //          bool [ expand nested tables and arrays ]
 //          bool [ --- ]
 //          integer [ indent ]
 //-----------------------------------------------------------------------
-function VS::DumpScope( table, printall = false, deepprint = true, guides = true, depth = 0 ):(_default)
+local print = ::print;
+function VS::DumpScope( input, bPrintAll = false, bDeepPrint = true, bPrintGuides = true, nDepth = 0 ):(print)
 {
-	local indent = function(count) for( local i = count; i--; ) ::print("   ");
-	if ( guides ) ::print(" ------------------------------\n");
-	if ( table )
+	// non-native variables
+	local _skip = ["Assert","Document","PrintHelp","RetrieveNativeSignature","UniqueString","IncludeScript","Entities","CSimpleCallChainer","CCallChainer","LateBinder","__ReplaceClosures","__DumpScope","printl","VSquirrel_OnCreateScope","VSquirrel_OnReleaseScope","PrecacheCallChain","OnPostSpawnCallChain","DispatchOnPostSpawn","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn","EntFireByHandle","EntFire","RAND_MAX","_version_","_intsize_","PI","_charsize_","_floatsize_","self","__vname","__vrefs","_xa9b2dfB7ffe","VS","Chat","ChatTeam","txt","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","HPlayer","Ent","Entc","Quaternion","matrix3x4","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
+	local indent = function(c) for( local i = c; i--; ) print("   ");
+	local SWorld = Entities.First().GetScriptScope();
+	if ( bPrintGuides ) print(" ------------------------------\n");
+	if ( input )
 	{
-		foreach( key, val in table )
+		foreach( key, val in input )
 		{
-			local isdefault = false;
-			if ( !printall ){ foreach( k in _default ) if ( key == k ) isdefault = true }
-			else if ( key == "VS" || key == "Documentation" ) isdefault = true;;
-			if ( !isdefault )
+			local type = typeof val;
+			local bSkip = false;
+
+			if ( !bPrintAll )
 			{
-				indent(depth);
-				::print(key);
-				switch( typeof val )
+				switch ( type )
+				{
+					case "native function":
+						bSkip = true;
+						break;
+
+					case "class":
+						foreach ( k,v in val )
+						{
+							if ( typeof v == "native function" )
+							{
+								bSkip = true;
+								break;
+							};
+						}
+						break;
+
+					case "table":
+						if ( SWorld && (val == SWorld) )
+						{
+							bSkip = true;
+						};
+						break;
+				}
+
+				// final check for varied types
+				if ( !bSkip )
+				{
+					foreach ( k in _skip ) if ( key == k )
+					{
+						bSkip = true;
+						break;
+					};
+				};
+			}
+			// skip these even if printing all
+			else if ( key == "VS" || key == "Documentation" )
+			{
+				bSkip = true;
+			};;
+
+			if ( !bSkip )
+			{
+				indent(nDepth);
+				print(key);
+
+				switch ( type )
 				{
 					case "table":
-						::print("(TABLE) : "+val.len());
-						if (!deepprint) break;
-						::print("\n");
-						indent(depth);
-						::print("{\n");
-						DumpScope( val, printall, deepprint, false, depth + 1 );
-						indent(depth);
-						::print("}");
+						print("(TABLE) : " + val.len());
+						if (!bDeepPrint) break;
+						print("\n");
+						indent(nDepth);
+						print("{\n");
+						DumpScope( val, bPrintAll, bDeepPrint, false, nDepth + 1 );
+						indent(nDepth);
+						print("}");
 						break;
+
 					case "array":
-						::print("(ARRAY) : "+val.len());
-						if (!deepprint) break;
-						::print("\n");
-						indent(depth);
-						::print("[\n");
-						DumpScope( val, printall, deepprint, false, depth + 1 );
-						indent(depth);
-						::print("]");
+						print("(ARRAY) : " + val.len());
+						if (!bDeepPrint) break;
+						print("\n");
+						indent(nDepth);
+						print("[\n");
+						DumpScope( val, bPrintAll, bDeepPrint, false, nDepth + 1 );
+						indent(nDepth);
+						print("]");
 						break;
+
 					case "string":
-						::print(" = \""+val+"\"");
+						print(" = \"" + val + "\"");
 						break;
+
 					case "Vector":
-						::print(" = "+::VecToString(val));
+						print(" = " + ::VecToString(val));
 						break;
+
 					default:
-						::print(" = "+val);
+						print(" = " + val);
 				}
-				::print("\n");
+				print("\n");
 			};
 		}
 	}
-	else ::print("null\n");
-	if ( guides ) ::print(" ------------------------------\n");
+	else print("(NULL)\n");
+	if ( bPrintGuides ) print(" ------------------------------\n");
 }
 
 //-----------------------------------------------------------------------
@@ -362,7 +416,7 @@ function VS::ArrayToTable( a )
 
 //-----------------------------------------------------------------------
 // Put in the function you want to get stack info from
-// if deepprint && scope not roottable, deepprint
+// if bDeepPrint && scope not roottable, bDeepPrint
 /*
 Engine function calls are done through Call(...), that's why these 2 stacks are excluded.
 	 ---
@@ -385,7 +439,7 @@ Engine function calls are done through Call(...), that's why these 2 stacks are 
 	 ---
 */
 //-----------------------------------------------------------------------
-function VS::GetStackInfo( deepprint = false, printall = false )
+function VS::GetStackInfo( bDeepPrint = false, bPrintAll = false )
 {
 	::print(" --- STACKINFO ----------------\n");
 	local s, j = 2;
@@ -408,8 +462,8 @@ function VS::GetStackInfo( deepprint = false, printall = false )
 				};
 			};
 		};
-		if ( w == "roottable" ) DumpScope(s, printall, 0, 0);
-		else DumpScope(s, printall, deepprint, 0);
+		if ( w == "roottable" ) DumpScope(s, bPrintAll, 0, 0);
+		else DumpScope(s, bPrintAll, bDeepPrint, 0);
 		if (w)::print("scope = \""+w+"\"\n");
 	}
 	::print(" --- STACKINFO ----------------\n");
@@ -524,15 +578,12 @@ function VS::_fb3k5S1r91t7(t, i, s = ROOT)
 
 local World;
 {
-	local e = Entc("worldspawn");
-	if ( !e )
+	World = Entc("worldspawn");
+	if ( !World )
 	{
 		Msg("ERROR: could not find worldspawn\n");
-		e = VS.CreateEntity("soundent");
+		World = VS.CreateEntity("soundent");
 	};
-	if ( e.ValidateScriptScope() )
-		_default.append( e.GetScriptScope().__vname );
-	World = e;
 }
 
 //-----------------------------------------------------------------------
@@ -557,7 +608,7 @@ local AddEvent = ::DoEntFireByInstanceHandle;
 
 
 {
-VS.EventQueue <- delegate VS :
+VS.EventQueue <-
 {
 	m_flNextQueue = -1.0,
 	m_flLastQueue = -1.0
@@ -594,9 +645,10 @@ VS.EventQueue.Dump <- function() :
 	Msg( "VS::EventQueue::Dump: " + curtime() + " : next(" + m_flNextQueue + "), last(" + m_flLastQueue + ")\n" );
 	for ( local ev = m_Events; ev = ev[ m_pNext ]; )
 	{
-		Msg(format( "   (%.2f) func '%s', env '%s', activator '%s', caller '%s'\n",
+		Msg(format( "   (%.2f) func '%s', %s '%s', activator '%s', caller '%s'\n",
 			ev[m_flFireTime],
 			get( ev[m_hFunc] ),
+			((typeof ev[m_argv] == "array") && ev[m_argv].len()) ? "arg" : "env",
 			get( ((typeof ev[m_argv] == "array") && ev[m_argv].len()) ? ev[m_argv][0] : ev[m_Env] ),
 			get( ev[m_activator] ),
 			get( ev[m_caller] ) ));
@@ -668,9 +720,7 @@ VS.EventQueue.AddEventInternal <- function( event, flDelay, curtime ) :
 	while ( ev[ m_pNext ] )
 	{
 		if ( event[ m_flFireTime ] < ev[ m_pNext ][ m_flFireTime ] )
-		{
 			break;
-		};
 		ev = ev[ m_pNext ];
 	}
 

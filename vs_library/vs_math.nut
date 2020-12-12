@@ -14,7 +14,6 @@ local Vector = ::Vector;
 local RandomFloat = ::RandomFloat;
 local sin = ::sin;
 local cos = ::cos;
-local floor = ::floor;
 local atan2 = ::atan2;
 local exp = ::exp;
 local pow = ::pow;
@@ -38,7 +37,7 @@ local log = ::log;
 
 // VS.IsInteger(1.0) is true
 // VS.IsInteger(1.1) is false
-function VS::IsInteger( f ):(floor){ return floor(f) == f; }
+function VS::IsInteger( f ){ return f.tointeger() == f; }
 
 //-----------------------------------------------------------------------
 // IsLookingAt with tolerance
