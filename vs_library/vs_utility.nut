@@ -6,6 +6,7 @@
 local Entities = ::Entities;
 local DebugDrawBox = ::DebugDrawBox;
 local DoUniqueString = ::DoUniqueString;
+local Fmt = ::format;
 
 ::Ent  <- function( s, i = null ):(Entities){ return Entities.FindByName(i,s); }
 ::Entc <- function( s, i = null ):(Entities){ return Entities.FindByClassname(i,s); }
@@ -486,13 +487,19 @@ function VS::GetTableDir(input)
 	if ( typeof input != "table" )
 		throw "Invalid input type '" + typeof input + "' ; expected: 'table'";
 
-	local r = _f627f40d21a6([],input);
+	local a = [];
+	local r = _f627f40d21a6(a,input);
 
 	if (r) r.append("roottable");
-	else r = ["roottable"];
+	else
+	{
+		r = a;
+		r.clear();
+		r.append("roottable");
+	};
 
 	r.reverse();
-	return r
+	return r;
 }
 
 // exclusive recursion function
@@ -629,9 +636,9 @@ local m_Events     = [null,null];
 m_Events[ m_flFireTime ] = (-0x7FFFFFFF).tofloat();
 
 VS.EventQueue.Dump <- function() :
-( m_Events, m_flFireTime, m_pNext, m_hFunc, m_argv, m_Env, m_activator, m_caller, curtime )
+( m_Events, m_flFireTime, m_pNext, m_hFunc, m_argv, m_Env, m_activator, m_caller, curtime, Fmt )
 {
-	local get = function(i)
+	local get = function(i):(Fmt)
 	{
 		if ( i == null )
 			return "(NULL)";
@@ -639,13 +646,13 @@ VS.EventQueue.Dump <- function() :
 		local t = s.find("0x");
 		if ( t == null )
 			return s;
-		return "(" + s.slice( t, s.len()-1 ) + ")";
+		return Fmt("(%s)", s.slice( t, s.len()-1 ));
 	}
 
-	Msg( "VS::EventQueue::Dump: " + curtime() + " : next(" + m_flNextQueue + "), last(" + m_flLastQueue + ")\n" );
+	Msg(Fmt( "VS::EventQueue::Dump: %g : next(%g), last(%g)\n", curtime(), m_flNextQueue, m_flLastQueue ));
 	for ( local ev = m_Events; ev = ev[ m_pNext ]; )
 	{
-		Msg(format( "   (%.2f) func '%s', %s '%s', activator '%s', caller '%s'\n",
+		Msg(Fmt( "   (%.2f) func '%s', %s '%s', activator '%s', caller '%s'\n",
 			ev[m_flFireTime],
 			get( ev[m_hFunc] ),
 			((typeof ev[m_argv] == "array") && ev[m_argv].len()) ? "arg" : "env",

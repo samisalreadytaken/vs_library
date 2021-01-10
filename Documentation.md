@@ -27,7 +27,8 @@ See [README.md](https://github.com/samisalreadytaken/vs_library/blob/master/READ
 ________________________________
 
 ## Developer notes
-* Wrapper functions such as EntFireByHandle return the final calls to take advantage of tail calls for (minor) performance gains.
+* Wrapper functions such as EntFireByHandle return the final calls to take advantage of tail calls for improved performance.
+* Variables are converted to strings using empty string concatenation instead of explicit `tostring()` calls for better performance; but long concatenations are instead formatted for better memory usage.
 * Free variables are used with static values to reduce variable lookups.
 * There will be some inconsistencies between the minified version and the source files:
 * * Some functions that should be 'inline' such as max() and clamp() are manually replaced in the minified version to reduce function call overhead.
@@ -56,7 +57,7 @@ ________________________________
 
 | Symbols | Description                                                                                                                                                                                                       |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `&`     | pointer, reference, instance. This means the input will be modified. Optional pointers can be omitted, but their result will be modified the next time another function with omitted pointer parameter is called. |
+| `&`     | instance reference. This means the input will be modified. Optional references can be omitted, but their result will be modified the next time another function with omitted reference parameter is called. |
 | `[]`    | array. `float[3]` represents an array made of floats, with only 3 indices.                                                                                                                                        |
 
 ### Variables used in examples
@@ -65,7 +66,7 @@ ________________________________
 | `HPlayer`      | `VS.GetLocalPlayer()`             | Local player in the server                            |
 | `HPlayerEye`   | `VS.CreateMeasure(HPlayer.GetName())`      | Buffer to get player eye angles                       |
 | `hHudHint`     | `VS.CreateEntity("env_hudhint")`  | Hud hint, show messages to the player                 |
-| `Think()`      | `VS.Timer(0, FrameTime(), Think)` | A function that is executed every frame               |
+| `Think()`      | `VS.Timer(0, 0.0, Think)`         | A function that is executed every frame               |
 | `flFrameTime2` | `FrameTime() * 2`                 | Used in the Think function for displaying every frame |
 
 
@@ -1445,9 +1446,9 @@ Engine function calls are done through Call(...), that's why these 2 stacks are 
 	{
 	   i = 0
 	   args(ARRAY) : 0
-	   this = (instance : pointer)
+	   this = (instance : 0x00000000)
 	   result = (null : 0x00000000)
-	   func = (function : pointer)
+	   func = (function : 0x00000000)
 	}
 	src = "unnamed"
 	func = "Call"

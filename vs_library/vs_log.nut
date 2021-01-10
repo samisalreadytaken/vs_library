@@ -63,6 +63,7 @@ local flFrameTime = ::FrameTime();
 local developer = ::developer;
 local ClientCommand = ::SendToConsole;
 local clamp = ::clamp;
+local Fmt = ::format;
 
 function VS::Log::_Print() : ( Msg, L, delay, clamp )
 {
@@ -89,7 +90,7 @@ function VS::Log::_Print() : ( Msg, L, delay, clamp )
 	return delay( _Print, 0.0, this );
 }
 
-function VS::Log::_Start() : ( ClientCommand, developer, clamp, flFrameTime )
+function VS::Log::_Start() : ( ClientCommand, developer, clamp, Fmt, flFrameTime )
 {
 	nL <- L.len();
 	nD <- 2000;
@@ -99,9 +100,9 @@ function VS::Log::_Start() : ( ClientCommand, developer, clamp, flFrameTime )
 
 	if ( export )
 	{
-		local file = file_prefix[0] == ':' ? file_prefix.slice(1) : file_prefix + "_" + ::VS.UniqueString();
+		local file = file_prefix[0] == ':' ? file_prefix.slice(1) : Fmt( "%s_%s", file_prefix, ::VS.UniqueString() );
 		_d <- developer();
-		ClientCommand("developer 0;con_filter_enable 1;con_filter_text_out\"" + filter + "\";con_filter_text\"\";con_logfile\"" + file + ".log\";script VS.EventQueue.AddEvent(VS.Log._Print," + flFrameTime*4.0 + ",VS.Log)");
+		ClientCommand(Fmt( "developer 0;con_filter_enable 1;con_filter_text_out\"%s\";con_filter_text\"\";con_logfile\"%s.log\";script VS.EventQueue.AddEvent(VS.Log._Print,%g,VS.Log)", filter, file, (flFrameTime*4.0) ));
 		return file;
 	}
 	else

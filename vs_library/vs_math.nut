@@ -99,7 +99,7 @@ function VS::GetAngle2D( vFrom, vTo ):(atan2)
 //-----------------------------------------------------------------------
 function VS::VectorVectors( forward, right, up ):(Vector)
 {
-	if( forward.x == 0.0 && forward.y == 0.0 )
+	if( !forward.x && !forward.y )
 	{
 		// pitch 90 degrees up/down from identity
 		right.x = 0.0;
@@ -180,7 +180,7 @@ function VS::VectorAngles( vFwd ):(Vector,atan2,sqrt)
 {
 	local tmp, yaw, pitch;
 
-	if( vFwd.y == 0.0 && vFwd.x == 0.0 )
+	if( !vFwd.y && !vFwd.x )
 	{
 		yaw = 0.0;
 		if( vFwd.z > 0.0 )
@@ -227,7 +227,7 @@ function VS::YawToVector( yaw ):(Vector,sin,cos)
 
 function VS::VecToYaw( vec ):(atan2)
 {
-	if( vec.y == 0.0 && vec.x == 0.0 )
+	if( !vec.y && !vec.x )
 		return 0.0;
 
 	local yaw = ::RAD2DEG*atan2(vec.y, vec.x);
@@ -240,7 +240,7 @@ function VS::VecToYaw( vec ):(atan2)
 
 function VS::VecToPitch( vec ):(atan2)
 {
-	if( vec.y == 0.0 && vec.x == 0.0 )
+	if( !vec.y && !vec.x )
 	{
 		if( vec.z < 0.0 )
 			return 180.0;
@@ -253,7 +253,7 @@ function VS::VecToPitch( vec ):(atan2)
 
 function VS::VectorIsZero(v)
 {
-	return v.x == 0.0 && v.y == 0.0 && v.z == 0.0;
+	return !v.x && !v.y && !v.z;
 }
 
 //-----------------------------------------------------------------------
@@ -741,7 +741,9 @@ function VS::Bias( x, biasAmt ):(log,pow)
 // |___________________
 // 0                   1
 //
-function VS::Gain( x, biasAmt )
+local Bias = ::VS.Bias;
+
+function VS::Gain( x, biasAmt ) : (Bias)
 {
 	if( x < 0.5 )
 		return 0.5 * Bias( 2.0*x, 1.0-biasAmt );

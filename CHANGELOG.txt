@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2021-01-10 [v2.39.6]
+- Reduced memory usage on event data acquisition
+
 2020-12-12 [v2.39.5]
 - Reduced file size and memory usage
 

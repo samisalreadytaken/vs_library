@@ -95,7 +95,8 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 ):(AddEven
 {
 	local r = e ? n ? n+"" : "vs.ref_"+UniqueString() : n ? n+"" : null;
 
-	if ( !r || !r.len() ) throw "Invalid targetname";
+	if ( !r || !r.len() )
+		throw "Invalid targetname";
 
 	local e = CreateEntity( "logic_measure_movement",
 	                        { measuretype = e ? 1 : 0,
@@ -202,7 +203,8 @@ function VS::OnTimer( hEnt, Func, tScope = null, bExecInEnt = false )
 local compile = ::compilestring;
 function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false ):(compile)
 {
-	if ( !tScope ) tScope = GetCaller();
+	if ( !tScope )
+		tScope = GetCaller();
 
 	if ( Func )
 	{
@@ -230,13 +232,11 @@ function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 
 	hEnt.ConnectOutput(sOutput, sOutput);
 
-	// Msg("** Adding output '" + sOutput + "' to '" + hEnt.GetName() + "'. Execute '" + GetFuncName(Func) + "()' in '" + (bExecInEnt?hEnt.GetScriptScope():GetVarName(tScope)) + ".'\n");
-
 	return r;
 }
 
 // This could still be useful in specific scenarios
-function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false ):(AddEvent)
+function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false ):(AddEvent, Fmt)
 {
 	if ( hEnt.GetScriptScope() || typeof Func == "function" )
 		return AddOutput( hEnt, sOutput, Func, tScope, bExecInEnt );
@@ -253,7 +253,7 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 			throw "Invalid function path. Not an entity";
 		};
 
-		AddEvent( hEnt,"AddOutput",sOutput+" "+tScope.self.GetName()+",RunScriptCode,"+Func,0.0,tScope.self,hEnt );
+		AddEvent( hEnt,"AddOutput", Fmt( "%s %s,RunScriptCode,%s", sOutput, tScope.self.GetName(), Func ), 0.0, tScope.self, hEnt );
 	}
 	else
 	{
@@ -264,7 +264,7 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 			SetName(hEnt, name);
 		};
 
-		AddEvent( hEnt,"AddOutput",sOutput+" "+name+",RunScriptCode,"+Func,0.0,null,hEnt );
+		AddEvent( hEnt,"AddOutput", Fmt( "%s %s,RunScriptCode,%s", sOutput, name, Func ), 0.0, null, hEnt );
 	};
 }
 
@@ -347,7 +347,7 @@ function VS::SetKeyValue( ent, key, val )
 // Set targetname
 function VS::SetName( ent, name )
 {
-	return ent.__KeyValueFromString("targetname",name+"");
+	return ent.__KeyValueFromString("targetname",""+name);
 }
 
 //-----------------------------------------------------------------------
@@ -356,7 +356,7 @@ function VS::SetName( ent, name )
 // Input an entity handle or string to dump its scope.
 // String example: "([2] player: targetname)"
 //-----------------------------------------------------------------------
-function VS::DumpEnt( input = null ):(Entities)
+function VS::DumpEnt( input = null ):(Entities,Fmt)
 {
 	// dump only scope names
 	if ( !input )
@@ -365,7 +365,7 @@ function VS::DumpEnt( input = null ):(Entities)
 		while ( ent = Entities.Next(ent) )
 		{
 			local s = ent.GetScriptScope();
-			if (s) ::Msg(ent + " :: " + s.__vname+"\n"); // GetVarName(s)
+			if (s) ::Msg(Fmt( "%s :: %s\n", ""+ent, s.__vname ));
 		}
 
 		return;
@@ -375,7 +375,7 @@ function VS::DumpEnt( input = null ):(Entities)
 	{
 		local ent;
 		while ( ent = Entities.Next(ent) )
-			if (ent+"" == input)
+			if (""+ent == input)
 				input = ent;
 	};
 
@@ -387,11 +387,11 @@ function VS::DumpEnt( input = null ):(Entities)
 			local s = input.GetScriptScope();
 			if (s)
 			{
-				::Msg("--- Script dump for entity "+input+"\n");
+				::Msg(Fmt( "--- Script dump for entity %s\n", ""+input ));
 				DumpScope(s,0,1,0,1);
 				::Msg("--- End script dump\n");
 			}
-			else return::Msg("Entity has no script scope! " + input + "\n");
+			else return::Msg(Fmt( "Entity has no script scope! %s\n", ""+input ));
 		}
 		else return::Msg("Invalid entity!\n");
 	}
@@ -405,7 +405,7 @@ function VS::DumpEnt( input = null ):(Entities)
 			local s = ent.GetScriptScope();
 			if (s)
 			{
-				::Msg("\n--- Script dump for entity "+ent+"\n");
+				::Msg(Fmt( "\n--- Script dump for entity %s\n", ""+ent ));
 				DumpScope(s,0,1,0,1);
 				::Msg("--- End script dump\n");
 			};
@@ -470,26 +470,26 @@ function VS::GetAllPlayers():(Entities)
 //
 // If the event listeners are not set up, named bots will be shown as players
 //-----------------------------------------------------------------------
-function VS::DumpPlayers( dumpscope = false )
+function VS::DumpPlayers( bDumpScope = false ) : (Fmt)
 {
 	local a = GetPlayersAndBots(), p = a[0], b = a[1];
 
-	::Msg("\n=======================================\n" + p.len()+" players found\n" + b.len()+" bots found\n");
+	::Msg(Fmt( "\n=======================================\n%d players found\n%d bots found\n", p.len(), b.len() ));
 
-	local c = function( _s, _a ):(dumpscope)
+	local c = function( _s, _a ):(bDumpScope, Fmt)
 	{
 		foreach( e in _a )
 		{
 			local s = e.GetScriptScope();
 			if (s) s = GetVarName(s);
 			if (!s) s = "null";
-			::Msg( _s+"- " + e + " :: " + s +"\n");
-			if ( dumpscope && s != "null" ) DumpEnt(e);
+			::Msg(Fmt( "%s - %s :: %s\n", _s, ""+e, s ));
+			if ( bDumpScope && s != "null" ) DumpEnt(e);
 		}
 	}
 
-	c("[BOT]    ",b);
-	c("[PLAYER] ",p);
+	c("[BOT]   ",b);
+	c("[PLAYER]",p);
 
 	::Msg("=======================================\n");
 }

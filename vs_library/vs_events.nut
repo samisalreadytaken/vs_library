@@ -14,13 +14,13 @@ VS.Events <- delegate VS :
 
 // array to store event data, user should never modify
 if ( !("_xa9b2dfB7ffe" in ROOT) )
-	::_xa9b2dfB7ffe <- [];
+	::_xa9b2dfB7ffe <- array(64);
 
 if ( !("OnGameEvent_player_spawn" in ROOT) )
-	::OnGameEvent_player_spawn <- ::dummy;
+	::OnGameEvent_player_spawn <- dummy;
 
 if ( !("OnGameEvent_player_connect" in ROOT) )
-	::OnGameEvent_player_connect <- ::dummy;
+	::OnGameEvent_player_connect <- dummy;
 
 }; // !PORTAL2 && EVENTS
 
@@ -59,46 +59,61 @@ if (EVENTS){
 // If events are correctly set up, add the userid, networkid (steamID32) and name to the player scope
 // Bot networkid is "BOT"
 //
-// Only allows 128 unprocessed entries to be held
+// Only allows 64 unprocessed entries to be held
 // This limit realistically will never be reached (unless the player_spawn listener
 // was never created or correctly set up). It's a just-in-case check.
 //
-// When the limit is reached, the oldest 64 entries are deleted.
+// When the limit is reached, the oldest 32 entries are deleted.
 
 local gEventData = ::_xa9b2dfB7ffe;
 local flTimeoutThold = ::FrameTime()*2;
-local Time = ::Time;
+local Time = Time;
+local Fmt = ::format;
 
-function VS::Events::player_connect(data):(gEventData,Time,flTimeoutThold)
+function VS::Events::player_connect( event ) : ( gEventData, Time, flTimeoutThold, Fmt )
 {
-	if ( data.networkid.len() )
+	if ( event.networkid != "" )
 	{
-		if ( gEventData.len() > 128 )
-		{
-			for( local i = 64; i--; )
-				gEventData.remove(0);
+		local idx;
 
-			::Msg("player_connect: ERROR!!! Player data is not being processed\n")
+		foreach( i,v in gEventData )
+			if ( !gEventData[i] )
+			{
+				idx = i;
+				break;
+			};
+
+		if ( idx == null )
+		{
+			// memmove( gEventData, gEventData + 32, 32 )
+			for ( local i = 32; i < 64; ++i )
+			{
+				gEventData[i-32] = gEventData[i];
+				gEventData[i] = null;
+			}
+
+			idx = 0;
+			::Msg( "player_connect: ERROR!!! Player data is not being processed\n" );
 		};
 
-		gEventData.append(data);
+		gEventData[idx] = event;
 
-		return::OnGameEvent_player_connect(data);
+		return::OnGameEvent_player_connect(event);
 	}
 	else if ( m_SV )
 	{
 		local dt = Time() - m_flValidateTime;
 
-		if ( !(dt > flTimeoutThold) )
+		if ( dt <= flTimeoutThold )
 		{
-			m_SV.userid <- data.userid;
+			m_SV.userid <- event.userid;
 
 			if ( !("name" in m_SV) )
 				m_SV.name <- "";
 			if ( !("networkid" in m_SV) )
 				m_SV.networkid <- "";
 		}
-		else::Msg("player_connect: Unexpected error! "+dt+"\n");
+		else::Msg(Fmt( "player_connect: Unexpected error! %g (%d)\n", dt, (0.5+(dt/::FrameTime())).tointeger() ));
 
 		m_SV = null;
 		m_flValidateTime = 0.0;
@@ -109,63 +124,65 @@ function VS::Events::player_connect(data):(gEventData,Time,flTimeoutThold)
 
 // OnEvent player_spawn
 // user function ::OnGameEvent_player_spawn will still be called
-function VS::Events::player_spawn(data):(gEventData)
+function VS::Events::player_spawn( event ) : ( gEventData )
 {
-	if ( gEventData.len() ) foreach( i, d in gEventData ) if ( d.userid == data.userid )
+	foreach( i, data in gEventData )
 	{
-		local player = GetPlayerByIndex(d.index+1);
-
-		if ( !player || !player.ValidateScriptScope() )
-		{
-			::Msg("player_connect: Invalid player entity\n");
+		if ( !data )
 			break;
-		};
 
-		local scope = player.GetScriptScope();
-
-		if ( "networkid" in scope )
+		else if ( data.userid == event.userid )
 		{
-			::Msg("player_connect: BUG!!! Something has gone wrong. ");
+			local player = GetPlayerByIndex( data.index+1 );
 
-			if ( scope.networkid == d.networkid )
+			if ( !player || !player.ValidateScriptScope() )
 			{
-				::Msg("Duplicated data!\n");
-				gEventData.remove(i);
-			}
-			else
-			{
-				::Msg("Conflicting data!\n");
+				::Msg("player_connect: Invalid player entity\n");
+				break;
 			};
 
+			local scope = player.GetScriptScope();
+
+			if ( "networkid" in scope )
+			{
+				::Msg("player_connect: BUG!!! Something has gone wrong. ");
+
+				if ( scope.networkid == data.networkid )
+				{
+					gEventData[i] = null;
+					::Msg("Duplicated data!\n");
+				}
+				else
+				{
+					::Msg("Conflicting data!\n");
+				};
+
+				break;
+			};
+
+			if ( data.networkid == "" )
+				::Msg("player_connect: could not get event data\n");
+
+			scope.userid <- data.userid;
+			scope.name <- data.name;
+			scope.networkid <- data.networkid;
+			gEventData[i] = null;
 			break;
-		};
+		};;
+	}
 
-		if ( !d.networkid.len() )
-			::Msg("player_connect: could not get event data\n");
-
-		scope.userid <- d.userid;
-		scope.name <- d.name;
-		scope.networkid <- d.networkid;
-		gEventData.remove(i);
-		break;
-	};;
-
-	return::OnGameEvent_player_spawn(data);
+	return::OnGameEvent_player_spawn(event);
 }
 
 // if something has gone wrong with automatic validation, force add userid
 //
 // Calling multiple times in a frame will cause problems; either delay, or use ValidateUseridAll.
 //
-function VS::ForceValidateUserid(ent):(AddEvent,Time)
+function VS::ForceValidateUserid( ent ) : ( AddEvent, Time, Fmt )
 {
 	if ( !ent || !ent.IsValid() || ent.GetClassname() != "player" )
-		return::Msg("ForceValidateUserid: Invalid input: "+E+"\n");
+		return::Msg(Fmt( "ForceValidateUserid: Invalid input: %s\n", ""+E ));
 
-	// TODO: force reloading the library will overwrite this.
-	// I believe referencing it using a targetname is more prone to user errors compared to
-	// the rare case of the execution of VS.ForceReload()
-	// ForceReload could be rewritten to clear instead of overwriting everything.
 	if ( !Events.m_hProxy )
 	{
 		Events.m_hProxy = CreateEntity("info_game_event_proxy", {event_name = "player_connect"}, true).weakref();
