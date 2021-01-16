@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2021-01-10 [v2.39.7]
+- Improved memory usage on VS.Log.Add and VecToString
+
 2021-01-10 [v2.39.6]
 - Reduced memory usage on event data acquisition
 

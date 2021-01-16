@@ -15,9 +15,9 @@ local Fmt = ::format;
 // Input  : Vector
 // Output : string
 //-----------------------------------------------------------------------
-::VecToString <- function( vec, prefix = "Vector(", separator = ",", suffix = ")" )
+::VecToString <- function( vec, prefix = "Vector(", separator = ",", suffix = ")" ) : (Fmt)
 {
-	return prefix + vec.x + separator + vec.y + separator + vec.z + suffix;
+	return Fmt( "%s%g%s%g%s%g%s", prefix, vec.x, separator, vec.y, separator, vec.z, suffix );
 }
 
 //-----------------------------------------------------------------------
@@ -490,15 +490,19 @@ function VS::GetTableDir(input)
 	local a = [];
 	local r = _f627f40d21a6(a,input);
 
-	if (r) r.append("roottable");
+	if (r)
+	{
+		r.insert( r.len(), "roottable" );
+		r.reverse();
+	}
 	else
 	{
 		r = a;
 		r.clear();
-		r.append("roottable");
+		r.resize(1);
+		r[0] = "roottable";
 	};
 
-	r.reverse();
 	return r;
 }
 

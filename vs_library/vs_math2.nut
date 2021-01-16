@@ -37,14 +37,18 @@ class::Quaternion
 		constructor(_x,_y,_z,_w);
 	}
 */
-	function _add(d) { return::Quaternion( x+d.x,y+d.y,z+d.z,w+d.w ) }
-	function _sub(d) { return::Quaternion( x-d.x,y-d.y,z-d.z,w-d.w ) }
-	function _mul(d) { return::Quaternion( x*d,y*d,z*d,w*d ) }
-	function _div(d) { return::Quaternion( x/d,y/d,z/d,w/d ) }
-	function _unm()  { return::Quaternion( -x,-y,-z,-w ) }
-	function _typeof() { return "Quaternion" }
-	function _tostring() { return "Quaternion("+x+","+y+","+z+","+w+")" }
 }
+
+local Fmt = ::format;
+local Quaternion = ::Quaternion;
+
+function Quaternion::_add(d):(Quaternion) { return Quaternion( x+d.x,y+d.y,z+d.z,w+d.w ) }
+function Quaternion::_sub(d):(Quaternion) { return Quaternion( x-d.x,y-d.y,z-d.z,w-d.w ) }
+function Quaternion::_mul(d):(Quaternion) { return Quaternion( x*d,y*d,z*d,w*d ) }
+function Quaternion::_div(d):(Quaternion) { return Quaternion( x/d,y/d,z/d,w/d ) }
+function Quaternion::_unm() :(Quaternion) { return Quaternion( -x,-y,-z,-w ) }
+function Quaternion::_typeof() { return "Quaternion" }
+function Quaternion::_tostring():(Fmt) { return Fmt("Quaternion(%g,%g,%g,%g)",x,y,z,w) }
 
 local array = ::array;
 
@@ -77,14 +81,10 @@ class::matrix3x4
 	m_flMatVal = null;
 }
 
-// matrix4x4
-// class VMatrix{}
-
 local _VEC =::Vector();
 local _QUAT =::Quaternion();
 local Vector = ::Vector;
 local matrix3x4 = ::matrix3x4;
-local Quaternion = ::Quaternion;
 local max = ::max;
 local min = ::min;
 local fabs = ::fabs;

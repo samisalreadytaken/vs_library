@@ -20,7 +20,8 @@ local L = ::VS.Log.L;
 
 function VS::Log::Add(s):(L)
 {
-	L.append(s);
+	// logs may have thousands of entries, allocate memory size+1 instead of size*2
+	L.insert( L.len(), s );
 }
 
 function VS::Log::Clear():(L)
