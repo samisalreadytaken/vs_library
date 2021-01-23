@@ -3,7 +3,10 @@
 
 --------------------------------
 
-2021-01-10 [v2.39.7]
+2021-01-23 [v2.39.8]
+- EventQueue bugfix
+
+2021-01-17 [v2.39.7]
 - Improved memory usage on VS.Log.Add and VecToString
 
 2021-01-10 [v2.39.6]

@@ -5,7 +5,7 @@ High-performance vscript libraries; written mainly for CSGO, compatible with Por
 
 See the [**hlvr**](https://github.com/samisalreadytaken/vs_library/tree/hlvr) branch for usage in Half-Life Alyx.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.39.7-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.39.8-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation
