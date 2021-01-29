@@ -3,6 +3,16 @@
 
 --------------------------------
 
+2021-01-29 [v2.39.9]
+- Added VS.EventQueue.CreateEvent
+- VS.EventQueue.AddEventInternal signature is changed!
+- Added optional parameter on VS.Log.Run to print a custom log array.
+
+  (glow.nut v1.0.9)
+- Removed vs_library dependency
+- Removed Glow.DEBUG
+- Reduced file size
+
 2021-01-23 [v2.39.8]
 - EventQueue bugfix
 

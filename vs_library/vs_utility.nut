@@ -431,9 +431,9 @@ Engine function calls are done through Call(...), that's why these 2 stacks are 
 	{
 	   i = 0
 	   args(ARRAY) : 0
-	   this = (instance : pointer)
+	   this = (instance : 0x00000000)
 	   result = (null : 0x00000000)
-	   func = (function : pointer)
+	   func = (function : 0x00000000)
 	}
 	src = "unnamed"
 	func = "Call"
@@ -636,13 +636,12 @@ local m_activator  = 6;
 local m_caller     = 7;
 
 local curtime   = Time;
-local FRAMETIME = FrameTime();
 
 local m_Events     = [null,null];
-m_Events[ m_flFireTime ] = (-0x7FFFFFFF).tofloat();
+m_Events[ m_flFireTime ] = -1.E+37; // -FLT_MAX
 
 VS.EventQueue.Dump <- function( bUseTicks = false ) :
-( m_Events, m_flFireTime, m_pNext, m_hFunc, m_argv, m_Env, m_activator, m_caller, curtime, Fmt )
+( m_Events, m_flFireTime, m_pNext, m_hFunc, m_argv, m_Env, m_activator, m_caller, curtime, Fmt, TICK_INTERVAL )
 {
 	local get = function(i):(Fmt)
 	{
@@ -655,10 +654,9 @@ VS.EventQueue.Dump <- function( bUseTicks = false ) :
 		return Fmt("(%s)", s.slice( t, s.len()-1 ));
 	}
 
-	local FRAMETIME = ::FrameTime();
-	local TIME_TO_TICKS = function( dt ) : ( FRAMETIME )
+	local TIME_TO_TICKS = function( dt ) : ( TICK_INTERVAL )
 	{
-		return ( 0.5 + dt / FRAMETIME ).tointeger();
+		return ( 0.5 + dt / TICK_INTERVAL ).tointeger();
 	}
 
 	Msg(Fmt( "VS::EventQueue::Dump: %g : next(%g), last(%g)\n",
@@ -736,9 +734,13 @@ VS.EventQueue.RemoveEvent <- function( ev ) : ( m_Events, m_pNext, m_pPrev )
 	}
 }.bindenv(VS.EventQueue);
 
-VS.EventQueue.AddEventInternal <- function( event, flFireTime, curtime ) :
-( World, AddEvent, m_Events, m_pNext, m_pPrev, m_flFireTime, m_activator, m_caller, FRAMETIME )
+VS.EventQueue.AddEventInternal <- function( event, flDelay ) :
+( World, curtime, AddEvent, m_Events, m_pNext, m_pPrev, m_flFireTime, m_activator, m_caller, TICK_INTERVAL )
 {
+	local curtime = curtime();
+	local flFireTime = curtime + flDelay;
+	event[ m_flFireTime ] = flFireTime;
+
 	local ev = m_Events;
 	while ( ev[ m_pNext ] )
 	{
@@ -757,18 +759,16 @@ VS.EventQueue.AddEventInternal <- function( event, flFireTime, curtime ) :
 
 		if ( (m_flNextQueue == -1.0) || (flFireTime < m_flNextQueue) )
 		{
-			// local flDelay = flFireTime - curtime;
-
 			m_flNextQueue = flFireTime;
 			AddEvent( World, "RunScriptCode", "::VS.EventQueue.ServiceEvents()", 0.0, event[m_activator], event[m_caller] );
 		}
 		// Expect no event to be not fired for longer than a frame
-		else if ( m_Events[ m_pNext ] && ( ( curtime - m_Events[ m_pNext ][ m_flFireTime ] ) >= FRAMETIME ) )
+		else if ( m_Events[ m_pNext ] && ( ( curtime - m_Events[ m_pNext ][ m_flFireTime ] ) >= TICK_INTERVAL ) )
 		{
 			// Game eventqueue is reset, or something has gone wrong.
 			// Reset
 			Clear();
-			return AddEventInternal( event, flFireTime, curtime );
+			return AddEventInternal( event, flDelay );
 		};;
 	};
 
@@ -779,12 +779,17 @@ VS.EventQueue.AddEventInternal <- function( event, flFireTime, curtime ) :
 local AddEventInternal = VS.EventQueue.AddEventInternal;
 
 VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = null, caller = null ) :
-( AddEventInternal, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime, ROOT )
+( AddEventInternal, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, ROOT )
 {
-	local curtime = curtime();
-	local event = [null,null,null,null,null,null,null,null];
+	local event = CreateEvent( hFunc, argv , activator , caller );
+	return AddEventInternal( event, flDelay );
 
-	event[ m_flFireTime ] = curtime + flDelay;
+}.bindenv(VS.EventQueue);
+
+VS.EventQueue.CreateEvent <- function( hFunc, argv = null, activator = null, caller = null ) :
+( m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, ROOT )
+{
+	local event = [null,null,null,null,null,null,null,null];
 	event[ m_hFunc ] = hFunc;
 	event[ m_activator ] = activator;
 	event[ m_caller ] = caller;
@@ -803,9 +808,8 @@ VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = nul
 		event[ m_Env ] = ROOT;
 	};;
 
-	return AddEventInternal( event, event[ m_flFireTime ], curtime );
-
-}.bindenv(VS.EventQueue);
+	return event;
+}
 
 VS.EventQueue.ServiceEvents <- function() :
 ( World, AddEvent, m_Events, m_pNext, m_pPrev, m_flFireTime, m_hFunc, m_Env, m_argv, m_activator, m_caller, curtime )
@@ -854,7 +858,7 @@ VS.EventQueue.ServiceEvents <- function() :
 // 102.4 tick : 0.00976563
 // 128.0 tick : 0.00781250
 //-----------------------------------------------------------------------
-local flTickRate = 1.0 / ::FrameTime();
+local flTickRate = 1.0 / TICK_INTERVAL;
 function VS::GetTickrate():(flTickRate)
 {
 	return flTickRate;
@@ -874,7 +878,7 @@ function VS::IsDedicatedServer()
 
 local TIMESTART = 4.0;
 local TIMEOUT = 12.0;
-local _TIMEOUT = TIMEOUT+FrameTime()*4;
+local _TIMEOUT = TIMEOUT+TICK_INTERVAL*4;
 
 ::VS.flCanCheckForDedicatedAfterSec <- fabs(clamp(Time(),0,_TIMEOUT)-_TIMEOUT);
 

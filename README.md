@@ -5,7 +5,7 @@ High-performance vscript libraries; written mainly for CSGO, compatible with Por
 
 See the [**hlvr**](https://github.com/samisalreadytaken/vs_library/tree/hlvr) branch for usage in Half-Life Alyx.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.39.8-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.39.9-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation
@@ -61,7 +61,7 @@ You can get the player handle from their userid.
 local player = VS.GetPlayerByUserid(userid)
 ```
 
-You can access the player data via their scope.
+You can access the player data from their script scope.
 ```cs
 local scope = player.GetScriptScope()
 
@@ -91,7 +91,7 @@ Use `VS.DumpPlayers(1)` to print every player data.
 --- End script dump
 [PLAYER] - ([1] player) :: b3ff40ba523_player
 --- Script dump for entity ([1] player)
-   networkid = "STEAM_1:0:11101"
+   networkid = "STEAM_1:0:0"
    userid = 14
    name = "Sam"
 --- End script dump
@@ -100,11 +100,9 @@ Use `VS.DumpPlayers(1)` to print every player data.
 
 #### Use on dedicated servers
 
-The player_connect event is fired only once when a player connects to the server. For this reason, it is not possible to get the Steam name and SteamIDs of players that were connected to the server prior to a map change. This data will only be available for players that connect to the server while your map is running.
+The player_connect event is fired only once when a player connects to the server. For this reason, it is not possible to get the Steam name and SteamIDs of players that were connected to the server prior to a map change. This data will only be available for players that connect to the server while your map is running. This is generally not an issue for singleplayer and coop maps that are locally hosted, unless the map is changed while another is loaded.
 
-This is not an issue for singleplayer and coop maps that are locally hosted (unless the map is changed while another is loaded).
-
-This also breaks automatic userid validation, requiring manual work. To manually validate every player, execute `VS.ValidateUseridAll()` on the `round_start` event (or `round_freeze_end`, this is dependant on your map and how the data is used). Note that this validation is asynchronous, meaning you cannot access player userids in the same frame as validating them.
+This also breaks automatic userid validation, requiring manual work. To manually validate every player, you can execute `VS.ValidateUseridAll()` on an event such as `round_start` or `round_freeze_end`; this is dependant on your map and how the data is used. Note that this validation is asynchronous, meaning you cannot access player userids in the same frame as validating them.
 
 ## Changelog
 See [CHANGELOG.txt](CHANGELOG.txt)

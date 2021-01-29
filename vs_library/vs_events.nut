@@ -66,7 +66,7 @@ if (EVENTS){
 // When the limit is reached, the oldest 32 entries are deleted.
 
 local gEventData = ::_xa9b2dfB7ffe;
-local flTimeoutThold = ::FrameTime()*2;
+local flTimeoutThold = TICK_INTERVAL*2;
 local Time = Time;
 local Fmt = ::format;
 

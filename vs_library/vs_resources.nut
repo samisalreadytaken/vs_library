@@ -7,7 +7,7 @@ local _ = ::getroottable();
 
 // Don't load if the library is already loaded
 if( "VS" in _ && typeof::VS == "table" &&
-    "MAX_COORD_FLOAT" in _ && !::VS._reload )
+    "IsInteger" in ::VS && !::VS._reload )
 	return;;
 
 local __ = function(){}
@@ -39,6 +39,7 @@ if( ::print.getinfos().native )
 if( ::EntFireByHandle.getinfos().native )
 	::DoEntFireByInstanceHandle <- ::EntFireByHandle;
 
+local TICK_INTERVAL = FrameTime();
 local ROOT = getroottable();
 ::CONST <- getconsttable();
 ::MAX_COORD_FLOAT <- 16384.0;

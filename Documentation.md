@@ -77,7 +77,6 @@ Included in `vs_library.nut`
 | Variable           | Value                            |
 | ------------------ | -------------------------------- |
 | `CONST`            | `table` Squirrel constant table  |
-| `vs_library`       | `string` VScript Library version |
 | `MAX_COORD_FLOAT`  | `16384.0` (`1<<14`)              |
 | `MAX_TRACE_LENGTH` | `56755.84086241`                 |
 | `DEG2RAD`          | `0.01745329`                     |
@@ -1290,10 +1289,12 @@ VS.EventQueue.AddEvent( function()
 }, 0.5, this )
 ```
 
-The internal function can also be called with a premade event object.
+The internal function can also be called with a premade event object using `VS.EventQueue.CreateEvent`.
 
 ```cs
-VS.EventQueue.AddEventInternal( event, delay, curtime )
+local event = VS.EventQueue.CreateEvent( Msg, [null, "Message 2\n"] )
+
+VS.EventQueue.AddEventInternal( event, delay )
 ```
 ________________________________
 
@@ -1910,7 +1911,7 @@ ________________________________
 
 <a name="f_FindEntityClassNearestFacing"></a>
 ```cpp
-handle VS::FindEntityClassNearestFacing(Vector vOrigin, Vector vFacing, float fThreshold, string sClassname)
+handle VS::FindEntityClassNearestFacing(Vector vOrigin, Vector vFacing, float fThreshold, string szClassname)
 ```
 
 ________________________________
@@ -1924,7 +1925,7 @@ ________________________________
 
 <a name="f_FindEntityClassNearestFacingNearest"></a>
 ```cpp
-handle VS::FindEntityClassNearestFacingNearest(Vector vOrigin, Vector vFacing, float fThreshold, string sClassname, float flRadius )
+handle VS::FindEntityClassNearestFacingNearest(Vector vOrigin, Vector vFacing, float fThreshold, string szClassname, float flRadius )
 ```
 When two candidate entities are in front of each other, pick the closer one
 ________________________________

@@ -13,6 +13,30 @@ local AddEvent = ::DoEntFireByInstanceHandle;
 	return AddEvent( target, action+"", value+"", delay, activator, caller );
 }
 
+local DoEntFire = ::DoEntFire;
+//-----------------------------------------------------------------------
+// Reduce 3 calls
+//-----------------------------------------------------------------------
+::EntFire <- function( target, action, value = "", delay = 0.0, activator = null ) : (DoEntFire)
+{
+	if ( !value )
+	{
+		value = "";
+	};
+
+	local caller;
+	if ( "self" in this )
+	{
+		caller = self;
+		if ( !activator )
+		{
+			activator = self;
+		};
+	};
+
+	DoEntFire( ""+target, ""+action, ""+value, delay, activator, caller );
+}
+
 ::PrecacheModel <- function(s) : (World)
 {
 	World.PrecacheModel(s);
@@ -201,7 +225,7 @@ function VS::OnTimer( hEnt, Func, tScope = null, bExecInEnt = false )
 // Output : table [ent scope]
 //-----------------------------------------------------------------------
 local compile = ::compilestring;
-function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false ):(compile)
+function VS::AddOutput( hEnt, szOutput, Func, tScope = null, bExecInEnt = false ):(compile)
 {
 	if ( !tScope )
 		tScope = GetCaller();
@@ -228,18 +252,18 @@ function VS::AddOutput( hEnt, sOutput, Func, tScope = null, bExecInEnt = false )
 
 	local r = hEnt.GetScriptScope();
 
-	r[sOutput] <- bExecInEnt ? Func : Func.bindenv(tScope);
+	r[szOutput] <- bExecInEnt ? Func : Func.bindenv(tScope);
 
-	hEnt.ConnectOutput(sOutput, sOutput);
+	hEnt.ConnectOutput(szOutput, szOutput);
 
 	return r;
 }
 
 // This could still be useful in specific scenarios
-function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false ):(AddEvent, Fmt)
+function VS::AddOutput2( hEnt, szOutput, Func, tScope = null, bExecInEnt = false ):(AddEvent, Fmt)
 {
 	if ( hEnt.GetScriptScope() || typeof Func == "function" )
-		return AddOutput( hEnt, sOutput, Func, tScope, bExecInEnt );
+		return AddOutput( hEnt, szOutput, Func, tScope, bExecInEnt );
 
 	if ( typeof Func != "string" )
 		throw "Invalid function type " + typeof Func;
@@ -253,7 +277,7 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 			throw "Invalid function path. Not an entity";
 		};
 
-		AddEvent( hEnt,"AddOutput", Fmt( "%s %s,RunScriptCode,%s", sOutput, tScope.self.GetName(), Func ), 0.0, tScope.self, hEnt );
+		AddEvent( hEnt,"AddOutput", Fmt( "%s %s,RunScriptCode,%s", szOutput, tScope.self.GetName(), Func ), 0.0, tScope.self, hEnt );
 	}
 	else
 	{
@@ -264,7 +288,7 @@ function VS::AddOutput2( hEnt, sOutput, Func, tScope = null, bExecInEnt = false 
 			SetName(hEnt, name);
 		};
 
-		AddEvent( hEnt,"AddOutput", Fmt( "%s %s,RunScriptCode,%s", sOutput, name, Func ), 0.0, null, hEnt );
+		AddEvent( hEnt,"AddOutput", Fmt( "%s %s,RunScriptCode,%s", szOutput, name, Func ), 0.0, null, hEnt );
 	};
 }
 
@@ -615,12 +639,12 @@ function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold ):(Entities)
 	return best_ent;
 }
 
-function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassname ):(Entities)
+function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, szClassname ):(Entities)
 {
 	local bestDot = fThreshold,
 	      best_ent, ent;
 
-	while ( ent = Entities.FindByClassname(ent,sClassname) )
+	while ( ent = Entities.FindByClassname(ent,szClassname) )
 	{
 		local to_ent = ent.GetOrigin() - vOrigin;
 
@@ -640,7 +664,7 @@ function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, sClassn
 
 // When two candidate entities are in front of each other, pick the closer one
 // Not perfect, but it works to some extent
-function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, sClassname, flRadius ):(Entities)
+function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, szClassname, flRadius ):(Entities)
 {
 	local flMaxDistSqr, best_ent, ent;
 
@@ -653,7 +677,7 @@ function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, 
 		flMaxDistSqr = 3.22122e+09; // MAX_TRACE_LENGTH * MAX_TRACE_LENGTH
 	};
 
-	while ( ent = Entities.FindByClassname(ent,sClassname) )
+	while ( ent = Entities.FindByClassname(ent,szClassname) )
 	{
 		local to_ent = ent.GetOrigin() - vOrigin;
 
