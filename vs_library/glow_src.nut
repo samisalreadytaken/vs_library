@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
 //                       github.com/samisalreadytaken
-//- v1.0.9 --------------------------------------------------------------
+//- v1.0.10 -------------------------------------------------------------
 //
 // Easy glow handling library.
 // Can be used on any entity that has a model.
@@ -36,8 +36,8 @@ if ( !("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Gl
 	//-----------------------------------------------------------------------
 	function Glow::Get( src ) : ( _list )
 	{
-		if( !src || src.GetModelName() == "" )
-			throw "Glow: Invalid source entity";
+		if( !src || !src.IsValid() || src.GetModelName() == "" )
+			return;
 
 		for( local i = _list.len(); i--; )
 		{
