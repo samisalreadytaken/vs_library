@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------
 --------------------- Copyright (c) samisalreadytaken -------------------
---- v0.1.1 --------------------------------------------------------------
+--- v0.1.3 --------------------------------------------------------------
 
-local VER = "v0.1.1"
+local VER = "v0.1.3"
 
 if not _VS then
 	_VS = {}
@@ -15,12 +15,12 @@ _VS[VER] = VS
 
 -------------------------------------------------------------------------
 
-VS.MAX_COORD_FLOAT = 16384.0
-VS.MAX_TRACE_LENGTH = 56755.84086241697115430736
-VS.DEG2RAD = 0.01745329251994329576
-VS.RAD2DEG = 57.29577951308232087679
-VS.PI = 3.14159265358979323846
-VS.RAND_MAX = 0x7FFF
+MAX_COORD_FLOAT = 16384.0
+MAX_TRACE_LENGTH = 56755.84086241697115430736
+DEG2RAD = 0.01745329251994329576
+RAD2DEG = 57.29577951308232087679
+PI = 3.14159265358979323846
+RAND_MAX = 0x7FFF
 
 local Msg,Warning = Msg,Warning
 local append,select,type,f,floor = table.insert,select,type,string.format,math.floor
@@ -38,7 +38,7 @@ local throw = function(msg)
 
 end
 
-if IsServer() then do ---------------------------------------------------
+if SERVER_DLL then do ---------------------------------------------------
 
 local tQueue = {}
 local nCompletedInQueue = 0
@@ -55,7 +55,7 @@ function VS.OnPlayerSpawn(...)
 
 	if bPlayerSpawned or ply and
 	   type(ply) == "table" and
-	   type(ply.__self) == "userdata" and
+	   IsValidEntity(ply) and
 	   not ply:IsNull() and
 	   ply:GetClassname() == "player" then
 		return Warning("VS::OnPlayerSpawn: player is already spawned\n")
@@ -63,16 +63,15 @@ function VS.OnPlayerSpawn(...)
 
 	local argv = pack(...)
 	local func = argv[1]
+	local info = debug.getinfo(func,"S")
 
 	if argv.n == 0 or type(func) ~= "function" then
-		return throw("VS::OnPlayerSpawn: invalid parameter 1\n")
+		return throw("VS::OnPlayerSpawn: invalid parameter 1 ["..info.short_src.."]\n")
 	end
-
-	local info = debug.getinfo(func,"S")
 
 	for i = 1, #tQueue do
 		if tQueue[tQueue[i]].source == info.source then
-			return throw("VS::OnPlayerSpawn: found event from this file in the queue, aborting\n")
+			return throw("VS::OnPlayerSpawn: found event from this file in the queue, aborting ["..info.short_src.."]\n")
 		end
 	end
 
@@ -108,7 +107,7 @@ function VS.OnPlayerSpawn(...)
 	append(tQueue,func)
 	tQueue[func] =
 	{
-		bSuccess = false,
+		success = false,
 		params = params,
 		err_cb = err_cb,
 		err_msg = err_msg,
@@ -117,7 +116,7 @@ function VS.OnPlayerSpawn(...)
 		line = info.linedefined
 	}
 
-	Msg(msg.."\n")
+	Msg(msg.." ["..info.short_src.."]\n")
 
 	return true
 
@@ -132,7 +131,7 @@ local function RunQueue()
 		local f = tQueue[i]
 		local t = tQueue[f]
 
-		if not t.bSuccess then
+		if not t.success then
 
 			local p,r = t.params
 
@@ -144,7 +143,7 @@ local function RunQueue()
 
 			if r or r == nil then
 
-				t.bSuccess = true
+				t.success = true
 				nCompletedInQueue = nCompletedInQueue+1
 
 			end
@@ -207,16 +206,17 @@ local function Destroy()
 
 end
 
-if not _VS.__iEventSpawn and not Entities:GetLocalPlayer()then
+if not _VS.__eventspawn and not Entities:GetLocalPlayer()then
 
-	_VS.__iEventSpawn = ListenToGameEvent("player_connect_full", function()
+	_VS.__eventspawn = ListenToGameEvent("player_connect_full", function()
 
 		bPlayerSpawned = true
 
-		if _VS.__hSpawnInit then
-			_VS.__hSpawnInit:Kill()
-			_VS.__hSpawnInit = nil
+		if _VS.__dummy then
+			_VS.__dummy:Kill()
+			_VS.__dummy = nil
 		end
+		_VS.__dummy = Entities:CreateByClassname("soundent")
 
 		FixLevelChange()
 
@@ -224,9 +224,7 @@ if not _VS.__iEventSpawn and not Entities:GetLocalPlayer()then
 
 			local nInitCount = 0
 
-			_VS.__hSpawnInit = Entities:CreateByClassname("soundent")
-
-			_VS.__hSpawnInit:SetContextThink("",function()
+			_VS.__dummy:SetContextThink("", function()
 
 				nInitCount = nInitCount+1
 
@@ -241,7 +239,7 @@ if not _VS.__iEventSpawn and not Entities:GetLocalPlayer()then
 
 							local t = tQueue[tQueue[i]]
 
-							if not t.bSuccess then
+							if not t.success then
 
 								if t.err_msg then
 									Warning(t.err_msg.."\n")
@@ -259,10 +257,14 @@ if not _VS.__iEventSpawn and not Entities:GetLocalPlayer()then
 
 					Destroy()
 					nInitCount = nil
-					_VS.__hSpawnInit:Kill()
-					_VS.__hSpawnInit = nil
-					StopListeningToGameEvent(_VS.__iEventSpawn)
-					_VS.__iEventSpawn = nil
+
+					-- delete next frame to preserve other event listeners
+					_VS.__dummy:SetContextThink( "R", function()
+						StopListeningToGameEvent(_VS.__eventspawn)
+						_VS.__eventspawn = nil
+						_VS.__dummy:Kill()
+						_VS.__dummy = nil
+					end, 0.0 )
 
 					return
 
@@ -270,15 +272,19 @@ if not _VS.__iEventSpawn and not Entities:GetLocalPlayer()then
 
 				return 1.0
 
-			end,1.0)
+			end, 1.0)
 
-			Msg("VS::PostPlayerSpawn: running ("..tostring(_VS.__hSpawnInit:entindex())..")\n")
+			Msg("VS::PostPlayerSpawn: running ("..tostring(_VS.__dummy:entindex())..")\n")
 
 		else
 
 			Destroy()
-			StopListeningToGameEvent(_VS.__iEventSpawn)
-			_VS.__iEventSpawn = nil
+			_VS.__dummy:SetContextThink( "R", function()
+				StopListeningToGameEvent(_VS.__eventspawn)
+				_VS.__eventspawn = nil
+				_VS.__dummy:Kill()
+				_VS.__dummy = nil
+			end, 0.0 )
 
 		end
 
@@ -286,7 +292,7 @@ if not _VS.__iEventSpawn and not Entities:GetLocalPlayer()then
 
 end
 
-end end -- IsServer
+end end -- SERVER_DLL
 
 function VS.IsAddonEnabled(str)
 
@@ -305,115 +311,88 @@ end
 function VS.IsInteger(f) return floor(f) == f end
 
 function VS.IsLookingAt( vSrc, vTarget, vDir, cosTolerance )
-
 	return (vTarget-vSrc):Normalized():Dot(vDir) >= cosTolerance
-
 end
 
 function VS.PointOnLineNearestPoint( vStartPos, vEndPos, vPoint )
-
 	local v1 = vEndPos - vStartPos
 	local v1l = v1:Length()
-	local dist = v1:Dot(vPoint-vStartPos) / (v1l*v1l)
-
-	if dist < 0.0 then
+	local dist = v1:Dot( vPoint - vStartPos ) / ( v1l * v1l )
+	if dist <= 0.0 then
 		return vStartPos
-	elseif dist > 1.0 then
+	end
+
+	if dist >= 1.0 then
 		return vEndPos
-	else
-		return vStartPos + v1 * dist
 	end
 
+	return vStartPos + v1*dist
 end
 
-function VS.Approach( tg, val, spd )
-
-	local dt = tg - val
-
-	if dt > spd then
-		val = val + spd
-	elseif dt < -spd then
-		val = val - spd
-	else
-		val = tg
+function VS.Approach( t, v, f )
+	local dt = t - v
+	if dt > f then
+		return v + f
 	end
-
-	return val
-
+	if dt < -f then
+		return v - f
+	end
+	return t
 end
 
-function VS.ApproachAngle( tg, val, spd )
-
-	tg = tg % 360.0
-
-	if tg > 180.0 then
-		tg = tg - 360.0
-	elseif tg < -180.0 then
-		tg = tg + 360.0
+function VS.ApproachAngle( t, v, f )
+	t = t % 360.0
+	if t > 180.0 then
+		t = t - 360.0
+	elseif t < -180.0 then
+		t = t + 360.0
 	end
-
-	val = val % 360.0
-
-	if val > 180.0 then
-		val = val - 360.0
-	elseif val < -180.0 then
-		val = val + 360.0
+	v = v % 360.0
+	if v > 180.0 then
+		v = v - 360.0
+	elseif v < -180.0 then
+		v = v + 360.0
 	end
-
-	local dt = tg - val
-
+	local dt = t - v
 	dt = dt % 360.0
-
 	if dt > 180.0 then
 		dt = dt - 360.0
 	elseif dt < -180.0 then
 		dt = dt + 360.0
 	end
-
-	if spd < 0 then
-		spd = -spd
+	if f < 0 then
+		f = -f
 	end
-
-	if dt > spd then
-		val = val + spd
-	elseif dt < -spd then
-		val = val - spd
-	else
-		val = tg
+	if dt > f then
+		return v + f
 	end
-
-	return val
-
+	if dt < -f then
+		return v - f
+	end
+	return t
 end
 
 function VS.AngleDiff( dst, src )
-
 	local ang = dst - src
-
 	ang = ang % 360.0
-
 	if ang > 180.0 then
-		ang = ang - 360.0
-	elseif ang < -180.0 then
-		ang = ang + 360.0
+		return ang - 360.0
 	end
-
+	if ang < -180.0 then
+		return ang + 360.0
+	end
 	return ang
-
 end
 
 function VS.AngleNormalize( ang )
-
 	ang = ang % 360.0
-
 	if ang > 180.0 then
-		ang = ang - 360.0
-	elseif ang < -180.0 then
-		ang = ang + 360.0
+		return ang - 360.0
 	end
-
+	if ang < -180.0 then
+		return ang + 360.0
+	end
 	return ang
-
 end
 
 function VS.QAngleNormalize( ang )
@@ -509,6 +488,20 @@ function VS.VectorsAreEqual( a, b, tolerance )
 	return ( x <= tolerance and
 	         y <= tolerance and
 	         z <= tolerance )
+end
+
+function VS.IsPointInBox( vec, min, max )
+
+	return ( vec.x >= min.x and vec.x <= max.x and
+	         vec.y >= min.y and vec.y <= max.y and
+	         vec.z >= min.z and vec.z <= max.z )
+end
+
+function VS.IsBoxIntersectingBox( min1, max1, min2, max2 )
+	if ( min1.x > max2.x ) or ( max1.x < min2.x ) then return false end
+	if ( min1.y > max2.y ) or ( max1.y < min2.y ) then return false end
+	if ( min1.z > max2.z ) or ( max1.z < min2.z ) then return false end
+	return true
 end
 
 -------------------------------------------------------------------------
