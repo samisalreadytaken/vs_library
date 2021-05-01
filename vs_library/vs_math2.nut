@@ -48,11 +48,11 @@ function Quaternion::_mul(d):(Quaternion) { return Quaternion( x*d,y*d,z*d,w*d )
 function Quaternion::_div(d):(Quaternion) { return Quaternion( x/d,y/d,z/d,w/d ) }
 function Quaternion::_unm() :(Quaternion) { return Quaternion( -x,-y,-z,-w ) }
 function Quaternion::_typeof() { return "Quaternion" }
-function Quaternion::_tostring():(Fmt) { return Fmt("Quaternion(%g,%g,%g,%g)",x,y,z,w) }
+function Quaternion::_tostring():(Fmt) { return Fmt("Quaternion(%g, %g, %g, %g)",x,y,z,w) }
 
 local array = ::array;
 
-class::matrix3x4
+class::matrix3x4_t
 {
 	//-----------------------------------------------------------------------------
 	// Creates a matrix where the X axis = forward
@@ -76,15 +76,20 @@ class::matrix3x4
 	}
 
 	function _typeof() { return "matrix3x4_t" }
-	function _tostring() { return "matrix3x4_t" }
 
 	m_flMatVal = null;
+}
+
+function matrix3x4_t::_tostring() : (Fmt)
+{
+	local m = m_flMatVal;
+	return Fmt( "[ (%g, %g, %g), (%g, %g, %g), (%g, %g, %g), (%g, %g, %g) ]", m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[2][0], m[2][1], m[2][2], m[0][3], m[1][3], m[2][3] );
 }
 
 local _VEC =::Vector();
 local _QUAT =::Quaternion();
 local Vector = ::Vector;
-local matrix3x4 = ::matrix3x4;
+local matrix3x4_t = ::matrix3x4_t;
 local max = ::max;
 local min = ::min;
 local fabs = ::fabs;
@@ -177,7 +182,7 @@ function VS::VectorITransform( in1, in2, out = _VEC )
 local VectorITransform = ::VS.VectorITransform;
 local VectorTransform = ::VS.VectorTransform;
 
-// assume in2 is a rotation (matrix3x4) and rotate the input vector
+// assume in2 is a rotation (matrix3x4_t) and rotate the input vector
 function VS::VectorRotate( in1, in2, out = _VEC )
 {
 	// Assert( in1 != out );
@@ -194,9 +199,9 @@ function VS::VectorRotate( in1, in2, out = _VEC )
 local VectorRotate = ::VS.VectorRotate;
 
 // assume in2 is a rotation (QAngle) and rotate the input vector
-function VS::VectorRotate2( in1, in2, out = _VEC ):(matrix3x4,VectorRotate)
+function VS::VectorRotate2( in1, in2, out = _VEC ):(matrix3x4_t,VectorRotate)
 {
-	local matRotate = matrix3x4();
+	local matRotate = matrix3x4_t();
 	AngleMatrix( in2, matRotate );
 	VectorRotate( in1, matRotate, out );
 
@@ -206,7 +211,7 @@ function VS::VectorRotate2( in1, in2, out = _VEC ):(matrix3x4,VectorRotate)
 // assume in2 is a rotation (Quaternion) and rotate the input vector
 function VS::VectorRotate3( in1, in2, out = _VEC ):(Quaternion)
 {
-//	local matRotate = matrix3x4();
+//	local matRotate = matrix3x4_t();
 //	QuaternionMatrix( in2, matRotate );
 //	VectorRotate( in1, matRotate, out );
 
@@ -367,8 +372,8 @@ function VS::QuaternionConjugate( p, q )
 //-----------------------------------------------------------------------------
 function VS::QuaternionMA( p, s, q, qt = _QUAT ):(Quaternion,QuaternionNormalize,QuaternionMult)
 {
-	// QuaternionScale( q, s, q1 );
-	local q1 = q * s;
+	local q1 = Quaternion();
+	QuaternionScale( q, s, q1 );
 	local p1 = QuaternionMult( p, q1, Quaternion() );;
 	QuaternionNormalize( p1 );
 
@@ -589,17 +594,15 @@ function VS::QuaternionAngleDiff( p, q ):(Quaternion,QuaternionMult,min,sqrt,asi
 }*/
 }
 
-/*
-// FIXME2: p.x is float, not Vector. Why is it vector here???
-function VS::QuaternionScale( p, t, q )
+function VS::QuaternionScale( p, t, q ) : (Vector,min,sqrt,sin,asin)
 {
 if(0){
-	local p0 = ::Quaternion();
-	local q = ::Quaternion();
+	local p0 = Quaternion();
+	local q = Quaternion();
 	p0.Init( 0.0, 0.0, 0.0, 1.0 );
 
 	// slerp in "reverse order" so that p doesn't get realigned
-	QuaternionSlerp( p, p0, 1.0 - ::fabs( t ), q );
+	QuaternionSlerp( p, p0, 1.0 - fabs( t ), q );
 	if(t < 0.0)
 	{
 		q.w = -q.w;
@@ -609,13 +612,19 @@ if(0){
 
 	// FIXME: this isn't overly sensitive to accuracy, and it may be faster to
 	// use the cos part (w) of the quaternion (::sin(omega)*N,::cos(omega)) to figure the new scale.
-	local sinom = ::sqrt( DotProduct( &p.x, &p.x ) );
-	sinom = ::min( sinom, 1.0 );
 
-	local sinsom = ::sin( ::asin( sinom ) * t );
+	local qv = Vector(p.x,p.y,p.z);
+	local sinom = sqrt( qv.Dot(qv) );
+
+	sinom = min( sinom, 1.0 );
+
+	local sinsom = sin( asin( sinom ) * t );
 
 	t = sinsom / (sinom + FLT_EPSILON);
-	q.x = VectorMultiply( &p.x, t );
+	local tmp = VectorMultiply( qv, t );
+	q.x = tmp.x;
+	q.y = tmp.y;
+	q.z = tmp.z;
 
 	// rescale rotation
 	r = 1.0 - sinsom * sinsom;
@@ -623,7 +632,7 @@ if(0){
 	// Assert( r >= 0 );
 	if(r < 0.0)
 		r = 0.0;
-	r = ::sqrt( r );
+	r = sqrt( r );
 
 	// keep sign of rotation
 	if(p.w < 0)
@@ -634,12 +643,12 @@ if(0){
 }
 
 // QAngle , QAngle , Vector, float
-function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis, deltaAngle )
+function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis, deltaAngle ) : (Quaternion)
 {
-	local srcQuat = ::Quaternion(),
-	      destQuat = ::Quaternion(),
-	      srcQuatInv = ::Quaternion(),
-	      out = ::Quaternion();
+	local srcQuat = Quaternion(),
+	      destQuat = Quaternion(),
+	      srcQuatInv = Quaternion(),
+	      out = Quaternion();
 	AngleQuaternion( srcAngles, srcQuat );
 	AngleQuaternion( destAngles, destQuat );
 	QuaternionScale( srcQuat, -1, srcQuatInv );
@@ -649,12 +658,13 @@ function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis, deltaAngl
 	QuaternionAxisAngle( out, deltaAxis, deltaAngle );
 }
 
+/*
 // QAngle , QAngle , Vector, float
 function VS::RotationDelta( srcAngles, destAngles, out )
 {
-	local src = ::matrix3x4(),
-	      srcInv = ::matrix3x4(),
-	      dest = ::matrix3x4();
+	local src = ::matrix3x4_t(),
+	      srcInv = ::matrix3x4_t(),
+	      dest = ::matrix3x4_t();
 
 	AngleMatrix( srcAngles, src );
 	AngleMatrix( destAngles, dest );
@@ -861,7 +871,7 @@ function VS::QuaternionAngles( q, angles = _VEC ):(asin,atan2)
 {
 /*# if(1){
 	// FIXME: doing it this way calculates too much data, needs to do an optimized version...
-	local matrix = ::matrix3x4();
+	local matrix = ::matrix3x4_t();
 	QuaternionMatrix( q, matrix );
 	MatrixAngles( matrix, angles );
 #}else{ */
@@ -880,10 +890,10 @@ function VS::QuaternionAngles( q, angles = _VEC ):(asin,atan2)
 
 local QuaternionMatrix = ::VS.QuaternionMatrix;
 
-function VS::QuaternionAngles2( q, angles = _VEC ):(matrix3x4,QuaternionMatrix,MatrixAngles)
+function VS::QuaternionAngles2( q, angles = _VEC ):(matrix3x4_t,QuaternionMatrix,MatrixAngles)
 {
 	// FIXME: doing it this way calculates too much data, needs to do an optimized version...
-	local matrix = matrix3x4();
+	local matrix = matrix3x4_t();
 	QuaternionMatrix( q, matrix );
 	MatrixAngles( matrix, angles );
 
@@ -974,7 +984,7 @@ function VS::MatrixQuaternion( mat, q = _QUAT ):(AngleQuaternion,MatrixAngles)
 //-----------------------------------------------------------------------------
 // Purpose: Converts a basis to a quaternion
 //-----------------------------------------------------------------------------
-function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT ):(matrix3x4,fabs,MatrixAnglesQ)
+function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT ):(matrix3x4_t,fabs,MatrixAnglesQ)
 {
 	Assert( fabs( vecForward.LengthSqr() - 1.0 ) < 1.e-3 );
 	Assert( fabs( vecRight.LengthSqr() - 1.0 ) < 1.e-3 );
@@ -1032,7 +1042,7 @@ function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT ):(matrix
 
 	// Version 2: Go through angles
 
-	local mat = matrix3x4( vecForward, vecLeft, vecUp );
+	local mat = matrix3x4_t( vecForward, vecLeft, vecUp );
 
 	// mat -> QAng -> Quat
 	// local angles = Vector();
@@ -1452,7 +1462,7 @@ function VS::ConcatTransforms( in1, in2, out )
 // Input  :
 //          Vector vAxisOrRot -
 //          float angle -
-//          matrix3x4 mat -
+//          matrix3x4_t mat -
 //-----------------------------------------------------------------------------
 function VS::MatrixBuildRotationAboutAxis( vAxisOfRot, angleDegrees, dst ):(sin,cos)
 {

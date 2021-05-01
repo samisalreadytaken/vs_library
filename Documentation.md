@@ -50,7 +50,7 @@ ________________________________
 | `Vector`, `vec3_t`    | `Vector(0,1,2)`                                                                     |
 | `QAngle`              | `Vector(0,1,2)`, `(pitch, yaw, roll)` Euler angle. Vector, **not a different type** |
 | `Quaternion`          | `Quaternion(0,1,2,3)`                                                               |
-| `matrix3x4_t`         | `matrix3x4()`                                                                       |
+| `matrix3x4_t`         | `matrix3x4_t()`                                                                       |
 | `trace_t`             | `VS.TraceLine()`                                                                    |
 | `ray_t`               | `VS.TraceLine().Ray()`, `trace_t`                                                   |
 | `TYPE`                | Multiple types. Any unless specified in description                                 |
@@ -241,7 +241,7 @@ Not included in `vs_library.nut`
 
 ### [vs_math2](#vs_math2-1)
 [`Quaternion`](#f_Quaternion)  
-[`matrix3x4`](#f_matrix3x4)  
+[`matrix3x4_t`](#f_matrix3x4_t)  
 [`VS.InvRSquared()`](#f_InvRSquared)  
 [`VS.a_swap()`](#f_a_swap)  
 [`VS.MatrixRowDotProduct()`](#f_MatrixRowDotProduct)  
@@ -2053,9 +2053,9 @@ Quaternion Quaternion(x, y, z, w)
 
 ________________________________
 
-<a name="f_matrix3x4"></a>
+<a name="f_matrix3x4_t"></a>
 ```cpp
-class matrix3x4
+class matrix3x4_t
 {
 	m_flMatVal[3][4]
 
@@ -2066,8 +2066,8 @@ class matrix3x4
 ________________________________
 
 ```cpp
-matrix3x4_t matrix3x4()
-matrix3x4_t matrix3x4(Vector xAxis, Vector yAxis, Vector zAxis, Vector vecOrigin)
+matrix3x4_t matrix3x4_t()
+matrix3x4_t matrix3x4_t(Vector xAxis, Vector yAxis, Vector zAxis, Vector vecOrigin)
 ```
 Creates a matrix where the X axis = forward  
 the Y axis = left, and the Z axis = up
