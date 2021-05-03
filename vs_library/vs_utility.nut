@@ -302,7 +302,7 @@ local print = ::print;
 function VS::DumpScope( input, bPrintAll = false, bDeepPrint = true, bPrintGuides = true, nDepth = 0 ):(print)
 {
 	// non-native variables
-	local _skip = ["Assert","Document","PrintHelp","RetrieveNativeSignature","UniqueString","IncludeScript","Entities","CSimpleCallChainer","CCallChainer","LateBinder","__ReplaceClosures","__DumpScope","printl","VSquirrel_OnCreateScope","VSquirrel_OnReleaseScope","PrecacheCallChain","OnPostSpawnCallChain","DispatchOnPostSpawn","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn","EntFireByHandle","EntFire","RAND_MAX","_version_","_intsize_","PI","_charsize_","_floatsize_","self","__vname","__vrefs","_xa9b2dfB7ffe","VS","Chat","ChatTeam","txt","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","HPlayer","Ent","Entc","Quaternion","matrix3x4","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
+	local _skip = ["Assert","Document","PrintHelp","RetrieveNativeSignature","UniqueString","IncludeScript","Entities","CSimpleCallChainer","CCallChainer","LateBinder","__ReplaceClosures","__DumpScope","printl","VSquirrel_OnCreateScope","VSquirrel_OnReleaseScope","PrecacheCallChain","OnPostSpawnCallChain","DispatchOnPostSpawn","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn","EntFireByHandle","EntFire","RAND_MAX","_version_","_intsize_","PI","_charsize_","_floatsize_","self","__vname","__vrefs","_xa9b2dfB7ffe","VS","Chat","ChatTeam","txt","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","HPlayer","Ent","Entc","Quaternion","matrix3x4_t","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
 	local indent = function(c) for( local i = c; i--; ) print("   ");
 	local SWorld = Entities.First().GetScriptScope();
 	if ( bPrintGuides ) print(" ------------------------------\n");
@@ -763,7 +763,7 @@ VS.EventQueue.AddEventInternal <- function( event, flDelay ) :
 			AddEvent( World, "RunScriptCode", "::VS.EventQueue.ServiceEvents()", 0.0, event[m_activator], event[m_caller] );
 		}
 		// Expect no event to be not fired for longer than a frame
-		else if ( m_Events[ m_pNext ] && ( ( curtime - m_Events[ m_pNext ][ m_flFireTime ] ) >= TICK_INTERVAL ) )
+		else if ( m_Events[ m_pNext ] && ( ( curtime - m_Events[ m_pNext ][ m_flFireTime ] - 0.001 ) >= TICK_INTERVAL ) )
 		{
 			// Game eventqueue is reset, or something has gone wrong.
 			// Reset
@@ -976,3 +976,16 @@ local ChatTeam = ::ScriptPrintMessageChatTeam;
 }
 
 }; // !PORTAL2
+
+/*
+local print = print, Fmt = format, argv = []
+::printf <- function( str, ... ) : ( print, Fmt, argv )
+{
+	argv.resize(vargc+2)
+	argv[1] = str
+	for ( local i = vargc; i--; )
+		argv[i+2] = vargv[i]
+	print( Fmt.acall( argv ) )
+	argv.clear()
+}
+*/

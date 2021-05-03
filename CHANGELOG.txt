@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2021-05-04 [v2.39.10]
+- VS.EventQueue bug fix
+
 2021-01-29 [v2.39.9]
 - Added VS.EventQueue.CreateEvent
 - VS.EventQueue.AddEventInternal signature is changed!
