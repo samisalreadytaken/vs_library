@@ -908,7 +908,7 @@ local _TIMEOUT = TIMEOUT+TICK_INTERVAL*4;
 		};
 	};
 
-	::VS.EventQueue.AddEvent( ::_VS_DS_Init, 0.1, this ); // delay value should not be less than 5 frames (SendToConsole delay)
+	::VS.EventQueue.AddEvent( ::_VS_DS_Init, 1.0, this ); // delay value should not be less than 5 frames (SendToConsole delay)
 }
 
 ::_VS_DS_IsListen <- function()
