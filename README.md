@@ -5,7 +5,7 @@ High-performance vscript libraries; written mainly for CSGO, compatible with Por
 
 See the [**hlvr**](https://github.com/samisalreadytaken/vs_library/tree/hlvr) branch for usage in Half-Life Alyx.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.39.11-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.40.0-informational
 [size]: https://img.shields.io/github/size/samisalreadytaken/vs_library/vs_library.nut
 
 ## Documentation
@@ -103,6 +103,32 @@ Use `VS.DumpPlayers(1)` to print every player data.
 The player_connect event is fired only once when a player connects to the server. For this reason, it is not possible to get the Steam name and SteamIDs of players that were connected to the server prior to a map change. This data will only be available for players that connect to the server while your map is running. This is generally not an issue for singleplayer and coop maps that are locally hosted, unless the map is changed while another is loaded.
 
 This also breaks automatic userid validation, requiring manual work. To manually validate every player, you can execute `VS.ValidateUseridAll()` on an event such as `round_start` or `round_freeze_end`; this is dependant on your map and how the data is used. Note that this validation is asynchronous, meaning you cannot access player userids in the same frame as validating them.
+
+### Listening for events fired multiple times in a frame
+
+Run `VS.FixupEventListener()` on each round start on the event listeners you expect to be fired multiple times in a frame.
+
+```cpp
+VS.FixupEventListener( Ent("bullet_impact") )
+```
+
+It is harmless to run it on all event listeners.
+
+```cpp
+for ( local ent; ent = Entities.FindByClassname( ent, "logic_eventlistener" ); )
+{
+	VS.FixupEventListener( ent )
+}
+```
+
+Alternatively you can create a script file with this execution, and attach it to your event listeners. Example file `fixupeventlistener.nut` and its content:
+
+```cpp
+IncludeScript("vs_library")
+VS.FixupEventListener( self )
+```
+
+Using this fixup there can only be _one_ event listener output with event_data access. Details and the reason is explained in the documentation.
 
 ## Changelog
 See [CHANGELOG.txt](CHANGELOG.txt)

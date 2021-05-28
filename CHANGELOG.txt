@@ -3,8 +3,13 @@
 
 --------------------------------
 
+2021-05-28 [v2.40.0]
+- Added VS.FixupEventListener
+- Fixed server initialisation
+- Fixed a bug with exporting large data with VS.Log
+
 2021-05-12 [v2.39.11]
-- Server initialisation bug fix
+- Server initialisation bug fix (reverted)
 
 2021-05-04 [v2.39.10]
 - VS.EventQueue bug fix

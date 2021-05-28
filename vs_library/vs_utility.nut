@@ -302,7 +302,7 @@ local print = ::print;
 function VS::DumpScope( input, bPrintAll = false, bDeepPrint = true, bPrintGuides = true, nDepth = 0 ):(print)
 {
 	// non-native variables
-	local _skip = ["Assert","Document","PrintHelp","RetrieveNativeSignature","UniqueString","IncludeScript","Entities","CSimpleCallChainer","CCallChainer","LateBinder","__ReplaceClosures","__DumpScope","printl","VSquirrel_OnCreateScope","VSquirrel_OnReleaseScope","PrecacheCallChain","OnPostSpawnCallChain","DispatchOnPostSpawn","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn","EntFireByHandle","EntFire","RAND_MAX","_version_","_intsize_","PI","_charsize_","_floatsize_","self","__vname","__vrefs","_xa9b2dfB7ffe","VS","Chat","ChatTeam","txt","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","HPlayer","Ent","Entc","Quaternion","matrix3x4_t","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
+	local _skip = ["Assert","Document","PrintHelp","RetrieveNativeSignature","UniqueString","IncludeScript","Entities","CSimpleCallChainer","CCallChainer","LateBinder","__ReplaceClosures","__DumpScope","printl","VSquirrel_OnCreateScope","VSquirrel_OnReleaseScope","PrecacheCallChain","OnPostSpawnCallChain","DispatchOnPostSpawn","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn","EntFireByHandle","EntFire","RAND_MAX","_version_","_intsize_","PI","_charsize_","_floatsize_","self","__vname","__vrefs","{847D4B}","VS","Chat","ChatTeam","txt","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","HPlayer","Ent","Entc","Quaternion","matrix3x4_t","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
 	local indent = function(c) for( local i = c; i--; ) print("   ");
 	local SWorld = Entities.First().GetScriptScope();
 	if ( bPrintGuides ) print(" ------------------------------\n");
@@ -488,7 +488,7 @@ function VS::GetTableDir(input)
 		throw "Invalid input type '" + typeof input + "' ; expected: 'table'";
 
 	local a = [];
-	local r = _f627f40d21a6(a,input);
+	local r = _10F07AD9(a,input);
 
 	if (r)
 	{
@@ -507,7 +507,7 @@ function VS::GetTableDir(input)
 }
 
 // exclusive recursion function
-function VS::_f627f40d21a6(bF, t, l = ROOT)
+function VS::_10F07AD9(bF, t, l = ROOT)
 {
 	foreach(v, u in l)
 		if (typeof u == "table")
@@ -519,7 +519,7 @@ function VS::_f627f40d21a6(bF, t, l = ROOT)
 				}
 				else
 				{
-					local r = _f627f40d21a6(bF, t, u);
+					local r = _10F07AD9(bF, t, u);
 					if (r)
 					{
 						bF.append(v);
@@ -537,11 +537,11 @@ function VS::FindVarByName(S)
 	if (typeof S != "string")
 		throw "Invalid input type '" + typeof S + "' ; expected: 'string'";
 
-	return _fb3k55Ir91t7(S);
+	return _2E42074F(S);
 }
 
 // exclusive recursion function
-function VS::_fb3k55Ir91t7(t, l = ROOT)
+function VS::_2E42074F(t, l = ROOT)
 {
 	if (t in l)
 		return l[t];
@@ -550,7 +550,7 @@ function VS::_fb3k55Ir91t7(t, l = ROOT)
 			if (typeof u == "table")
 				if (v != "VS" && v != "Documentation")
 				{
-					local r = _fb3k55Ir91t7(t, u);
+					local r = _2E42074F(t, u);
 					if (r) return r;
 				};;;
 }
@@ -567,11 +567,11 @@ function VS::GetVarName(v)
 	if ( t == "function" || t == "native function" )
 		return v.getinfos().name;
 
-	return _fb3k5S1r91t7(t, v);
+	return _8B78B6AE(t, v);
 }
 
 // exclusive recursion function
-function VS::_fb3k5S1r91t7(t, i, s = ROOT)
+function VS::_8B78B6AE(t, i, s = ROOT)
 {
 	foreach(k, v in s)
 	{
@@ -581,7 +581,7 @@ function VS::_fb3k5S1r91t7(t, i, s = ROOT)
 		if (typeof v == "table")
 			if (k != "VS" && k != "Documentation")
 			{
-				local r = _fb3k5S1r91t7(t, i, v);
+				local r = _8B78B6AE(t, i, v);
 				if (r) return r;
 			};;
 	}
@@ -640,7 +640,7 @@ local curtime   = Time;
 local m_Events     = [null,null];
 m_Events[ m_flFireTime ] = -1.E+37; // -FLT_MAX
 
-VS.EventQueue.Dump <- function( bUseTicks = false ) :
+VS.EventQueue.Dump <- function( bUseTicks = false, indent = 0 ) :
 ( m_Events, m_flFireTime, m_pNext, m_hFunc, m_argv, m_Env, m_activator, m_caller, curtime, Fmt, TICK_INTERVAL )
 {
 	local get = function(i):(Fmt)
@@ -659,22 +659,27 @@ VS.EventQueue.Dump <- function( bUseTicks = false ) :
 		return ( 0.5 + dt / TICK_INTERVAL ).tointeger();
 	}
 
-	Msg(Fmt( "VS::EventQueue::Dump: %g : next(%g), last(%g)\n",
+	local n = "";
+	for ( local i = indent; i--; ) n += "    ";
+
+	Msg(Fmt( n + "VS::EventQueue::Dump: %g : next(%g), last(%g)\n",
 		bUseTicks ? TIME_TO_TICKS( curtime() ) : curtime(),
 		bUseTicks ? ( m_flNextQueue == -1.0 ? -1.0 : TIME_TO_TICKS( m_flNextQueue ) ) : m_flNextQueue,
 		bUseTicks ? TIME_TO_TICKS( m_flLastQueue ) : m_flLastQueue ));
 
 	for ( local ev = m_Events; ev = ev[ m_pNext ]; )
 	{
-		Msg(Fmt( "   (%s) func '%s', %s '%s', activator '%s', caller '%s'\n",
+		local fn = ev[m_hFunc].getinfos().name;
+		local ta = typeof ev[m_argv] == "array" && ev[m_argv].len();
+		Msg(Fmt( n + "   (%s) func '%s'%s, %s '%s', activator '%s', caller '%s'\n",
 			bUseTicks ? ""+TIME_TO_TICKS( ev[m_flFireTime] ) : Fmt( "%.2f", ev[m_flFireTime] ),
-			get( ev[m_hFunc] ),
-			((typeof ev[m_argv] == "array") && ev[m_argv].len()) ? "arg" : "env",
-			get( ((typeof ev[m_argv] == "array") && ev[m_argv].len()) ? ev[m_argv][0] : ev[m_Env] ),
+			fn ? fn : "<unnamed>", get( ev[m_hFunc] ),
+			ta ? "arg" : "env",
+			get( ta ? ev[m_argv][0] : ev[m_Env] ),
 			get( ev[m_activator] ),
 			get( ev[m_caller] ) ));
 	}
-	Msg( "VS::EventQueue::Dump: end.\n" );
+	Msg( n + "VS::EventQueue::Dump: end.\n" );
 
 }.bindenv(VS.EventQueue);
 
@@ -858,10 +863,10 @@ VS.EventQueue.ServiceEvents <- function() :
 // 102.4 tick : 0.00976563
 // 128.0 tick : 0.00781250
 //-----------------------------------------------------------------------
-local flTickRate = 1.0 / TICK_INTERVAL;
-function VS::GetTickrate():(flTickRate)
+local FrameTime = FrameTime;
+function VS::GetTickrate():(FrameTime)
 {
-	return flTickRate;
+	return 1.0 / FrameTime();
 }
 
 if (!PORTAL2){
@@ -908,7 +913,7 @@ local _TIMEOUT = TIMEOUT+TICK_INTERVAL*4;
 		};
 	};
 
-	::VS.EventQueue.AddEvent( ::_VS_DS_Init, 1.0, this ); // delay value should not be less than 5 frames (SendToConsole delay)
+	::VS.EventQueue.AddEvent( ::_VS_DS_Init, 0.1, this ); // delay value should not be too low
 }
 
 ::_VS_DS_IsListen <- function()
@@ -942,7 +947,11 @@ if (::_VS_DS_bExecOnce)
 	::_VS_DS_bExecOnce = false;
 };
 
-}; // !PORTAL2
+}else{ // !PORTAL2
+
+function VS::IsDedicatedServer() { return false; }
+
+};
 
 if (!PORTAL2){
 
@@ -978,14 +987,25 @@ local ChatTeam = ::ScriptPrintMessageChatTeam;
 }; // !PORTAL2
 
 /*
-local print = print, Fmt = format, argv = []
-::printf <- function( str, ... ) : ( print, Fmt, argv )
+::printf <- function( str, ... )
 {
-	argv.resize(vargc+2)
-	argv[1] = str
+	// init on first call
+
+	local print = ::print, Fmt = ::format, argv = [];
+	::printf <- function( str, ... ) : ( print, Fmt, argv )
+	{
+		argv.resize( vargc + 2 );
+		argv[1] = str;
+		for ( local i = vargc; i--; )
+			argv[i+2] = vargv[i];
+		print( Fmt.acall( argv ) );
+		argv.clear();
+	}
+
+	argv.resize( vargc + 2 );
+	argv[1] = str;
 	for ( local i = vargc; i--; )
-		argv[i+2] = vargv[i]
-	print( Fmt.acall( argv ) )
-	argv.clear()
+		argv[i+2] = vargv[i];
+	return ::printf.acall( argv );
 }
 */

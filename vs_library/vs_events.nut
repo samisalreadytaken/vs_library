@@ -13,8 +13,8 @@ VS.Events <- delegate VS :
 }
 
 // array to store event data, user should never modify
-if ( !("_xa9b2dfB7ffe" in ROOT) )
-	::_xa9b2dfB7ffe <- array(64);
+if ( !("{847D4B}" in ROOT) )
+	ROOT["{847D4B}"] <- array(64);
 
 if ( !("OnGameEvent_player_spawn" in ROOT) )
 	::OnGameEvent_player_spawn <- dummy;
@@ -65,7 +65,7 @@ if (EVENTS){
 //
 // When the limit is reached, the oldest 32 entries are deleted.
 
-local gEventData = ::_xa9b2dfB7ffe;
+local gEventData = ROOT["{847D4B}"];
 local flTimeoutThold = TICK_INTERVAL*2;
 local Time = Time;
 local Fmt = ::format;
@@ -212,6 +212,81 @@ function VS::ValidateUseridAll( bForce = 0 )
 
 VS.Events.ForceValidateUserid <- VS.ForceValidateUserid.weakref();
 VS.Events.ValidateUseridAll <- VS.ValidateUseridAll.weakref();
+
+//-----------------------------------------------------------------------
+//
+// While event listeners dump the event data whenever events are fired,
+// entity outputs are added to the event queue to be executed in the next frame.
+// Because of this delay, when an event is fired multiple times before
+// the output is fired - before the script function is executed via the output - previous events would be lost.
+//
+// This function catches each event data dump, saving it for the next time it is
+// fetched by user script which is called by the event listener output.
+// Because of this save-restore action, the event data can only be fetched once.
+// This means there can only be 1 event listener output with event_data access.
+//
+// Run this function on each round start on the event listeners you expect to be fired multiple times in a frame.
+//
+//		VS.FixupEventListener( Ent("bullet_impact") )
+//
+// It is harmless to run it on all event listeners.
+//
+//		for ( local ent; ent = Entities.FindByClassname( ent, "logic_eventlistener" ); )
+//			VS.FixupEventListener( ent )
+//
+// Alternatively you can create a script file with this execution, and attach it to your event listeners. (fixupeventlistener.nut)
+//
+//		IncludeScript("vs_library")
+//		VS.FixupEventListener( self )
+//
+//-----------------------------------------------------------------------
+function VS::FixupEventListener( ent )
+{
+	if ( !ent || !ent.IsValid() ||
+		(ent.GetClassname() != "logic_eventlistener") || !ent.ValidateScriptScope() )
+		return Msg("VS::FixupEventListener: invalid event listener input\n");
+
+	local sc = ent.GetScriptScope();
+
+	if ( sc.parent.rawin( "{7D6E9A}" ) )
+		return Msg("VS::FixupEventListener: already fixed up " + ent + "\n");
+
+	local cache = [];
+	// sc.rawset( "event_cache", cache );
+	sc.rawdelete("event_data");
+
+	// Table looks for parent's metamethods.
+	// They are called in child's environment.
+	delegate ( delegate ( delegate sc.parent :
+	{
+		_delslot = function( k )
+		{
+			delete parent.parent[k];
+		}
+	} ) :
+	{
+		_newslot = function( k, v ) : (cache)
+		{
+			if ( k == "event_data" )
+			{
+				cache.insert( 0, v );
+			}
+			else
+			{
+				rawset( k, v );
+			}
+		},
+		_get = function( k ) : (cache)
+		{
+			if ( k == "event_data" )
+			{
+				return cache.pop();
+			};
+			return rawget(k); // throw
+		},
+		["{7D6E9A}"] = null
+	} ) : sc
+}
 
 }; // EVENTS
 

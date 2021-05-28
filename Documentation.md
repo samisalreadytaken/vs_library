@@ -223,7 +223,8 @@ Included in `vs_library.nut`
 ### [vs_events](#vs_events-1)
 [`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)  
 [`VS.ForceValidateUserid()`](#f_ForceValidateUserid)  
-[`VS.ValidateUseridAll()`](#f_ValidateUseridAll)
+[`VS.ValidateUseridAll()`](#f_ValidateUseridAll)  
+[`VS.FixupEventListener()`](#f_FixupEventListener)
 
 
 ### [vs_log](#vs_log-1)
@@ -1314,7 +1315,7 @@ ________________________________
 
 <a name="f_EventQueueDump"></a>
 ```cpp
-void VS::EventQueue::Dump()
+void VS::EventQueue::Dump( bUseTicks = false, indent = 0 )
 ```
 (debug) Dump events in the queue.
 ________________________________
@@ -1960,6 +1961,17 @@ void VS::ValidateUseridAll(bool force = false)
 Make sure all player userids are validated. Asynchronous.
 ________________________________
 
+<a name="f_FixupEventListener"></a>
+```cpp
+void VS::FixupEventListener( handle eventlistener )
+```
+Details:
+
+While event listeners dump the event data whenever events are fired, entity outputs are added to the event queue to be executed in the next frame. Because of this delay, when an event is fired multiple times before the output is fired - before the script function is executed via the output - previous events would be lost.
+
+This function catches each event data dump, saving it for the next time it is fetched by user script which is called by the event listener output. Because of this save-restore action, the event data can only be fetched once. This means there can only be 1 event listener output with event_data access.
+________________________________
+
 ### [vs_log](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_log.nut)
 
 Print and export custom log lines.
@@ -2002,29 +2014,27 @@ ________________________________
 ```cpp
 void VS::Log::Add(string s)
 ```
-Add new string to the log. Newline (`\n`) not included.
-
-`VS.Log.L.append(string s)`
+Add new string to the internal log. Newline (`\n`) not included.
 ________________________________
 
 <a name="f_LogClear"></a>
 ```cpp
 void VS::Log::Clear()
 ```
-Clear the log.
+Clear the internal log.
 ________________________________
 
 <a name="f_LogRun"></a>
 ```cpp
-string VS::Log::Run()
+string VS::Log::Run( data = null, function callback = null )
 ```
-if VS.Log.export == true, then export the log file to the game directory
+If `data` is null, the internal log is used. `callback` is called after logging is complete.
 
-return exported file name
+If VS.Log.export is true, then export the log file to the game directory. Returns exported file name.
 
-if VS.Log.export == false, then print in the console
+If VS.Log.export is false, then print in the console.
 
-When exporting, do NOT call multiple times in a frame, or before the previous exporting is done.
+Do NOT call multiple times in a frame, or before the previous export is done.
 ________________________________
 
 <a name="f_Logfilter"></a>
