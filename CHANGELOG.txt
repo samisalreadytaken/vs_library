@@ -3,6 +3,38 @@
 
 --------------------------------
 
+2021-05-31 [v2.40.1]
+- Various optimisations
+- Removed VS.DrawEntityBBox
+- Moved VS.VectorNegate into base from vs_math2
+- Added destination parameter in VS.VectorAngles
+- Added destination parameter in VS.InterpolateAngles
+  (vs_math2)
+- Renamed VS.MatrixAnglesQ to VS.MatrixQuaternionFast
+- Added VS.GetBoxVertices
+- Added VS.DrawBoxAngles
+- Added VS.DrawSphere
+- Added VS.DrawCapsule
+- Added VS.DrawEntityBounds
+- Added VS.DrawFrustum
+- Added VMatrix
+- Added VS.RotationDelta
+- Added VS.Vector3DMultiply
+- Added VS.Vector3DMultiplyProjective
+- Added VS.Vector3DMultiplyPositionProjective
+- Added VS.MatrixBuildPerspective
+- Added VS.MatrixInverseGeneral
+- Added VS.MatrixBuildRotation
+- Added VS.MatrixBuildRotationAboutAxis
+- Fixed VS.ComputeCenterMatrix, VS.ComputeCenterIMatrix
+- Fixed (in == out) conditions for VS.VectorYawRotate, VS.VectorTransform, VS.VectorITransform, VS.VectorRotate, VS.VectorIRotate
+- Renamed `matrix3x4_t::m_flMatVal` to `matrix3x4_t::m`
+- Moved optional position parameters on some matrix functions for consistency. This changes function signatures!
+  Affected functions: AngleMatrix, AngleIMatrix, QuaternionMatrix
+    `VS.AngleMatrix( angles, matrix )` -> `VS.AngleMatrix( angles, null, matrix )`
+  (vs_interp)
+- Removed default output parameters
+
 2021-05-28 [v2.40.0]
 - Added VS.FixupEventListener
 - Fixed server initialisation

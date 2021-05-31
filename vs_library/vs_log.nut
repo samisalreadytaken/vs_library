@@ -58,10 +58,9 @@ local delay = ::VS.EventQueue.AddEvent;
 local flFrameTime = TICK_INTERVAL * 4.0;
 local developer = ::developer;
 local ClientCommand = ::SendToConsole;
-local clamp = ::clamp;
 local Fmt = ::format;
 
-function VS::Log::_Print() : ( Msg, delay, clamp )
+function VS::Log::_Print() : ( Msg, delay )
 {
 	local t = filter, p = Msg, L = _data;
 
@@ -71,7 +70,7 @@ function VS::Log::_Print() : ( Msg, delay, clamp )
 		for ( local i = nC; i < nN; ++i ) p( t + L[i] );
 
 	nC += nD;
-	nN = clamp( nN + nD, 0, nL );
+	nN = min( nN + nD, nL );
 
 	if ( nC >= nN )
 	{
@@ -84,16 +83,16 @@ function VS::Log::_Print() : ( Msg, delay, clamp )
 		return;
 	};
 
-	return delay( _Print, 0.0, this );
+	return delay( _Print, 0.001, this );
 }
 
-function VS::Log::_Start() : ( ClientCommand, developer, clamp, Fmt, flFrameTime )
+function VS::Log::_Start() : ( ClientCommand, developer, Fmt, flFrameTime )
 {
 	nL <- _data.len();
 	nD <- 2000;
 	// nS <- ceil( nL / nD.tofloat() );
 	nC <- 0;
-	nN <- clamp( nD, 0, nL );
+	nN <- min( nD, nL );
 
 	//if ( !( "_PRINT" in this ) )
 	//	_PRINT <- VS.EventQueue.CreateEvent( _Print, this );

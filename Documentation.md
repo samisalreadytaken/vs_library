@@ -50,7 +50,8 @@ ________________________________
 | `Vector`, `vec3_t`    | `Vector(0,1,2)`                                                                     |
 | `QAngle`              | `Vector(0,1,2)`, `(pitch, yaw, roll)` Euler angle. Vector, **not a different type** |
 | `Quaternion`          | `Quaternion(0,1,2,3)`                                                               |
-| `matrix3x4_t`         | `matrix3x4_t()`                                                                       |
+| `matrix3x4_t`         | `matrix3x4_t()`                                                                     |
+| `VMatrix`             | `VMatrix()`                                                                     |
 | `trace_t`             | `VS.TraceLine()`                                                                    |
 | `ray_t`               | `VS.TraceLine().Ray()`, `trace_t`                                                   |
 | `TYPE`                | Multiple types. Any unless specified in description                                 |
@@ -111,6 +112,7 @@ Included in `vs_library.nut`
 [`VS.AngleNormalize()`](#f_AngleNormalize)  
 [`VS.QAngleNormalize()`](#f_QAngleNormalize)  
 [`VS.SnapDirectionToAxis()`](#f_SnapDirectionToAxis)  
+[`VS.VectorNegate()`](#f_VectorNegate)  
 [`VS.VectorCopy()`](#f_VectorCopy)  
 [`VS.VectorMin()`](#f_VectorMin)  
 [`VS.VectorMax()`](#f_VectorMax)  
@@ -157,7 +159,6 @@ Included in `vs_library.nut`
 [`VecToString()`](#f_VecToString)  
 [`VS.GetTickrate()`](#f_GetTickrate)  
 [`VS.IsDedicatedServer()`](#f_IsDedicatedServer)  
-[`VS.DrawEntityBBox()`](#f_DrawEntityBBox)  
 [`VS.TraceLine`](#f_TraceLine)  
 [`VS.TraceLine.DidHit()`](#f_DidHit)  
 [`VS.TraceLine.GetEnt()`](#f_GetEnt)  
@@ -243,6 +244,7 @@ Not included in `vs_library.nut`
 ### [vs_math2](#vs_math2-1)
 [`Quaternion`](#f_Quaternion)  
 [`matrix3x4_t`](#f_matrix3x4_t)  
+[`VMatrix`](#f_VMatrix)  
 [`VS.InvRSquared()`](#f_InvRSquared)  
 [`VS.a_swap()`](#f_a_swap)  
 [`VS.MatrixRowDotProduct()`](#f_MatrixRowDotProduct)  
@@ -255,7 +257,6 @@ Not included in `vs_library.nut`
 [`VS.VectorRotate3()`](#f_VectorRotate3)  
 [`VS.VectorIRotate()`](#f_VectorIRotate)  
 [`VS.VectorMA()`](#f_VectorMA)  
-[`VS.VectorNegate()`](#f_VectorNegate)  
 [`VS.QuaternionsAreEqual()`](#f_QuaternionsAreEqual)  
 [`VS.QuaternionMA()`](#f_QuaternionMA)  
 [`VS.QuaternionAdd()`](#f_QuaternionAdd)  
@@ -268,6 +269,7 @@ Not included in `vs_library.nut`
 [`VS.QuaternionSlerp()`](#f_QuaternionSlerp)  
 [`VS.QuaternionSlerpNoAlign()`](#f_QuaternionSlerpNoAlign)  
 [`VS.QuaternionAngleDiff()`](#f_QuaternionAngleDiff)  
+[`VS.QuaternionScale()`](#f_QuaternionScale)  
 [`VS.QuaternionConjugate()`](#f_QuaternionConjugate)  
 [`VS.QuaternionInvert()`](#f_QuaternionInvert)  
 [`VS.QuaternionNormalize()`](#f_QuaternionNormalize)  
@@ -276,16 +278,19 @@ Not included in `vs_library.nut`
 [`VS.QuaternionAxisAngle()`](#f_QuaternionAxisAngle)  
 [`VS.AxisAngleQuaternion()`](#f_AxisAngleQuaternion)  
 [`VS.AngleQuaternion()`](#f_AngleQuaternion)  
+[`VS.RotationDeltaAxisAngle()`](#f_RotationDeltaAxisAngle)  
+[`VS.RotationDelta()`](#f_RotationDelta)  
 [`VS.MatrixQuaternion()`](#f_MatrixQuaternion)  
 [`VS.BasisToQuaternion()`](#f_BasisToQuaternion)  
 [`VS.MatrixAngles()`](#f_MatrixAngles)  
-[`VS.MatrixAnglesQ()`](#f_MatrixAnglesQ)  
+[`VS.MatrixQuaternionFast()`](#f_MatrixQuaternionFast)  
 [`VS.AngleMatrix()`](#f_AngleMatrix)  
 [`VS.AngleIMatrix()`](#f_AngleIMatrix)  
 [`VS.MatrixVectors()`](#f_MatrixVectors)  
 [`VS.MatricesAreEqual()`](#f_MatricesAreEqual)  
 [`VS.MatrixCopy()`](#f_MatrixCopy)  
 [`VS.MatrixInvert()`](#f_MatrixInvert)  
+[`VS.MatrixInverseGeneral()`](#f_MatrixInverseGeneral)  
 [`VS.MatrixGetColumn()`](#f_MatrixGetColumn)  
 [`VS.MatrixSetColumn()`](#f_MatrixSetColumn)  
 [`VS.MatrixScaleBy()`](#f_MatrixScaleBy)  
@@ -297,11 +302,29 @@ Not included in `vs_library.nut`
 [`VS.ComputeAbsMatrix()`](#f_ComputeAbsMatrix)  
 [`VS.ConcatRotations()`](#f_ConcatRotations)  
 [`VS.ConcatTransforms()`](#f_ConcatTransforms)  
+[`VS.MatrixMultiply()`](#f_MatrixMultiply)  
 [`VS.MatrixBuildRotationAboutAxis()`](#f_MatrixBuildRotationAboutAxis)  
+[`VS.MatrixBuildRotation()`](#f_MatrixBuildRotation)  
+[`VS.Vector3DMultiply()`](#f_Vector3DMultiply)  
+[`VS.Vector3DMultiplyProjective()`](#f_Vector3DMultiplyProjective)  
+[`VS.Vector3DMultiplyPositionProjective()`](#f_Vector3DMultiplyPositionProjective)  
 [`VS.TransformAABB()`](#f_TransformAABB)  
 [`VS.ITransformAABB()`](#f_ITransformAABB)  
 [`VS.RotateAABB()`](#f_RotateAABB)  
 [`VS.IRotateAABB()`](#f_IRotateAABB)  
+[`VS.GetBoxVertices()`](#f_GetBoxVertices)  
+[`VS.MatrixBuildPerspective()`](#f_MatrixBuildPerspective)  
+[`VS.ComputeViewMatrix()`](#f_ComputeViewMatrix)  
+[`VS.ScreenToWorld()`](#f_ScreenToWorld)  
+[`VS.ComputeCameraVariables()`](#f_ComputeCameraVariables)  
+[`VS.CalcFovY()`](#f_CalcFovY)  
+[`VS.CalcFovX()`](#f_CalcFovX)  
+[`VS.DrawFrustum()`](#f_DrawFrustum)  
+[`VS.DrawViewFrustum()`](#f_DrawViewFrustum)  
+[`VS.DrawBoxAngles()`](#f_DrawBoxAngles)  
+[`VS.DrawEntityBounds()`](#f_DrawEntityBounds)  
+[`VS.DrawCapsule()`](#f_DrawCapsule)  
+[`VS.DrawSphere()`](#f_DrawSphere)  
 
 
 ### [vs_collision](#vs_collision-1)
@@ -329,8 +352,8 @@ Not included in `vs_library.nut`
 [`VS.Catmull_Rom_Spline_Normalize()`](#f_Catmull_Rom_Spline_Normalize)  
 [`VS.Catmull_Rom_Spline_Integral_Normalize()`](#f_Catmull_Rom_Spline_Integral_Normalize)  
 [`VS.Catmull_Rom_Spline_NormalizeX()`](#f_Catmull_Rom_Spline_NormalizeX)  
-[`VS.Catmull_Rom_SplineQ()`](#f_Catmull_Rom_SplineQ)  
-[`VS.Catmull_Rom_SplineQ_Tangent()`](#f_Catmull_Rom_SplineQ_Tangent)  
+[`VS.Catmull_Rom_SplineQuat()`](#f_Catmull_Rom_SplineQuat)  
+[`VS.Catmull_Rom_SplineQuat_Tangent()`](#f_Catmull_Rom_SplineQuat_Tangent)  
 [`VS.Hermite_Spline()`](#f_Hermite_Spline)  
 [`VS.Hermite_SplineF()`](#f_Hermite_SplineF)  
 [`VS.Hermite_SplineBasis()`](#f_Hermite_SplineBasis)  
@@ -454,7 +477,7 @@ ________________________________
 
 <a name="f_VectorAngles"></a>
 ```cpp
-QAngle VS::VectorAngles(Vector forward)
+QAngle VS::VectorAngles(Vector forward, QAngle &out = _VEC)
 ```
 Forward direction vector -> Euler QAngle
 ________________________________
@@ -581,6 +604,13 @@ function Think()
 ```
 
 </details>
+
+________________________________
+
+<a name="f_VectorNegate"></a>
+```cpp
+Vector VS::VectorNegate(Vector& vec)
+```
 
 ________________________________
 
@@ -1095,15 +1125,6 @@ bool VS::IsDedicatedServer()
 The initialisation of this function is asynchronous. It takes 6 seconds to finalise on map spawn auto-load, and 1-5 frames on manual execution on post map spawn. `VS.flCanCheckForDedicatedAfterSec` can be used for delayed initialisation needs.
 
 `VS.EventQueue.AddEvent( Init, VS.flCanCheckForDedicatedAfterSec, this )`
-________________________________
-
-<a name="f_DrawEntityBBox"></a>
-```cpp
-void VS::DrawEntityBBox(float time, handle ent, int r = 255, int g = 138, int b = 0, int alpha = 0)
-```
-Draw entity's AABB
-
-Equivalent to the command `ent_bbox`
 ________________________________
 
 <a name="f_TraceLine"></a>
@@ -2067,7 +2088,7 @@ ________________________________
 ```cpp
 class matrix3x4_t
 {
-	m_flMatVal[3][4]
+	m[3][4]
 
 	void Init()
 }
@@ -2081,6 +2102,17 @@ matrix3x4_t matrix3x4_t(Vector xAxis, Vector yAxis, Vector zAxis, Vector vecOrig
 ```
 Creates a matrix where the X axis = forward  
 the Y axis = left, and the Z axis = up
+________________________________
+
+<a name="f_VMatrix"></a>
+```cpp
+class VMatrix
+{
+	VMatrix()
+	m[4][4]
+}
+```
+
 ________________________________
 
 <a name="f_InvRSquared"></a>
@@ -2163,13 +2195,6 @@ ________________________________
 <a name="f_VectorMA"></a>
 ```cpp
 Vector VS::VectorMA(Vector start, float scale, Vector direction, Vector& dest = _VEC)
-```
-
-________________________________
-
-<a name="f_VectorNegate"></a>
-```cpp
-Vector VS::VectorNegate(Vector& vec)
 ```
 
 ________________________________
@@ -2260,6 +2285,13 @@ float VS::QuaternionAngleDiff(Quaternion p, Quaternion q)
 Returns the angular delta between the two normalized quaternions in degrees.
 ________________________________
 
+<a name="f_QuaternionScale"></a>
+```cpp
+void VS::QuaternionScale(Quaternion p, float t, Quaternion &q)
+```
+
+________________________________
+
 <a name="f_QuaternionConjugate"></a>
 ```cpp
 void VS::QuaternionConjugate(Quaternion p, Quaternion& q)
@@ -2285,7 +2317,7 @@ ________________________________
 
 <a name="f_QuaternionMatrix"></a>
 ```cpp
-void VS::QuaternionMatrix(Quaternion q, matrix3x4_t& matrix, Vector pos)
+void VS::QuaternionMatrix(Quaternion q, Vector pos, matrix3x4_t& matrix)
 ```
 Quaternion -> matrix3x4
 ________________________________
@@ -2318,9 +2350,30 @@ Quaternion VS::AngleQuaternion(QAngle angles, Quaternion& out = _QUAT)
 QAngle -> Quaternion
 ________________________________
 
+<a name="f_RotationDeltaAxisAngle"></a>
+```cpp
+void VS::RotationDeltaAxisAngle( QAngle srcAngles, QAngle destAngles, Vector &deltaAxis, float deltaAngle )
+```
+
+________________________________
+
+<a name="f_RotationDelta"></a>
+```cpp
+void VS::RotationDelta( QAngle srcAngles, QAngle destAngles, QAngle &out )
+```
+
+________________________________
+
 <a name="f_MatrixQuaternion"></a>
 ```cpp
 Quaternion VS::MatrixQuaternion(matrix3x4_t mat, Quaternion& q = _QUAT)
+```
+matrix3x4 -> Quaternion
+________________________________
+
+<a name="f_MatrixQuaternionFast"></a>
+```cpp
+Quaternion VS::MatrixQuaternionFast(matrix3x4_t matrix, Quaternion& angles)
 ```
 matrix3x4 -> Quaternion
 ________________________________
@@ -2334,28 +2387,21 @@ ________________________________
 
 <a name="f_MatrixAngles"></a>
 ```cpp
-QAngle VS::MatrixAngles(matrix3x4_t matrix, Vector& angles = _VEC, Vector position = null)
+QAngle VS::MatrixAngles(matrix3x4_t matrix, Vector& angles = _VEC, Vector &position = null)
 ```
 Generates QAngle given a left-handed orientation matrix.
 ________________________________
 
-<a name="f_MatrixAnglesQ"></a>
-```cpp
-Quaternion VS::MatrixAnglesQ(matrix3x4_t matrix, Quaternion& angles = _QUAT, Vector position = null)
-```
-matrix3x4 -> Quaternion
-________________________________
-
 <a name="f_AngleMatrix"></a>
 ```cpp
-void VS::AngleMatrix(QAngle angles, matrix3x4_t& matrix, Vector position)
+void VS::AngleMatrix(QAngle angles, Vector position, matrix3x4_t& matrix)
 ```
 QAngle -> matrix3x4 (left-handed)
 ________________________________
 
 <a name="f_AngleIMatrix"></a>
 ```cpp
-void VS::AngleIMatrix(QAngle angles, matrix3x4_t& mat, Vector position)
+void VS::AngleIMatrix(QAngle angles, Vector position, matrix3x4_t& mat)
 ```
 
 ________________________________
@@ -2392,16 +2438,23 @@ void VS::MatrixInvert(matrix3x4_t in1, matrix3x4_t& out)
 NOTE: This is just the transpose not a general inverse
 ________________________________
 
+<a name="f_MatrixInverseGeneral"></a>
+```cpp
+void VS::MatrixInverseGeneral(VMatrix in1, VMatrix& out)
+```
+
+________________________________
+
 <a name="f_MatrixGetColumn"></a>
 ```cpp
-Vector VS::MatrixGetColumn(matrix3x4_t in1, int column, Vector& out = _VEC)
+Vector VS::MatrixGetColumn(matrix3x4_t in1, int column, Vector& out)
 ```
 
 ________________________________
 
 <a name="f_MatrixSetColumn"></a>
 ```cpp
-void VS::MatrixSetColumn(Vector in1, int column, matrix3x4_t& out = _VEC)
+void VS::MatrixSetColumn(Vector in1, int column, matrix3x4_t& out)
 ```
 
 ________________________________
@@ -2469,11 +2522,46 @@ void VS::ConcatTransforms(matrix3x4_t in1, matrix3x4_t in2, matrix3x4_t& out)
 `MatrixMultiply`
 ________________________________
 
+<a name="f_MatrixMultiply"></a>
+```cpp
+void VS::MatrixMultiply(VMatrix in1, VMatrix in2, VMatrix& out)
+```
+
+________________________________
+
 <a name="f_MatrixBuildRotationAboutAxis"></a>
 ```cpp
 void VS::MatrixBuildRotationAboutAxis(Vector vAxisOfRot, float angleDegrees, matrix3x4_t& dst)
 ```
 Builds the matrix for a counterclockwise rotation about an arbitrary axis.
+________________________________
+
+<a name="f_MatrixBuildRotation"></a>
+```cpp
+void VS::MatrixBuildRotation( matrix3x4_t& dst, Vector initialDirection, Vector finalDirection )
+```
+Builds a rotation matrix that rotates one direction vector into another.
+________________________________
+
+<a name="f_Vector3DMultiply"></a>
+```cpp
+void VS::Vector3DMultiply( matrix3x4 src1, Vector src2, Vector &dst )
+```
+Matrix/vector multiply
+________________________________
+
+<a name="f_Vector3DMultiply"></a>
+```cpp
+void VS::Vector3DMultiplyProjective( VMatrix src1, Vector src2, Vector &dst )
+```
+Vector3DMultiplyProjective treats src2 as if it's a direction and does the perspective divide at the end.
+________________________________
+
+<a name="f_Vector3DMultiply"></a>
+```cpp
+void VS::Vector3DMultiplyPositionProjective( VMatrix src1, Vector src2, Vector &dst )
+```
+Vector3DMultiplyPositionProjective treats src2 as if it's a point and does the perspective divide at the end
 ________________________________
 
 <a name="f_TransformAABB"></a>
@@ -2503,7 +2591,129 @@ ________________________________
 ```cpp
 void VS::IRotateAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
 ```
+________________________________
 
+<a name="f_GetBoxVertices"></a>
+```cpp
+void VS::GetBoxVertices( Vector origin, QAngle angles, Vector mins, Vector maxs, Vector[8] pVertices )
+```
+Get the vertices of a rotated box.
+
+```
++z
+^   +y
+|  /
+| /
+   ----> +x
+
+   3-------7
+  /|      /|
+ / |     / |
+1--2----5  6
+| /     | /
+|/      |/
+0-------4
+```
+
+________________________________
+
+<a name="f_MatrixBuildPerspective"></a>
+```cpp
+void VS::MatrixBuildPerspective( VMatrix& dst, float fovX, float fovY, float zNear, float zFar )
+```
+Build a perspective matrix.  
+zNear and zFar are assumed to be positive.  
+You end up looking down positive Z, X is to the right, Y is up.  
+X range: [0..1]  
+Y range: [0..1]  
+Z range: [0..1]
+________________________________
+
+<a name="f_ComputeViewMatrix"></a>
+```cpp
+void VS::ComputeViewMatrix( VMatrix &pWorldToView, Vector origin, Vector forward, Vector left, Vector up )
+```
+
+________________________________
+
+<a name="f_ScreenToWorld"></a>
+```cpp
+Vector VS::ScreenToWorld( float x, float y, Vector origin, Vector forward, Vector right, Vector up, float fov, float flAspect, float zFar )
+```
+```cs
+{
+	local x = 0.35
+	local y = 0.65
+	local eyeAng = playerEye.GetAngles()
+	local eyePos = player.EyePosition()
+	local worldPos = VS.ScreenToWorld( x, y,
+		eyePos,
+		playerEye.GetForwardVector(),
+		playerEye.GetLeftVector(),
+		playerEye.GetUpVector(),
+		90.0, 16.0/9.0, 16.0 )
+
+	local maxs = vec3_t( 0.0, 0.5, 0.5 );
+	DrawBoxAnglesFilled( worldPos, -maxs, maxs, eyeAng, 0, 255, 255, 64, 5.0 );
+}
+```
+________________________________
+
+<a name="f_ComputeCameraVariables"></a>
+```cpp
+void VS::ComputeCameraVariables( Vector vecOrigin, Vector pVecForward, Vector pVecRight, Vector pVecUp, VMatrix &pMatCamInverse )
+```
+________________________________
+
+<a name="f_CalcFovY"></a>
+```cpp
+float VS::CalcFovY( float flFovX, float flAspect )
+```
+Computes Y fov from an X fov and a screen aspect ratio
+________________________________
+
+<a name="f_CalcFovX"></a>
+```cpp
+float VS::CalcFovX( float flFovY, float flAspect )
+```
+Computes X fov from an Y fov and a screen aspect ratio
+________________________________
+
+<a name="f_DrawFrustum"></a>
+```cpp
+void VS::DrawFrustum( matWorldToView, r, g, b, z, time )
+```
+________________________________
+
+<a name="f_DrawViewFrustum"></a>
+```cpp
+void VS::DrawViewFrustum( vecOrigin, vecForward, vecRight, vecUp,
+		flFovX, flFovY, zNear, zFar, r, g, b, z, time )
+```
+________________________________
+
+<a name="f_DrawBoxAngles"></a>
+```cpp
+void VS::DrawBoxAngles( origin, mins, maxs, angles, r, g, b, z, time )
+```
+________________________________
+
+<a name="f_DrawEntityBounds"></a>
+```cpp
+void VS::DrawEntityBounds( ent, r, g, b, z, time )
+```
+________________________________
+
+<a name="f_DrawSphere"></a>
+```cpp
+void VS::DrawSphere( Vector vCenter, float flRadius, int nTheta, int nPhi, int r, int g, int b, bool z, float time )
+```
+________________________________
+
+<a name="f_DrawCapsule"></a>
+```cpp
+void VS::DrawCapsule( start, end, radius, r, g, b, z, time )
+```
 ________________________________
 
 ### [vs_collision](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_collision.nut)
@@ -2621,14 +2831,14 @@ ________________________________
 
 <a name="f_Interpolator_CurveInterpolate"></a>
 ```cpp
-Vector VS::Interpolator_CurveInterpolate(int interpolationType, Vector vPre, Vector vStart, Vector vEnd, Vector vNext, f, Vector& vOut = _VEC)
+Vector VS::Interpolator_CurveInterpolate(int interpolationType, Vector vPre, Vector vStart, Vector vEnd, Vector vNext, f, Vector& vOut)
 ```
 
 ________________________________
 
 <a name="f_Interpolator_CurveInterpolate_NonNormalized"></a>
 ```cpp
-Vector VS::Interpolator_CurveInterpolate_NonNormalized(int interpolationType, Vector vPre, Vector vStart, Vector vEnd, Vector vNext, f, Vector& vOut = _VEC)
+Vector VS::Interpolator_CurveInterpolate_NonNormalized(int interpolationType, Vector vPre, Vector vStart, Vector vEnd, Vector vNext, f, Vector& vOut)
 ```
 
 ________________________________
@@ -2642,7 +2852,7 @@ ________________________________
 
 <a name="f_Catmull_Rom_Spline"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Catmull_Rom_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 Interpolate a Catmull-Rom spline.
 
@@ -2651,7 +2861,7 @@ ________________________________
 
 <a name="f_Catmull_Rom_Spline_Tangent"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline_Tangent(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Catmull_Rom_Spline_Tangent(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 Interpolate a Catmull-Rom spline.
 
@@ -2660,21 +2870,21 @@ ________________________________
 
 <a name="f_Catmull_Rom_Spline_Integral"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline_Integral(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Catmull_Rom_Spline_Integral(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 area under the curve [0..t]
 ________________________________
 
 <a name="f_Catmull_Rom_Spline_Integral2"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline_Integral2(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Catmull_Rom_Spline_Integral2(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 area under the curve [0..1]
 ________________________________
 
 <a name="f_Catmull_Rom_Spline_Normalize"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Catmull_Rom_Spline_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 Interpolate a Catmull-Rom spline.
 
@@ -2683,7 +2893,7 @@ ________________________________
 
 <a name="f_Catmull_Rom_Spline_Integral_Normalize"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline_Integral_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Catmull_Rom_Spline_Integral_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 area under the curve [0..t]
 
@@ -2692,23 +2902,23 @@ ________________________________
 
 <a name="f_Catmull_Rom_Spline_NormalizeX"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Catmull_Rom_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 Interpolate a Catmull-Rom spline.
 
 Normalize p2.x->p1.x and p3.x->p4.x to be the same length as p2.x->p3.x
 ________________________________
 
-<a name="f_Catmull_Rom_SplineQ"></a>
+<a name="f_Catmull_Rom_SplineQuat"></a>
 ```cpp
-Quaternion VS::Catmull_Rom_SplineQ(Quaternion p1, Quaternion p2, Quaternion p3, Quaternion p4, float t, Quaternion& output)
+Quaternion VS::Catmull_Rom_SplineQuat(Quaternion p1, Quaternion p2, Quaternion p3, Quaternion p4, float t, Quaternion& output)
 ```
 Interpolate a Catmull-Rom spline.
 ________________________________
 
-<a name="f_Catmull_Rom_SplineQ_Tangent"></a>
+<a name="f_Catmull_Rom_SplineQuat_Tangent"></a>
 ```cpp
-Quaternion VS::Catmull_Rom_SplineQ_Tangent(Quaternion p1, Quaternion p2, Quaternion p3, Quaternion p4, float t, Quaternion& output)
+Quaternion VS::Catmull_Rom_SplineQuat_Tangent(Quaternion p1, Quaternion p2, Quaternion p3, Quaternion p4, float t, Quaternion& output)
 ```
 Interpolate a Catmull-Rom spline.
 
@@ -2717,7 +2927,7 @@ ________________________________
 
 <a name="f_Hermite_Spline"></a>
 ```cpp
-Vector VS::Hermite_Spline(Vector p1, Vector p2, Vector d1, Vector d2, float t, Vector& output = _VEC)
+Vector VS::Hermite_Spline(Vector p1, Vector p2, Vector d1, Vector d2, float t, Vector& output)
 ```
 Basic hermite spline
 
@@ -2742,7 +2952,7 @@ ________________________________
 
 <a name="f_Hermite_Spline3V"></a>
 ```cpp
-Vector VS::Hermite_Spline3V(Vector p0, Vector p1, Vector p2, float t, Vector& output = _VEC)
+Vector VS::Hermite_Spline3V(Vector p0, Vector p1, Vector p2, float t, Vector& output)
 ```
 Simple three data point hermite spline.
 
@@ -2760,14 +2970,14 @@ ________________________________
 
 <a name="f_Hermite_Spline3Q"></a>
 ```cpp
-Quaternion VS::Hermite_Spline3Q(Quaternion q0, Quaternion q1, Quaternion q2, float t, Quaternion& output = _QUAT)
+Quaternion VS::Hermite_Spline3Q(Quaternion q0, Quaternion q1, Quaternion q2, float t, Quaternion& output)
 ```
 
 ________________________________
 
 <a name="f_Kochanek_Bartels_Spline"></a>
 ```cpp
-Vector VS::Kochanek_Bartels_Spline(float tension, float bias, float continuity, Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Kochanek_Bartels_Spline(float tension, float bias, float continuity, Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 
 <details><summary>Details</summary>
@@ -2791,49 +3001,49 @@ ________________________________
 
 <a name="f_Kochanek_Bartels_Spline_NormalizeX"></a>
 ```cpp
-Vector VS::Kochanek_Bartels_Spline_NormalizeX(float tension, float bias, float continuity, Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Kochanek_Bartels_Spline_NormalizeX(float tension, float bias, float continuity, Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 
 ________________________________
 
 <a name="f_Cubic_Spline"></a>
 ```cpp
-Vector VS::Cubic_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Cubic_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 See link at Kochanek_Bartels_Spline for info on the basis matrix used
 ________________________________
 
 <a name="f_Cubic_Spline_NormalizeX"></a>
 ```cpp
-Vector VS::Cubic_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Cubic_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 
 ________________________________
 
 <a name="f_BSpline"></a>
 ```cpp
-Vector VS::BSpline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::BSpline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 See link at Kochanek_Bartels_Spline for info on the basis matrix used
 ________________________________
 
 <a name="f_BSpline_NormalizeX"></a>
 ```cpp
-Vector VS::BSpline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::BSpline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 
 ________________________________
 
 <a name="f_Parabolic_Spline"></a>
 ```cpp
-Vector VS::Parabolic_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Parabolic_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 See link at Kochanek_Bartels_Spline for info on the basis matrix used
 ________________________________
 
 <a name="f_Parabolic_Spline_NormalizeX"></a>
 ```cpp
-Vector VS::Parabolic_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output = _VEC)
+Vector VS::Parabolic_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 
 ________________________________
@@ -2847,7 +3057,7 @@ ________________________________
 
 <a name="f_InterpolateAngles"></a>
 ```cpp
-QAngle VS::InterpolateAngles(QAngle v1, QAngle v2, float flPercent)
+QAngle VS::InterpolateAngles(QAngle v1, QAngle v2, float flPercent, QAngle &out)
 ```
 QAngle slerp
 ________________________________

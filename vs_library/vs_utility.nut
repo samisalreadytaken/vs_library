@@ -3,10 +3,9 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 
-local Entities = ::Entities;
-local DebugDrawBox = ::DebugDrawBox;
-local DoUniqueString = ::DoUniqueString;
-local Fmt = ::format;
+local Entities = Entities;
+local DoUniqueString = DoUniqueString;
+local Fmt = format;
 
 ::Ent  <- function( s, i = null ):(Entities){ return Entities.FindByName(i,s); }
 ::Entc <- function( s, i = null ):(Entities){ return Entities.FindByClassname(i,s); }
@@ -18,15 +17,6 @@ local Fmt = ::format;
 ::VecToString <- function( vec, prefix = "Vector(", separator = ",", suffix = ")" ) : (Fmt)
 {
 	return Fmt( "%s%g%s%g%s%g%s", prefix, vec.x, separator, vec.y, separator, vec.z, suffix );
-}
-
-//-----------------------------------------------------------------------
-// Draw entity's AABB
-// ent_bbox
-//-----------------------------------------------------------------------
-function VS::DrawEntityBBox( time, ent, r = 255, g = 138, b = 0, a = 0 ):(DebugDrawBox)
-{
-	return DebugDrawBox(ent.GetOrigin(),ent.GetBoundingMins(),ent.GetBoundingMaxs(),r,g,b,a,time);
 }
 
 //-----------------------------------------------------------------------
@@ -991,7 +981,7 @@ local ChatTeam = ::ScriptPrintMessageChatTeam;
 {
 	// init on first call
 
-	local print = ::print, Fmt = ::format, argv = [];
+	local print = print, Fmt = format, argv = [];
 	::printf <- function( str, ... ) : ( print, Fmt, argv )
 	{
 		argv.resize( vargc + 2 );
@@ -1006,6 +996,122 @@ local ChatTeam = ::ScriptPrintMessageChatTeam;
 	argv[1] = str;
 	for ( local i = vargc; i--; )
 		argv[i+2] = vargv[i];
-	return ::printf.acall( argv );
+	return printf.acall( argv );
 }
+*/
+
+/*
+// Template asynchronous loops for expensive functions.
+// Place your logic inside the for loop.
+// Special variables should not be moved.
+// Expects increments ( nStartIndex < nTargetLimit )
+
+function CallAsyncLoop( nStartIndex, nTargetLimit, nAsyncIncr )
+{
+	if ( bLoopInProgress )
+		return;
+	bLoopInProgress = true;
+
+	if ( nStartIndex < nTargetLimit )
+		throw "error";
+
+
+	// times a loop is synchronously executed.
+	// expected to be lower than target limit
+	_AINCR = nAsyncIncr;
+
+	// total loop count (async)
+	_TGLIM = nTargetLimit;
+
+	// internal asynchronous counters
+	_ASIDX = nStartIndex; // cur idx
+	_ASLIM = min( _AINCR, _TGLIM ); // cur lim
+
+
+	// print how long it took
+	flAsyncLoopStartTime <- Time();
+
+	// start
+	MyAsyncFunc();
+}
+
+function MyAsyncFunc()
+{
+	for ( local i = _ASIDX; i < _ASLIM; i += 1 ) // increment amount at user's discretion
+	{
+		// do
+	}
+
+	_ASIDX += _AINCR;
+	_ASLIM = min( _ASLIM + _AINCR, _TGLIM );
+
+	// complete
+	if ( _ASIDX >= _ASLIM )
+	{
+		OnFinished();
+		return;
+	}
+	return VS.EventQueue.AddEvent( MyAsyncFunc, 0.01, this );
+}
+
+function OnFinished()
+{
+	bLoopInProgress = false;
+
+	local dt = Time() - flAsyncLoopStartTime
+	print(format( "Async loop finished in %g seconds!\n", dt ))
+}
+
+// While this is used for automating loop completion,
+// threads or generators can be used for pausing on conditions when
+// a loop is expected to run for long or to run an expensive function.
+
+// If the functions called inside the loop are expected to suspend the loop
+// instead of the main loop itself, use threads.
+// To use threads, replace `yield` with `suspend()`, `resume gen` with `thread.wakeup()`
+
+local gen = [null]
+
+local DoResume = function() : (gen)
+{
+	resume gen[0]
+}
+
+function MyLoop() : (DoResume)
+{
+	local i = 0
+	while (++i)
+	{
+		if ( CheapCall() )
+			continue
+
+		if ( CheapCall2() )
+			continue
+
+		// continue asynchronously before the expensive call
+		yield VS.EventQueue.AddEvent( DoResume, 0.01, null )
+
+		ExpensiveCall()
+
+		// continue asynchronously after the expensive call
+		yield VS.EventQueue.AddEvent( DoResume, 0.01, null )
+
+		// fatal end
+		if ( i >= 5000 )
+		{
+			local dt = Time() - flStartTime
+			print(format( "Async generator finished in %g seconds!\n", dt ))
+			return
+		}
+	}
+}
+
+function CallMyLoop() : (gen)
+{
+	flStartTime <- Time();
+
+	gen[0] = MyLoop()
+	resume gen[0]
+}
+
 */

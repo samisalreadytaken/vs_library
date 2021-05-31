@@ -75,8 +75,8 @@ function VS::PointOnLineNearestPoint( vStartPos, vEndPos, vPoint )
 function VS::GetAngle( vFrom, vTo ):(Vector,atan2)
 {
 	local d     = vFrom - vTo;
-	local pitch = ::RAD2DEG*atan2( d.z, d.Length2D() );
-	local yaw   = ::RAD2DEG*(atan2( d.y, d.x ) + ::PI);
+	local pitch = RAD2DEG*atan2( d.z, d.Length2D() );
+	local yaw   = RAD2DEG*(atan2( d.y, d.x ) + ::PI);
 
 	return Vector(pitch,yaw,0.0);
 }
@@ -89,7 +89,7 @@ function VS::GetAngle( vFrom, vTo ):(Vector,atan2)
 function VS::GetAngle2D( vFrom, vTo ):(atan2)
 {
 	local d   = vTo - vFrom;
-	local yaw = ::RAD2DEG*atan2( d.y, d.x );
+	local yaw = RAD2DEG*atan2( d.y, d.x );
 
 	return yaw;
 }
@@ -129,17 +129,17 @@ function VS::AngleVectors( vAng, vFwd = _VEC, vRg = null, vUp = null ):(sin,cos)
 {
 	local sr, cr, rr,
 
-	      yr = ::DEG2RAD*vAng.y,
+	      yr = DEG2RAD*vAng.y,
 	      sy = sin(yr),
 	      cy = cos(yr),
 
-	      pr = ::DEG2RAD*vAng.x,
+	      pr = DEG2RAD*vAng.x,
 	      sp = sin(pr),
 	      cp = cos(pr);
 
 	if( vAng.z )
 	{
-		rr = ::DEG2RAD*vAng.z;
+		rr = DEG2RAD*vAng.z;
 		sr = sin(rr);
 		cr = cos(rr);
 	}
@@ -176,7 +176,7 @@ function VS::AngleVectors( vAng, vFwd = _VEC, vRg = null, vUp = null ):(sin,cos)
 //-----------------------------------------------------------------------
 // Forward direction vector -> Euler QAngle
 //-----------------------------------------------------------------------
-function VS::VectorAngles( vFwd ):(Vector,atan2,sqrt)
+function VS::VectorAngles( vFwd, vOut = _VEC ):(Vector,atan2,sqrt)
 {
 	local tmp, yaw, pitch;
 
@@ -190,17 +190,21 @@ function VS::VectorAngles( vFwd ):(Vector,atan2,sqrt)
 	}
 	else
 	{
-		yaw = ::RAD2DEG*atan2(vFwd.y, vFwd.x);
+		yaw = RAD2DEG*atan2(vFwd.y, vFwd.x);
 		if( yaw < 0.0 )
 			yaw += 360.0;
 
 		tmp = sqrt(vFwd.x*vFwd.x + vFwd.y*vFwd.y);
-		pitch = ::RAD2DEG*atan2(-vFwd.z, tmp);
+		pitch = RAD2DEG*atan2(-vFwd.z, tmp);
 		if( pitch < 0.0 )
 			pitch += 360.0;
 	};
 
-	return Vector(pitch,yaw,0.0);
+	vOut.x = pitch;
+	vOut.y = yaw;
+	vOut.z = 0.0;
+
+	return vOut;
 }
 
 //-----------------------------------------------------------------------
@@ -208,12 +212,15 @@ function VS::VectorAngles( vFwd ):(Vector,atan2,sqrt)
 //-----------------------------------------------------------------------
 function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC ):(sin,cos)
 {
-	local rad = ::DEG2RAD*fYaw;
+	local rad = DEG2RAD*fYaw;
 	local sy  = sin(rad);
 	local cy  = cos(rad);
 
-	vOut.x = vIn.x * cy - vIn.y * sy;
-	vOut.y = vIn.x * sy + vIn.y * cy;
+	local x = vIn.x * cy - vIn.y * sy;
+	local y = vIn.x * sy + vIn.y * cy;
+
+	vOut.x = x;
+	vOut.y = y;
 	vOut.z = vIn.z;
 
 	return vOut;
@@ -221,7 +228,7 @@ function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC ):(sin,cos)
 
 function VS::YawToVector( yaw ):(Vector,sin,cos)
 {
-	local ang = ::DEG2RAD*yaw;
+	local ang = DEG2RAD*yaw;
 	return Vector(cos(ang), sin(ang), 0.0);
 }
 
@@ -230,7 +237,7 @@ function VS::VecToYaw( vec ):(atan2)
 	if( !vec.y && !vec.x )
 		return 0.0;
 
-	local yaw = ::RAD2DEG*atan2(vec.y, vec.x);
+	local yaw = RAD2DEG*atan2(vec.y, vec.x);
 
 	if( yaw < 0.0 )
 		yaw += 360.0;
@@ -248,7 +255,7 @@ function VS::VecToPitch( vec ):(atan2)
 			return -180.0;
 	};
 
-	return::RAD2DEG*atan2(-vec.z, vec.Length2D());
+	returnRAD2DEG*atan2(-vec.z, vec.Length2D());
 }
 
 function VS::VectorIsZero(v)
@@ -422,6 +429,15 @@ function VS::SnapDirectionToAxis( vDirection, epsilon = 0.002 )
 
 		return vDirection;
 	};
+}
+
+function VS::VectorNegate( vec )
+{
+	vec.x = -vec.x;
+	vec.y = -vec.y;
+	vec.z = -vec.z;
+
+	return vec;
 }
 
 //-----------------------------------------------------------------------------
