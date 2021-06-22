@@ -13,7 +13,6 @@ local AddEvent = ::DoEntFireByInstanceHandle;
 	return AddEvent( target, action+"", value+"", delay, activator, caller );
 }
 
-local DoEntFire = ::DoEntFire;
 //-----------------------------------------------------------------------
 // Reduce 3 calls
 //-----------------------------------------------------------------------

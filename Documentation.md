@@ -119,10 +119,7 @@ Included in `vs_library.nut`
 [`VS.VectorAbs()`](#f_VectorAbs)  
 [`VS.VectorAdd()`](#f_VectorAdd)  
 [`VS.VectorSubtract()`](#f_VectorSubtract)  
-[`VS.VectorMultiply()`](#f_VectorMultiply)  
-[`VS.VectorMultiply2()`](#f_VectorMultiply2)  
-[`VS.VectorDivide()`](#f_VectorDivide)  
-[`VS.VectorDivide2()`](#f_VectorDivide2)  
+[`VS.VectorScale()`](#f_VectorScale)  
 [`VS.ComputeVolume()`](#f_ComputeVolume)  
 [`VS.RandomVector()`](#f_RandomVector)  
 [`VS.CalcSqrDistanceToAABB()`](#f_CalcSqrDistanceToAABB)  
@@ -233,7 +230,9 @@ Included in `vs_library.nut`
 [`VS.Log.export`](#f_Logexport)  
 [`VS.Log.file_prefix`](#f_Logfile_prefix)  
 [`VS.Log.Add()`](#f_LogAdd)  
+[`VS.Log.Pop()`](#f_LogPop)  
 [`VS.Log.Clear()`](#f_LogClear)  
+[`VS.Log.WriteKeyValues()`](#f_LogWriteKeyValues)  
 [`VS.Log.Run()`](#f_LogRun)  
 [`VS.Log.filter`](#f_Logfilter)  
 
@@ -268,6 +267,10 @@ Not included in `vs_library.nut`
 [`VS.QuaternionIdentityBlend()`](#f_QuaternionIdentityBlend)  
 [`VS.QuaternionSlerp()`](#f_QuaternionSlerp)  
 [`VS.QuaternionSlerpNoAlign()`](#f_QuaternionSlerpNoAlign)  
+[`VS.QuaternionAverageExponential()`](#f_QuaternionAverageExponential)  
+[`VS.QuaternionSquad()`](#f_QuaternionSquad)  
+[`VS.QuaternionLn()`](#f_QuaternionLn)  
+[`VS.QuaternionExp()`](#f_QuaternionExp)  
 [`VS.QuaternionAngleDiff()`](#f_QuaternionAngleDiff)  
 [`VS.QuaternionScale()`](#f_QuaternionScale)  
 [`VS.QuaternionConjugate()`](#f_QuaternionConjugate)  
@@ -291,6 +294,7 @@ Not included in `vs_library.nut`
 [`VS.MatrixCopy()`](#f_MatrixCopy)  
 [`VS.MatrixInvert()`](#f_MatrixInvert)  
 [`VS.MatrixInverseGeneral()`](#f_MatrixInverseGeneral)  
+[`VS.MatrixInverseTR()`](#f_MatrixInverseTR)  
 [`VS.MatrixGetColumn()`](#f_MatrixGetColumn)  
 [`VS.MatrixSetColumn()`](#f_MatrixSetColumn)  
 [`VS.MatrixScaleBy()`](#f_MatrixScaleBy)  
@@ -305,7 +309,6 @@ Not included in `vs_library.nut`
 [`VS.MatrixMultiply()`](#f_MatrixMultiply)  
 [`VS.MatrixBuildRotationAboutAxis()`](#f_MatrixBuildRotationAboutAxis)  
 [`VS.MatrixBuildRotation()`](#f_MatrixBuildRotation)  
-[`VS.Vector3DMultiply()`](#f_Vector3DMultiply)  
 [`VS.Vector3DMultiplyProjective()`](#f_Vector3DMultiplyProjective)  
 [`VS.Vector3DMultiplyPositionProjective()`](#f_Vector3DMultiplyPositionProjective)  
 [`VS.TransformAABB()`](#f_TransformAABB)  
@@ -352,8 +355,6 @@ Not included in `vs_library.nut`
 [`VS.Catmull_Rom_Spline_Normalize()`](#f_Catmull_Rom_Spline_Normalize)  
 [`VS.Catmull_Rom_Spline_Integral_Normalize()`](#f_Catmull_Rom_Spline_Integral_Normalize)  
 [`VS.Catmull_Rom_Spline_NormalizeX()`](#f_Catmull_Rom_Spline_NormalizeX)  
-[`VS.Catmull_Rom_SplineQuat()`](#f_Catmull_Rom_SplineQuat)  
-[`VS.Catmull_Rom_SplineQuat_Tangent()`](#f_Catmull_Rom_SplineQuat_Tangent)  
 [`VS.Hermite_Spline()`](#f_Hermite_Spline)  
 [`VS.Hermite_SplineF()`](#f_Hermite_SplineF)  
 [`VS.Hermite_SplineBasis()`](#f_Hermite_SplineBasis)  
@@ -701,32 +702,11 @@ Vector VS::VectorSubtract(Vector a, Vector b, Vector& out = _VEC )
 Vector a - Vector b
 ________________________________
 
-<a name="f_VectorMultiply"></a>
+<a name="f_VectorScale"></a>
 ```cpp
-Vector VS::VectorMultiply(Vector a, float b, Vector& out = _VEC )
+Vector VS::VectorScale(Vector a, float b, Vector& out = _VEC )
 ```
 Vector a * b
-________________________________
-
-<a name="f_VectorMultiply2"></a>
-```cpp
-Vector VS::VectorMultiply2(Vector a, Vector b, Vector& out = _VEC )
-```
-Vector a * Vector b
-________________________________
-
-<a name="f_VectorDivide"></a>
-```cpp
-Vector VS::VectorDivide(Vector a, float b, Vector& out = _VEC )
-```
-Vector a / b
-________________________________
-
-<a name="f_VectorDivide2"></a>
-```cpp
-Vector VS::VectorDivide2(Vector a, Vector b, Vector& out = _VEC )
-```
-Vector a / Vector b
 ________________________________
 
 <a name="f_ComputeVolume"></a>
@@ -1108,7 +1088,7 @@ ________________________________
 ```cpp
 string VecToString(Vector vec, string prefix = "Vector(", string separator = ",", string suffix = ")")
 ```
-return `"Vector(0,1,2)"`
+return `"Vector(0, 1, 2)"`
 ________________________________
 
 <a name="f_GetTickrate"></a>
@@ -2035,7 +2015,14 @@ ________________________________
 ```cpp
 void VS::Log::Add(string s)
 ```
-Add new string to the internal log. Newline (`\n`) not included.
+Add new string to the internal log.
+________________________________
+
+<a name="f_LogPop"></a>
+```cpp
+void VS::Log::Pop()
+```
+Pop the last string from the internal log.
 ________________________________
 
 <a name="f_LogClear"></a>
@@ -2043,6 +2030,38 @@ ________________________________
 void VS::Log::Clear()
 ```
 Clear the internal log.
+________________________________
+
+<a name="f_LogWriteKeyValues"></a>
+```cpp
+void VS::Log::WriteKeyValues( szName, hTable )
+```
+Recursively write a script table as KeyValues into the internal log.
+
+```cs
+function test()
+{
+	local kv =
+	{
+		Key1 = "string value 1",
+		Key2 = 2,
+		[true] = Vector(1,1,1),
+		[4] =
+		{
+			subkey1 = 5,
+			subkey2 = 6
+		},
+		testarray = [ Vector(0,0,1), Vector(0,1,0), Vector(1,0,0) ]
+	}
+
+	VS.Log.Clear()
+	VS.Log.export = false
+
+	VS.Log.WriteKeyValues( "TestKV", kv )
+
+	VS.Log.Run()
+}
+```
 ________________________________
 
 <a name="f_LogRun"></a>
@@ -2060,7 +2079,7 @@ ________________________________
 
 <a name="f_Logfilter"></a>
 ```cpp
-VS.Log.filter = "VL"
+VS.Log.filter = "L "
 ```
 Export filter
 ________________________________
@@ -2278,6 +2297,34 @@ Quaternion VS::QuaternionSlerpNoAlign(Quaternion p, Quaternion q, float t, Quate
 
 ________________________________
 
+<a name="f_QuaternionExp"></a>
+```cpp
+void VS::QuaternionExp(Quaternion p, Quaternion &q)
+```
+Computes the exponential of a given pure quaternion. The w-component of the input quaternion is ignored in the calculation.
+________________________________
+
+<a name="f_QuaternionLn"></a>
+```cpp
+void VS::QuaternionLn(Quaternion p, Quaternion &q)
+```
+Computes the natural logarithm of a given unit quaternion. If input is not a unit quaternion, the returned value is undefined.
+________________________________
+
+<a name="f_QuaternionSquad"></a>
+```cpp
+void VS::QuaternionSquad(Quaternion q0, Quaternion q1, Quaternion q2, Quaternion q3, float t, Quaternion &qt)
+```
+Interpolates between quaternions Q1 to Q2, using spherical quadrangle interpolation.
+________________________________
+
+<a name="f_QuaternionAverageExponential"></a>
+```cpp
+void VS::QuaternionAverageExponential(Quaternion &q, int nCount, Quaternion[] stack)
+```
+
+________________________________
+
 <a name="f_QuaternionAngleDiff"></a>
 ```cpp
 float VS::QuaternionAngleDiff(Quaternion p, Quaternion q)
@@ -2433,16 +2480,23 @@ ________________________________
 
 <a name="f_MatrixInvert"></a>
 ```cpp
-void VS::MatrixInvert(matrix3x4_t in1, matrix3x4_t& out)
+void VS::MatrixInvert(matrix3x4_t src, matrix3x4_t& dst)
 ```
 NOTE: This is just the transpose not a general inverse
 ________________________________
 
 <a name="f_MatrixInverseGeneral"></a>
 ```cpp
-void VS::MatrixInverseGeneral(VMatrix in1, VMatrix& out)
+void VS::MatrixInverseGeneral(VMatrix src, VMatrix& dst)
 ```
 
+________________________________
+
+<a name="f_MatrixInverseTR"></a>
+```cpp
+void VS::MatrixInverseTR(VMatrix src, VMatrix& dst)
+```
+Does a fast inverse, assuming the matrix only contains translation and rotation.
 ________________________________
 
 <a name="f_MatrixGetColumn"></a>
@@ -2543,21 +2597,14 @@ void VS::MatrixBuildRotation( matrix3x4_t& dst, Vector initialDirection, Vector 
 Builds a rotation matrix that rotates one direction vector into another.
 ________________________________
 
-<a name="f_Vector3DMultiply"></a>
-```cpp
-void VS::Vector3DMultiply( matrix3x4 src1, Vector src2, Vector &dst )
-```
-Matrix/vector multiply
-________________________________
-
-<a name="f_Vector3DMultiply"></a>
+<a name="f_Vector3DMultiplyProjective"></a>
 ```cpp
 void VS::Vector3DMultiplyProjective( VMatrix src1, Vector src2, Vector &dst )
 ```
 Vector3DMultiplyProjective treats src2 as if it's a direction and does the perspective divide at the end.
 ________________________________
 
-<a name="f_Vector3DMultiply"></a>
+<a name="f_Vector3DMultiplyPositionProjective"></a>
 ```cpp
 void VS::Vector3DMultiplyPositionProjective( VMatrix src1, Vector src2, Vector &dst )
 ```
@@ -2619,7 +2666,7 @@ ________________________________
 
 <a name="f_MatrixBuildPerspective"></a>
 ```cpp
-void VS::MatrixBuildPerspective( VMatrix& dst, float fovX, float fovY, float zNear, float zFar )
+void VS::MatrixBuildPerspective( VMatrix& dst, float fovX, float flAspect, float zNear, float zFar )
 ```
 Build a perspective matrix.  
 zNear and zFar are assumed to be positive.  
@@ -2663,6 +2710,9 @@ ________________________________
 ```cpp
 void VS::ComputeCameraVariables( Vector vecOrigin, Vector pVecForward, Vector pVecRight, Vector pVecUp, VMatrix &pMatCamInverse )
 ```
+Compute camera matrix.
+
+This returns the inverted inverse camera matrix to simplify its local usage - _technically_ it's not the camera matrix. This may have unwanted effects if not expected, but for the purposes of its usage here, it is fine.
 ________________________________
 
 <a name="f_CalcFovY"></a>
@@ -2688,7 +2738,7 @@ ________________________________
 <a name="f_DrawViewFrustum"></a>
 ```cpp
 void VS::DrawViewFrustum( vecOrigin, vecForward, vecRight, vecUp,
-		flFovX, flFovY, zNear, zFar, r, g, b, z, time )
+		flFovX, flAspect, zNear, zFar, r, g, b, z, time )
 ```
 ________________________________
 
@@ -2907,22 +2957,6 @@ Vector VS::Catmull_Rom_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector
 Interpolate a Catmull-Rom spline.
 
 Normalize p2.x->p1.x and p3.x->p4.x to be the same length as p2.x->p3.x
-________________________________
-
-<a name="f_Catmull_Rom_SplineQuat"></a>
-```cpp
-Quaternion VS::Catmull_Rom_SplineQuat(Quaternion p1, Quaternion p2, Quaternion p3, Quaternion p4, float t, Quaternion& output)
-```
-Interpolate a Catmull-Rom spline.
-________________________________
-
-<a name="f_Catmull_Rom_SplineQuat_Tangent"></a>
-```cpp
-Quaternion VS::Catmull_Rom_SplineQuat_Tangent(Quaternion p1, Quaternion p2, Quaternion p3, Quaternion p4, float t, Quaternion& output)
-```
-Interpolate a Catmull-Rom spline.
-
-Returns the tangent of the point at t of the spline
 ________________________________
 
 <a name="f_Hermite_Spline"></a>

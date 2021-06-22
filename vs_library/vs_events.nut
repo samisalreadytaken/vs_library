@@ -31,8 +31,6 @@ if (!PORTAL2){
 // Output : player handle
 //-----------------------------------------------------------------------
 
-local Entities = ::Entities;
-
 function VS::GetPlayerByUserid( userid ):(Entities)
 {
 	local ent;
@@ -67,8 +65,7 @@ if (EVENTS){
 
 local gEventData = ROOT["{847D4B}"];
 local flTimeoutThold = TICK_INTERVAL*2;
-local Time = Time;
-local Fmt = ::format;
+local Fmt = format;
 
 function VS::Events::player_connect( event ) : ( gEventData, Time, flTimeoutThold, Fmt )
 {
@@ -269,6 +266,12 @@ function VS::FixupEventListener( ent )
 		{
 			if ( k == "event_data" )
 			{
+				// This can of course be used as a manager and call callbacks added with a unique function, but
+				// that would not be compatible with the current method of using outputs, and
+				// be generally pointless as CSGO does not have an addon system where independent scripts
+				// are likely to be run in parallel.
+				// Events can only be listened by spawning a map-created event listener, and
+				// event listeners are guaranteed to be only used by mappers who will have outputs.
 				cache.insert( 0, v );
 			}
 			else

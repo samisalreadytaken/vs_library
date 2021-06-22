@@ -7,17 +7,71 @@
 //
 //-----------------------------------------------------------------------
 
-// instance for reading values from functions with optional output parameters
-local _VEC = Vector();
 
-local Vector = ::Vector;
-local RandomFloat = ::RandomFloat;
-local sin = ::sin;
-local cos = ::cos;
-local atan2 = ::atan2;
-local exp = ::exp;
-local pow = ::pow;
-local log = ::log;
+// NOTE: Vector extensions will only be applied if these were run before creating an instance.
+// This cannot be guaranteed when the library is executed post server init -
+// where other scripts could have created a vector instance.
+
+// REMOVED: While I could keep this in for map scripts where this would be guaranteed,
+// I am wary of the uncertain edge cases.
+// For personal uses, use this vec3_t class.
+/*
+class ::vec3_t extends Vector {}
+local Vector = vec3_t;
+
+function Vector::IsValid()
+{
+	return ( x > -FLT_MAX && x < FLT_MAX ) &&
+		( y > -FLT_MAX && y < FLT_MAX ) &&
+		( z > -FLT_MAX && z < FLT_MAX );
+}
+
+function Vector::_unm()
+{
+	return this * -1.0;
+}
+
+function Vector::_div(f)
+{
+	return this * ( 1.0 / f );
+}
+
+function Vector::Negate()
+{
+	x = -x;
+	y = -y;
+	z = -z;
+}
+
+function Vector::Set(X, Y, Z)
+{
+	x = X;
+	y = Y;
+	z = Z;
+}
+
+function Vector::Copy(v)
+{
+	x = v.x;
+	y = v.y;
+	z = v.z;
+}
+
+function Vector::Replicate(f)
+{
+	x = y = z = f;
+}
+
+function Vector::Normalized()
+{
+	local v = this * 1.0;
+	v.Norm();
+	return v;
+}
+*/
+
+// static instance for reading values from functions with optional output parameters
+local _VEC = Vector();
 
 ::max <- function( a, b ){ return a > b ? a : b; }
 ::min <- function( a, b ){ return a < b ? a : b; }
@@ -35,9 +89,17 @@ local log = ::log;
 	// (v < min) ? min : (max < v) ? max : v
 }
 
-// VS.IsInteger(1.0) is true
-// VS.IsInteger(1.1) is false
-function VS::IsInteger( f ){ return f.tointeger() == f; }
+function VS::IsInteger(f)
+{
+	return f.tointeger() == f;
+}
+
+/*
+function VS::IsFinite(f)
+{
+	return ( f > -FLT_MAX && f < FLT_MAX );
+}
+*/
 
 //-----------------------------------------------------------------------
 // IsLookingAt with tolerance
@@ -76,7 +138,7 @@ function VS::GetAngle( vFrom, vTo ):(Vector,atan2)
 {
 	local d     = vFrom - vTo;
 	local pitch = RAD2DEG*atan2( d.z, d.Length2D() );
-	local yaw   = RAD2DEG*(atan2( d.y, d.x ) + ::PI);
+	local yaw   = RAD2DEG*(atan2( d.y, d.x ) + PI);
 
 	return Vector(pitch,yaw,0.0);
 }
@@ -255,7 +317,7 @@ function VS::VecToPitch( vec ):(atan2)
 			return -180.0;
 	};
 
-	returnRAD2DEG*atan2(-vec.z, vec.Length2D());
+	return RAD2DEG*atan2(-vec.z, vec.Length2D());
 }
 
 function VS::VectorIsZero(v)
@@ -297,7 +359,7 @@ function VS::AnglesAreEqual( a, b, tolerance = 0.0 )
 //-----------------------------------------------------------------------
 // Equality with tolerance
 //-----------------------------------------------------------------------
-function VS::CloseEnough( a, b, e )
+function VS::CloseEnough( a, b, e = 1.e-3 )
 {
 	local d = a - b;
 	if (d < 0.0)
@@ -457,18 +519,18 @@ function VS::VectorCopy( src, dst )
 //-----------------------------------------------------------------------------
 function VS::VectorMin( a, b, o = _VEC )
 {
-	o.x = ::min(a.x,b.x);
-	o.y = ::min(a.y,b.y);
-	o.z = ::min(a.z,b.z);
+	o.x = min(a.x,b.x);
+	o.y = min(a.y,b.y);
+	o.z = min(a.z,b.z);
 
 	return o;
 }
 
 function VS::VectorMax( a, b, o = _VEC )
 {
-	o.x = ::max(a.x,b.x);
-	o.y = ::max(a.y,b.y);
-	o.z = ::max(a.z,b.z);
+	o.x = max(a.x,b.x);
+	o.y = max(a.y,b.y);
+	o.z = max(a.z,b.z);
 
 	return o;
 }
@@ -507,7 +569,7 @@ function VS::VectorSubtract( a, b, o = _VEC )
 
 // scalar
 // Vector a * b
-function VS::VectorMultiply( a, b, o = _VEC )
+function VS::VectorScale( a, b, o = _VEC )
 {
 	o.x = a.x * b;
 	o.y = a.y * b;
@@ -515,9 +577,9 @@ function VS::VectorMultiply( a, b, o = _VEC )
 
 	return o;
 }
-
+/*
 // Vector a * Vector b
-function VS::VectorMultiply2( a, b, o = _VEC )
+function VS::VectorMultiply( a, b, o = _VEC )
 {
 	o.x = a.x*b.x;
 	o.y = a.y*b.y;
@@ -526,20 +588,8 @@ function VS::VectorMultiply2( a, b, o = _VEC )
 	return o;
 }
 
-// Vector a / b
-function VS::VectorDivide( a, b, o = _VEC )
-{
-	local d = 1.0/b;
-
-	o.x = a.x*d;
-	o.y = a.y*d;
-	o.z = a.z*d;
-
-	return o;
-}
-
 // Vector a / Vector b
-function VS::VectorDivide2( a, b, o = _VEC )
+function VS::VectorDivide( a, b, o = _VEC )
 {
 	o.x = a.x/b.x;
 	o.y = a.y/b.y;
@@ -547,7 +597,7 @@ function VS::VectorDivide2( a, b, o = _VEC )
 
 	return o;
 }
-
+*/
 function VS::ComputeVolume( vecMins, vecMaxs )
 {
 	local vecDelta = vecMaxs - vecMins;
@@ -610,12 +660,6 @@ function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut = _VEC )
 
 	return closestOut;
 }
-
-//-----------------------------------------------------------------------
-//
-// For advanced interpolation methods, see 'vs_library/vs_interp'
-//
-//-----------------------------------------------------------------------
 
 // decayTo is factor the value should decay to in decayTime
 function VS::ExponentialDecay( decayTo, decayTime, dt ):(log,exp)
@@ -787,7 +831,7 @@ function VS::Gain( x, biasAmt ) : (Bias)
 //
 function VS::SmoothCurve( x ):(cos)
 {
-	return (1.0 - cos(x * ::PI)) * 0.5;
+	return (1.0 - cos(x * PI)) * 0.5;
 }
 
 function VS::MovePeak( x, flPeakPos )
@@ -845,12 +889,6 @@ function VS::VectorLerp( v1, v2, f, o = _VEC )
 
 	return o;
 }
-
-//-----------------------------------------------------------------------
-//
-// For advanced collision methods, see 'vs_library/vs_collision'
-//
-//-----------------------------------------------------------------------
 
 // VectorWithinAABox
 function VS::IsPointInBox( vec, boxmin, boxmax )

@@ -3,6 +3,27 @@
 
 --------------------------------
 
+2021-06-22 [v2.40.2]
+- Added class support for VS.EventQueue
+- Renamed VS.VectorMultiply<float> to VS.VectorScale
+- Removed VS.VectorDivide and VS.VectorMultiply
+- Added VS.Log.Pop
+- Added VS.MatrixInverseTR
+- Added VS.QuaternionLn
+- Added VS.QuaternionExp
+- Added VS.QuaternionSquad
+- Added VS.QuaternionAverageExponential
+- Optimised VS.MatrixBuildPerspective
+- Optimised interpolation algorithms
+- Fixed no export log printing
+- Fixed VS.MatrixQuaternionFast
+- Fixed VS.Spline_Normalize
+- Fixed VS.QuaternionSlerp and VS.QuaternionSlerpNoAlign
+- Replaced fovY parameters with aspectRatio in VS.MatrixBuildPerspective and VS.DrawViewFrustum
+- Inverted VS.ComputeCameraVariables matrix by default
+- Removed VS.Catmull_Rom_SplineQuat hacks
+- Removed vs_math2 inclusion in extended library files, the users will now need to include it themselves.
+
 2021-05-31 [v2.40.1]
 - Various optimisations
 - Removed VS.DrawEntityBBox
@@ -17,21 +38,31 @@
 - Added VS.DrawCapsule
 - Added VS.DrawEntityBounds
 - Added VS.DrawFrustum
+- Added VS.DrawViewFrustum
 - Added VMatrix
 - Added VS.RotationDelta
-- Added VS.Vector3DMultiply
 - Added VS.Vector3DMultiplyProjective
 - Added VS.Vector3DMultiplyPositionProjective
 - Added VS.MatrixBuildPerspective
 - Added VS.MatrixInverseGeneral
 - Added VS.MatrixBuildRotation
 - Added VS.MatrixBuildRotationAboutAxis
+- Added VS.ComputeCameraVariables
+- Added VS.ScreenToWorld
+- Added VS.CalcFovX
+- Added VS.CalcFovY
 - Fixed VS.ComputeCenterMatrix, VS.ComputeCenterIMatrix
-- Fixed (in == out) conditions for VS.VectorYawRotate, VS.VectorTransform, VS.VectorITransform, VS.VectorRotate, VS.VectorIRotate
+- Fixed (in == out) conditions for:
+	VS.VectorYawRotate
+	VS.VectorTransform
+	VS.VectorITransform
+	VS.VectorRotate
+	VS.VectorIRotate
 - Renamed `matrix3x4_t::m_flMatVal` to `matrix3x4_t::m`
 - Moved optional position parameters on some matrix functions for consistency. This changes function signatures!
-  Affected functions: AngleMatrix, AngleIMatrix, QuaternionMatrix
-    `VS.AngleMatrix( angles, matrix )` -> `VS.AngleMatrix( angles, null, matrix )`
+	Affected functions: AngleMatrix, AngleIMatrix, QuaternionMatrix
+		`VS.AngleMatrix( angles, matrix )` -> `VS.AngleMatrix( angles, null, matrix )`
+
   (vs_interp)
 - Removed default output parameters
 

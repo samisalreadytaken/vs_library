@@ -9,25 +9,20 @@
 //
 //-----------------------------------------------------------------------
 
-IncludeScript("vs_library/vs_math2");
+if( !("VectorTransform" in VS) )
+	Assert(0,"vs_math2 not found");;
 
 // if already included
 if( "Catmull_Rom_Spline" in VS )
 	return;;
 
-local Vector = Vector;
-local Quaternion = Quaternion;
 local QuaternionAlign = VS.QuaternionAlign;
 local QuaternionNormalize = VS.QuaternionNormalize;
 local AngleQuaternion = VS.AngleQuaternion;
 local QuaternionAngles = VS.QuaternionAngles;
 local QuaternionSlerp = VS.QuaternionSlerp;
-local VectorAdd = VS.VectorAdd;
-local VectorMultiply = VS.VectorMultiply;
 local VectorMA = VS.VectorMA;
 local VectorLerp = VS.VectorLerp;
-local fabs = fabs;
-local sin = sin;
 local ExponentialDecay = VS.ExponentialDecay;
 
 enum INTERPOLATE
@@ -85,9 +80,7 @@ function VS::Interpolator_GetKochanekBartelsParams( interpolationType, tbc )
 
 function VS::Interpolator_CurveInterpolate( interpolationType, vPre, vStart, vEnd, vNext, f, vOut ):(sin,VectorLerp,ExponentialDecay)
 {
-	vOut.x = 0;
-	vOut.y = 0;
-	vOut.z = 0;
+	vOut.x = vOut.y = vOut.z = 0.0;
 
 	switch ( interpolationType )
 	{
@@ -216,12 +209,7 @@ function VS::Interpolator_CurveInterpolate( interpolationType, vPre, vStart, vEn
 function VS::Interpolator_CurveInterpolate_NonNormalized( interpolationType, vPre, vStart, vEnd, vNext, f, vOut )
 	: ( sin, VectorLerp, ExponentialDecay )
 {
-	// if( typeof vOut == "Quaternion" )
-		// return Interpolator_CurveInterpolate_NonNormalizedQ( interpolationType, vPre, vStart, vEnd, vNext, f, vOut );
-
-	vOut.x = 0;
-	vOut.y = 0;
-	vOut.z = 0;
+	vOut.x = vOut.y = vOut.z = 0.0;
 
 	switch ( interpolationType )
 	{
@@ -330,12 +318,17 @@ function VS::Interpolator_CurveInterpolate_NonNormalized( interpolationType, vPr
 //          Vector p4 -
 //          Vector p4n -
 //-----------------------------------------------------------------------------
-function VS::Spline_Normalize( p1, p2, p3, p4, p1n, p4n ):(VectorLerp)
+function VS::Spline_Normalize( p1, p2, p3, p4, p1n, p4n ) : ( VectorLerp )
 {
 	local dt = p3.x - p2.x;
 
-	p1n = p1;
-	p4n = p4;
+	p1n.x = p1.x;
+	p1n.y = p1.y;
+	p1n.z = p1.z;
+
+	p4n.x = p4.x;
+	p4n.y = p4.y;
+	p4n.z = p4.z;
 
 	if( dt != 0.0 )
 	{
@@ -354,98 +347,47 @@ local Spline_Normalize = VS.Spline_Normalize;
 
 // Interpolate a Catmull-Rom spline.
 // t is a [0,1] value and interpolates a curve between p2 and p3.
-function VS::Catmull_Rom_Spline( p1, p2, p3, p4, t, output ) : (VectorAdd)
+function VS::Catmull_Rom_Spline( p1, p2, p3, p4, t, output )
 {
-//	if( p1 == output ||
-//		p2 == output ||
-//		p3 == output ||
-//		p4 == output ) Assert(0);
+	//         p1     p2    p3    p4
+	//
+	// t^3     -1     +3    -3    +1     /
+	// t^2     +2     -5     4    -1    /
+	// t^1     -1      0     1     0   /  2
+	// t^0      0      2     0     0  /
 
 	local th = t*0.5;
-	local tSqr = t*th;
-	local tSqrSqr = t*tSqr;
-	t = th;
+	local t2 = t*th;
+	local t3 = t*t2;
 
-	output.x = output.y = output.z = 0.0;
+	local a = -t3 + 2.0 * t2 - th;
+	local b = 3.0 * t3 - 5.0 * t2 + 1.0;
+	local c = -3.0 * t3 + 4.0 * t2 + th;
+	local d = t3 - t2;
 
-	// matrix row 1
-	local a = p1 * ( -tSqrSqr );	// 0.5 t^3 * [ (-1*p1) + ( 3*p2) + (-3*p3) + p4 ]
-	local b = p2 * ( tSqrSqr*3 );
-	local c = p3 * ( tSqrSqr*-3 );
-	local d = p4 * ( tSqrSqr );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
-	VectorAdd( output, d, output );
-
-	// matrix row 2
-	a = p1 * ( tSqr*2 );			// 0.5 t^2 * [ ( 2*p1) + (-5*p2) + ( 4*p3) - p4 ]
-	b = p2 * ( tSqr*-5 );
-	c = p3 * ( tSqr*4 );
-	d = p4 * ( -tSqr );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
-	VectorAdd( output, d, output );
-
-	// matrix row 3
-	a = p1 * ( -t );				// 0.5 t * [ (-1*p1) + p3 ]
-	b = p3 * ( t );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-
-	// matrix row 4
-	VectorAdd( output, p2, output ); 								// p2
+	output.x = a * p1.x + b * p2.x + c * p3.x + d * p4.x;
+	output.y = a * p1.y + b * p2.y + c * p3.y + d * p4.y;
+	output.z = a * p1.z + b * p2.z + c * p3.z + d * p4.z;
 }
 
 local Catmull_Rom_Spline = VS.Catmull_Rom_Spline;
 
 // Interpolate a Catmull-Rom spline.
 // Returns the tangent of the point at t of the spline
-function VS::Catmull_Rom_Spline_Tangent( p1, p2, p3, p4, t, output ):(VectorAdd)
+function VS::Catmull_Rom_Spline_Tangent( p1, p2, p3, p4, t, output )
 {
-//	if( p1 == output ||
-//		p2 == output ||
-//		p3 == output ||
-//		p4 == output ) Assert(0);
+	local t3 = 1.5 * t * t; // 3.0 * t * t * 0.5;
+	// local t2 = 2.0 * t * 0.5;
+	// local th = 0.5;
 
-	local tOne = 1.5*t*t;
-	local tTwo = 1*t;
-	local tThree = 0.5;
+	local a = -t3 + 2.0 * t - 0.5;
+	local b = 3.0 * t3 - 5.0 * t;
+	local c = -3.0 * t3 + 4.0 * t + 0.5;
+	local d = t3 - t;
 
-	output.x = output.y = output.z = 0.0;
-
-	// matrix row 1
-	local a = p1 * ( -tOne );		// 0.5 t^3 * [ (-1*p1) + ( 3*p2) + (-3*p3) + p4 ]
-	local b = p2 * ( tOne*3 );
-	local c = p3 * ( tOne*-3 );
-	local d = p4 * ( tOne );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
-	VectorAdd( output, d, output );
-
-	// matrix row 2
-	a = p1 * ( tTwo*2 );		// 0.5 t^2 * [ ( 2*p1) + (-5*p2) + ( 4*p3) - p4 ]
-	b = p2 * ( tTwo*-5 );
-	c = p3 * ( tTwo*4 );
-	d = p4 * ( -tTwo );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
-	VectorAdd( output, d, output );
-
-	// matrix row 3
-	a = p1 * ( -tThree );			// 0.5 t * [ (-1*p1) + p3 ]
-	b = p3 * ( tThree );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
+	output.x = a * p1.x + b * p2.x + c * p3.x + d * p4.x;
+	output.y = a * p1.y + b * p2.y + c * p3.y + d * p4.y;
+	output.z = a * p1.z + b * p2.z + c * p3.z + d * p4.z;
 }
 
 // area under the curve [0..t]
@@ -512,90 +454,12 @@ function VS::Catmull_Rom_Spline_Integral_Normalize( p1, p2, p3, p4, t, output ) 
 
 // Interpolate a Catmull-Rom spline.
 // Normalize p2.x->p1.x and p3.x->p4.x to be the same length as p2.x->p3.x
-function VS::Catmull_Rom_Spline_NormalizeX( p1, p2, p3, p4, t, output ) : ( Vector, Spline_Normalize, Catmull_Rom_Spline )
+function VS::Catmull_Rom_Spline_NormalizeX( p1, p2, p3, p4, t, output ) :
+	( Vector, Spline_Normalize, Catmull_Rom_Spline )
 {
 	local p1n = Vector(), p4n = Vector();
 	Spline_Normalize( p1, p2, p3, p4, p1n, p4n );
 	return Catmull_Rom_Spline( p1n, p2, p3, p4n, t, output );
-}
-
-// quat
-function VS::Catmull_Rom_SplineQuat( p1, p2, p3, p4, t, output ):(QuaternionAlign)
-{
-	QuaternionAlign( p2, p3, p3 );
-
-	local th = t*0.5;
-	local ts = t*th;
-	local tz = t*ts;
-	t = th;
-
-	output.x = output.y = output.z = output.w = 0.0;
-
-	local a = p1 * ( -tz );
-	local b = p2 * ( tz*3 );
-	local c = p3 * ( tz*-3 );
-	local d = p4 * ( tz );
-
-	output.x+=a.x;output.y+=a.y;output.z+=a.z;output.w+=a.w;
-	output.x+=b.x;output.y+=b.y;output.z+=b.z;output.w+=b.w;
-	output.x+=c.x;output.y+=c.y;output.z+=c.z;output.w+=c.w;
-	output.x+=d.x;output.y+=d.y;output.z+=d.z;output.w+=d.w;
-
-	a = p1 * ( ts*2 );
-	b = p2 * ( ts*-5 );
-	c = p3 * ( ts*4 );
-	d = p4 * ( -ts );
-
-	output.x+=a.x;output.y+=a.y;output.z+=a.z;output.w+=a.w;
-	output.x+=b.x;output.y+=b.y;output.z+=b.z;output.w+=b.w;
-	output.x+=c.x;output.y+=c.y;output.z+=c.z;output.w+=c.w;
-	output.x+=d.x;output.y+=d.y;output.z+=d.z;output.w+=d.w;
-
-	a = p1 * ( -t );
-	b = p3 * ( t );
-
-	output.x+=a.x;output.y+=a.y;output.z+=a.z;output.w+=a.w;
-	output.x+=b.x;output.y+=b.y;output.z+=b.z;output.w+=b.w;
-
-	output.x+=p2.x;output.y+=p2.y;output.z+=p2.z;output.w+=p2.w;
-}
-
-// quat
-function VS::Catmull_Rom_SplineQuat_Tangent( p1, p2, p3, p4, t, output ):(QuaternionAlign)
-{
-	QuaternionAlign( p2, p3, p3 );
-
-	local to = 1.5*t*t;
-	local tw = 1*t;
-	local th = 0.5;
-
-	output.x = output.y = output.z = output.w = 0.0;
-
-	local a = p1 * ( -to );
-	local b = p2 * ( to*3 );
-	local c = p3 * ( to*-3 );
-	local d = p4 * ( to );
-
-	output.x+=a.x;output.y+=a.y;output.z+=a.z;output.w+=a.w;
-	output.x+=b.x;output.y+=b.y;output.z+=b.z;output.w+=b.w;
-	output.x+=c.x;output.y+=c.y;output.z+=c.z;output.w+=c.w;
-	output.x+=d.x;output.y+=d.y;output.z+=d.z;output.w+=d.w;
-
-	a = p1 * ( tw*2 );
-	b = p2 * ( tw*-5 );
-	c = p3 * ( tw*4 );
-	d = p4 * ( -tw );
-
-	output.x+=a.x;output.y+=a.y;output.z+=a.z;output.w+=a.w;
-	output.x+=b.x;output.y+=b.y;output.z+=b.z;output.w+=b.w;
-	output.x+=c.x;output.y+=c.y;output.z+=c.z;output.w+=c.w;
-	output.x+=d.x;output.y+=d.y;output.z+=d.z;output.w+=d.w;
-
-	a = p1 * ( -th );
-	b = p3 * ( th );
-
-	output.x+=a.x;output.y+=a.y;output.z+=a.z;output.w+=a.w;
-	output.x+=b.x;output.y+=b.y;output.z+=b.z;output.w+=b.w;
 }
 
 //-----------------------------------------------------------------------------
@@ -603,57 +467,45 @@ function VS::Catmull_Rom_SplineQuat_Tangent( p1, p2, p3, p4, t, output ):(Quater
 //			d1 and d2 are used to entry and exit slope of curve
 // Input  :
 //-----------------------------------------------------------------------------
-function VS::Hermite_Spline( p1, p2, d1, d2, t, output ) : ( VectorMA, VectorMultiply )
+function VS::Hermite_Spline( p1, p2, d1, d2, t, output )
 {
-//	if( p1 == output ||
-//		p2 == output ||
-//		p3 == output ||
-//		p4 == output ) Assert(0);
+	local t2 = t*t;
+	local t3 = t*t2;
 
-	local tSqr = t*t;
-	local tCube = t*tSqr;
+	local b1 = 2.0 * t3 - 3.0 * t2 + 1.0;
+	local b2 = 1.0 - b1; // -2.0 * t3 + 3.0 * t2;
+	local b3 = t3 - 2.0 * t2 + t;
+	local b4 = t3 - t2;
 
-	local b1 = 2.0*tCube-3.0*tSqr+1.0;
-	local b2 = 1.0 - b1; // -2*tCube+3*tSqr;
-	local b3 = tCube-2*tSqr+t;
-	local b4 = tCube-tSqr;
-
-	VectorMultiply( p1, b1, output );
-
-	VectorMA( output, b2, p2, output );
-	VectorMA( output, b3, d1, output );
-	VectorMA( output, b4, d2, output );
+	output.x = b1 * p1.x + b2 * p2.x + b3 * d1.x + b4 * d2.x;
+	output.y = b1 * p1.y + b2 * p2.y + b3 * d1.y + b4 * d2.y;
+	output.z = b1 * p1.z + b2 * p2.z + b3 * d1.z + b4 * d2.z;
 }
 
 // return float
 function VS::Hermite_SplineF( p1, p2, d1, d2, t )
 {
-	local tSqr = t*t;
-	local tCube = t*tSqr;
+	local t2 = t*t;
+	local t3 = t*t2;
 
-	local b1 = 2.0*tCube-3.0*tSqr+1.0;
-	local b2 = 1.0 - b1; // -2*tCube+3*tSqr;
-	local b3 = tCube-2*tSqr+t;
-	local b4 = tCube-tSqr;
+	local b1 = 2.0 * t3 - 3.0 * t2 + 1.0;
+	// local b2 = 1.0 - b1; // -2.0 * t3 + 3.0 * t2;
+	// local b3 = t3 - 2.0 * t2 + t;
+	// local b4 = t3 - t2;
 
-	local output = p1 * b1;
-	output += p2 * b2;
-	output += d1 * b3;
-	output += d2 * b4;
-
-	return output;
+	return b1 * p1 + (1.0 - b1) * p2 + (t3 - 2.0 * t2 + t) * d1 + (t3 - t2) * d2;
 }
 
 // float basis[4]
 function VS::Hermite_SplineBasis( t, basis )
 {
-	local tSqr = t*t;
-	local tCube = t*tSqr;
+	local t2 = t*t;
+	local t3 = t*t2;
 
-	basis[0] = 2.0*tCube-3.0*tSqr+1.0;
-	basis[1] = 1.0 - basis[0]; // -2*tCube+3*tSqr;
-	basis[2] = tCube-2*tSqr+t;
-	basis[3] = tCube-tSqr;
+	basis[0] = 2.0 * t3 - 3.0 * t2 + 1.0;
+	basis[1] = 1.0 - basis[0]; // -2.0 * t3 + 3.0 * t2;
+	basis[2] = t3 - 2.0 * t2 + t;
+	basis[3] = t3 - t2;
 }
 
 local Hermite_Spline = VS.Hermite_Spline;
@@ -714,62 +566,73 @@ function VS::Hermite_Spline3Q( q0, q1, q2, t, output )
 // See http://news.povray.org/povray.binaries.tutorials/attachment/%3CXns91B880592482seed7@povray.org%3E/Splines.bas.txt
 // for example code and descriptions of various spline types...
 //-----------------------------------------------------------------------------
-function VS::Kochanek_Bartels_Spline( tension, bias, continuity, p1, p2, p3, p4, t, output ) : (VectorAdd)
+function VS::Kochanek_Bartels_Spline( tension, bias, continuity, p1, p2, p3, p4, t, output )
 {
-//	if( p1 == output ||
-//		p2 == output ||
-//		p3 == output ||
-//		p4 == output ) Assert(0);
+	local ffa = ( 1.0 - tension ) * ( 1.0 + continuity ) * ( 1.0 + bias );
+	local ffb = ( 1.0 - tension ) * ( 1.0 - continuity ) * ( 1.0 - bias );
+	local ffc = ( 1.0 - tension ) * ( 1.0 - continuity ) * ( 1.0 + bias );
+	local ffd = ( 1.0 - tension ) * ( 1.0 + continuity ) * ( 1.0 - bias );
 
-	local ffa = ( 1.0 - tension ) * ( 1.0 + continuity ) * ( 1.0 + bias ),
-	      ffb = ( 1.0 - tension ) * ( 1.0 - continuity ) * ( 1.0 - bias ),
-	      ffc = ( 1.0 - tension ) * ( 1.0 - continuity ) * ( 1.0 + bias ),
-	      ffd = ( 1.0 - tension ) * ( 1.0 + continuity ) * ( 1.0 - bias );
+	//        p1      p2         p3       p4
+	//
+	// t^3    -A    4+A-B-C   -4+B+C-D     D     /
+	// t^2   +2A  -6-2A+2B+C  6-2B-C+D    -D    /
+	// t^1    -A     A-B         B         0   /  2
+	// t^0     0      2          0         0  /
+
+	// NOTE: Valve's original code (33 add, 46 mul, 91 mov):
+	//
+	// out = 0
+	//
+	// FA = p1*t3*m[0][0]
+	// FB = p2*t3*m[0][1]
+	// FC = p3*t3*m[0][2]
+	// FD = p4*t3*m[0][3]
+	//
+	// out += FA + FB + FC + FD
+	//
+	// FA = p1*t2*m[1][0]
+	// FB = p2*t2*m[1][1]
+	// FC = p3*t2*m[1][2]
+	// FD = p4*t2*m[1][3]
+	//
+	// out += FA + FB + FC + FD
+	//
+	// FA = p1*t1*m[2][0]
+	// FB = p2*t1*m[2][1]
+	// FC = p3*t1*m[2][2]
+	// FD = p4*t1*m[2][3]
+	//
+	// out += FA + FB + FC + FD
+	//
+	// FA = p1*m[3][0]
+	// FB = p2*m[3][1]
+	// FC = p3*m[3][2]
+	// FD = p4*m[3][3]
+	//
+
+	// Optimised version (13 add, 19 mul, 33 mov):
+	//
+	// FA = p1 * ( t3*m[0][0] + t2*m[1][0] + t1*m[2][0] + m[3][0] )
+	// FB = p2 * ( t3*m[0][1] + t2*m[1][1] + t1*m[2][1] + m[3][1] )
+	// FC = p3 * ( t3*m[0][2] + t2*m[1][2] + t1*m[2][2] + m[3][2] )
+	// FD = p4 * ( t3*m[0][3] + t2*m[1][3] + t1*m[2][3] + m[3][3] )
+	//
+	// out = FA + FB + FC + FD
+	//
 
 	local th = t*0.5;
-	local tSqr = t*th;
-	local tSqrSqr = t*tSqr;
-	t = th;
+	local t2 = t*th;
+	local t3 = t*t2;
 
-	output.x = output.y = output.z = 0.0;
+	local a = t3 * -ffa + t2 * 2.0 * ffa - th * ffa;
+	local b = t3 * (4.0 + ffa - ffb - ffc) + t2 * (-6.0 - 2.0 * ffa + 2.0 * ffb + ffc) + th * (ffa - ffb) + 1.0;
+	local c = t3 * (-4.0 + ffb + ffc - ffd) + t2 * (6.0 - 2.0 * ffb - ffc + ffd) + th * ffb;
+	local d = t3 * ffd - t2 * ffd;
 
-	// matrix row 1
-	local a = p1 * ( tSqrSqr * -ffa );
-	local b = p2 * ( tSqrSqr * ( 4.0 + ffa - ffb - ffc ) );
-	local c = p3 * ( tSqrSqr * ( -4.0 + ffb + ffc - ffd ) );
-	local d = p4 * ( tSqrSqr * ffd );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
-	VectorAdd( output, d, output );
-
-	// matrix row 2
-	a = p1 * ( tSqr* 2 * ffa );
-	b = p2 * ( tSqr * ( -6 - 2 * ffa + 2 * ffb + ffc ) );
-	c = p3 * ( tSqr * ( 6 - 2 * ffb - ffc + ffd ) );
-	d = p4 * ( tSqr * -ffd );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
-	VectorAdd( output, d, output );
-
-	// matrix row 3
-	a = p1 * ( t * -ffa );
-	b = p2 * ( t * ( ffa - ffb ) );
-	c = p3 * ( t * ffb );
-	// p4 unchanged
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
-
-	// matrix row 4
-	// p1, p3, p4 unchanged
-	// p2 is multiplied by 1 and added, so just added it directly
-
-	VectorAdd( output, p2, output );
+	output.x = a * p1.x + b * p2.x + c * p3.x + d * p4.x;
+	output.y = a * p1.y + b * p2.y + c * p3.y + d * p4.y;
+	output.z = a * p1.z + b * p2.z + c * p3.z + d * p4.z;
 }
 
 local Kochanek_Bartels_Spline = VS.Kochanek_Bartels_Spline;
@@ -783,45 +646,24 @@ function VS::Kochanek_Bartels_Spline_NormalizeX( tension, bias, continuity, p1, 
 }
 
 // See link at Kochanek_Bartels_Spline for info on the basis matrix used
-function VS::Cubic_Spline( p1, p2, p3, p4, t, output ) : (VectorAdd)
+function VS::Cubic_Spline( p1, p2, p3, p4, t, output )
 {
-//	if( p1 == output ||
-//		p2 == output ||
-//		p3 == output ||
-//		p4 == output ) Assert(0);
+	local t2 = t*t;
+	local t3 = t*t2;
 
-	local tSqr = t*t;
-	local tSqrSqr = t*tSqr;
+	// local a = 0;
+	local b = t3 * 2.0 - t2 * 3.0 + 1.0;
+	local c = t3 * -2.0 + t2 * 3.0;
+	// local d = 0;
 
-	output.x = output.y = output.z = 0.0;
-
-	// matrix row 1
-	local b = p2 * ( tSqrSqr * 2 );
-	local c = p3 * ( tSqrSqr * -2 );
-
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
-
-	// matrix row 2
-	b = p2 * ( tSqr * -3 );
-	c = p3 * ( tSqr * 3 );
-
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
-
-	// matrix row 3
-	// no influence
-	// p4 unchanged
-
-	// matrix row 4
-	// p1, p3, p4 unchanged
-
-	VectorAdd( output, p2, output );
+	output.x = b * p2.x + c * p3.x;
+	output.y = b * p2.y + c * p3.y;
+	output.z = b * p2.z + c * p3.z;
 }
 
 local Cubic_Spline = VS.Cubic_Spline;
 
-function VS::Cubic_Spline_NormalizeX( p1, p2, p3, p4, t, output ):(Vector,Spline_Normalize,Cubic_Spline)
+function VS::Cubic_Spline_NormalizeX( p1, p2, p3, p4, t, output ) : ( Vector, Spline_Normalize, Cubic_Spline )
 {
 	local p1n = Vector(), p4n = Vector();
 	Spline_Normalize( p1, p2, p3, p4, p1n, p4n );
@@ -829,59 +671,20 @@ function VS::Cubic_Spline_NormalizeX( p1, p2, p3, p4, t, output ):(Vector,Spline
 }
 
 // See link at Kochanek_Bartels_Spline for info on the basis matrix used
-function VS::BSpline( p1, p2, p3, p4, t, output ) : (VectorAdd)
+function VS::BSpline( p1, p2, p3, p4, t, output )
 {
-//	if( p1 == output ||
-//		p2 == output ||
-//		p3 == output ||
-//		p4 == output ) Assert(0);
+	local th = t*0.166667;
+	local t2 = t*th;
+	local t3 = t*t2;
 
-	local oneOver6 = 0.166667;
+	local a = -t3 + t2 * 3.0 - th * 3.0 + 0.166667;
+	local b = t3 * 3.0 - t2 * 6.0 + 0.666668; // 4.0 * 0.166667;
+	local c = t3 * -3.0 + t2 * 3.0 + th * 3.0 + 0.166667;
+	// local d = t3;
 
-	local th = t * oneOver6;
-	local tSqr = t * th;
-	local tSqrSqr = t*tSqr;
-	t = th;
-
-	output.x = output.y = output.z = 0.0;
-
-	// matrix row 1
-	local a = p1 * ( -tSqrSqr );
-	local b = p2 * ( tSqrSqr * 3.0 );
-	local c = p3 * ( tSqrSqr * -3.0 );
-	local d = p4 * ( tSqrSqr );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
-	VectorAdd( output, d, output );
-
-	// matrix row 2
-	a = p1 * ( tSqr * 3.0 );
-	b = p2 * ( tSqr * -6.0 );
-	c = p3 * ( tSqr * 3.0 );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
-
-	// matrix row 3
-	a = p1 * ( t * -3.0 );
-	c = p3 * ( t * 3.0 );
-	// p4 unchanged
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, c, output );
-
-	// matrix row 4
-	// p1 and p3 scaled by 1.0, so done below
-	a = p1 * ( oneOver6 );
-	b = p2 * ( 4.0 * oneOver6 );
-	c = p3 * ( oneOver6 );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
+	output.x = a * p1.x + b * p2.x + c * p3.x + t3 * p4.x;
+	output.y = a * p1.y + b * p2.y + c * p3.y + t3 * p4.y;
+	output.z = a * p1.z + b * p2.z + c * p3.z + t3 * p4.z;
 }
 
 local BSpline = VS.BSpline;
@@ -894,46 +697,19 @@ function VS::BSpline_NormalizeX( p1, p2, p3, p4, t, output ) : ( Vector, Spline_
 }
 
 // See link at Kochanek_Bartels_Spline for info on the basis matrix used
-function VS::Parabolic_Spline( p1, p2, p3, p4, t, output ) : (VectorAdd)
+function VS::Parabolic_Spline( p1, p2, p3, p4, t, output )
 {
-//	if( p1 == output ||
-//		p2 == output ||
-//		p3 == output ||
-//		p4 == output ) Assert(0);
-
 	local th = t*0.5;
-	local tSqr = t*th;
-	t = th;
+	local t2 = t*th;
 
-	output.x = output.y = output.z = 0.0;
+	local a = t2 - t + 0.5;
+	local b = t2 * -2.0 + t + 0.5;
+	// local c = t2;
+	// local d = 0;
 
-	// matrix row 1
-	// no influence from t cubed
-
-	// matrix row 2
-	local a = p1 * ( tSqr );
-	local b = p2 * ( tSqr * -2.0 );
-	local c = p3 * ( tSqr );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-	VectorAdd( output, c, output );
-
-	// matrix row 3
-	local t2 = t * 2.0;
-	a = p1 * (-t2 );
-	b = p2 * ( t2 );
-	// p4 unchanged
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
-
-	// matrix row 4
-	a = p1 * ( 0.5 );
-	b = p2 * ( 0.5 );
-
-	VectorAdd( output, a, output );
-	VectorAdd( output, b, output );
+	output.x = a * p1.x + b * p2.x + t2 * p3.x;
+	output.y = a * p1.y + b * p2.y + t2 * p3.y;
+	output.z = a * p1.z + b * p2.z + t2 * p3.z;
 }
 
 local Parabolic_Spline = VS.Parabolic_Spline;
@@ -948,7 +724,7 @@ function VS::Parabolic_Spline_NormalizeX( p1, p2, p3, p4, t, output ) : ( Vector
 //-----------------------------------------------------------------------------
 // Purpose: Compress the input values for a ranged result such that from 75% to 200% smoothly of the range maps
 //-----------------------------------------------------------------------------
-function VS::RangeCompressor( flValue, flMin, flMax, flBase ):(fabs,Hermite_SplineF)
+function VS::RangeCompressor( flValue, flMin, flMax, flBase ) : ( fabs, Hermite_SplineF )
 {
 	// clamp base
 	if( flBase < flMin )

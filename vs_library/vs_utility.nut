@@ -3,8 +3,6 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 
-local Entities = Entities;
-local DoUniqueString = DoUniqueString;
 local Fmt = format;
 
 ::Ent  <- function( s, i = null ):(Entities){ return Entities.FindByName(i,s); }
@@ -14,7 +12,7 @@ local Fmt = format;
 // Input  : Vector
 // Output : string
 //-----------------------------------------------------------------------
-::VecToString <- function( vec, prefix = "Vector(", separator = ",", suffix = ")" ) : (Fmt)
+::VecToString <- function( vec, prefix = "Vector(", separator = ", ", suffix = ")" ) : (Fmt)
 {
 	return Fmt( "%s%g%s%g%s%g%s", prefix, vec.x, separator, vec.y, separator, vec.z, suffix );
 }
@@ -266,8 +264,6 @@ function VS::arrayApply( arr, func )
 // arr.map( func(v) )
 // Same as arrayApply, but return a new array. Doesn't modify the input array
 //-----------------------------------------------------------------------
-local array = ::array;
-
 function VS::arrayMap( arr, func ):(array)
 {
 	local new = array(arr.len());
@@ -288,8 +284,7 @@ function VS::arrayMap( arr, func ):(array)
 //          bool [ --- ]
 //          integer [ indent ]
 //-----------------------------------------------------------------------
-local print = ::print;
-function VS::DumpScope( input, bPrintAll = false, bDeepPrint = true, bPrintGuides = true, nDepth = 0 ):(print)
+function VS::DumpScope( input, bPrintAll = false, bDeepPrint = true, bPrintGuides = true, nDepth = 0 )
 {
 	// non-native variables
 	local _skip = ["Assert","Document","PrintHelp","RetrieveNativeSignature","UniqueString","IncludeScript","Entities","CSimpleCallChainer","CCallChainer","LateBinder","__ReplaceClosures","__DumpScope","printl","VSquirrel_OnCreateScope","VSquirrel_OnReleaseScope","PrecacheCallChain","OnPostSpawnCallChain","DispatchOnPostSpawn","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn","EntFireByHandle","EntFire","RAND_MAX","_version_","_intsize_","PI","_charsize_","_floatsize_","self","__vname","__vrefs","{847D4B}","VS","Chat","ChatTeam","txt","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","HPlayer","Ent","Entc","Quaternion","matrix3x4_t","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
@@ -432,16 +427,16 @@ Engine function calls are done through Call(...), that's why these 2 stacks are 
 //-----------------------------------------------------------------------
 function VS::GetStackInfo( bDeepPrint = false, bPrintAll = false )
 {
-	::print(" --- STACKINFO ----------------\n");
+	print(" --- STACKINFO ----------------\n");
 	local s, j = 2;
-	while( s =::getstackinfos(j++) )
+	while( s = getstackinfos(j++) )
 	{
 		if ( s.func == "pcall" && s.src == "NATIVE" ) break;
-		::print(" ("+(j-1)+")\n");
+		print(" ("+(j-1)+")\n");
 		local w, m = s.locals;
 		if ( "this" in m && typeof m["this"] == "table" )
 		{
-			if (m["this"] == ::getroottable())
+			if (m["this"] == getroottable())
 			{
 				w = "roottable";
 			}
@@ -455,9 +450,9 @@ function VS::GetStackInfo( bDeepPrint = false, bPrintAll = false )
 		};
 		if ( w == "roottable" ) DumpScope(s, bPrintAll, 0, 0);
 		else DumpScope(s, bPrintAll, bDeepPrint, 0);
-		if (w)::print("scope = \""+w+"\"\n");
+		if (w) print("scope = \""+w+"\"\n");
 	}
-	::print(" --- STACKINFO ----------------\n");
+	print(" --- STACKINFO ----------------\n");
 }
 
 local Stack = ::getstackinfos;
@@ -789,19 +784,19 @@ VS.EventQueue.CreateEvent <- function( hFunc, argv = null, activator = null, cal
 	event[ m_activator ] = activator;
 	event[ m_caller ] = caller;
 
-	local typeofArgs = typeof argv;
-	if ( typeofArgs == "table" )
+	switch ( typeof argv )
 	{
-		event[ m_Env ] = argv;
+		case "table":
+		case "class":
+		case "instance":
+			event[ m_Env ] = argv;
+			break;
+		case "array":
+			event[ m_argv ] = argv;
+			break;
+		default:
+			event[ m_Env ] = ROOT;
 	}
-	else if ( typeofArgs == "array" )
-	{
-		event[ m_argv ] = argv;
-	}
-	else
-	{
-		event[ m_Env ] = ROOT;
-	};;
 
 	return event;
 }
@@ -853,7 +848,6 @@ VS.EventQueue.ServiceEvents <- function() :
 // 102.4 tick : 0.00976563
 // 128.0 tick : 0.00781250
 //-----------------------------------------------------------------------
-local FrameTime = FrameTime;
 function VS::GetTickrate():(FrameTime)
 {
 	return 1.0 / FrameTime();
@@ -1006,7 +1000,7 @@ local ChatTeam = ::ScriptPrintMessageChatTeam;
 // Special variables should not be moved.
 // Expects increments ( nStartIndex < nTargetLimit )
 
-function CallAsyncLoop( nStartIndex, nTargetLimit, nAsyncIncr )
+function StartAsyncLoop( nStartIndex, nTargetLimit, nAsyncIncr )
 {
 	if ( bLoopInProgress )
 		return;
@@ -1062,22 +1056,40 @@ function OnFinished()
 	print(format( "Async loop finished in %g seconds!\n", dt ))
 }
 
-// While this is used for automating loop completion,
+// While this can be used for automating loop completion,
 // threads or generators can be used for pausing on conditions when
 // a loop is expected to run for long or to run an expensive function.
 
 // If the functions called inside the loop are expected to suspend the loop
 // instead of the main loop itself, use threads.
-// To use threads, replace `yield` with `suspend()`, `resume gen` with `thread.wakeup()`
+// To use threads, replace `yield` with `suspend()`, `resume` with `thread.wakeup()`
 
-local gen = [null]
+_thread <- null
 
-local DoResume = function() : (gen)
+function ThreadResume()
 {
-	resume gen[0]
+	resume _thread
+	// _thread.wakeup()
 }
 
-function MyLoop() : (DoResume)
+function ThreadSleep( duration )
+{
+	suspend( VS.EventQueue.AddEvent( ThreadResume, duration, this ) );
+}
+
+function CreateThread( func, env = null )
+{
+	_thread = (func.bindenv( env ? env : VS.GetCaller() ))()
+	// _thread = newthread( func.bindenv( env ? env : VS.GetCaller() ) )
+}
+
+function StartThread()
+{
+	resume _thread
+	// _thread.call()
+}
+
+function MyThread()
 {
 	local i = 0
 	while (++i)
@@ -1085,33 +1097,34 @@ function MyLoop() : (DoResume)
 		if ( CheapCall() )
 			continue
 
-		if ( CheapCall2() )
+		if ( CheapCall() )
 			continue
 
 		// continue asynchronously before the expensive call
-		yield VS.EventQueue.AddEvent( DoResume, 0.01, null )
+		yield VS.EventQueue.AddEvent( ThreadResume, 0.01, null )
+		// ThreadSleep( 0.01 )
 
 		ExpensiveCall()
 
 		// continue asynchronously after the expensive call
-		yield VS.EventQueue.AddEvent( DoResume, 0.01, null )
+		yield VS.EventQueue.AddEvent( ThreadResume, 0.01, null )
+		// ThreadSleep( 0.01 )
 
 		// fatal end
 		if ( i >= 5000 )
 		{
 			local dt = Time() - flStartTime
-			print(format( "Async generator finished in %g seconds!\n", dt ))
+			print(format( "Async thread finished in %g seconds!\n", dt ))
 			return
 		}
 	}
 }
 
-function CallMyLoop() : (gen)
+function test()
 {
 	flStartTime <- Time();
 
-	gen[0] = MyLoop()
-	resume gen[0]
+	CreateThread( MyThread )
+	StartThread()
 }
-
 */

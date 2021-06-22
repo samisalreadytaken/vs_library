@@ -10,12 +10,14 @@
 //-----------------------------------------------------------------------
 
 // if already included
-if( "AngleQuaternion" in ::VS )
+if( "VectorTransform" in VS )
 	return;;
 
 const FLT_EPSILON = 1.19209290E-07;;
 const FLT_MAX = 1.E+37;;
 const FLT_MIN = 1.E-37;;
+// const INT_MAX = 0x7FFFFFFF;;
+// const INT_MIN = -0x7FFFFFFF - 1;;
 
 local vec3_origin = Vector();
 
@@ -33,19 +35,25 @@ class ::Quaternion
 		z = _z;
 		w = _w;
 	}
+
+	function IsValid()
+	{
+		return ( x > -FLT_MAX && x < FLT_MAX ) &&
+			( y > -FLT_MAX && y < FLT_MAX ) &&
+			( z > -FLT_MAX && z < FLT_MAX ) &&
+			( w > -FLT_MAX && w < FLT_MAX );
+	}
 }
 
 local Fmt = format;
-local Quaternion = Quaternion;
 
 function Quaternion::_add(d):(Quaternion) { return Quaternion( x+d.x,y+d.y,z+d.z,w+d.w ) }
 function Quaternion::_sub(d):(Quaternion) { return Quaternion( x-d.x,y-d.y,z-d.z,w-d.w ) }
 function Quaternion::_mul(d):(Quaternion) { return Quaternion( x*d,y*d,z*d,w*d ) }
-function Quaternion::_div(d):(Quaternion) { return Quaternion( x/d,y/d,z/d,w/d ) }
+function Quaternion::_div(d):(Quaternion) { local f = 1.0/d; return Quaternion( x*f,y*f,z*f,w*f ) }
 function Quaternion::_unm() :(Quaternion) { return Quaternion( -x,-y,-z,-w ) }
 function Quaternion::_typeof() { return "Quaternion" }
 function Quaternion::_tostring():(Fmt) { return Fmt("Quaternion(%g, %g, %g, %g)",x,y,z,w) }
-
 
 class ::matrix3x4_t
 {
@@ -128,28 +136,16 @@ function VMatrix::_cloned( src )
 function VMatrix::_tostring() : (Fmt)
 {
 	local m = m;
-	return Fmt( "[ (%g, %g, %g), (%g, %g, %g), (%g, %g, %g), (%g, %g, %g) ]", m[0][0], m[0][1], m[0][2], m[0][3], m[1][0], m[1][1], m[1][2], m[1][3], m[2][0], m[2][1], m[2][2], m[2][3], m[3][0], m[3][1], m[3][2], m[3][3] );
+	return Fmt( "[ (%g, %g, %g, %g), (%g, %g, %g, %g), (%g, %g, %g, %g), (%g, %g, %g, %g) ]", m[0][0], m[0][1], m[0][2], m[0][3], m[1][0], m[1][1], m[1][2], m[1][3], m[2][0], m[2][1], m[2][2], m[2][3], m[3][0], m[3][1], m[3][2], m[3][3] );
 }
 
 
 local _VEC = Vector();
 local _QUAT = Quaternion();
-local Vector = Vector;
-local matrix3x4_t = matrix3x4_t;
-local VMatrix = VMatrix;
-local array = array;
-local max = max;
-local min = min;
-local fabs = fabs;
-local sqrt = sqrt;
-local sin = sin;
-local cos = cos;
-local asin = asin;
-local acos = acos;
-local atan2 = atan2;
 local VectorAdd = VS.VectorAdd;
 local VectorSubtract = VS.VectorSubtract;
 local Line = DebugDrawLine;
+
 
 function VS::InvRSquared(v):(max)
 {
@@ -235,8 +231,8 @@ function VS::VectorITransform( in1, in2, out = _VEC )
 	return out;
 }
 
-local VectorITransform = ::VS.VectorITransform;
-local VectorTransform = ::VS.VectorTransform;
+local VectorITransform = VS.VectorITransform;
+local VectorTransform = VS.VectorTransform;
 
 // assume in2 is a rotation (matrix3x4_t) and rotate the input vector
 function VS::VectorRotate( in1, in2, out = _VEC )
@@ -375,7 +371,7 @@ function VS::QuaternionNormalize(q):(sqrt)
 		q.x *= iradius;
 	};
 
-	return radius;
+	return 0.0;
 }
 
 //-----------------------------------------------------------------------------
@@ -476,6 +472,7 @@ function VS::QuaternionAdd( p, q, qt = _QUAT ):(Quaternion,QuaternionAlign)
 	return qt;
 }
 
+// QuaternionLength
 function VS::QuaternionDotProduct( p, q )
 {
 	return p.x * q.x + p.y * q.y + p.z * q.z + p.w * q.w;
@@ -563,7 +560,7 @@ function VS::QuaternionIdentityBlend( p, t, qt = _QUAT ):(QuaternionNormalize)
 //-----------------------------------------------------------------------------
 // Quaternion sphereical linear interpolation
 //-----------------------------------------------------------------------------
-function VS::QuaternionSlerpNoAlign( p, q, t, qt = _QUAT ):(sin,acos)
+function VS::QuaternionSlerpNoAlign( p, q, t, qt = _QUAT ) : ( sin, acos )
 {
 	local omega, cosom, sinom, sclp, sclq;
 
@@ -572,9 +569,9 @@ function VS::QuaternionSlerpNoAlign( p, q, t, qt = _QUAT ):(sin,acos)
 	// QuaternionDotProduct
 	cosom = p.x*q.x + p.y*q.y + p.z*q.z + p.w*q.w;
 
-	if( (1.0 + cosom) > 0.000001 )
+	if ( cosom > -0.999999 ) // ( (1.0 + cosom) > 0.000001 )
 	{
-		if( (1.0 - cosom) > 0.000001 )
+		if ( cosom < 0.999999 ) // ( (1.0 - cosom) > 0.000001 )
 		{
 			omega = acos( cosom );
 			sinom = sin( omega );
@@ -604,10 +601,10 @@ function VS::QuaternionSlerpNoAlign( p, q, t, qt = _QUAT ):(sin,acos)
 		sclp = sin( (1.0 - t) * 1.5708 );
 		sclq = sin( t * 1.5708 );
 
-		qt.x = sclp * p.x + sclq * qt.x;
-		qt.y = sclp * p.y + sclq * qt.y;
-		qt.z = sclp * p.z + sclq * qt.z;
-		qt.w = q.z;
+		qt.x = sclp * p.x - sclq * q.y;
+		qt.y = sclp * p.y + sclq * q.x;
+		qt.z = sclp * p.z - sclq * q.w;
+		qt.w = sclp * p.w + sclq * q.z;
 	};
 
 	return qt;
@@ -625,6 +622,325 @@ function VS::QuaternionSlerp( p, q, t, qt = _QUAT ):(Quaternion,QuaternionAlign,
 	QuaternionSlerpNoAlign( p, q2, t, qt );
 
 	return qt;
+}
+
+//-------------------------------------------------
+//
+//
+// DirectX (c) Microsoft
+//-------------------------------------------------
+function VS::QuaternionExp( p, q ) : (sqrt, sin, cos)
+{
+	// const Zero = XMVectorZero();
+	// const g_XMEpsilon = XMVectorReplicate(1.192092896e-7f)
+
+	// Theta = XMVector3Length(Q);
+	local Theta = sqrt( p.x*q.x + p.y*q.y + p.z*q.z );
+
+	// XMVectorSinCos(&SinTheta, &CosTheta, Theta);
+	local CosTheta = cos(Theta);
+
+	// Control = XMVectorNearEqual(Theta, Zero, g_XMEpsilon.v);
+	if ( Theta > 1.192092896e-7 )
+	{
+		// XMVectorSinCos(&SinTheta, &CosTheta, Theta);
+		local SinTheta = sin(Theta);
+
+		// S = XMVectorDivide(SinTheta, Theta);
+		local S = SinTheta / Theta;
+
+		// Result = XMVectorMultiply(Q, S);
+		// Result = XMVectorSelect(Result, Q, Control);
+		q.x = S * p.x;
+		q.y = S * p.y;
+		q.z = S * p.z;
+	}
+	else
+	{
+		// Result = XMVectorSelect(Result, Q, Control);
+		q.x = p.x;
+		q.y = p.y;
+		q.z = p.z;
+	};
+	// Result = XMVectorSelect(CosTheta, Result, g_XMSelect1110.v);
+	q.w = CosTheta
+}
+
+//-------------------------------------------------
+//
+//
+// DirectX (c) Microsoft
+//-------------------------------------------------
+function VS::QuaternionLn( p, q ) : (acos, sin)
+{
+	// const OneMinusEpsilon = XMVectorReplicate(1.0f - 0.00001f);
+
+	// ControlW = XMVectorInBounds(QW, OneMinusEpsilon.v);
+	if ( p.w > 0.99999 || p.w < (-0.99999) )
+	{
+		// Theta = XMVectorACos(QW);
+		local Theta = acos(p.w);
+
+		// S = XMVectorDivide(Theta, XMVectorSin(Theta));
+		local S = Theta / sin(Theta);
+
+		// Result = XMVectorMultiply(Q0, S);
+		// Result = XMVectorSelect(Q0, Result, ControlW);
+		q.x = S * p.x;
+		q.y = S * p.y;
+		q.z = S * p.z;
+	}
+	else
+	{
+		// Result = XMVectorSelect(Q0, Result, ControlW);
+		q.x = p.x;
+		q.y = p.y;
+		q.z = p.z;
+	};
+	// Q0 = XMVectorSelect(g_XMSelect1110.v, Q, g_XMSelect1110.v);
+	q.w = 0.0;
+}
+
+//-------------------------------------------------
+// Interpolates between quaternions Q1 to Q2, using spherical quadrangle interpolation.
+//
+// DirectX (c) Microsoft
+//-------------------------------------------------
+function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, out ) : (Quaternion)
+{
+	// FLOAT T;
+	// XMVECTOR Q0;
+	// XMVECTOR Q1;
+	// XMVECTOR Q2;
+	// XMVECTOR Q3;
+	//
+	// XMQuaternionSquadSetup( &Q1, &Q2, &Q3, Q0, Q1, Q2, Q3 );
+	// XMVECTOR spline = XMQuaternionSquad( Q1, Q1, Q2, Q3, T );
+	//
+	//------------------------------------------------------------------
+	// XMQuaternionSquadSetup(*pA, *pB, *pC, Q0, Q1, Q2, Q3)
+		// QuaternionAlign( Q1, Q2 )
+			// LS12 = XMQuaternionLengthSq(XMVectorAdd(Q1, Q2));
+			local aQ12x = Q1.x + Q2.x;
+			local aQ12y = Q1.y + Q2.y;
+			local aQ12z = Q1.z + Q2.z;
+			local aQ12w = Q1.w + Q2.w;
+			local LS12 = aQ12x*aQ12x + aQ12y*aQ12y + aQ12z*aQ12z + aQ12w*aQ12w;
+
+			// LD12 = XMQuaternionLengthSq(XMVectorSubtract(Q1, Q2));
+			local sQ12x = Q1.x - Q2.x;
+			local sQ12y = Q1.y - Q2.y;
+			local sQ12z = Q1.z - Q2.z;
+			local sQ12w = Q1.w - Q2.w;
+			local LD12 = sQ12x*sQ12x + sQ12y*sQ12y + sQ12z*sQ12z + sQ12w*sQ12w;
+
+			local SQ2;
+			// Control1 = XMVectorLess(LS12, LD12);
+			// SQ2 = XMVectorSelect(Q2, XMVectorNegate(Q2), Control1);
+			if ( LS12 < LD12 )
+			{
+				SQ2 = Quaternion( -Q2.x, -Q2.y, -Q2.z, -Q2.w );
+			}
+			else
+			{
+				SQ2 = Q2;
+			};
+
+		// QuaternionAlign( Q0, Q1 )
+			// LS01 = XMQuaternionLengthSq(XMVectorAdd(Q0, Q1));
+			local aQ01x = Q0.x + Q1.x;
+			local aQ01y = Q0.y + Q1.y;
+			local aQ01z = Q0.z + Q1.z;
+			local aQ01w = Q0.w + Q1.w;
+			local LS01 = aQ01x*aQ01x + aQ01y*aQ01y + aQ01z*aQ01z + aQ01w*aQ01w;
+
+			// LD01 = XMQuaternionLengthSq(XMVectorSubtract(Q0, Q1));
+			local sQ01x = Q0.x - Q1.x;
+			local sQ01y = Q0.y - Q1.y;
+			local sQ01z = Q0.z - Q1.z;
+			local sQ01w = Q0.w - Q1.w;
+			local LD01 = sQ01x*sQ01x + sQ01y*sQ01y + sQ01z*sQ01z + sQ01w*sQ01w;
+
+			local SQ0;
+			// Control0 = XMVectorLess(LS01, LD01);
+			// SQ0 = XMVectorSelect(Q0, XMVectorNegate(Q0), Control0);
+			if ( LS01 < LD01 )
+			{
+				SQ0 = Quaternion( -Q0.x, -Q0.y, -Q0.z, -Q0.w );
+			}
+			else
+			{
+				SQ0 = Q0;
+			};
+
+		// QuaternionAlign( Q2, Q3 )
+			// LS23 = XMQuaternionLengthSq(XMVectorAdd(SQ2, Q3));
+			local aQ23x = Q2.x + Q3.x;
+			local aQ23y = Q2.y + Q3.y;
+			local aQ23z = Q2.z + Q3.z;
+			local aQ23w = Q2.w + Q3.w;
+			local LS23 = aQ23x*aQ23x + aQ23y*aQ23y + aQ23z*aQ23z + aQ23w*aQ23w;
+
+			// LD23 = XMQuaternionLengthSq(XMVectorSubtract(SQ2, Q3));
+			local sQ23x = Q2.x - Q3.x;
+			local sQ23y = Q2.y - Q3.y;
+			local sQ23z = Q2.z - Q3.z;
+			local sQ23w = Q2.w - Q3.w;
+			local LD23 = sQ23x*sQ23x + sQ23y*sQ23y + sQ23z*sQ23z + sQ23w*sQ23w;
+
+			local SQ3;
+			// Control2 = XMVectorLess(LS23, LD23);
+			// SQ3 = XMVectorSelect(Q3, XMVectorNegate(Q3), Control2);
+			if ( LS23 < LD23 )
+			{
+				SQ3 = Quaternion( -Q3.x, -Q3.y, -Q3.z, -Q3.w );
+			}
+			else
+			{
+				SQ3 = Q3;
+			};
+
+		// InvQ1 = XMQuaternionInverse(Q1);
+		local InvQ1 = Quaternion();
+		QuaternionInvert( Q1, InvQ1 );
+		// InvQ2 = XMQuaternionInverse(SQ2);
+		local InvQ2 = Quaternion();
+		QuaternionInvert( Q2, InvQ2 );
+
+		// LnQ0 = XMQuaternionLn(XMQuaternionMultiply(InvQ1, SQ0));
+		local LnQ0 = Quaternion();
+			// QuaternionMult(InvQ1, SQ0, LnQ0)
+			LnQ0.x =  InvQ1.x * SQ0.w + InvQ1.y * SQ0.z - InvQ1.z * SQ0.y + InvQ1.w * SQ0.x;
+			LnQ0.y = -InvQ1.x * SQ0.z + InvQ1.y * SQ0.w + InvQ1.z * SQ0.x + InvQ1.w * SQ0.y;
+			LnQ0.z =  InvQ1.x * SQ0.y - InvQ1.y * SQ0.x + InvQ1.z * SQ0.w + InvQ1.w * SQ0.z;
+			LnQ0.w = -InvQ1.x * SQ0.x - InvQ1.y * SQ0.y - InvQ1.z * SQ0.z + InvQ1.w * SQ0.w;
+			// QuaternionLn(LnQ0, LnQ0)
+			QuaternionLn(LnQ0, LnQ0);
+
+		// LnQ2 = XMQuaternionLn(XMQuaternionMultiply(InvQ1, SQ2));
+		local LnQ2 = Quaternion();
+			// QuaternionMult(InvQ1, SQ2, LnQ2)
+			LnQ2.x =  InvQ1.x * SQ2.w + InvQ1.y * SQ2.z - InvQ1.z * SQ2.y + InvQ1.w * SQ2.x;
+			LnQ2.y = -InvQ1.x * SQ2.z + InvQ1.y * SQ2.w + InvQ1.z * SQ2.x + InvQ1.w * SQ2.y;
+			LnQ2.z =  InvQ1.x * SQ2.y - InvQ1.y * SQ2.x + InvQ1.z * SQ2.w + InvQ1.w * SQ2.z;
+			LnQ2.w = -InvQ1.x * SQ2.x - InvQ1.y * SQ2.y - InvQ1.z * SQ2.z + InvQ1.w * SQ2.w;
+			// QuaternionLn(LnQ2, LnQ2)
+			QuaternionLn(LnQ2, LnQ2);
+
+		// LnQ1 = XMQuaternionLn(XMQuaternionMultiply(InvQ2, Q1));
+		local LnQ1 = Quaternion();
+			// QuaternionMult(InvQ2, Q1, LnQ1)
+			LnQ1.x =  InvQ2.x * Q1.w + InvQ2.y * Q1.z - InvQ2.z * Q1.y + InvQ2.w * Q1.x;
+			LnQ1.y = -InvQ2.x * Q1.z + InvQ2.y * Q1.w + InvQ2.z * Q1.x + InvQ2.w * Q1.y;
+			LnQ1.z =  InvQ2.x * Q1.y - InvQ2.y * Q1.x + InvQ2.z * Q1.w + InvQ2.w * Q1.z;
+			LnQ1.w = -InvQ2.x * Q1.x - InvQ2.y * Q1.y - InvQ2.z * Q1.z + InvQ2.w * Q1.w;
+			// QuaternionLn(LnQ1, LnQ1)
+			QuaternionLn(LnQ1, LnQ1);
+
+		// LnQ3 = XMQuaternionLn(XMQuaternionMultiply(InvQ2, SQ3));
+		local LnQ3 = Quaternion();
+			// QuaternionMult(InvQ2, SQ3, LnQ3)
+			LnQ3.x =  InvQ2.x * SQ3.w + InvQ2.y * SQ3.z - InvQ2.z * SQ3.y + InvQ2.w * SQ3.x;
+			LnQ3.y = -InvQ2.x * SQ3.z + InvQ2.y * SQ3.w + InvQ2.z * SQ3.x + InvQ2.w * SQ3.y;
+			LnQ3.z =  InvQ2.x * SQ3.y - InvQ2.y * SQ3.x + InvQ2.z * SQ3.w + InvQ2.w * SQ3.z;
+			LnQ3.w = -InvQ2.x * SQ3.x - InvQ2.y * SQ3.y - InvQ2.z * SQ3.z + InvQ2.w * SQ3.w;
+			// QuaternionLn(LnQ3, LnQ3)
+			QuaternionLn(LnQ3, LnQ3);
+
+		// const NegativeOneQuarter = XMVectorSplatConstant(-1, 2);
+		// const NegativeOneQuarter = XMVectorReplicate(-0.25);
+
+		// ExpQ02 = XMVectorMultiply(XMVectorAdd(LnQ0, LnQ2), NegativeOneQuarter);
+		local ExpQ02 = Quaternion();
+		ExpQ02.x = -0.25 * (LnQ0.x + LnQ2.x);
+		ExpQ02.y = -0.25 * (LnQ0.y + LnQ2.y);
+		ExpQ02.z = -0.25 * (LnQ0.z + LnQ2.z);
+		ExpQ02.w = -0.25 * (LnQ0.w + LnQ2.w);
+		// ExpQ02 = XMQuaternionExp(ExpQ02);
+		QuaternionExp(ExpQ02, ExpQ02);
+
+		// ExpQ13 = XMVectorMultiply(XMVectorAdd(LnQ1, LnQ3), NegativeOneQuarter);
+		local ExpQ13 = Quaternion();
+		ExpQ13.x = -0.25 * (LnQ1.x + LnQ3.x);
+		ExpQ13.y = -0.25 * (LnQ1.y + LnQ3.y);
+		ExpQ13.z = -0.25 * (LnQ1.z + LnQ3.z);
+		ExpQ13.w = -0.25 * (LnQ1.w + LnQ3.w);
+		// ExpQ13 = XMQuaternionExp(ExpQ13);
+		QuaternionExp(ExpQ13, ExpQ13);
+
+		// pA = XMQuaternionMultiply(Q1, ExpQ02);
+		local pA = Quaternion();
+			// QuaternionMult(Q1, ExpQ02, pA)
+			pA.x =  Q1.x * ExpQ02.w + Q1.y * ExpQ02.z - Q1.z * ExpQ02.y + Q1.w * ExpQ02.x;
+			pA.y = -Q1.x * ExpQ02.z + Q1.y * ExpQ02.w + Q1.z * ExpQ02.x + Q1.w * ExpQ02.y;
+			pA.z =  Q1.x * ExpQ02.y - Q1.y * ExpQ02.x + Q1.z * ExpQ02.w + Q1.w * ExpQ02.z;
+			pA.w = -Q1.x * ExpQ02.x - Q1.y * ExpQ02.y - Q1.z * ExpQ02.z + Q1.w * ExpQ02.w;
+
+		// pB = XMQuaternionMultiply(SQ2, ExpQ13);
+		local pB = Quaternion();
+			// QuaternionMult(SQ2, ExpQ13, pB)
+			pB.x =  SQ2.x * ExpQ13.w + SQ2.y * ExpQ13.z - SQ2.z * ExpQ13.y + SQ2.w * ExpQ13.x;
+			pB.y = -SQ2.x * ExpQ13.z + SQ2.y * ExpQ13.w + SQ2.z * ExpQ13.x + SQ2.w * ExpQ13.y;
+			pB.z =  SQ2.x * ExpQ13.y - SQ2.y * ExpQ13.x + SQ2.z * ExpQ13.w + SQ2.w * ExpQ13.z;
+			pB.w = -SQ2.x * ExpQ13.x - SQ2.y * ExpQ13.y - SQ2.z * ExpQ13.z + SQ2.w * ExpQ13.w;
+
+		// pC = SQ2;
+		local pC = SQ2;
+
+	// XMQuaternionSquad(Q0, Q1, Q2, Q3, T, out)
+		local Q0 = Q1;
+		local Q1 = pA;
+		local Q2 = pB;
+		local Q3 = pC;
+
+		// XMQuaternionSlerpV
+		local Q03 = Quaternion();
+		QuaternionSlerpNoAlign( Q0, Q3, T, Q03 );
+
+		// XMQuaternionSlerpV
+		local Q12 = Quaternion();
+		QuaternionSlerpNoAlign( Q1, Q2, T, Q12 );
+
+		// TP = XMVectorReplicate(T);
+		// const Two = XMVectorSplatConstant(2, 0);
+		// TP = XMVectorNegativeMultiplySubtract(TP, TP, TP);
+		// TP = XMVectorMultiply(TP, Two);
+		T = (T - T * T) * 2.0;
+
+		QuaternionSlerpNoAlign( Q03, Q12, T, out );
+}
+
+
+// TODO: weights
+function VS::QuaternionAverageExponential( q, nCount, pStack ) : (Quaternion)
+{
+	local pFirst = pStack[0];
+
+	if ( nCount == 1 )
+	{
+		q.x = pFirst.x;
+		q.y = pFirst.y;
+		q.z = pFirst.z;
+		q.w = pFirst.w;
+		return;
+	};
+
+	local weight = 1.0 / nCount;
+
+	local sum = Quaternion();
+	local tmp = Quaternion();
+
+	for ( local i = 0; i < nCount; ++i )
+	{
+		QuaternionAlign( pFirst, pStack[i], tmp );
+		QuaternionLn( tmp, tmp );
+		sum.x += tmp.x * weight;
+		sum.y += tmp.y * weight;
+		sum.z += tmp.z * weight;
+		sum.w += tmp.w * weight;
+	}
+
+	QuaternionExp( sum, q );
 }
 
 //-----------------------------------------------------------------------------
@@ -698,10 +1014,7 @@ if(0){
 	local sinsom = sin( asin( sinom ) * t );
 
 	t = sinsom / (sinom + FLT_EPSILON);
-	local tmp = VectorMultiply( qv, t );
-	q.x = tmp.x;
-	q.y = tmp.y;
-	q.z = tmp.z;
+	VectorScale( qv, t, q );
 
 	// rescale rotation
 	r = 1.0 - sinsom * sinsom;
@@ -818,7 +1131,7 @@ function VS::MatrixAngles( matrix, angles = _VEC, position = null ):(sqrt,atan2)
 	return angles;
 }
 
-function VS::MatrixQuaternionFast( matrix, q )
+function VS::MatrixQuaternionFast( matrix, q ) : (sqrt)
 {
 	matrix = matrix.m;
 	local trace;
@@ -843,7 +1156,7 @@ function VS::MatrixQuaternionFast( matrix, q )
 	}
 	else
 	{
-		if ( matrix[0][0] < -matrix[1][1] )
+		if ( matrix[0][0] < (-matrix[1][1]) )
 		{
 			trace = 1.0 - matrix[0][0] - matrix[1][1] + matrix[2][2];
 			q.x = matrix[0][2] + matrix[2][0];
@@ -956,7 +1269,7 @@ function VS::QuaternionAngles2( q, angles = _VEC ):(asin,atan2)
 	return angles;
 }
 
-local QuaternionMatrix = ::VS.QuaternionMatrix;
+local QuaternionMatrix = VS.QuaternionMatrix;
 
 function VS::QuaternionAngles( q, angles = _VEC ):(matrix3x4_t,QuaternionMatrix,MatrixAngles)
 {
@@ -977,8 +1290,8 @@ function VS::QuaternionAxisAngle( q, axis ):(acos)
 	local angle = acos(q.w)*114.591559026; // RAD2DEG * 2.0
 
 	// AngleNormalize
-	if( angle > 180 )
-		angle -= 360;
+	if( angle > 180.0 )
+		angle -= 360.0;
 
 	axis.x = q.x;
 	axis.y = q.y;
@@ -1331,6 +1644,9 @@ function VS::MatrixInvert( in1, out ):(a_swap)
 	out[2][3] = -(tmp0*out[2][0] + tmp1*out[2][1] + tmp2*out[2][2]);
 }
 
+//-----------------------------------------------------------------------------
+// Inverts any matrix at all
+//-----------------------------------------------------------------------------
 function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 {
 	local iRow, i, j, iTemp, iTest;
@@ -1451,6 +1767,31 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 	}
 
 	return true;
+}
+
+//-----------------------------------------------------------------------------
+// Does a fast inverse, assuming the matrix only contains translation and rotation.
+//-----------------------------------------------------------------------------
+function VS::MatrixInverseTR( src, dst )
+{
+	src = src.m;
+	dst = dst.m;
+
+	// Transpose the upper 3x3.
+	dst[0][0] = src[0][0];  dst[0][1] = src[1][0]; dst[0][2] = src[2][0];
+	dst[1][0] = src[0][1];  dst[1][1] = src[1][1]; dst[1][2] = src[2][1];
+	dst[2][0] = src[0][2];  dst[2][1] = src[1][2]; dst[2][2] = src[2][2];
+
+	// Transform the translation.
+	// Vector vTrans( -src.m[0][3], -src.m[1][3], -src.m[2][3] );
+	// Vector3DMultiply( dst, vTrans, vNewTrans );
+	// MatrixSetColumn( dst, 3, vNewTrans );
+	dst[0][3] = dst[0][0] * -src[0][3] - dst[0][1] * src[1][3] - dst[0][2] * src[2][3];
+	dst[1][3] = dst[1][0] * -src[0][3] - dst[1][1] * src[1][3] - dst[1][2] * src[2][3];
+	dst[2][3] = dst[2][0] * -src[0][3] - dst[2][1] * src[1][3] - dst[2][2] * src[2][3];
+
+	dst[3][0] = dst[3][1] = dst[3][2] = 0.0;
+	dst[3][3] = 1.0;
 }
 
 function VS::MatrixGetColumn( in1, column, out = _VEC )
@@ -1720,30 +2061,39 @@ function VS::MatrixTranslate( dst, vecTranslation )
 function VS::MatrixBuildRotationAboutAxis( vAxisOfRot, angleDegrees, dst ) : ( sin, cos )
 {
 	local radians = angleDegrees * 0.01745329; // DEG2RAD
-	local fSin = sin( radians ),
-	      fCos = cos( radians );
+	local fSin = sin( radians );
+	local fCos = cos( radians );
 
-	local axisXSquared = vAxisOfRot.x * vAxisOfRot.x,
-	      axisYSquared = vAxisOfRot.y * vAxisOfRot.y,
-	      axisZSquared = vAxisOfRot.z * vAxisOfRot.z;
+	local axisXSquared = vAxisOfRot.x * vAxisOfRot.x;
+	local axisYSquared = vAxisOfRot.y * vAxisOfRot.y;
+	local axisZSquared = vAxisOfRot.z * vAxisOfRot.z;
 
 	dst = dst.m;
 
 	dst[0][0] = axisXSquared + (1.0 - axisXSquared) * fCos;
-	dst[1][0] = vAxisOfRot.x * vAxisOfRot.y * (1.0 - fCos) + vAxisOfRot.z * fSin;
-	dst[2][0] = vAxisOfRot.z * vAxisOfRot.x * (1.0 - fCos) - vAxisOfRot.y * fSin;
-
-	dst[0][1] = vAxisOfRot.x * vAxisOfRot.y * (1.0 - fCos) - vAxisOfRot.z * fSin;
 	dst[1][1] = axisYSquared + (1.0 - axisYSquared) * fCos;
-	dst[2][1] = vAxisOfRot.y * vAxisOfRot.z * (1.0 - fCos) + vAxisOfRot.x * fSin;
-
-	dst[0][2] = vAxisOfRot.z * vAxisOfRot.x * (1.0 - fCos) + vAxisOfRot.y * fSin;
-	dst[1][2] = vAxisOfRot.y * vAxisOfRot.z * (1.0 - fCos) - vAxisOfRot.x * fSin;
 	dst[2][2] = axisZSquared + (1.0 - axisZSquared) * fCos;
 
-	dst[0][3] = 0.0;
-	dst[1][3] = 0.0;
-	dst[2][3] = 0.0;
+	fCos = 1.0 - fCos;
+
+	local xyc = vAxisOfRot.x * vAxisOfRot.y * fCos;
+	local yzc = vAxisOfRot.y * vAxisOfRot.z * fCos;
+	local xzc = vAxisOfRot.z * vAxisOfRot.x * fCos;
+
+	local xs = vAxisOfRot.x * fSin;
+	local ys = vAxisOfRot.y * fSin;
+	local zs = vAxisOfRot.z * fSin;
+
+	dst[1][0] = xyc + zs;
+	dst[2][0] = xzc - ys;
+
+	dst[0][1] = xyc - zs;
+	dst[2][1] = yzc + xs;
+
+	dst[0][2] = xzc + ys;
+	dst[1][2] = yzc - xs;
+
+	dst[0][3] = dst[1][3] = dst[2][3] = 0.0;
 }
 
 //-----------------------------------------------------------------------------
@@ -1803,8 +2153,10 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Ve
 #endif*/
 }
 
+/*
 //-----------------------------------------------------------------------------
 // Matrix/vector multiply
+// NOTE: identical to VectorRotate
 //
 // Input  : matrix
 //          Vector
@@ -1822,6 +2174,26 @@ function VS::Vector3DMultiply( src1, src2, dst )
 	dst.z = z;
 }
 
+//-----------------------------------------------------------------------------
+// Vector3DMultiplyPosition treats src2 as if it's a point (adds the translation)
+// NOTE: identical to VectorTransform
+//
+// Input  : VMatrix
+//          Vector
+//          Vector
+//-----------------------------------------------------------------------------
+function VS::Vector3DMultiplyPosition( src1, src2, dst )
+{
+	src1 = src1.m;
+	local x = src1[0][0] * src2.x + src1[0][1] * src2.y + src1[0][2] * src2.z + src1[0][3];
+	local y = src1[1][0] * src2.x + src1[1][1] * src2.y + src1[1][2] * src2.z + src1[1][3];
+	local z = src1[2][0] * src2.x + src1[2][1] * src2.y + src1[2][2] * src2.z + src1[2][3];
+
+	dst.x = x;
+	dst.y = y;
+	dst.z = z;
+}
+*/
 //-----------------------------------------------------------------------------
 // Vector3DMultiplyProjective treats src2 as if it's a direction
 // and does the perspective divide at the end
@@ -2073,44 +2445,83 @@ function VS::GetBoxVertices( origin, angles, mins, maxs, pVerts ) : ( matrix3x4_
 // Y range: [0..1]
 // Z range: [0..1]
 //-----------------------------------------------------------------------------
-function VS::MatrixBuildPerspective( dst, fovX, fovY, zNear, zFar ) : ( tan, VMatrix )
+function VS::MatrixBuildPerspective( dst, fovX, flAspect, zNear, zFar ) : ( tan )
 {
+	dst = dst.m;
 	// memset( dst.Base(), 0, sizeof( dst ) );
-	local m = dst.m;
-	MatrixScaleByZero( dst );
-	m[3][0] = 0.0; m[3][1] = 0.0; m[3][2] = 0.0; m[3][3] = 0.0;
+	            dst[0][1] =             dst[0][3] =
+	dst[1][0] =                         dst[1][3] =
+	dst[2][0] = dst[2][1] =
+	dst[3][0] = dst[3][1] =             dst[3][3] = 0.0;
 
-	local width  = tan( fovX * 0.008726646 );	// DEG2RAD * 0.5
-	local height = tan( fovY * 0.008726646 );	// DEG2RAD * 0.5
-	local zz = zFar / ( zNear - zFar );
-	m[0][0]  = 1.0 / width;
-	m[1][1]  = 1.0 / height;
-	m[2][2] = -zz;
-	m[3][2] = 1.0;
-	m[2][3] = zNear * zz;
+	local invW = -0.5 / tan( fovX * 0.008726646 );
+	local range = zFar / ( zNear - zFar );
+
+	// create the final matrix directly
+	dst[0][0] = invW;
+	dst[1][1] = invW * flAspect;
+	dst[0][2] = dst[1][2] = 0.5;
+	dst[2][2] = -range;
+	dst[3][2] = 1.0;
+	dst[2][3] = zNear * range;
+
+/*
+	local width  = tan( fovX * DEG2RAD * 0.5 );
+	local height = width / flAspect;
+	local range = zFar / ( zNear - zFar );
+
+	dst[0][0]  = 1.0 / width;
+	dst[1][1]  = 1.0 / height;
+	dst[2][2] = -range;
+	dst[3][2] = 1.0;
+	dst[2][3] = zNear * range;
 
 	// negate X and Y so that X points right, and Y points up.
-	local negateXY = VMatrix();
-	SetIdentityMatrix( negateXY );
-	m = negateXY.m;
-	m[0][0] = -1.0;
-	m[1][1] = -1.0;
-	MatrixMultiply( negateXY, dst, dst );
+	// negateXY
+	//[	(-1, 0, 0, 0),
+	//	(0, -1, 0, 0),
+	//	(0, 0, 1, 0),
+	//	(0, 0, 0, 1)	]
+	dst[0][0] *= -1.0;
+	// dst[0][1] *= -1.0;
+	// dst[0][2] *= -1.0;
+	// dst[0][3] *= -1.0;
 
-	local addW = VMatrix();
-	SetIdentityMatrix( addW );
-	m = addW.m;
-	m[0][3] = 1.0;
-	m[1][3] = 1.0;
-	m[2][3] = 0.0;
-	MatrixMultiply( addW, dst, dst );
+	// dst[1][0] *= -1.0;
+	dst[1][1] *= -1.0;
+	// dst[1][2] *= -1.0;
+	// dst[1][3] *= -1.0;
 
-	local scaleHalf = VMatrix();
-	SetIdentityMatrix( scaleHalf );
-	m = scaleHalf.m;
-	m[0][0] = 0.5;
-	m[1][1] = 0.5;
-	MatrixMultiply( scaleHalf, dst, dst );
+	// addW
+	//[	(1, 0, 0, 1),
+	//	(0, 1, 0, 1),
+	//	(0, 0, 1, 0),
+	//	(0, 0, 0, 1)	]
+	// dst[0][0] += dst[3][0];
+	// dst[0][1] += dst[3][1];
+	dst[0][2] += dst[3][2];
+	// dst[0][3] += dst[3][3];
+
+	// dst[1][0] += dst[3][0];
+	// dst[1][1] += dst[3][1];
+	dst[1][2] += dst[3][2];
+	// dst[1][3] += dst[3][3];
+
+	// scaleHalf
+	//[	(0.5, 0, 0, 0),
+	//	(0, 0.5, 0, 0),
+	//	(0, 0, 1, 0),
+	//	(0, 0, 0, 1)	]
+	dst[0][0] *= 0.5;
+	// dst[0][1] *= 0.5;
+	dst[0][2] *= 0.5;
+	// dst[0][3] *= 0.5;
+
+	// dst[1][0] *= 0.5;
+	dst[1][1] *= 0.5;
+	dst[1][2] *= 0.5;
+	// dst[1][3] *= 0.5;
+*/
 }
 
 /*
@@ -2131,22 +2542,38 @@ function VS::MatrixBuildPerspectiveX( dst, flFovX, flAspect, flZNear, flZFar )
 	dst[1][2] = 0.0;
 	dst[1][3] = 0.0;
 
-	local zz = flZFar / ( flZNear - flZFar );
+	local flRange = flZFar / ( flZNear - flZFar );
 	dst[2][0] = 0.0;
 	dst[2][1] = 0.0;
-	dst[2][2] = zz;
-	dst[2][3] = flZNear * zz;
+	dst[2][2] = flRange;
+	dst[2][3] = flZNear * flRange;
 
 	dst[3][0] = 0.0;
 	dst[3][1] = 0.0;
 	dst[3][2] = -1.0;
 	dst[3][3] = 0.0;
 }
+
+function VS::ComputeProjectionMatrix( pCameraToProjection, flZNear, flZFar, flFOVX, flAspect )
+{
+	// memset( pCameraToProjection, 0, sizeof( VMatrix ) );
+	local m = pCameraToProjection.m;
+	MatrixScaleByZero( pCameraToProjection );
+	m[3][0] = m[3][1] = m[3][2] = m[3][3] = 0.0;
+
+	local halfWidth = tan( flFOVX * DEG2RAD * 0.5 );
+	local halfHeight = halfWidth / flAspect;
+
+	m[0][0]  = 1.0 / halfWidth;
+	m[1][1]  = 1.0 / halfHeight;
+	m[2][2] = flZFar / ( flZNear - flZFar );
+	m[3][2] = -1.0;
+	m[2][3] = flZNear * flZFar / ( flZNear - flZFar );
+}
 */
 
 function VS::ComputeViewMatrix( pWorldToView, origin, forward, left, up ) : ( Vector, matrix3x4_t, VMatrix )
 {
-	local m;
 	local transform = matrix3x4_t();
 
 	// AngleMatrix( angles, origin, transform );
@@ -2174,6 +2601,102 @@ function VS::ComputeViewMatrix( pWorldToView, origin, forward, left, up ) : ( Ve
 	MatrixCopy( transform, pWorldToView );
 }
 
+/*
+function VS::ComputeViewMatrix( pWorldToView, vecOrigin, vecForward, vecLeft, vecUp ) : ( matrix3x4_t )
+{
+	local pCameraToWorld = matrix3x4_t();
+	MatrixSetColumn( vecForward, 0, pCameraToWorld );
+	MatrixSetColumn( vecLeft, 1, pCameraToWorld );
+	MatrixSetColumn( vecUp, 2, pCameraToWorld );
+	MatrixSetColumn( vecOrigin, 3, pCameraToWorld );
+
+	local g_ViewAlignMatrix = matrix3x4_t();
+	local m = g_ViewAlignMatrix.m;
+	m[0][0] = 0.0;  m[0][1] = 0.0; m[0][2] = -1.0; m[0][3] = 0.0;
+	m[1][0] = -1.0; m[1][1] = 0.0; m[1][2] = 0.0;  m[1][3] = 0.0;
+	m[2][0] = 0.0;  m[2][1] = 1.0; m[2][2] = 0.0;  m[2][3] = 0.0;
+
+	local tmp = matrix3x4_t();
+	ConcatTransforms( pCameraToWorld, g_ViewAlignMatrix, tmp );
+	MatrixInvert( tmp, pWorldToView );
+}
+
+function VS::ComputeViewMatrix( pViewMatrix, matGameCustom )
+{
+	pViewMatrix = pViewMatrix.m;
+	matGameCustom = matGameCustom.m;
+
+	pViewMatrix[0][0] = -matGameCustom[1][0];
+	pViewMatrix[0][1] = -matGameCustom[1][1];
+	pViewMatrix[0][2] = -matGameCustom[1][2];
+	pViewMatrix[0][3] = -matGameCustom[1][3];
+
+	pViewMatrix[1][0] = matGameCustom[2][0];
+	pViewMatrix[1][1] = matGameCustom[2][1];
+	pViewMatrix[1][2] = matGameCustom[2][2];
+	pViewMatrix[1][3] = matGameCustom[2][3];
+
+	pViewMatrix[2][0] = -matGameCustom[0][0];
+	pViewMatrix[2][1] = -matGameCustom[0][1];
+	pViewMatrix[2][2] = -matGameCustom[0][2];
+	pViewMatrix[2][3] = -matGameCustom[0][3];
+
+	pViewMatrix[3][0] = pViewMatrix[3][1] = pViewMatrix[3][2] = 0.0;
+	pViewMatrix[3][3] = 1.0;
+}
+
+function VS::ViewMatrixRH( vEye, vForward, vUp, mOut )
+{
+	local zAxis = vEye - vForward;
+	local xAxis = vUp.Cross( zAxis );
+	local yAxis = zAxis.Cross( xAxis );
+	xAxis.Norm();
+	yAxis.Norm();
+	zAxis.Norm();
+	local flDotX = -xAxis.Dot( vEye );
+	local flDotY = -yAxis.Dot( vEye );
+	local flDotZ = -zAxis.Dot( vEye );
+
+	local m = mOut.m;
+
+	// xAxis.x, yAxis.x, zAxis.x, 0
+	// xAxis.y, yAxis.y, zAxis.y, 0
+	// xAxis.z, yAxis.z, zAxis.z, 0
+	// flDotX,  flDotY,  flDotZ,  1
+
+	// Transpose
+	m[0][0] = xAxis.x; m[1][0] = xAxis.y; m[2][0] = xAxis.z; m[3][0] = flDotX;
+	m[0][1] = yAxis.x; m[1][1] = yAxis.y; m[2][1] = yAxis.z; m[3][1] = flDotY;
+	m[0][2] = zAxis.x; m[1][2] = zAxis.y; m[2][2] = zAxis.z; m[3][2] = flDotZ;
+	m[0][3] = 0.0;     m[1][3] = 0.0;     m[2][3] = 0.0;     m[3][3] = 1.0;
+}
+*/
+
+// NOTE: inverted!
+function VS::ComputeCameraVariables( vecOrigin, pVecForward, pVecRight, pVecUp, pMatCamInverse )
+{
+	pMatCamInverse = pMatCamInverse.m;
+
+	pMatCamInverse[0][0] = -pVecRight.x;
+	pMatCamInverse[0][1] = -pVecRight.y;
+	pMatCamInverse[0][2] = -pVecRight.z;
+	pMatCamInverse[0][3] = pVecRight.Dot( vecOrigin );
+
+	pMatCamInverse[1][0] = -pVecUp.x;
+	pMatCamInverse[1][1] = -pVecUp.y;
+	pMatCamInverse[1][2] = -pVecUp.z;
+	pMatCamInverse[1][3] = pVecUp.Dot( vecOrigin );
+
+	pMatCamInverse[2][0] = pVecForward.x;
+	pMatCamInverse[2][1] = pVecForward.y;
+	pMatCamInverse[2][2] = pVecForward.z;
+	pMatCamInverse[2][3] = -pVecForward.Dot( vecOrigin );
+
+	pMatCamInverse[3][0] = pMatCamInverse[3][1] = pMatCamInverse[3][2] = 0.0;
+	pMatCamInverse[3][3] = 1.0;
+}
+
+
 function VS::ScreenToWorld( x, y, origin, forward, right, up, fov, flAspect, zFar ) : (Vector, VMatrix)
 {
 	// FIXME: why is this offset?
@@ -2183,16 +2706,14 @@ function VS::ScreenToWorld( x, y, origin, forward, right, up, fov, flAspect, zFa
 	local vecScreen = Vector( 2.0 * x - 1.0, 1.0 - 2.0 * y, 1.0 );
 
 	local viewToProj = VMatrix();
-	MatrixBuildPerspective( viewToProj, fov, CalcFovY( fov, flAspect ), 1.0, zFar );
-
-	// AngleVectors( angles, forward, right, up );
+	MatrixBuildPerspective( viewToProj, fov, flAspect, 1.0, zFar );
 
 	local worldToView = VMatrix();
 	ComputeCameraVariables(
 		origin,
 		forward,
-		right * -1.0,
-		up * -1.0,
+		right,
+		up,
 		worldToView );
 
 	local worldToProj = viewToProj; // VMatrix();
@@ -2206,6 +2727,7 @@ function VS::ScreenToWorld( x, y, origin, forward, right, up, fov, flAspect, zFa
 
 	return worldPos;
 }
+
 
 //-----------------------------------------------------------------------------
 // Computes Y fov from an X fov and a screen aspect ratio
@@ -2225,40 +2747,12 @@ function VS::CalcFovX( flFovY, flAspect ) : ( tan, atan )
 	return 114.591559026 * atan( tan( 0.008726646* flFovY ) * flAspect );	// DEG2RAD * 0.5 , RAD2DEG * 2.0
 }
 
-function VS::ComputeCameraVariables( vecOrigin, pVecForward, pVecRight, pVecUp, pMatCamInverse )
-{
-	pMatCamInverse = pMatCamInverse.m;
-
-	pMatCamInverse[0][0] = pVecRight.x;
-	pMatCamInverse[1][0] = pVecUp.x;
-	pMatCamInverse[2][0] = pVecForward.x;
-	pMatCamInverse[3][0] = 0.0;
-
-	pMatCamInverse[0][1] = pVecRight.y;
-	pMatCamInverse[1][1] = pVecUp.y;
-	pMatCamInverse[2][1] = pVecForward.y;
-	pMatCamInverse[3][1] = 0.0;
-
-	pMatCamInverse[0][2] = pVecRight.z;
-	pMatCamInverse[1][2] = pVecUp.z;
-	pMatCamInverse[2][2] = pVecForward.z;
-	pMatCamInverse[3][2] = 0.0;
-
-	pMatCamInverse[0][3] = -pVecRight.Dot( vecOrigin );
-	pMatCamInverse[1][3] = -pVecUp.Dot( vecOrigin );
-	pMatCamInverse[2][3] = -pVecForward.Dot( vecOrigin );
-	pMatCamInverse[3][3] = 1.0;
-}
-
 local initFrustumDraw = function() : (vec3_origin)
 {
-	local Vector = Vector;
-	local VMatrix = VMatrix;
 	local Line = DebugDrawLine;
 	local Vector3DMultiplyPositionProjective = VS.Vector3DMultiplyPositionProjective;
 	local MatrixInverseGeneral = VS.MatrixInverseGeneral;
 	local MatrixBuildPerspective = VS.MatrixBuildPerspective;
-	local CalcFovY = VS.CalcFovY;
 
 	local startWorldSpace = Vector(), endWorldSpace = Vector();
 
@@ -2318,11 +2812,11 @@ local initFrustumDraw = function() : (vec3_origin)
 	local DrawFrustum = VS.DrawFrustum;
 
 	function VS::DrawViewFrustum( vecOrigin, vecForward, vecRight, vecUp,
-		flFovX, flFovY, zNear, zFar, r, g, b, z, time ) :
-			( VMatrix, MatrixBuildPerspective, CalcFovY, ComputeCameraVariables, MatrixMultiply, DrawFrustum )
+		flFovX, flAspect, zNear, zFar, r, g, b, z, time ) :
+			( VMatrix, MatrixBuildPerspective, ComputeCameraVariables, MatrixMultiply, DrawFrustum )
 	{
 		local mat = VMatrix();
-		MatrixBuildPerspective( mat, flFovX, flFovY, zNear, zFar ); // matPerspective
+		MatrixBuildPerspective( mat, flFovX, flAspect, zNear, zFar ); // matPerspective
 
 		local matInvCam = VMatrix();
 		ComputeCameraVariables( vecOrigin, vecForward, vecRight, vecUp, matInvCam );
@@ -2340,19 +2834,17 @@ function VS::DrawFrustum( matrix, r, g, b, z, t ) : (initFrustumDraw)
 }
 
 function VS::DrawViewFrustum( vecOrigin, vecForward, vecRight, vecUp,
-		flFovX, flFovY, zNear, zFar, r, g, b, z, time ) : (initFrustumDraw)
+		flFovX, flAspect, zNear, zFar, r, g, b, z, time ) : (initFrustumDraw)
 {
 	initFrustumDraw();
 	return DrawViewFrustum( vecOrigin, vecForward, vecRight, vecUp,
-		flFovX, flFovY, zNear, zFar, r, g, b, z, time );
+		flFovX, flAspect, zNear, zFar, r, g, b, z, time );
 }
 
 local initBoxDraw = function() : (vec3_origin)
 {
 	local Box = DebugDrawBox;
 	local Line = DebugDrawLine;
-	local Vector = Vector;
-	local matrix3x4_t = matrix3x4_t;
 	local GetBoxVertices = VS.GetBoxVertices;
 	local verts = [ Vector(), Vector(), Vector(), Vector(),
 			Vector(), Vector(), Vector(), Vector() ];
@@ -2457,8 +2949,6 @@ function VS::DrawSphere( vCenter, flRadius, nTheta, nPhi, r, g, b, z, time ) : (
 local initCapsule = function()
 {
 	local Line = DebugDrawLine;
-	local Vector = Vector;
-	local matrix3x4_t = matrix3x4_t;
 
 	local g_capsuleVertPositions = [
 		[ -0.01, -0.01, 1.0 ],	[ 0.51, 0.0, 0.86 ],	[ 0.44, 0.25, 0.86 ],	[ 0.25, 0.44, 0.86 ],
@@ -2633,27 +3123,21 @@ class ::Frustum_t
 //-----------------------------------------------------------------------------
 // Generate a frustum based on perspective view parameters
 //-----------------------------------------------------------------------------
-function VS::GeneratePerspectiveFrustum( origin, angles, flZNear, flZFar, flFovX, flAspectRatio, frustum )
+function VS::GeneratePerspectiveFrustum( origin, vecForward, vecRight, vecUp, flZNear, flZFar, flFovX, flAspectRatio, frustum )
 {
-	local vecForward = Vector(), vecRight = Vector(), vecUp = Vector();
-	AngleVectors( angles, vecForward, vecRight, vecUp );
-	local flFovY = CalcFovY( flFovX, flAspectRatio );
 	local flIntercept = origin.Dot( forward );
 
 	// Setup the near and far planes.
 	frustum.SetPlane( FRUSTUM_FARZ, PLANE_ANYZ, -forward, -flZFar - flIntercept );
 	frustum.SetPlane( FRUSTUM_NEARZ, PLANE_ANYZ, forward, flZNear + flIntercept );
 
-	flFovX *= 0.5;
-	flFovY *= 0.5;
-
-	local flTanX = tan( DEG2RAD*( flFovX ) );
-	local flTanY = tan( DEG2RAD*( flFovY ) );
+	local flTanX = tan( DEG2RAD * flFovX * 0.5 );
+	local flTanY = flTanX / flAspectRatio;
 
 	local normalPos = Vector(), normalNeg = Vector();
 
 	VectorMA( right, flTanX, forward, normalPos );
-	VectorMA( normalPos, -2.0, right, normalNeg );
+	VectorMA( normalPos, -2.0, right * -1.0, normalNeg );
 
 	normalPos.Norm();
 	normalNeg.Norm();

@@ -11,15 +11,15 @@
 //
 //-----------------------------------------------------------------------
 
-IncludeScript("vs_library/vs_math2");
+if( !("VectorTransform" in VS) )
+	Assert(0,"vs_math2 not found");;
 
 // if already included
-if( "IsBoxIntersectingRay" in ::VS )
+if( "IsBoxIntersectingRay" in VS )
 	return;;
 
-local fabs = ::fabs;
-local InvRSquared = ::VS.InvRSquared;
-local VectorMA = ::VS.VectorMA;
+local InvRSquared = VS.InvRSquared;
+local VectorMA = VS.VectorMA;
 
 //-----------------------------------------------------------------------------
 // Clears the trace
@@ -321,8 +321,8 @@ function VS::IsBoxIntersectingRay2( boxMin, boxMax, origin, vecDelta, flToleranc
 	return true;
 }
 
-local IsBoxIntersectingBox = ::VS.IsBoxIntersectingBox;
-local IsBoxIntersectingRay2 = ::VS.IsBoxIntersectingRay2;
+local IsBoxIntersectingBox = VS.IsBoxIntersectingBox;
+local IsBoxIntersectingRay2 = VS.IsBoxIntersectingRay2;
 
 //-----------------------------------------------------------------------------
 // Intersects a ray with a AABB, return true if they intersect
