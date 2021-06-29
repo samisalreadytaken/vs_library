@@ -51,9 +51,9 @@ ________________________________
 | `QAngle`              | `Vector(0,1,2)`, `(pitch, yaw, roll)` Euler angle. Vector, **not a different type** |
 | `Quaternion`          | `Quaternion(0,1,2,3)`                                                               |
 | `matrix3x4_t`         | `matrix3x4_t()`                                                                     |
-| `VMatrix`             | `VMatrix()`                                                                     |
+| `VMatrix`             | `VMatrix()`                                                                         |
 | `trace_t`             | `VS.TraceLine()`                                                                    |
-| `ray_t`               | `VS.TraceLine().Ray()`, `trace_t`                                                   |
+| `Ray_t`               | `Ray_t()`                                                                           |
 | `TYPE`                | Multiple types. Any unless specified in description                                 |
 
 | Symbols | Description                                                                                                                                                                                                       |
@@ -165,7 +165,6 @@ Included in `vs_library.nut`
 [`VS.TraceLine.GetDist()`](#f_GetDist)  
 [`VS.TraceLine.GetDistSqr()`](#f_GetDistSqr)  
 [`VS.TraceLine.GetNormal()`](#f_GetNormal)  
-[`VS.TraceLine.Ray()`](#f_Ray)  
 [`VS.TraceDir()`](#f_TraceDir)  
 [`VS.UniqueString()`](#f_UniqueString)  
 [`VS.EventQueue.Clear()`](#f_EventQueueClear)  
@@ -244,6 +243,8 @@ Not included in `vs_library.nut`
 [`Quaternion`](#f_Quaternion)  
 [`matrix3x4_t`](#f_matrix3x4_t)  
 [`VMatrix`](#f_VMatrix)  
+[`VS.RandomVectorInUnitSphere()`](#f_RandomVectorInUnitSphere)  
+[`VS.RandomVectorOnUnitSphere()`](#f_RandomVectorOnUnitSphere)  
 [`VS.InvRSquared()`](#f_InvRSquared)  
 [`VS.a_swap()`](#f_a_swap)  
 [`VS.MatrixRowDotProduct()`](#f_MatrixRowDotProduct)  
@@ -331,6 +332,7 @@ Not included in `vs_library.nut`
 
 
 ### [vs_collision](#vs_collision-1)
+[`Ray_t`](#f_Ray_t)  
 [`VS.Collision_ClearTrace()`](#f_Collision_ClearTrace)  
 [`VS.ComputeBoxOffset()`](#f_ComputeBoxOffset)  
 [`VS.IsPointInCone()`](#f_IsPointInCone)  
@@ -338,8 +340,12 @@ Not included in `vs_library.nut`
 [`VS.IsBoxIntersectingSphere()`](#f_IsBoxIntersectingSphere)  
 [`VS.IsCircleIntersectingRectangle()`](#f_IsCircleIntersectingRectangle)  
 [`VS.IsRayIntersectingSphere()`](#f_IsRayIntersectingSphere)  
+[`VS.IntersectInfiniteRayWithSphere()`](#f_IntersectInfiniteRayWithSphere)  
 [`VS.IsBoxIntersectingRay()`](#f_IsBoxIntersectingRay)  
 [`VS.IsBoxIntersectingRay2()`](#f_IsBoxIntersectingRay2)  
+[`VS.IntersectRayWithRay()`](#f_IntersectRayWithRay)  
+[`VS.IntersectRayWithPlane()`](#f_IntersectRayWithPlane)  
+[`VS.IsRayIntersectingOBB()`](#f_IsRayIntersectingOBB)  
 
 
 ### [vs_interp](#vs_interp-1)
@@ -1111,25 +1117,18 @@ ________________________________
 ```cpp
 class VS::TraceLine
 {
-	startpos
-	endpos
-	ignore
-	fraction
-	hitpos
-	normal
-
-	m_Delta
-	m_IsSwept
-	m_Extents
-	m_IsRay
-	m_StartOffset
-	m_Start
+	Vector startpos
+	Vector endpos
+	CBaseEntity ignore
+	float fraction
+	Vector hitpos
+	Vector normal
 }
 ```
 ________________________________
 
 ```cpp
-trace_t VS::TraceLine(Vector start = null, Vector end = null, handle ignore = null)
+trace_t VS::TraceLine(Vector start, Vector end, handle ignore = null)
 ```
 Note: This doesn't hit entities. To calculate LOS with them, iterate through every entity type you want and trace individually.
 ________________________________
@@ -1213,14 +1212,6 @@ function Think()
 
 </details>
 
-________________________________
-
-<a name="f_Ray"></a>
-```cpp
-trace_t VS::TraceLine::Ray(Vector mins, Vector maxs)
-```
-Initiate ray tracing  
-Used in collisions
 ________________________________
 
 <a name="f_TraceDir"></a>
@@ -2091,7 +2082,7 @@ ________________________________
 ```cpp
 class Quaternion
 {
-	x, y, z, w
+	float x, y, z, w
 }
 ```
 ________________________________
@@ -2107,7 +2098,7 @@ ________________________________
 ```cpp
 class matrix3x4_t
 {
-	m[3][4]
+	float m[3][4]
 
 	void Init()
 }
@@ -2128,10 +2119,24 @@ ________________________________
 class VMatrix
 {
 	VMatrix()
-	m[4][4]
+	float m[4][4]
 }
 ```
 
+________________________________
+
+<a name="f_RandomVectorInUnitSphere"></a>
+```cpp
+float VS::RandomVectorInUnitSphere(Vector &out)
+```
+Guarantee uniform random distribution within a sphere
+________________________________
+
+<a name="f_RandomVectorOnUnitSphere"></a>
+```cpp
+void VS::RandomVectorOnUnitSphere(Vector &out)
+```
+Guarantee uniform random distribution on a sphere
 ________________________________
 
 <a name="f_InvRSquared"></a>
@@ -2768,7 +2773,23 @@ ________________________________
 
 ### [vs_collision](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_collision.nut)
 
-Ray traces need to be initialised with `trace.Ray()`
+________________________________
+
+<a name="f_Ray_t"></a>
+```cpp
+class Ray_t
+{
+	Vector m_Start
+	Vector m_Delta
+	Vector m_StartOffset
+	Vector m_Extents
+	bool m_IsRay
+	bool m_IsSwept
+
+	void Init( Vector start, Vector end, Vector mins = null, Vector maxs = null )
+}
+```
+
 ________________________________
 
 <a name="f_Collision_ClearTrace"></a>
@@ -2780,7 +2801,7 @@ ________________________________
 
 <a name="f_ComputeBoxOffset"></a>
 ```cpp
-float VS::ComputeBoxOffset(ray_t ray)
+float VS::ComputeBoxOffset(Ray_t ray)
 ```
 Compute the offset in t along the ray that we'll use for the collision
 ________________________________
@@ -2819,29 +2840,57 @@ ________________________________
 
 <a name="f_IsRayIntersectingSphere"></a>
 ```cpp
-float VS::IsRayIntersectingSphere(Vector vecRayOrigin, Vector vecRayDelta, Vector vecCenter, float flRadius, float flTolerance)
+bool VS::IsRayIntersectingSphere(Vector vecRayOrigin, Vector vecRayDelta, Vector vecCenter, float flRadius, float flTolerance = 0.0)
 ```
 returns true if there's an intersection between ray and sphere
 
 `flTolerance [0..1]`
 ________________________________
 
+<a name="f_IntersectInfiniteRayWithSphere"></a>
+```cpp
+bool VS::IntersectInfiniteRayWithSphere( Vector vecRayOrigin, Vector vecRayDelta, Vector vecSphereCenter, float flRadius, float pT[2] )
+```
+Returns whether or not there was an intersection. Returns the two intersection points.
+________________________________
+
 <a name="f_IsBoxIntersectingRay"></a>
 ```cpp
-bool VS::IsBoxIntersectingRay(Vector origin, Vector vecBoxMin, Vector vecBoxMax, ray_t ray, float flTolerance = 0.0)
+bool VS::IsBoxIntersectingRay(Vector boxMin, Vector boxMax, Vector origin, Vector vecDelta, float flTolerance = 0.0)
+```
+Intersects a ray with a AABB, return true if they intersect
+
+Input  : worldMins, worldMaxs
+________________________________
+
+<a name="f_IsBoxIntersectingRay2"></a>
+```cpp
+bool VS::IsBoxIntersectingRay2(Vector origin, Vector vecBoxMin, Vector vecBoxMax, Ray_t ray, float flTolerance = 0.0)
 ```
 Intersects a ray with a AABB, return true if they intersect
 
 Input  : localMins, localMaxs
 ________________________________
 
-<a name="f_IsBoxIntersectingRay2"></a>
+<a name="f_IntersectRayWithRay"></a>
 ```cpp
-bool VS::IsBoxIntersectingRay2(Vector boxMin, Vector boxMax, Vector origin, Vector vecDelta, float flTolerance)
+bool VS::IntersectRayWithRay( Vector vecStart0, Vector vecDelta0, Vector vecStart1, Vector vecDelta1 )
 ```
-Intersects a ray with a AABB, return true if they intersect
+Intersects a ray with a ray, return true if they intersect
+________________________________
 
-Input  : worldMins, worldMaxs
+<a name="f_IntersectRayWithPlane"></a>
+```cpp
+float VS::IntersectRayWithPlane( Vector start, Vector dir, Vector normal, float dist )
+```
+returns distance along ray
+________________________________
+
+<a name="f_IsRayIntersectingOBB"></a>
+```cpp
+bool VS::IsRayIntersectingOBB( Ray_t ray, Vector org, QAngle angles, Vector mins, Vector maxs )
+```
+Swept OBB test
 ________________________________
 
 ### [vs_interp](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_interp.nut)

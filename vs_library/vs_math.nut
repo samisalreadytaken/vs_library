@@ -187,21 +187,21 @@ function VS::VectorVectors( forward, right, up ):(Vector)
 // Euler QAngle -> Basis Vectors.  Each vector is optional
 // input vector pointers
 //-----------------------------------------------------------------------
-function VS::AngleVectors( vAng, vFwd = _VEC, vRg = null, vUp = null ):(sin,cos)
+function VS::AngleVectors( angle, forward = _VEC, right = null, up = null ):(sin,cos)
 {
 	local sr, cr, rr,
 
-	      yr = DEG2RAD*vAng.y,
+	      yr = DEG2RAD*angle.y,
 	      sy = sin(yr),
 	      cy = cos(yr),
 
-	      pr = DEG2RAD*vAng.x,
+	      pr = DEG2RAD*angle.x,
 	      sp = sin(pr),
 	      cp = cos(pr);
 
-	if( vAng.z )
+	if ( angle.z )
 	{
-		rr = DEG2RAD*vAng.z;
+		rr = DEG2RAD*angle.z;
 		sr = sin(rr);
 		cr = cos(rr);
 	}
@@ -211,53 +211,53 @@ function VS::AngleVectors( vAng, vFwd = _VEC, vRg = null, vUp = null ):(sin,cos)
 		cr = 1.0;
 	};
 
-	if( vFwd )
+	if ( forward )
 	{
-		vFwd.x = cp*cy;
-		vFwd.y = cp*sy;
-		vFwd.z = -sp;
+		forward.x = cp*cy;
+		forward.y = cp*sy;
+		forward.z = -sp;
 	};
 
-	if( vRg )
+	if ( right )
 	{
-		vRg.x = (-1.0*sr*sp*cy+-1.0*cr*-sy);
-		vRg.y = (-1.0*sr*sp*sy+-1.0*cr*cy);
-		vRg.z = -1.0*sr*cp;
+		right.x = -sr*sp*cy+cr*sy;
+		right.y = -sr*sp*sy-cr*cy;
+		right.z = -sr*cp;
 	};
 
-	if( vUp )
+	if ( up )
 	{
-		vUp.x = (cr*sp*cy+-sr*-sy);
-		vUp.y = (cr*sp*sy+-sr*cy);
-		vUp.z = cr*cp;
+		up.x = cr*sp*cy+sr*sy;
+		up.y = cr*sp*sy-sr*cy;
+		up.z = cr*cp;
 	};
 
-	return vFwd;
+	return forward;
 }
 
 //-----------------------------------------------------------------------
 // Forward direction vector -> Euler QAngle
 //-----------------------------------------------------------------------
-function VS::VectorAngles( vFwd, vOut = _VEC ):(Vector,atan2,sqrt)
+function VS::VectorAngles( forward, vOut = _VEC ) : ( Vector, atan2, sqrt )
 {
 	local tmp, yaw, pitch;
 
-	if( !vFwd.y && !vFwd.x )
+	if ( !forward.y && !forward.x )
 	{
 		yaw = 0.0;
-		if( vFwd.z > 0.0 )
+		if( forward.z > 0.0 )
 			pitch = 270.0;
 		else
 			pitch = 90.0;
 	}
 	else
 	{
-		yaw = RAD2DEG*atan2(vFwd.y, vFwd.x);
+		yaw = RAD2DEG*atan2( forward.y, forward.x );
 		if( yaw < 0.0 )
 			yaw += 360.0;
 
-		tmp = sqrt(vFwd.x*vFwd.x + vFwd.y*vFwd.y);
-		pitch = RAD2DEG*atan2(-vFwd.z, tmp);
+		tmp = sqrt( forward.x*forward.x + forward.y*forward.y );
+		pitch = RAD2DEG*atan2( -forward.z, tmp );
 		if( pitch < 0.0 )
 			pitch += 360.0;
 	};
@@ -455,39 +455,32 @@ function VS::QAngleNormalize( vAng )
 function VS::SnapDirectionToAxis( vDirection, epsilon = 0.002 )
 {
 	local proj = 1.0 - epsilon;
+	local f = vDirection.x < 0.0;
 
-	if( (vDirection.x < 0.0 ? -vDirection.x : vDirection.x) > proj )
+	if( (f ? -vDirection.x : vDirection.x) > proj )
 	{
-		if( vDirection.x < 0.0 )
-			vDirection.x = -1.0;
-		else
-			vDirection.x = 1.0;
-		vDirection.y = 0.0;
-		vDirection.z = 0.0;
+		vDirection.x = f ? -1.0 : 1.0;
+		vDirection.y = vDirection.z = 0.0;
 
 		return vDirection;
 	};
 
-	if( (vDirection.y < 0.0 ? -vDirection.y : vDirection.y) > proj )
+	f = vDirection.y < 0.0;
+
+	if( (f ? -vDirection.y : vDirection.y) > proj )
 	{
-		if( vDirection.y < 0.0 )
-			vDirection.y = -1.0;
-		else
-			vDirection.y = 1.0;
-		vDirection.z = 0.0;
-		vDirection.x = 0.0;
+		vDirection.y = f ? -1.0 : 1.0;
+		vDirection.z = vDirection.x = 0.0;
 
 		return vDirection;
 	};
 
-	if( (vDirection.z < 0.0 ? -vDirection.z : vDirection.z) > proj )
+	f = vDirection.z < 0.0;
+
+	if( (f ? -vDirection.z : vDirection.z) > proj )
 	{
-		if( vDirection.z < 0.0 )
-			vDirection.z = -1.0;
-		else
-			vDirection.z = 1.0;
-		vDirection.x = 0.0;
-		vDirection.y = 0.0;
+		vDirection.z = f ? -1.0 : 1.0;
+		vDirection.x = vDirection.y = 0.0;
 
 		return vDirection;
 	};
@@ -842,8 +835,8 @@ function VS::MovePeak( x, flPeakPos )
 		return 0.5 + 0.5 * (x - flPeakPos) / (1.0 - flPeakPos);
 }
 
-local MovePeak = ::VS.MovePeak;
-local Gain = ::VS.Gain;
+local MovePeak = VS.MovePeak;
+local Gain = VS.Gain;
 
 // This works like SmoothCurve, with two changes:
 //

@@ -37,22 +37,12 @@ trace.normal
 
 */
 //-----------------------------------------------------------------------
-local Trace = ::TraceLine;
+local Trace = TraceLine;
 
 class::VS.TraceLine
 {
-	constructor( start = null, end = null, ent = null ):(Vector,Trace)
+	constructor( start, end, ent = null ) : (Trace)
 	{
-		if ( !start )
-		{
-			local v = Vector();
-			startpos = v;
-			endpos = v;
-			ignore = ent;
-			fraction = 1.0;
-			return;
-		};
-
 		startpos = start;
 		endpos = end;
 		ignore = ent;
@@ -74,13 +64,6 @@ class::VS.TraceLine
 	fraction = 0.0;
 	hitpos = null;
 	normal = null;
-
-	m_Delta = null;
-	m_IsSwept = null;
-	m_Extents = null;
-	m_IsRay = null;
-	m_StartOffset = null;
-	m_Start = null;
 }
 
 //-----------------------------------------------------------------------
@@ -164,18 +147,6 @@ function VS::TraceLine::GetNormal():(Vector,TraceDir)
 	return normal;
 }
 
-// initiate ray tracing
-function VS::TraceLine::Ray( mins =::Vector(), maxs =::Vector() )
-{
-	m_Delta = endpos - startpos;
-	m_IsSwept = m_Delta.LengthSqr() != 0.0;
-	m_Extents = (maxs - mins) * 0.5;
-	m_IsRay = m_Extents.LengthSqr() < 1.e-6;
-	m_StartOffset = (mins + maxs) * 0.5;
-	m_Start = startpos + m_StartOffset;
-	m_StartOffset *= -1.0;
-	return this;
-}
 
 // VECTOR_CONE_1DEGREES  = Vector( 0.00873, 0.00873, 0.00873 )
 // VECTOR_CONE_2DEGREES  = Vector( 0.01745, 0.01745, 0.01745 )

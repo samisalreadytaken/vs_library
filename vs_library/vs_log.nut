@@ -210,7 +210,6 @@ function VS::Log::WriteTable( szName, hTable, indentLevel = 0, curIndent = "" ) 
 //-----------------------------------------------------------------------
 
 local delay = VS.EventQueue.AddEvent;
-local flFrameTime = TICK_INTERVAL * 4.0;
 local ClientCommand = SendToConsole;
 
 function VS::Log::_Write() : ( Msg, delay )
@@ -239,7 +238,7 @@ function VS::Log::_Write() : ( Msg, delay )
 	return delay( _Write, 0.001, this );
 }
 
-function VS::Log::_Start() : ( ClientCommand, developer, Fmt, flFrameTime )
+function VS::Log::_Start() : ( ClientCommand, developer, Fmt, TICK_INTERVAL )
 {
 	nL <- _data.len();
 	nD <- 2000;
@@ -254,7 +253,7 @@ function VS::Log::_Start() : ( ClientCommand, developer, Fmt, flFrameTime )
 	{
 		local file = file_prefix[0] == ':' ? file_prefix.slice(1) : Fmt( "%s_%s", file_prefix, VS.UniqueString() );
 		_d <- developer();
-		ClientCommand(Fmt( "developer 0;con_filter_enable 1;con_filter_text_out\"%s\";con_filter_text\"\";con_logfile\"%s.log\";script VS.EventQueue.AddEvent(VS.Log._Write,%g,VS.Log)", filter, file, flFrameTime ));
+		ClientCommand(Fmt( "developer 0;con_filter_enable 1;con_filter_text_out\"%s\";con_filter_text\"\";con_logfile\"%s.log\";script VS.EventQueue.AddEvent(VS.Log._Write,%g,VS.Log)", filter, file, TICK_INTERVAL * 4.0 ));
 		return file;
 	}
 	else

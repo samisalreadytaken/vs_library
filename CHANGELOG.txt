@@ -3,6 +3,18 @@
 
 --------------------------------
 
+2021-06-27 [v2.40.3]
+- Removed VS.TraceLine.Ray()
+- Fixed VS.AngleIMatrix
+- Added Ray_t()
+- Reworked VS.IsBoxIntersectingRay - function signature is changed
+- Added VS.IsRayIntersectingOBB
+- Added VS.IntersectInfiniteRayWithSphere
+- Added VS.IntersectRayWithRay
+- Added VS.IntersectRayWithPlane
+- Added VS.RandomVectorInUnitSphere
+- Added VS.RandomVectorOnUnitSphere
+
 2021-06-22 [v2.40.2]
 - Added class support for VS.EventQueue
 - Renamed VS.VectorMultiply<float> to VS.VectorScale

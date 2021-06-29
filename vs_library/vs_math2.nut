@@ -147,6 +147,33 @@ local VectorSubtract = VS.VectorSubtract;
 local Line = DebugDrawLine;
 
 
+// Guarantee uniform random distribution within a sphere
+function VS::RandomVectorInUnitSphere( out ) : ( rand, sin, cos, acos, pow )
+{
+	local rd = 2.0 / 32767;
+	local phi = acos( 1.0 - rand() * rd );
+	local theta = 3.14159265 * rand() * rd;
+	local r = pow( rand() * rd * 0.5, 0.333333 );
+	local sp = r * sin( phi );
+	out.x = sp * cos( theta );
+	out.y = sp * sin( theta );
+	out.z = r * cos( phi );
+	return r;
+}
+
+// Guarantee uniform random distribution on a sphere
+function VS::RandomVectorOnUnitSphere( out ) : ( rand, sin, cos, acos )
+{
+	local rd = 2.0 / 32767;
+	local phi = acos( 1.0 - rand() * rd );
+	local theta = 3.14159265 * rand() * rd;
+	// r = 1
+	local sp = sin( phi );
+	out.x = sp * cos( theta );
+	out.y = sp * sin( theta );
+	out.z = cos( phi );
+}
+
 function VS::InvRSquared(v):(max)
 {
 	return 1.0 / max( 1.0, v.LengthSqr() );
@@ -562,21 +589,21 @@ function VS::QuaternionIdentityBlend( p, t, qt = _QUAT ):(QuaternionNormalize)
 //-----------------------------------------------------------------------------
 function VS::QuaternionSlerpNoAlign( p, q, t, qt = _QUAT ) : ( sin, acos )
 {
-	local omega, cosom, sinom, sclp, sclq;
+	local sclp, sclq;
 
 	// 0.0 returns p, 1.0 return q.
 
 	// QuaternionDotProduct
-	cosom = p.x*q.x + p.y*q.y + p.z*q.z + p.w*q.w;
+	local cosom = p.x*q.x + p.y*q.y + p.z*q.z + p.w*q.w;
 
 	if ( cosom > -0.999999 ) // ( (1.0 + cosom) > 0.000001 )
 	{
 		if ( cosom < 0.999999 ) // ( (1.0 - cosom) > 0.000001 )
 		{
-			omega = acos( cosom );
-			sinom = sin( omega );
-			sclp = sin( (1.0 - t)*omega ) / sinom;
-			sclq = sin( t*omega ) / sinom;
+			local omega = acos( cosom );
+			local invSinom = 1.0 / sin( omega );
+			sclp = sin( (1.0 - t)*omega ) * invSinom;
+			sclq = sin( t*omega ) * invSinom;
 		}
 		else
 		{
@@ -1511,31 +1538,31 @@ function VS::AngleIMatrix( angles, position, matrix ):(sin,cos,VectorRotate)
 	      sr = sin(az),
 	      cr = cos(az);
 
-	matrix = matrix.m;
+	local m = matrix.m;
 	// matrix = (YAW * PITCH) * ROLL
-	matrix[0][0] = cp*cy;
-	matrix[0][1] = cp*sy;
-	matrix[0][2] = -sp;
+	m[0][0] = cp*cy;
+	m[0][1] = cp*sy;
+	m[0][2] = -sp;
 
-	matrix[1][0] = sr*sp*cy+cr*-sy;
-	matrix[1][1] = sr*sp*sy+cr*cy;
-	matrix[1][2] = sr*cp;
+	m[1][0] = sr*sp*cy+cr*-sy;
+	m[1][1] = sr*sp*sy+cr*cy;
+	m[1][2] = sr*cp;
 
-	matrix[2][0] = (cr*sp*cy+-sr*-sy);
-	matrix[2][1] = (cr*sp*sy+-sr*cy);
-	matrix[2][2] = cr*cp;
+	m[2][0] = (cr*sp*cy+-sr*-sy);
+	m[2][1] = (cr*sp*sy+-sr*cy);
+	m[2][2] = cr*cp;
 
-	matrix[0][3] = 0.0;
-	matrix[1][3] = 0.0;
-	matrix[2][3] = 0.0;
+	m[0][3] = 0.0;
+	m[1][3] = 0.0;
+	m[2][3] = 0.0;
 
 	if( position )
 	{
 		local vecTranslation = VectorRotate( position, matrix ) * -1.0;
 		// MatrixSetColumn( vecTranslation, 3, matrix );
-		matrix[0][3] = vecTranslation.x;
-		matrix[1][3] = vecTranslation.y;
-		matrix[2][3] = vecTranslation.z;
+		m[0][3] = vecTranslation.x;
+		m[1][3] = vecTranslation.y;
+		m[2][3] = vecTranslation.z;
 	};
 }
 
@@ -2108,16 +2135,16 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Ve
 	local angle = initialDirection.Dot( finalDirection );
 	// Assert( IsFinite(angle) );
 
-	local axis = Vector();
+	local axis;
 
 	// No rotation required
-	if( angle - 1.0 > -1.e-3 )
+	if ( angle > 0.999 )
 	{
 		// parallel case
 		SetIdentityMatrix(dst);
 		return;
 	}
-	else if( angle + 1.0 < 1.e-3 )
+	else if ( angle < (-0.999) )
 	{
 		// antiparallel case, pick any axis in the plane
 		// perpendicular to the final direction. Choose the direction (x,y,z)
@@ -2130,27 +2157,30 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Ve
 		if( fabs(finalDirection.z) < fabs(finalDirection[idx]) )
 			idx = "z";
 
+		axis = Vector();
 		axis[idx] = 1.0;
 
-		VectorMA( axis, -(axis.Dot(finalDirection)), finalDirection, axis );
+		VectorMA( axis, -axis.Dot( finalDirection ), finalDirection, axis );
 		axis.Norm();
 		angle = 180.0;
 	}
 	else
 	{
-		axis = initialDirection.Cross(finalDirection);
+		axis = initialDirection.Cross( finalDirection );
 		axis.Norm();
 		angle = acos(angle) * 57.29577951; // RAD2DEG
-	};
+	};;
 
-	MatrixBuildRotationAboutAxis( axis, angle, dst );
+	return MatrixBuildRotationAboutAxis( axis, angle, dst );
 
-/*#ifdef _DEBUG
+/*
+#ifdef _DEBUG
 	local test = Vector();
-	Vector3DMultiply( initialDirection, test, dst );
+	VectorRotate( initialDirection, test, dst );
 	test -= finalDirection;
 	Assert( test.LengthSqr() < 1e-3 );
-#endif*/
+#endif
+*/
 }
 
 /*
