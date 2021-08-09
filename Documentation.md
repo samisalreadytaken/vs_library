@@ -5,20 +5,14 @@ ________________________________
 <!-- U+2800 U+2514 U+2500 -->
 ### Table of Contents
 └─ [**README**](#README)  
-└─ [**Developer notes**](#developer-notes)  
 └─ **Reference**  
 ⠀ ⠀└─ [Keywords, symbols and variables](#keywords-and-symbols-used-in-this-documentation)  
-⠀ ⠀└─ **Base**  
-⠀ ⠀ ⠀ ⠀└─ [Constants](#Constants)  
-⠀ ⠀ ⠀ ⠀└─ [vs_math](#vs_math)  
-⠀ ⠀ ⠀ ⠀└─ [vs_utility](#vs_utility)  
-⠀ ⠀ ⠀ ⠀└─ [vs_entity](#vs_entity)  
-⠀ ⠀ ⠀ ⠀└─ [vs_events](#vs_events)  
-⠀ ⠀ ⠀ ⠀└─ [vs_log](#vs_log)  
-⠀ ⠀└─ **Additional**  
-⠀ ⠀ ⠀ ⠀└─ [vs_math2](#vs_math2)  
-⠀ ⠀ ⠀ ⠀└─ [vs_collision](#vs_collision)  
-⠀ ⠀ ⠀ ⠀└─ [vs_interp](#vs_interp)  
+⠀ ⠀└─ [Constants](#Constants)  
+⠀ ⠀└─ [vs_math](#vs_math)  
+⠀ ⠀└─ [vs_utility](#vs_utility)  
+⠀ ⠀└─ [vs_entity](#vs_entity)  
+⠀ ⠀└─ [vs_events](#vs_events)  
+⠀ ⠀└─ [vs_log](#vs_log)  
 ________________________________
 
 ## README
@@ -26,14 +20,6 @@ ________________________________
 See [README.md](https://github.com/samisalreadytaken/vs_library/blob/master/README.md) for installation, downloading and usage.
 ________________________________
 
-## Developer notes
-* Wrapper functions such as EntFireByHandle return the final calls to take advantage of tail calls for improved performance.
-* Variables are converted to strings using empty string concatenation instead of explicit `tostring()` calls for better performance; but long concatenations are instead formatted for better memory usage.
-* Free variables are used with static values to reduce variable lookups.
-* There will be some inconsistencies between the minified version and the source files:
-* * Some functions that should be 'inline' such as max() and clamp() are manually replaced in the minified version to reduce function call overhead.
-* * Constant variables such as PI and DEG2RAD are replaced with their values in the minified version to reduce variable lookups.
-________________________________
 
 ## Keywords and symbols used in this documentation
 | Type                  | Example                                                                             |
@@ -44,7 +30,7 @@ ________________________________
 | `bool`                | `true`, `false`                                                                     |
 | `string`              | `""`                                                                                |
 | `table`               | `{}`                                                                                |
-| `array`               | `[]`                                                                                |
+| `array`               | `[]`, `array()`                                                                     |
 | `closure`, `function` | function                                                                            |
 | `handle`,`CBaseEntity`| Entity script handle                                                                |
 | `Vector`, `vec3_t`    | `Vector(0,1,2)`                                                                     |
@@ -68,33 +54,43 @@ ________________________________
 | `HPlayerEye`   | `VS.CreateMeasure(HPlayer.GetName())`      | Buffer to get player eye angles                       |
 | `hHudHint`     | `VS.CreateEntity("env_hudhint")`  | Hud hint, show messages to the player                 |
 | `Think()`      | `VS.Timer(0, 0.0, Think)`         | A function that is executed every frame               |
-| `flFrameTime2` | `FrameTime() * 2`                 | Used in the Think function for displaying every frame |
 
-
-## Base
-Included in `vs_library.nut`
 
 ### Constants
 | Variable           | Value                            |
 | ------------------ | -------------------------------- |
 | `CONST`            | `table` Squirrel constant table  |
-| `MAX_COORD_FLOAT`  | `16384.0` (`1<<14`)              |
-| `MAX_TRACE_LENGTH` | `56755.84086241`                 |
-| `DEG2RAD`          | `0.01745329`                     |
-| `RAD2DEG`          | `57.29577951`                    |
-| `PI`               | `3.14159265`                     |
+| `FLT_EPSILON`      | `1.192092896e-7`                 |
+| `FLT_MAX`          | `3.402823466e+38`                |
+| `FLT_MIN`          | `1.175494351e-38`                |
+| `INT_MAX`          | `2147483647`                     |
+| `INT_MIN`          | `-2147483648`                    |
+| `DEG2RAD`          | `0.017453293`                    |
+| `RAD2DEG`          | `57.295779513`                   |
+| `PI`               | `3.141592654`                    |
 | `RAND_MAX`         | `0x7FFF`                         |
+| `MAX_COORD_FLOAT`  | `16384.0` (`1<<14`)              |
+| `MAX_TRACE_LENGTH` | `56755.840862417`                |
+
+NOTE: To use these constants in your scripts, the library needs to have been compiled before your script. To ensure this happens, you may load your scripts using a buffer script which loads the library first, then loads your custom script.
+
+```cs
+IncludeScript("vs_library")
+IncludeScript("myscript")
+```
 
 
 ### [vs_math](#vs_math-1)
+[`Quaternion`](#f_Quaternion)  
+[`matrix3x4_t`](#f_matrix3x4_t)  
+[`VMatrix`](#f_VMatrix)  
+[`VS.fabs()`](#f_fabs)  
 [`max()`](#f_max)  
 [`min()`](#f_min)  
 [`clamp()`](#f_clamp)  
 [`VS.IsInteger()`](#f_IsInteger)  
 [`VS.IsLookingAt()`](#f_IsLookingAt)  
-[`VS.PointOnLineNearestPoint()`](#f_PointOnLineNearestPoint)  
 [`VS.GetAngle()`](#f_GetAngle)  
-[`VS.GetAngle2D()`](#f_GetAngle2D)  
 [`VS.VectorVectors()`](#f_VectorVectors)  
 [`VS.AngleVectors()`](#f_AngleVectors)  
 [`VS.VectorAngles()`](#f_VectorAngles)  
@@ -120,10 +116,11 @@ Included in `vs_library.nut`
 [`VS.VectorAdd()`](#f_VectorAdd)  
 [`VS.VectorSubtract()`](#f_VectorSubtract)  
 [`VS.VectorScale()`](#f_VectorScale)  
+[`VS.VectorMA()`](#f_VectorMA)  
 [`VS.ComputeVolume()`](#f_ComputeVolume)  
 [`VS.RandomVector()`](#f_RandomVector)  
-[`VS.CalcSqrDistanceToAABB()`](#f_CalcSqrDistanceToAABB)  
-[`VS.CalcClosestPointOnAABB()`](#f_CalcClosestPointOnAABB)  
+[`VS.RandomVectorInUnitSphere()`](#f_RandomVectorInUnitSphere)  
+[`VS.RandomVectorOnUnitSphere()`](#f_RandomVectorOnUnitSphere)  
 [`VS.ExponentialDecay()`](#f_ExponentialDecay)  
 [`VS.ExponentialDecay2()`](#f_ExponentialDecay2)  
 [`VS.ExponentialDecayIntegral()`](#f_ExponentialDecayIntegral)  
@@ -140,156 +137,41 @@ Included in `vs_library.nut`
 [`VS.Lerp()`](#f_Lerp)  
 [`VS.FLerp()`](#f_FLerp)  
 [`VS.VectorLerp()`](#f_VectorLerp)  
-[`VS.IsPointInBox()`](#f_IsPointInBox)  
-[`VS.IsBoxIntersectingBox()`](#f_IsBoxIntersectingBox)  
-
-
-### [vs_utility](#vs_utility-1)
-[`Ent()`](#f_Ent)  
-[`Entc()`](#f_Entc)  
-[`delay()`](#f_delay)  
-[`Chat()`](#f_Chat)  
-[`ChatTeam()`](#f_ChatTeam)  
-[`Alert()`](#f_Alert)  
-[`AlertTeam()`](#f_AlertTeam)  
-[`txt`](#f_txt)  
-[`VecToString()`](#f_VecToString)  
-[`VS.GetTickrate()`](#f_GetTickrate)  
-[`VS.IsDedicatedServer()`](#f_IsDedicatedServer)  
-[`VS.TraceLine`](#f_TraceLine)  
-[`VS.TraceLine.DidHit()`](#f_DidHit)  
-[`VS.TraceLine.GetEnt()`](#f_GetEnt)  
-[`VS.TraceLine.GetEntByName()`](#f_GetEntByName)  
-[`VS.TraceLine.GetEntByClassname()`](#f_GetEntByClassname)  
-[`VS.TraceLine.GetPos()`](#f_GetPos)  
-[`VS.TraceLine.GetDist()`](#f_GetDist)  
-[`VS.TraceLine.GetDistSqr()`](#f_GetDistSqr)  
-[`VS.TraceLine.GetNormal()`](#f_GetNormal)  
-[`VS.TraceDir()`](#f_TraceDir)  
-[`VS.UniqueString()`](#f_UniqueString)  
-[`VS.EventQueue.Clear()`](#f_EventQueueClear)  
-[`VS.EventQueue.AddEvent()`](#f_EventQueueAddEvent)  
-[`VS.EventQueue.CancelEventsByInput()`](#f_EventQueueCancelEventsByInput)  
-[`VS.EventQueue.RemoveEvent()`](#f_EventQueueRemoveEvent)  
-[`VS.EventQueue.Dump()`](#f_EventQueueDump)  
-[`VS.arrayFind()`](#f_arrayFind)  
-[`VS.arrayApply()`](#f_arrayApply)  
-[`VS.arrayMap()`](#f_arrayMap)  
-[`VS.DumpScope()`](#f_DumpScope)  
-[`VS.DumpEnt()`](#f_DumpEnt)  
-[`VS.DumpPlayers()`](#f_DumpPlayers)  
-[`VS.ArrayToTable()`](#f_ArrayToTable)  
-[`VS.GetStackInfo()`](#f_GetStackInfo)  
-[`VS.GetCallerFunc()`](#f_GetCallerFunc)  
-[`VS.GetCaller()`](#f_GetCaller)  
-[`VS.GetTableDir()`](#f_GetTableDir)  
-[`VS.FindVarByName()`](#f_FindVarByName)  
-[`VS.GetVarName()`](#f_GetVarName)  
-
-
-### [vs_entity](#vs_entity-1)
-[`EntFireByHandle()`](#f_EntFireByHandle)  
-[`PrecacheModel()`](#f_PrecacheModel)  
-[`PrecacheScriptSound()`](#f_PrecacheScriptSound)  
-[`VS.MakePersistent()`](#f_MakePersistent)  
-[`VS.SetParent()`](#f_SetParent)  
-[`VS.ShowGameText()`](#f_ShowGameText)  
-[`VS.ShowHudHint()`](#f_ShowHudHint)  
-[`VS.HideHudHint()`](#f_HideHudHint)  
-[`VS.CreateMeasure()`](#f_CreateMeasure)  
-[`VS.SetMeasure()`](#f_SetMeasure)  
-[`VS.CreateTimer()`](#f_CreateTimer)  
-[`VS.Timer()`](#f_Timer)  
-[`VS.OnTimer()`](#f_OnTimer)  
-[`VS.AddOutput()`](#f_AddOutput)  
-[`VS.AddOutput2()`](#f_AddOutput2)  
-[`VS.CreateEntity()`](#f_CreateEntity)  
-[`VS.SetKeyValue()`](#f_SetKeyValue)  
-[`VS.SetName()`](#f_SetName)  
-[`VS.GetPlayersAndBots()`](#f_GetPlayersAndBots)  
-[`VS.GetAllPlayers()`](#f_GetAllPlayers)  
-[`VS.GetLocalPlayer()`](#f_GetLocalPlayer)  
-[`VS.GetPlayerByIndex()`](#f_GetPlayerByIndex)  
-[`VS.GetEntityByIndex()`](#f_GetEntityByIndex)  
-[`VS.IsPointSized()`](#f_IsPointSized)  
-[`VS.FindEntityClassNearestFacing()`](#f_FindEntityClassNearestFacing)  
-[`VS.FindEntityNearestFacing()`](#f_FindEntityNearestFacing)  
-[`VS.FindEntityClassNearestFacingNearest()`](#f_FindEntityClassNearestFacingNearest)  
-
-
-### [vs_events](#vs_events-1)
-[`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)  
-[`VS.ForceValidateUserid()`](#f_ForceValidateUserid)  
-[`VS.ValidateUseridAll()`](#f_ValidateUseridAll)  
-[`VS.FixupEventListener()`](#f_FixupEventListener)
-
-
-### [vs_log](#vs_log-1)
-[`VS.Log.enabled`](#f_Logenabled)  
-[`VS.Log.export`](#f_Logexport)  
-[`VS.Log.file_prefix`](#f_Logfile_prefix)  
-[`VS.Log.Add()`](#f_LogAdd)  
-[`VS.Log.Pop()`](#f_LogPop)  
-[`VS.Log.Clear()`](#f_LogClear)  
-[`VS.Log.WriteKeyValues()`](#f_LogWriteKeyValues)  
-[`VS.Log.Run()`](#f_LogRun)  
-[`VS.Log.filter`](#f_Logfilter)  
-
-
-## Additional
-Not included in `vs_library.nut`
-
-### [vs_math2](#vs_math2-1)
-[`Quaternion`](#f_Quaternion)  
-[`matrix3x4_t`](#f_matrix3x4_t)  
-[`VMatrix`](#f_VMatrix)  
-[`VS.RandomVectorInUnitSphere()`](#f_RandomVectorInUnitSphere)  
-[`VS.RandomVectorOnUnitSphere()`](#f_RandomVectorOnUnitSphere)  
-[`VS.InvRSquared()`](#f_InvRSquared)  
-[`VS.a_swap()`](#f_a_swap)  
-[`VS.MatrixRowDotProduct()`](#f_MatrixRowDotProduct)  
-[`VS.MatrixColumnDotProduct()`](#f_MatrixColumnDotProduct)  
 [`VS.DotProductAbs()`](#f_DotProductAbs)  
-[`VS.VectorTransform()`](#f_VectorTransform)  
-[`VS.VectorITransform()`](#f_VectorITransform)  
-[`VS.VectorRotate()`](#f_VectorRotate)  
-[`VS.VectorRotate2()`](#f_VectorRotate2)  
-[`VS.VectorRotate3()`](#f_VectorRotate3)  
-[`VS.VectorIRotate()`](#f_VectorIRotate)  
-[`VS.VectorMA()`](#f_VectorMA)  
 [`VS.QuaternionsAreEqual()`](#f_QuaternionsAreEqual)  
+[`VS.QuaternionNormalize()`](#f_QuaternionNormalize)  
+[`VS.QuaternionAlign()`](#f_QuaternionAlign)  
+[`VS.QuaternionMult()`](#f_QuaternionMult)  
+[`VS.QuaternionConjugate()`](#f_QuaternionConjugate)  
 [`VS.QuaternionMA()`](#f_QuaternionMA)  
 [`VS.QuaternionAdd()`](#f_QuaternionAdd)  
 [`VS.QuaternionDotProduct()`](#f_QuaternionDotProduct)  
-[`VS.QuaternionMult()`](#f_QuaternionMult)  
-[`VS.QuaternionAlign()`](#f_QuaternionAlign)  
+[`VS.QuaternionInvert()`](#f_QuaternionInvert)  
 [`VS.QuaternionBlend()`](#f_QuaternionBlend)  
 [`VS.QuaternionBlendNoAlign()`](#f_QuaternionBlendNoAlign)  
 [`VS.QuaternionIdentityBlend()`](#f_QuaternionIdentityBlend)  
 [`VS.QuaternionSlerp()`](#f_QuaternionSlerp)  
 [`VS.QuaternionSlerpNoAlign()`](#f_QuaternionSlerpNoAlign)  
-[`VS.QuaternionAverageExponential()`](#f_QuaternionAverageExponential)  
-[`VS.QuaternionSquad()`](#f_QuaternionSquad)  
 [`VS.QuaternionLn()`](#f_QuaternionLn)  
 [`VS.QuaternionExp()`](#f_QuaternionExp)  
+[`VS.QuaternionSquad()`](#f_QuaternionSquad)  
+[`VS.QuaternionAverageExponential()`](#f_QuaternionAverageExponential)  
 [`VS.QuaternionAngleDiff()`](#f_QuaternionAngleDiff)  
 [`VS.QuaternionScale()`](#f_QuaternionScale)  
-[`VS.QuaternionConjugate()`](#f_QuaternionConjugate)  
-[`VS.QuaternionInvert()`](#f_QuaternionInvert)  
-[`VS.QuaternionNormalize()`](#f_QuaternionNormalize)  
+[`VS.RotationDeltaAxisAngle()`](#f_RotationDeltaAxisAngle)  
+[`VS.RotationDelta()`](#f_RotationDelta)  
 [`VS.QuaternionMatrix()`](#f_QuaternionMatrix)  
 [`VS.QuaternionAngles()`](#f_QuaternionAngles)  
 [`VS.QuaternionAxisAngle()`](#f_QuaternionAxisAngle)  
 [`VS.AxisAngleQuaternion()`](#f_AxisAngleQuaternion)  
 [`VS.AngleQuaternion()`](#f_AngleQuaternion)  
-[`VS.RotationDeltaAxisAngle()`](#f_RotationDeltaAxisAngle)  
-[`VS.RotationDelta()`](#f_RotationDelta)  
 [`VS.MatrixQuaternion()`](#f_MatrixQuaternion)  
 [`VS.BasisToQuaternion()`](#f_BasisToQuaternion)  
 [`VS.MatrixAngles()`](#f_MatrixAngles)  
 [`VS.MatrixQuaternionFast()`](#f_MatrixQuaternionFast)  
 [`VS.AngleMatrix()`](#f_AngleMatrix)  
 [`VS.AngleIMatrix()`](#f_AngleIMatrix)  
+[`VS.VectorMatrix()`](#f_VectorMatrix)  
 [`VS.MatrixVectors()`](#f_MatrixVectors)  
 [`VS.MatricesAreEqual()`](#f_MatricesAreEqual)  
 [`VS.MatrixCopy()`](#f_MatrixCopy)  
@@ -310,6 +192,12 @@ Not included in `vs_library.nut`
 [`VS.MatrixMultiply()`](#f_MatrixMultiply)  
 [`VS.MatrixBuildRotationAboutAxis()`](#f_MatrixBuildRotationAboutAxis)  
 [`VS.MatrixBuildRotation()`](#f_MatrixBuildRotation)  
+[`VS.VectorTransform()`](#f_VectorTransform)  
+[`VS.VectorITransform()`](#f_VectorITransform)  
+[`VS.VectorRotate()`](#f_VectorRotate)  
+[`VS.VectorRotate2()`](#f_VectorRotate2)  
+[`VS.VectorRotate3()`](#f_VectorRotate3)  
+[`VS.VectorIRotate()`](#f_VectorIRotate)  
 [`VS.Vector3DMultiplyProjective()`](#f_Vector3DMultiplyProjective)  
 [`VS.Vector3DMultiplyPositionProjective()`](#f_Vector3DMultiplyPositionProjective)  
 [`VS.TransformAABB()`](#f_TransformAABB)  
@@ -327,28 +215,8 @@ Not included in `vs_library.nut`
 [`VS.DrawViewFrustum()`](#f_DrawViewFrustum)  
 [`VS.DrawBoxAngles()`](#f_DrawBoxAngles)  
 [`VS.DrawEntityBounds()`](#f_DrawEntityBounds)  
-[`VS.DrawCapsule()`](#f_DrawCapsule)  
 [`VS.DrawSphere()`](#f_DrawSphere)  
-
-
-### [vs_collision](#vs_collision-1)
-[`Ray_t`](#f_Ray_t)  
-[`VS.Collision_ClearTrace()`](#f_Collision_ClearTrace)  
-[`VS.ComputeBoxOffset()`](#f_ComputeBoxOffset)  
-[`VS.IsPointInCone()`](#f_IsPointInCone)  
-[`VS.IsSphereIntersectingSphere()`](#f_IsSphereIntersectingSphere)  
-[`VS.IsBoxIntersectingSphere()`](#f_IsBoxIntersectingSphere)  
-[`VS.IsCircleIntersectingRectangle()`](#f_IsCircleIntersectingRectangle)  
-[`VS.IsRayIntersectingSphere()`](#f_IsRayIntersectingSphere)  
-[`VS.IntersectInfiniteRayWithSphere()`](#f_IntersectInfiniteRayWithSphere)  
-[`VS.IsBoxIntersectingRay()`](#f_IsBoxIntersectingRay)  
-[`VS.IsBoxIntersectingRay2()`](#f_IsBoxIntersectingRay2)  
-[`VS.IntersectRayWithRay()`](#f_IntersectRayWithRay)  
-[`VS.IntersectRayWithPlane()`](#f_IntersectRayWithPlane)  
-[`VS.IsRayIntersectingOBB()`](#f_IsRayIntersectingOBB)  
-
-
-### [vs_interp](#vs_interp-1)
+[`VS.DrawCapsule()`](#f_DrawCapsule)  
 [`enum INTERPOLATE`](#f_INTERPOLATE)  
 [`VS.Interpolator_GetKochanekBartelsParams()`](#f_Interpolator_GetKochanekBartelsParams)  
 [`VS.Interpolator_CurveInterpolate()`](#f_Interpolator_CurveInterpolate)  
@@ -377,10 +245,175 @@ Not included in `vs_library.nut`
 [`VS.Parabolic_Spline_NormalizeX()`](#f_Parabolic_Spline_NormalizeX)  
 [`VS.RangeCompressor()`](#f_RangeCompressor)  
 [`VS.InterpolateAngles()`](#f_InterpolateAngles)  
+[`VS.PointOnLineNearestPoint()`](#f_PointOnLineNearestPoint)  
+[`VS.CalcSqrDistanceToAABB()`](#f_CalcSqrDistanceToAABB)  
+[`VS.CalcClosestPointOnAABB()`](#f_CalcClosestPointOnAABB)  
+[`Ray_t`](#f_Ray_t)  
+[`VS.ComputeBoxOffset()`](#f_ComputeBoxOffset)  
+[`VS.IsPointInBox()`](#f_IsPointInBox)  
+[`VS.IsBoxIntersectingBox()`](#f_IsBoxIntersectingBox)  
+[`VS.IsPointInCone()`](#f_IsPointInCone)  
+[`VS.IsSphereIntersectingSphere()`](#f_IsSphereIntersectingSphere)  
+[`VS.IsBoxIntersectingSphere()`](#f_IsBoxIntersectingSphere)  
+[`VS.IsCircleIntersectingRectangle()`](#f_IsCircleIntersectingRectangle)  
+[`VS.IsRayIntersectingSphere()`](#f_IsRayIntersectingSphere)  
+[`VS.IntersectInfiniteRayWithSphere()`](#f_IntersectInfiniteRayWithSphere)  
+[`VS.IsBoxIntersectingRay()`](#f_IsBoxIntersectingRay)  
+[`VS.IsBoxIntersectingRay2()`](#f_IsBoxIntersectingRay2)  
+[`VS.IntersectRayWithRay()`](#f_IntersectRayWithRay)  
+[`VS.IntersectRayWithPlane()`](#f_IntersectRayWithPlane)  
+[`VS.IsRayIntersectingOBB()`](#f_IsRayIntersectingOBB)  
+
+
+### [vs_utility](#vs_utility-1)
+[`Ent()`](#f_Ent)  
+[`Entc()`](#f_Entc)  
+[`delay()`](#f_delay)  
+[`Chat()`](#f_Chat)  
+[`ChatTeam()`](#f_ChatTeam)  
+[`Alert()`](#f_Alert)  
+[`AlertTeam()`](#f_AlertTeam)  
+[`txt`](#f_txt)  
+[`VecToString()`](#f_VecToString)  
+[`VS.IsDedicatedServer()`](#f_IsDedicatedServer)  
+[`VS.TraceLine`](#f_TraceLine)  
+[`VS.TraceLine.DidHit()`](#f_DidHit)  
+[`VS.TraceLine.GetEnt()`](#f_GetEnt)  
+[`VS.TraceLine.GetEntByName()`](#f_GetEntByName)  
+[`VS.TraceLine.GetEntByClassname()`](#f_GetEntByClassname)  
+[`VS.TraceLine.GetPos()`](#f_GetPos)  
+[`VS.TraceLine.GetDist()`](#f_GetDist)  
+[`VS.TraceLine.GetDistSqr()`](#f_GetDistSqr)  
+[`VS.TraceLine.GetNormal()`](#f_GetNormal)  
+[`VS.TraceDir()`](#f_TraceDir)  
+[`VS.UniqueString()`](#f_UniqueString)  
+[`VS.EventQueue.Clear()`](#f_EventQueueClear)  
+[`VS.EventQueue.AddEvent()`](#f_EventQueueAddEvent)  
+[`VS.EventQueue.CancelEventsByInput()`](#f_EventQueueCancelEventsByInput)  
+[`VS.EventQueue.RemoveEvent()`](#f_EventQueueRemoveEvent)  
+[`VS.EventQueue.Dump()`](#f_EventQueueDump)  
+[`VS.DumpScope()`](#f_DumpScope)  
+[`VS.DumpEnt()`](#f_DumpEnt)  
+[`VS.DumpPlayers()`](#f_DumpPlayers)  
+[`VS.ArrayToTable()`](#f_ArrayToTable)  
+[`VS.PrintStack()`](#f_PrintStack)  
+[`VS.GetCallerFunc()`](#f_GetCallerFunc)  
+[`VS.GetCaller()`](#f_GetCaller)  
+[`VS.GetTableDir()`](#f_GetTableDir)  
+[`VS.FindVarByName()`](#f_FindVarByName)  
+[`VS.GetVarName()`](#f_GetVarName)  
+
+
+### [vs_entity](#vs_entity-1)
+[`EntFireByHandle()`](#f_EntFireByHandle)  
+[`PrecacheModel()`](#f_PrecacheModel)  
+[`PrecacheScriptSound()`](#f_PrecacheScriptSound)  
+[`VS.MakePersistent()`](#f_MakePersistent)  
+[`VS.SetParent()`](#f_SetParent)  
+[`VS.CreateMeasure()`](#f_CreateMeasure)  
+[`VS.SetMeasure()`](#f_SetMeasure)  
+[`VS.CreateTimer()`](#f_CreateTimer)  
+[`VS.Timer()`](#f_Timer)  
+[`VS.OnTimer()`](#f_OnTimer)  
+[`VS.AddOutput()`](#f_AddOutput)  
+[`VS.CreateEntity()`](#f_CreateEntity)  
+[`VS.SetKeyValue()`](#f_SetKeyValue)  
+[`VS.SetName()`](#f_SetName)  
+[`VS.GetPlayersAndBots()`](#f_GetPlayersAndBots)  
+[`VS.GetAllPlayers()`](#f_GetAllPlayers)  
+[`VS.GetLocalPlayer()`](#f_GetLocalPlayer)  
+[`VS.GetPlayerByIndex()`](#f_GetPlayerByIndex)  
+[`VS.GetEntityByIndex()`](#f_GetEntityByIndex)  
+[`VS.IsPointSized()`](#f_IsPointSized)  
+[`VS.FindEntityClassNearestFacing()`](#f_FindEntityClassNearestFacing)  
+[`VS.FindEntityNearestFacing()`](#f_FindEntityNearestFacing)  
+[`VS.FindEntityClassNearestFacingNearest()`](#f_FindEntityClassNearestFacingNearest)  
+
+
+### [vs_events](#vs_events-1)
+[`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)  
+[`VS.ListenToGameEvent()`](#f_ListenToGameEvent)  
+[`VS.StopListeningToAllGameEvents()`](#f_StopListeningToAllGameEvents)  
+[`VS.ForceValidateUserid()`](#f_ForceValidateUserid)  
+[`VS.ValidateUseridAll()`](#f_ValidateUseridAll)  
+[`VS.FixupEventListener()`](#f_FixupEventListener)  
+[`VS.Events.InitTemplate()`](#f_InitTemplate)  
+
+
+### [vs_log](#vs_log-1)
+[`VS.Log.enabled`](#f_Logenabled)  
+[`VS.Log.export`](#f_Logexport)  
+[`VS.Log.file_prefix`](#f_Logfile_prefix)  
+[`VS.Log.Add()`](#f_LogAdd)  
+[`VS.Log.Pop()`](#f_LogPop)  
+[`VS.Log.Clear()`](#f_LogClear)  
+[`VS.Log.WriteKeyValues()`](#f_LogWriteKeyValues)  
+[`VS.Log.Run()`](#f_LogRun)  
+[`VS.Log.filter`](#f_Logfilter)  
+
 
 ________________________________
 
-### [vs_math](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_math.nut)
+### [vs_math](https://github.com/samisalreadytaken/vs_library/blob/master/src/vs_math.nut)
+________________________________
+
+<a name="f_Quaternion"></a>
+```cpp
+class Quaternion
+{
+	float x, y, z, w;
+
+	Quaternion();
+	Quaternion( x, y, z, w );
+
+	bool IsValid();
+}
+```
+________________________________
+
+<a name="f_matrix3x4_t"></a>
+```cpp
+class matrix3x4_t
+{
+	float m[3][4];
+
+	matrix3x4_t();
+
+	matrix3x4_t(
+		m00, m01, m02, m03
+		m10, m11, m12, m13
+		m20, m21, m22, m23 );
+
+	void Init(
+		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
+		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
+		m20 = 0.0, m21 = 0.0, m22 = 0.0, m23 = 0.0 );
+}
+```
+________________________________
+
+<a name="f_VMatrix"></a>
+```cpp
+class VMatrix
+{
+	float m[4][4];
+
+	VMatrix();
+
+	VMatrix(
+		m00, m01, m02, m03
+		m10, m11, m12, m13
+		m20, m21, m22, m23
+		m30, m31, m32, m33 );
+
+	void Init(
+		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
+		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
+		m20 = 0.0, m21 = 0.0, m22 = 0.0, m23 = 0.0 );
+
+	void Identity();
+}
+```
 ________________________________
 
 <a name="f_max"></a>
@@ -408,7 +441,7 @@ ________________________________
 ```cpp
 bool VS::IsInteger(float input)
 ```
-Check if the float input is an integer
+Check if float is an integer
 ________________________________
 
 <a name="f_IsLookingAt"></a>
@@ -424,21 +457,27 @@ function Think()
 	local eye = HPlayer.EyePosition()
 	local target = Vector()
 
+	DebugDrawLine( HPlayer.GetOrigin(), target, 255,0,0,true, -1 )
+
 	// only check if there is direct LOS with the target
-	if( !VS.TraceLine( eye, target ).DidHit() )
+	if ( !VS.TraceLine( eye, target ).DidHit() )
 	{
 		bLooking = VS.IsLookingAt( eye, target, HPlayerEye.GetForwardVector(), VIEW_FIELD_NARROW )
 	}
 
 	if ( bLooking )
 	{
-		VS.ShowHudHint( hHudHint, HPlayer, "LOOKING" )
-		DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 0,255,0,255, flFrameTime2 )
+		m_hHudHint.__KeyValueFromString( "message", "LOOKING" );
+		EntFireByHandle( hHudHint, "ShowHudHint", "", HPlayer );
+
+		DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 0,255,0,255, -1 )
 	}
 	else
 	{
-		VS.ShowHudHint( hHudHint, HPlayer, "NOT looking" )
-		DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 255,0,0,255, flFrameTime2 )
+		m_hHudHint.__KeyValueFromString( "message", "NOT looking" );
+		EntFireByHandle( hHudHint, "ShowHudHint", "", HPlayer );
+
+		DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 255,0,0,255, -1 )
 	}
 }
 ```
@@ -447,25 +486,11 @@ function Think()
 
 ________________________________
 
-<a name="f_PointOnLineNearestPoint"></a>
-```cpp
-Vector VS::PointOnLineNearestPoint(Vector start, Vector end, Vector point)
-```
-
-________________________________
-
 <a name="f_GetAngle"></a>
 ```cpp
 Vector VS::GetAngle(Vector from, Vector to)
 ```
-Angle between 2 position vectors
-________________________________
-
-<a name="f_GetAngle2D"></a>
-```cpp
-float VS::GetAngle2D(Vector from, Vector to)
-```
-Angle (yaw) between 2 position vectors
+Angle between 2 position vectors. Identical to `VS.VectorAngles( vTo - vFrom, pOut )`.
 ________________________________
 
 <a name="f_VectorVectors"></a>
@@ -582,7 +607,7 @@ ________________________________
 
 <a name="f_SnapDirectionToAxis"></a>
 ```cpp
-Vector VS::SnapDirectionToAxis(Vector& direction, float epsilon = 0.1)
+Vector VS::SnapDirectionToAxis(Vector& direction, float epsilon = 0.002)
 ```
 Snaps the input (normalised direction) vector to the closest axis
 
@@ -595,15 +620,15 @@ function Think()
 	local dir = HPlayerEye.GetForwardVector()
 
 	// draw normal direction
-	DebugDrawLine( eye, eye+dir*128, 255, 255, 255, false, flFrameTime2 )
-	DebugDrawBox( eye+dir*128, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 128, flFrameTime2 )
+	DebugDrawLine( eye, eye+dir*128, 255, 255, 255, false, -1 )
+	DebugDrawBox( eye+dir*128, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 128, -1 )
 
 	// snap
 	VS.SnapDirectionToAxis( dir, 0.5 )
 
 	// draw snapped direction
-	DebugDrawLine( eye, eye+dir*128, 255, 255, 255, false, flFrameTime2 )
-	DebugDrawBox( eye+dir*128, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 128, flFrameTime2 )
+	DebugDrawLine( eye, eye+dir*128, 255, 255, 255, false, -1 )
+	DebugDrawBox( eye+dir*128, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 128, -1 )
 
 	// print snapped direction
 	printl( VecToString(dir) )
@@ -651,68 +676,31 @@ ________________________________
 
 <a name="f_VectorAdd"></a>
 ```cpp
-Vector VS::VectorAdd(Vector a, Vector b, Vector& out = _VEC )
+Vector VS::VectorAdd(Vector a, Vector b, Vector& out )
 ```
 Vector a + Vector b
-
-<details><summary>NOTE</summary>
-
-```cs
-//
-// <vec1 + vec2> operation returns a new Vector instance
-// <VS.VectorAdd(vec1, vec2, vec1)> stores the result in vec1
-// When the third parameter is omitted, it acts the same as the overload operator
-// (except when it doesn't, then you should either use the operator,
-// or pass a new Vector instance in the third parameter)
-//
-// Example of how to mess up:
-
-// in1, in2, in3, in4 are unique non-equal vectors
-
-local v1 = VS.VectorAdd( in1, in2 )
-
-// true
-// VS.VectorsAreEqual( v1, in1+in2 )
-
-local v2 = VS.VectorAdd( in3, in4 )
-
-// false
-// VS.VectorsAreEqual( v1, in1+in2 )
-
-// true
-// VS.VectorsAreEqual( v1, in3+in4 )
-
-// true
-// v1 == v2
-
-// Overcoming this:
-
-local v1 = VS.VectorAdd( in1, in2, Vector() )
-local v2 = VS.VectorAdd( in3, in4, Vector() )
-
-// This is because when the third parameter is omitted, they reference the same instance.
-// While this may not be much of use in basic + - operations, it can be very helpful in
-// complex functions in 'vs_math2', where you're using the value, not the instance.
-// General idea is that if you're going to do more with the returned Vector instance,
-// create a new one and pass that as a parameter.
-```
-
-</details>
 
 ________________________________
 
 <a name="f_VectorSubtract"></a>
 ```cpp
-Vector VS::VectorSubtract(Vector a, Vector b, Vector& out = _VEC )
+Vector VS::VectorSubtract(Vector a, Vector b, Vector& out )
 ```
 Vector a - Vector b
 ________________________________
 
 <a name="f_VectorScale"></a>
 ```cpp
-Vector VS::VectorScale(Vector a, float b, Vector& out = _VEC )
+Vector VS::VectorScale(Vector a, float b, Vector& out )
 ```
 Vector a * b
+________________________________
+
+<a name="f_VectorMA"></a>
+```cpp
+Vector VS::VectorMA(Vector start, float scale, Vector direction, Vector& dest = _VEC)
+```
+start + scale * direction
 ________________________________
 
 <a name="f_ComputeVolume"></a>
@@ -729,18 +717,18 @@ Vector VS::RandomVector(float minVal = -RAND_MAX, float maxVal = RAND_MAX)
 Get a random vector
 ________________________________
 
-<a name="f_CalcSqrDistanceToAABB"></a>
+<a name="f_RandomVectorInUnitSphere"></a>
 ```cpp
-float VS::CalcSqrDistanceToAABB(Vector mins, Vector maxs, Vector point)
+float VS::RandomVectorInUnitSphere(Vector &out)
 ```
-
+Guarantee uniform random distribution within a sphere
 ________________________________
 
-<a name="f_CalcClosestPointOnAABB"></a>
+<a name="f_RandomVectorOnUnitSphere"></a>
 ```cpp
-Vector VS::CalcClosestPointOnAABB(Vector mins, Vector maxs, Vector point, Vector& closestOut = _VEC)
+void VS::RandomVectorOnUnitSphere(Vector &out)
 ```
-
+Guarantee uniform random distribution on a sphere
 ________________________________
 
 <a name="f_ExponentialDecay"></a>
@@ -807,7 +795,6 @@ ________________________________
 ```cpp
 float VS::Bias(float x, float biasAmt)
 ```
-<details><summary>Details</summary>
 
 ```
 Bias takes an X value between 0 and 1 and returns another value between 0 and 1
@@ -844,15 +831,12 @@ With biasAmt = 0.8, the curve looks like this:
 With a biasAmt of 0.5, Bias returns X.
 ```
 
-</details>
-
 ________________________________
 
 <a name="f_Gain"></a>
 ```cpp
 float VS::Gain(float x, float biasAmt)
 ```
-<details><summary>Details</summary>
 
 ```
 Gain is similar to Bias, but biasAmt biases towards or away from 0.5.
@@ -886,15 +870,12 @@ With biasAmt = 0.8, the curve looks like this:
 0                   1
 ```
 
-</details>
-
 ________________________________
 
 <a name="f_SmoothCurve"></a>
 ```cpp
 float VS::SmoothCurve(float x)
 ```
-<details><summary>Details</summary>
 
 ```
 SmoothCurve maps a 0-1 value into another 0-1 value based on a cosine wave
@@ -915,8 +896,6 @@ The curve looks like this:
 0                   1
 ```
 
-</details>
-
 ________________________________
 
 <a name="f_MovePeak"></a>
@@ -930,8 +909,6 @@ ________________________________
 ```cpp
 float VS::SmoothCurve_Tweak(float x, float flPeakPos, float flPeakSharpness)
 ```
-<details><summary>Details</summary>
-
 This works like SmoothCurve, with two changes:  
 
 1. Instead of the curve peaking at 0.5, it will peak at flPeakPos.  
@@ -939,8 +916,6 @@ This works like SmoothCurve, with two changes:
 
 2. flPeakSharpness is a 0-1 value controlling the sharpness of the peak.  
    Low values blunt the peak and high values sharpen the peak.
-
-</details>
 
 ________________________________
 
@@ -973,14 +948,899 @@ ________________________________
 ```cpp
 Vector VS::VectorLerp(Vector v1, Vector v2, float f, Vector& out = _VEC)
 ```
+________________________________
 
+<a name="f_DotProductAbs"></a>
+```cpp
+float VS::DotProductAbs(Vector in1, Vector in2)
+```
+
+________________________________
+
+<a name="f_QuaternionsAreEqual"></a>
+```cpp
+bool VS::QuaternionsAreEqual(Quaternion a, Quaternion b, float tolerance = 0.0)
+```
+
+________________________________
+
+<a name="f_QuaternionNormalize"></a>
+```cpp
+float VS::QuaternionNormalize(Quaternion& q)
+```
+Make sure the quaternion is of unit length
+
+Return radius
+________________________________
+
+<a name="f_QuaternionAlign"></a>
+```cpp
+Quaternion VS::QuaternionAlign(Quaternion p, Quaternion q, Quaternion& qt = _QUAT)
+```
+make sure quaternions are within 180 degrees of one another, if not, reverse q
+________________________________
+
+<a name="f_QuaternionMult"></a>
+```cpp
+Quaternion VS::QuaternionMult(Quaternion p, Quaternion q, Quaternion& qt = _QUAT)
+```
+`qt = p * q`
+________________________________
+
+<a name="f_QuaternionConjugate"></a>
+```cpp
+void VS::QuaternionConjugate(Quaternion p, Quaternion& q)
+```
+
+________________________________
+
+<a name="f_QuaternionMA"></a>
+```cpp
+Quaternion VS::QuaternionMA(Quaternion p, float s, Quaternion q, Quaternion& qt = _QUAT)
+```
+`qt = p * ( s * q )`
+________________________________
+
+<a name="f_QuaternionAdd"></a>
+```cpp
+Quaternion VS::QuaternionAdd(Quaternion p, Quaternion q, Quaternion& qt = _QUAT)
+```
+
+________________________________
+
+<a name="f_QuaternionDotProduct"></a>
+```cpp
+float VS::QuaternionDotProduct(Quaternion p, Quaternion q)
+```
+
+________________________________
+
+<a name="f_QuaternionInvert"></a>
+```cpp
+void VS::QuaternionInvert(Quaternion p, Quaternion& q)
+```
+
+________________________________
+
+<a name="f_QuaternionBlend"></a>
+```cpp
+Quaternion VS::QuaternionBlend(Quaternion p, Quaternion q, float t, Quaternion& qt = _QUAT)
+```
+Do a piecewise addition of the quaternion elements. This is a cheap way to simulate a slerp.
+________________________________
+
+<a name="f_QuaternionBlendNoAlign"></a>
+```cpp
+Quaternion VS::QuaternionBlendNoAlign(Quaternion p, Quaternion q, float t, Quaternion& qt = _QUAT)
+```
+
+________________________________
+
+<a name="f_QuaternionIdentityBlend"></a>
+```cpp
+Quaternion VS::QuaternionIdentityBlend(Quaternion p, float t, Quaternion& qt = _QUAT)
+```
+
+________________________________
+
+<a name="f_QuaternionSlerp"></a>
+```cpp
+Quaternion VS::QuaternionSlerp(Quaternion p, Quaternion q, float t, Quaternion& qt = _QUAT)
+```
+Quaternion sphereical linear interpolation
+________________________________
+
+<a name="f_QuaternionSlerpNoAlign"></a>
+```cpp
+Quaternion VS::QuaternionSlerpNoAlign(Quaternion p, Quaternion q, float t, Quaternion& qt = _QUAT)
+```
+
+________________________________
+
+<a name="f_QuaternionLn"></a>
+```cpp
+void VS::QuaternionLn(Quaternion p, Quaternion &q)
+```
+Computes the natural logarithm of a given unit quaternion. If input is not a unit quaternion, the returned value is undefined.
+________________________________
+
+<a name="f_QuaternionExp"></a>
+```cpp
+void VS::QuaternionExp(Quaternion p, Quaternion &q)
+```
+Computes the exponential of a given pure quaternion. The w-component of the input quaternion is ignored in the calculation.
+________________________________
+
+<a name="f_QuaternionSquad"></a>
+```cpp
+void VS::QuaternionSquad(Quaternion q0, Quaternion q1, Quaternion q2, Quaternion q3, float t, Quaternion &qt)
+```
+Interpolates between quaternions Q1 to Q2, using spherical quadrangle interpolation.
+________________________________
+
+<a name="f_QuaternionAverageExponential"></a>
+```cpp
+void VS::QuaternionAverageExponential(Quaternion &q, int nCount, Quaternion[] stack)
+```
+
+________________________________
+
+<a name="f_QuaternionAngleDiff"></a>
+```cpp
+float VS::QuaternionAngleDiff(Quaternion p, Quaternion q)
+```
+Returns the angular delta between the two normalized quaternions in degrees.
+________________________________
+
+<a name="f_QuaternionScale"></a>
+```cpp
+void VS::QuaternionScale(Quaternion p, float t, Quaternion &q)
+```
+________________________________
+
+<a name="f_RotationDeltaAxisAngle"></a>
+```cpp
+void VS::RotationDeltaAxisAngle( QAngle srcAngles, QAngle destAngles, Vector &deltaAxis, float deltaAngle )
+```
+
+________________________________
+
+<a name="f_RotationDelta"></a>
+```cpp
+void VS::RotationDelta( QAngle srcAngles, QAngle destAngles, QAngle &out )
+```
+
+________________________________
+
+<a name="f_QuaternionMatrix"></a>
+```cpp
+void VS::QuaternionMatrix(Quaternion q, Vector pos, matrix3x4_t& matrix)
+```
+Quaternion -> matrix3x4
+________________________________
+
+<a name="f_QuaternionAngles"></a>
+```cpp
+QAngle VS::QuaternionAngles(Quaternion q, Vector& angles = _VEC)
+```
+Quaternion -> QAngle
+________________________________
+
+<a name="f_QuaternionAxisAngle"></a>
+```cpp
+float VS::QuaternionAxisAngle(Quaternion q, Vector& axis)
+```
+Converts a quaternion to an axis / angle in degrees (exponential map)
+________________________________
+
+<a name="f_AxisAngleQuaternion"></a>
+```cpp
+Quaternion VS::AxisAngleQuaternion(Vector axis, float angle, Quaternion& q = _QUAT)
+```
+Converts an exponential map (ang/axis) to a quaternion
+________________________________
+
+<a name="f_AngleQuaternion"></a>
+```cpp
+Quaternion VS::AngleQuaternion(QAngle angles, Quaternion& out = _QUAT)
+```
+QAngle -> Quaternion
+
+________________________________
+
+<a name="f_MatrixQuaternion"></a>
+```cpp
+Quaternion VS::MatrixQuaternion(matrix3x4_t mat, Quaternion& q = _QUAT)
+```
+matrix3x4 -> Quaternion
+________________________________
+
+<a name="f_MatrixQuaternionFast"></a>
+```cpp
+Quaternion VS::MatrixQuaternionFast(matrix3x4_t matrix, Quaternion& angles)
+```
+matrix3x4 -> Quaternion
+________________________________
+
+<a name="f_BasisToQuaternion"></a>
+```cpp
+Quaternion VS::BasisToQuaternion(Vector forward, Vector right, Vector up, Quaternion& q = _QUAT)
+```
+Converts a basis to a quaternion
+________________________________
+
+<a name="f_MatrixAngles"></a>
+```cpp
+QAngle VS::MatrixAngles(matrix3x4_t matrix, Vector& angles = _VEC, Vector &position = null)
+```
+Generates QAngle given a left-handed orientation matrix.
+________________________________
+
+<a name="f_AngleMatrix"></a>
+```cpp
+void VS::AngleMatrix(QAngle angles, Vector position, matrix3x4_t& matrix)
+```
+QAngle -> matrix3x4 (left-handed)
+________________________________
+
+<a name="f_AngleIMatrix"></a>
+```cpp
+void VS::AngleIMatrix(QAngle angles, Vector position, matrix3x4_t& mat)
+```
+
+________________________________
+
+<a name="f_VectorMatrix"></a>
+```cpp
+void VS::VectorMatrix(Vector forward, matrix3x4_t &matrix)
+```
+
+________________________________
+
+<a name="f_MatrixVectors"></a>
+```cpp
+void VS::MatrixVectors(matrix3x4_t matrix, Vector& forward, Vector& right, Vector& up)
+```
+matrix3x4 -> basis
+
+Matrix is right-handed x=forward, y=left, z=up.
+
+Valve uses left-handed convention for vectors in the game code (forward, right, up)
+________________________________
+
+<a name="f_MatricesAreEqual"></a>
+```cpp
+bool VS::MatricesAreEqual(matrix3x4_t src1, matrix3x4_t src2, float flTolerance)
+```
+
+________________________________
+
+<a name="f_MatrixCopy"></a>
+```cpp
+matrix3x4_t VS::MatrixCopy(matrix3x4_t src, matrix3x4_t& dst)
+```
+
+________________________________
+
+<a name="f_MatrixInvert"></a>
+```cpp
+void VS::MatrixInvert(matrix3x4_t src, matrix3x4_t& dst)
+```
+NOTE: This is just the transpose not a general inverse
+________________________________
+
+<a name="f_MatrixInverseGeneral"></a>
+```cpp
+void VS::MatrixInverseGeneral(VMatrix src, VMatrix& dst)
+```
+
+________________________________
+
+<a name="f_MatrixInverseTR"></a>
+```cpp
+void VS::MatrixInverseTR(VMatrix src, VMatrix& dst)
+```
+Does a fast inverse, assuming the matrix only contains translation and rotation.
+________________________________
+
+<a name="f_MatrixGetColumn"></a>
+```cpp
+Vector VS::MatrixGetColumn(matrix3x4_t in1, int column, Vector& out)
+```
+
+________________________________
+
+<a name="f_MatrixSetColumn"></a>
+```cpp
+void VS::MatrixSetColumn(Vector in1, int column, matrix3x4_t& out)
+```
+
+________________________________
+
+<a name="f_MatrixScaleBy"></a>
+```cpp
+void VS::MatrixScaleBy(float flScale, matrix3x4_t& out)
+```
+
+________________________________
+
+<a name="f_MatrixScaleByZero"></a>
+```cpp
+void VS::MatrixScaleByZero(matrix3x4_t& out)
+```
+
+________________________________
+
+<a name="f_SetIdentityMatrix"></a>
+```cpp
+void VS::SetIdentityMatrix(matrix3x4_t& matrix)
+```
+
+________________________________
+
+<a name="f_SetScaleMatrix"></a>
+```cpp
+void VS::SetScaleMatrix(float x, float y, float z, matrix3x4_t& dst)
+```
+Builds a scale matrix
+________________________________
+
+<a name="f_ComputeCenterMatrix"></a>
+```cpp
+void VS::ComputeCenterMatrix(Vector origin, QAngle angles, Vector mins, Vector maxs, matrix3x4_t& matrix)
+```
+Compute a matrix that has the correct orientation but which has an origin at the center of the bounds
+________________________________
+
+<a name="f_ComputeCenterIMatrix"></a>
+```cpp
+void VS::ComputeCenterIMatrix(Vector origin, QAngle angles, Vector mins, Vector maxs, matrix3x4_t& matrix)
+```
+
+________________________________
+
+<a name="f_ComputeAbsMatrix"></a>
+```cpp
+void VS::ComputeAbsMatrix(matrix3x4_t in1, matrix3x4_t& out)
+```
+Compute a matrix which is the absolute value of another
+________________________________
+
+<a name="f_ConcatRotations"></a>
+```cpp
+void VS::ConcatRotations(matrix3x4_t in1, matrix3x4_t in2, matrix3x4_t& out)
+```
+
+________________________________
+
+<a name="f_ConcatTransforms"></a>
+```cpp
+void VS::ConcatTransforms(matrix3x4_t in1, matrix3x4_t in2, matrix3x4_t& out)
+```
+`MatrixMultiply`
+________________________________
+
+<a name="f_MatrixMultiply"></a>
+```cpp
+void VS::MatrixMultiply(VMatrix in1, VMatrix in2, VMatrix& out)
+```
+
+________________________________
+
+<a name="f_MatrixBuildRotationAboutAxis"></a>
+```cpp
+void VS::MatrixBuildRotationAboutAxis(Vector vAxisOfRot, float angleDegrees, matrix3x4_t& dst)
+```
+Builds the matrix for a counterclockwise rotation about an arbitrary axis.
+________________________________
+
+<a name="f_MatrixBuildRotation"></a>
+```cpp
+void VS::MatrixBuildRotation( matrix3x4_t& dst, Vector initialDirection, Vector finalDirection )
+```
+Builds a rotation matrix that rotates one direction vector into another.
+________________________________
+
+<a name="f_VectorTransform"></a>
+```cpp
+Vector VS::VectorTransform(Vector in1, matrix3x4_t in2, Vector& out = _VEC)
+```
+transform in1 by the matrix in2
+________________________________
+
+<a name="f_VectorITransform"></a>
+```cpp
+Vector VS::VectorITransform(Vector in1, matrix3x4_t in2, Vector& out = _VEC)
+```
+assuming the matrix is orthonormal, transform in1 by the transpose (also the inverse in this case) of in2.
+________________________________
+
+<a name="f_VectorRotate"></a>
+```cpp
+Vector VS::VectorRotate(Vector in1, matrix3x4_t in2, Vector& out = _VEC)
+```
+assume in2 is a rotation and rotate the input vector
+________________________________
+
+<a name="f_VectorRotate2"></a>
+```cpp
+Vector VS::VectorRotate2(Vector in1, QAngle in2, Vector& out = _VEC)
+```
+assume in2 is a rotation and rotate the input vector
+________________________________
+
+<a name="f_VectorRotate3"></a>
+```cpp
+Vector VS::VectorRotate3(Vector in1, Quaternion in2, Vector& out = _VEC)
+```
+assume in2 is a rotation and rotate the input vector
+________________________________
+
+<a name="f_VectorIRotate"></a>
+```cpp
+Vector VS::VectorIRotate(Vector in1, matrix3x4_t in2, Vector& out = _VEC)
+```
+rotate by the inverse of the matrix
+________________________________
+
+<a name="f_Vector3DMultiplyProjective"></a>
+```cpp
+void VS::Vector3DMultiplyProjective( VMatrix src1, Vector src2, Vector &dst )
+```
+Vector3DMultiplyProjective treats src2 as if it's a direction and does the perspective divide at the end.
+________________________________
+
+<a name="f_Vector3DMultiplyPositionProjective"></a>
+```cpp
+void VS::Vector3DMultiplyPositionProjective( VMatrix src1, Vector src2, Vector &dst )
+```
+Vector3DMultiplyPositionProjective treats src2 as if it's a point and does the perspective divide at the end
+________________________________
+
+<a name="f_TransformAABB"></a>
+```cpp
+void VS::TransformAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
+```
+Transforms a AABB into another space; which will inherently grow the box.
+________________________________
+
+<a name="f_ITransformAABB"></a>
+```cpp
+void VS::ITransformAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
+```
+Uses the inverse transform of in1
+________________________________
+
+<a name="f_RotateAABB"></a>
+```cpp
+void VS::RotateAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
+```
+Rotates a AABB into another space; which will inherently grow the box.
+
+(same as TransformAABB, but doesn't take the translation into account)
+________________________________
+
+<a name="f_IRotateAABB"></a>
+```cpp
+void VS::IRotateAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
+```
+________________________________
+
+<a name="f_GetBoxVertices"></a>
+```cpp
+void VS::GetBoxVertices( Vector origin, QAngle angles, Vector mins, Vector maxs, Vector[8] pVertices )
+```
+Get the vertices of a rotated box.
+
+```
++z
+^   +y
+|  /
+| /
+   ----> +x
+
+   3-------7
+  /|      /|
+ / |     / |
+1--2----5  6
+| /     | /
+|/      |/
+0-------4
+```
+________________________________
+
+<a name="f_MatrixBuildPerspective"></a>
+```cpp
+void VS::MatrixBuildPerspective( VMatrix& dst, float fovX, float flAspect, float zNear, float zFar )
+```
+Build a perspective matrix.  
+zNear and zFar are assumed to be positive.  
+You end up looking down positive Z, X is to the right, Y is up.  
+X range: [0..1]  
+Y range: [0..1]  
+Z range: [0..1]
+________________________________
+
+<a name="f_ComputeViewMatrix"></a>
+```cpp
+void VS::ComputeViewMatrix( VMatrix &pWorldToView, Vector origin, Vector forward, Vector left, Vector up )
+```
+
+________________________________
+
+<a name="f_ScreenToWorld"></a>
+```cpp
+Vector VS::ScreenToWorld( float x, float y, Vector origin, Vector forward, Vector right, Vector up, float fov, float flAspect, float zFar )
+```
+```cs
+{
+	local x = 0.35
+	local y = 0.65
+	local eyeAng = playerEye.GetAngles()
+	local eyePos = player.EyePosition()
+	local worldPos = VS.ScreenToWorld( x, y,
+		eyePos,
+		playerEye.GetForwardVector(),
+		playerEye.GetLeftVector(),
+		playerEye.GetUpVector(),
+		90.0, 16.0/9.0, 16.0 )
+
+	local maxs = vec3_t( 0.0, 0.5, 0.5 );
+	DrawBoxAnglesFilled( worldPos, -maxs, maxs, eyeAng, 0, 255, 255, 64, 5.0 );
+}
+```
+________________________________
+
+<a name="f_ComputeCameraVariables"></a>
+```cpp
+void VS::ComputeCameraVariables( Vector vecOrigin, Vector pVecForward, Vector pVecRight, Vector pVecUp, VMatrix &pMatCamInverse )
+```
+Compute camera matrix.
+
+This returns the inverted inverse camera matrix to simplify its local usage - _technically_ it's not the camera matrix. This may have unwanted effects if not expected, but for the purposes of its usage here, it is fine.
+________________________________
+
+<a name="f_CalcFovY"></a>
+```cpp
+float VS::CalcFovY( float flFovX, float flAspect )
+```
+Computes Y fov from an X fov and a screen aspect ratio
+________________________________
+
+<a name="f_CalcFovX"></a>
+```cpp
+float VS::CalcFovX( float flFovY, float flAspect )
+```
+Computes X fov from an Y fov and a screen aspect ratio
+________________________________
+
+<a name="f_DrawFrustum"></a>
+```cpp
+void VS::DrawFrustum( matWorldToView, r, g, b, z, time )
+```
+________________________________
+
+<a name="f_DrawViewFrustum"></a>
+```cpp
+void VS::DrawViewFrustum( vecOrigin, vecForward, vecRight, vecUp,
+		flFovX, flAspect, zNear, zFar, r, g, b, z, time )
+```
+________________________________
+
+<a name="f_DrawBoxAngles"></a>
+```cpp
+void VS::DrawBoxAngles( origin, mins, maxs, angles, r, g, b, z, time )
+```
+________________________________
+
+<a name="f_DrawEntityBounds"></a>
+```cpp
+void VS::DrawEntityBounds( ent, r, g, b, z, time )
+```
+________________________________
+
+<a name="f_DrawSphere"></a>
+```cpp
+void VS::DrawSphere( Vector vCenter, float flRadius, int nTheta, int nPhi, int r, int g, int b, bool z, float time )
+```
+________________________________
+
+<a name="f_DrawCapsule"></a>
+```cpp
+void VS::DrawCapsule( start, end, radius, r, g, b, z, time )
+```
+________________________________
+
+<a name="f_INTERPOLATE"></a>
+```cpp
+enum INTERPOLATE
+{
+	DEFAULT,
+	CATMULL_ROM_NORMALIZEX,
+	EASE_IN,
+	EASE_OUT,
+	EASE_INOUT,
+	BSPLINE,
+	LINEAR_INTERP,
+	KOCHANEK_BARTELS,
+	KOCHANEK_BARTELS_EARLY,
+	KOCHANEK_BARTELS_LATE,
+	SIMPLE_CUBIC,
+	CATMULL_ROM,
+	CATMULL_ROM_NORMALIZE,
+	CATMULL_ROM_TANGENT,
+	EXPONENTIAL_DECAY,
+	HOLD
+}
+```
+
+________________________________
+
+<a name="f_Interpolator_GetKochanekBartelsParams"></a>
+```cpp
+void VS::Interpolator_GetKochanekBartelsParams(int interpolationType, float& tbc[3])
+```
+
+________________________________
+
+<a name="f_Interpolator_CurveInterpolate"></a>
+```cpp
+Vector VS::Interpolator_CurveInterpolate(int interpolationType, Vector vPre, Vector vStart, Vector vEnd, Vector vNext, f, Vector& vOut)
+```
+
+________________________________
+
+<a name="f_Interpolator_CurveInterpolate_NonNormalized"></a>
+```cpp
+Vector VS::Interpolator_CurveInterpolate_NonNormalized(int interpolationType, Vector vPre, Vector vStart, Vector vEnd, Vector vNext, f, Vector& vOut)
+```
+
+________________________________
+
+<a name="f_Spline_Normalize"></a>
+```cpp
+void VS::Spline_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, Vector p1n, Vector p4n)
+```
+A helper function to normalize p2.x->p1.x and p3.x->p4.x to be the same length as p2.x->p3.x
+________________________________
+
+<a name="f_Catmull_Rom_Spline"></a>
+```cpp
+Vector VS::Catmull_Rom_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+Interpolate a Catmull-Rom spline.
+
+t is a [0,1] value and interpolates a curve between p2 and p3.
+________________________________
+
+<a name="f_Catmull_Rom_Spline_Tangent"></a>
+```cpp
+Vector VS::Catmull_Rom_Spline_Tangent(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+Interpolate a Catmull-Rom spline.
+
+Returns the tangent of the point at t of the spline
+________________________________
+
+<a name="f_Catmull_Rom_Spline_Integral"></a>
+```cpp
+Vector VS::Catmull_Rom_Spline_Integral(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+area under the curve [0..t]
+________________________________
+
+<a name="f_Catmull_Rom_Spline_Integral2"></a>
+```cpp
+Vector VS::Catmull_Rom_Spline_Integral2(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+area under the curve [0..1]
+________________________________
+
+<a name="f_Catmull_Rom_Spline_Normalize"></a>
+```cpp
+Vector VS::Catmull_Rom_Spline_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+Interpolate a Catmull-Rom spline.
+
+Normalize p2->p1 and p3->p4 to be the same length as p2->p3
+________________________________
+
+<a name="f_Catmull_Rom_Spline_Integral_Normalize"></a>
+```cpp
+Vector VS::Catmull_Rom_Spline_Integral_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+area under the curve [0..t]
+
+Normalize p2->p1 and p3->p4 to be the same length as p2->p3
+________________________________
+
+<a name="f_Catmull_Rom_Spline_NormalizeX"></a>
+```cpp
+Vector VS::Catmull_Rom_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+Interpolate a Catmull-Rom spline.
+
+Normalize p2.x->p1.x and p3.x->p4.x to be the same length as p2.x->p3.x
+________________________________
+
+<a name="f_Hermite_Spline"></a>
+```cpp
+Vector VS::Hermite_Spline(Vector p1, Vector p2, Vector d1, Vector d2, float t, Vector& output)
+```
+Basic hermite spline
+
+t = 0 returns p1,  
+t = 1 returns p2,  
+d1 and d2 are used to entry and exit slope of curve
+________________________________
+
+<a name="f_Hermite_SplineF"></a>
+```cpp
+float VS::Hermite_SplineF(float p1, float p2, float d1, float d2, float t)
+```
+
+________________________________
+
+<a name="f_Hermite_SplineBasis"></a>
+```cpp
+void VS::Hermite_SplineBasis(float t, float& basis[4])
+```
+
+________________________________
+
+<a name="f_Hermite_Spline3V"></a>
+```cpp
+Vector VS::Hermite_Spline3V(Vector p0, Vector p1, Vector p2, float t, Vector& output)
+```
+Simple three data point hermite spline.
+
+t = 0 returns p1, t = 1 returns p2,  
+slopes are generated from the p0->p1 and p1->p2 segments  
+this is reasonable C1 method when there's no "p3" data yet.
+________________________________
+
+<a name="f_Hermite_Spline3F"></a>
+```cpp
+float VS::Hermite_Spline3F(float p0, float p1, float p2, float t)
+```
+
+________________________________
+
+<a name="f_Hermite_Spline3Q"></a>
+```cpp
+Quaternion VS::Hermite_Spline3Q(Quaternion q0, Quaternion q1, Quaternion q2, float t, Quaternion& output)
+```
+
+________________________________
+
+<a name="f_Kochanek_Bartels_Spline"></a>
+```cpp
+Vector VS::Kochanek_Bartels_Spline(float tension, float bias, float continuity, Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+
+See http://en.wikipedia.org/wiki/Kochanek-Bartels_curves
+
+Tension:    -1 = Round -> 1 = Tight  
+Bias:       -1 = Pre-shoot (bias left) -> 1 = Post-shoot (bias right)  
+Continuity: -1 = Box corners -> 1 = Inverted corners
+
+If T=B=C=0 it's the same matrix as Catmull-Rom.  
+If T=1 & B=C=0 it's the same as Cubic.  
+If T=B=0 & C=-1 it's just linear interpolation
+
+See http://news.povray.org/povray.binaries.tutorials/attachment/%3CXns91B880592482seed7@povray.org%3E/Splines.bas.txt
+for example code and descriptions of various spline types...
+
+________________________________
+
+<a name="f_Kochanek_Bartels_Spline_NormalizeX"></a>
+```cpp
+Vector VS::Kochanek_Bartels_Spline_NormalizeX(float tension, float bias, float continuity, Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+
+________________________________
+
+<a name="f_Cubic_Spline"></a>
+```cpp
+Vector VS::Cubic_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+See link at Kochanek_Bartels_Spline for info on the basis matrix used
+________________________________
+
+<a name="f_Cubic_Spline_NormalizeX"></a>
+```cpp
+Vector VS::Cubic_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+
+________________________________
+
+<a name="f_BSpline"></a>
+```cpp
+Vector VS::BSpline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+See link at Kochanek_Bartels_Spline for info on the basis matrix used
+________________________________
+
+<a name="f_BSpline_NormalizeX"></a>
+```cpp
+Vector VS::BSpline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+
+________________________________
+
+<a name="f_Parabolic_Spline"></a>
+```cpp
+Vector VS::Parabolic_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+See link at Kochanek_Bartels_Spline for info on the basis matrix used
+________________________________
+
+<a name="f_Parabolic_Spline_NormalizeX"></a>
+```cpp
+Vector VS::Parabolic_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+```
+
+________________________________
+
+<a name="f_RangeCompressor"></a>
+```cpp
+float VS::RangeCompressor(float flValue, float flMin, float flMax, float flBase)
+```
+Compress the input values for a ranged result such that from 75% to 200% smoothly of the range maps
+________________________________
+
+<a name="f_InterpolateAngles"></a>
+```cpp
+QAngle VS::InterpolateAngles(QAngle v1, QAngle v2, float flPercent, QAngle &out)
+```
+QAngle slerp
+________________________________
+
+<a name="f_PointOnLineNearestPoint"></a>
+```cpp
+Vector VS::PointOnLineNearestPoint(Vector start, Vector end, Vector point)
+```
+________________________________
+
+<a name="f_CalcSqrDistanceToAABB"></a>
+```cpp
+float VS::CalcSqrDistanceToAABB(Vector mins, Vector maxs, Vector point)
+```
+________________________________
+
+<a name="f_CalcClosestPointOnAABB"></a>
+```cpp
+Vector VS::CalcClosestPointOnAABB(Vector mins, Vector maxs, Vector point, Vector& closestOut = _VEC)
+```
+________________________________
+
+<a name="f_Ray_t"></a>
+```cpp
+class Ray_t
+{
+	Vector m_Start;
+	Vector m_Delta;
+	Vector m_StartOffset;
+	Vector m_Extents;
+	bool m_IsRay;
+	bool m_IsSwept;
+
+	void Init( Vector start, Vector end, Vector mins = null, Vector maxs = null );
+}
+```
+________________________________
+
+<a name="f_ComputeBoxOffset"></a>
+```cpp
+float VS::ComputeBoxOffset(Ray_t ray)
+```
+Compute the offset in t along the ray that we'll use for the collision
 ________________________________
 
 <a name="f_IsPointInBox"></a>
 ```cpp
 bool VS::IsPointInBox(Vector vec, Vector boxmin, Vector boxmax)
 ```
-
 ________________________________
 
 <a name="f_IsBoxIntersectingBox"></a>
@@ -990,8 +1850,95 @@ bool VS::IsBoxIntersectingBox(Vector boxMin1, Vector boxMax1, Vector boxMin2, Ve
 Return true of the boxes intersect (but not if they just touch)
 ________________________________
 
-### [vs_utility](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_utility.nut)
+<a name="f_IsPointInCone"></a>
+```cpp
+bool VS::IsPointInCone(Vector pt, Vector origin, Vector axis, float cosAngle, float length)
+```
+returns true if pt intersects the truncated cone
 
+origin - cone tip,  
+axis - unit cone axis,  
+cosAngle - cosine of cone axis to surface angle
+________________________________
+
+<a name="f_IsSphereIntersectingSphere"></a>
+```cpp
+bool VS::IsSphereIntersectingSphere(Vector center1, float radius1, Vector center2, float radius2)
+```
+Returns true if a box intersects with a sphere
+________________________________
+
+<a name="f_IsBoxIntersectingSphere"></a>
+```cpp
+bool VS::IsBoxIntersectingSphere(Vector boxMin, Vector boxMax, Vector center, float radius)
+```
+Returns true if a box intersects with a sphere
+________________________________
+
+<a name="f_IsCircleIntersectingRectangle"></a>
+```cpp
+bool VS::IsCircleIntersectingRectangle(Vector boxMin, Vector boxMax, Vector center, float radius)
+```
+Returns true if a rectangle intersects with a circle
+________________________________
+
+<a name="f_IsRayIntersectingSphere"></a>
+```cpp
+bool VS::IsRayIntersectingSphere(Vector vecRayOrigin, Vector vecRayDelta, Vector vecCenter, float flRadius, float flTolerance = 0.0)
+```
+returns true if there's an intersection between ray and sphere
+
+`flTolerance [0..1]`
+________________________________
+
+<a name="f_IntersectInfiniteRayWithSphere"></a>
+```cpp
+bool VS::IntersectInfiniteRayWithSphere( Vector vecRayOrigin, Vector vecRayDelta, Vector vecSphereCenter, float flRadius, float pT[2] )
+```
+Returns whether or not there was an intersection. Returns the two intersection points.
+________________________________
+
+<a name="f_IsBoxIntersectingRay"></a>
+```cpp
+bool VS::IsBoxIntersectingRay(Vector boxMin, Vector boxMax, Vector origin, Vector vecDelta, float flTolerance = 0.0)
+```
+Intersects a ray with a AABB, return true if they intersect
+
+Input  : worldMins, worldMaxs
+________________________________
+
+<a name="f_IsBoxIntersectingRay2"></a>
+```cpp
+bool VS::IsBoxIntersectingRay2(Vector origin, Vector vecBoxMin, Vector vecBoxMax, Ray_t ray, float flTolerance = 0.0)
+```
+Intersects a ray with a AABB, return true if they intersect
+
+Input  : localMins, localMaxs
+________________________________
+
+<a name="f_IntersectRayWithRay"></a>
+```cpp
+bool VS::IntersectRayWithRay( Vector vecStart0, Vector vecDelta0, Vector vecStart1, Vector vecDelta1 )
+```
+Intersects a ray with a ray, return true if they intersect
+________________________________
+
+<a name="f_IntersectRayWithPlane"></a>
+```cpp
+float VS::IntersectRayWithPlane( Vector start, Vector dir, Vector normal, float dist )
+```
+returns distance along ray
+________________________________
+
+<a name="f_IsRayIntersectingOBB"></a>
+```cpp
+bool VS::IsRayIntersectingOBB( Ray_t ray, Vector org, QAngle angles, Vector mins, Vector maxs )
+```
+Swept OBB test
+________________________________
+
+
+### [vs_utility](https://github.com/samisalreadytaken/vs_library/blob/master/src/vs_utility.nut)
 ________________________________
 
 <a name="f_Ent"></a>
@@ -1068,7 +2015,6 @@ ________________________________
 ```cpp
 txt
 {
-	invis
 	white
 	red
 	purple
@@ -1092,16 +2038,9 @@ ________________________________
 
 <a name="f_VecToString"></a>
 ```cpp
-string VecToString(Vector vec, string prefix = "Vector(", string separator = ",", string suffix = ")")
+string VecToString(Vector vec)
 ```
 return `"Vector(0, 1, 2)"`
-________________________________
-
-<a name="f_GetTickrate"></a>
-```cpp
-float VS::GetTickrate()
-```
-Get server tickrate
 ________________________________
 
 <a name="f_IsDedicatedServer"></a>
@@ -1117,20 +2056,20 @@ ________________________________
 ```cpp
 class VS::TraceLine
 {
-	Vector startpos
-	Vector endpos
-	CBaseEntity ignore
-	float fraction
-	Vector hitpos
-	Vector normal
+	Vector startpos;
+	Vector endpos;
+	CBaseEntity ignore;
+	float fraction;
+	Vector hitpos;
+	Vector normal;
 }
 ```
 ________________________________
 
 ```cpp
-trace_t VS::TraceLine(Vector start, Vector end, handle ignore = null)
+trace_t VS::TraceLine( Vector start, Vector end, handle ignore = null, int mask = MASK_NPCWORLDSTATIC )
 ```
-Note: This doesn't hit entities. To calculate LOS with them, iterate through every entity type you want and trace individually.
+Mask parameter can take `0x2000b` (`MASK_NPCWORLDSTATIC`) or `0x200400b` (`MASK_SOLID`).
 ________________________________
 
 <a name="f_DidHit"></a>
@@ -1188,11 +2127,11 @@ ________________________________
 
 <a name="f_GetNormal"></a>
 ```cpp
-Vector VS::TraceLine::GetNormal()
+Vector VS::TraceLine::GetNormal( r = 0.5 )
 ```
-Get surface normal
+Get surface normal. Specify parameter for range. Use larger values to take the average of a larger surface normal.
 
-This computes 2 extra traces
+This computes 2 extra traces.
 
 Calling this will save the normal in `normal`, calling it again will not recompute.
 
@@ -1202,11 +2141,11 @@ Draw the normal of a surface the player is looking at
 ```cs
 function Think()
 {
-	local tr = VS.TraceDir(HPlayer.EyePosition(), HPlayerEye.GetForwardVector())
-
+	local tr = VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() )
 	tr.GetNormal()
 
-	DebugDrawLine(tr.hitpos, tr.normal * 16 + tr.hitpos, 0, 0, 255, false, 0.1)
+	DebugDrawLine( tr.hitpos, tr.normal * 16 + tr.hitpos, 255, 0, 255, false, 0.1 )
+	DebugDrawBoxAngles( tr.hitpos, Vector(0,-1,-1), Vector(16,1,1), VS.VectorAngles(tr.normal), 0,0,255,255, 0.1 )
 }
 ```
 
@@ -1216,7 +2155,7 @@ ________________________________
 
 <a name="f_TraceDir"></a>
 ```cpp
-trace_t VS::TraceDir(Vector start, Vector direction, float maxdist = MAX_TRACE_LENGTH, handle ignore = null)
+trace_t VS::TraceDir(Vector start, Vector direction, float maxdist = MAX_TRACE_LENGTH, handle ignore = null, int mask = MASK_NPCWORLDSTATIC)
 ```
 
 <details><summary>Example</summary>
@@ -1228,8 +2167,8 @@ function Think()
 	local eye = HPlayer.EyePosition()
 	local pos = VS.TraceDir(eye, HPlayerEye.GetForwardVector()).GetPos()
 
-	DebugDrawLine(eye, pos, 255, 255, 255, false, flFrameTime2)
-	DebugDrawBox(pos, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 125, flFrameTime2)
+	DebugDrawLine(eye, pos, 255, 255, 255, false, -1)
+	DebugDrawBox(pos, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 125, -1)
 }
 ```
 
@@ -1312,70 +2251,6 @@ void VS::EventQueue::Dump( bUseTicks = false, indent = 0 )
 (debug) Dump events in the queue.
 ________________________________
 
-<a name="f_arrayFind"></a>
-```cpp
-int VS::arrayFind(array arr, TYPE val)
-```
-Linear search. If value found in array then return index, else return null
-
-Checks using this function should be explicit, and not be implicit (`if(arrayFind())`); because the returned index value can be `0`, which equates to `false` in checks.
-
-<details><summary>Example</summary>
-
-```cs
-local arr = ["a","b","c","d"]
-
-// Wrong usage:
-
-// index (1) is in array
-// true
-printl( VS.arrayFind(arr, "b") ? "true" : "false" )
-
-// index (0) is in array
-// false
-printl( VS.arrayFind(arr, "a") ? "true" : "false" )
-
-// index (null) is NOT in array
-// false
-printl( VS.arrayFind(arr, "x") ? "true" : "false" )
-
-
-// Correct usage:
-
-// Check if "a" is in array
-// index (0) is in array
-// true
-printl( VS.arrayFind(arr, "a") != null )
-
-// Check if "a" is NOT in array
-// index (0) is in array
-// false
-printl( VS.arrayFind(arr, "a") == null )
-
-// Check if "x" is NOT in array
-// true
-printl( VS.arrayFind(arr, "x") == null )
-
-```
-
-</details>
-
-________________________________
-
-<a name="f_arrayApply"></a>
-```cpp
-void VS::arrayApply(array arr, function func)
-```
-Apply the input function to every element in the input array
-________________________________
-
-<a name="f_arrayMap"></a>
-```cpp
-array VS::arrayMap(array arr, function func)
-```
-Same as arrayApply, but return a new array. Doesn't modify the input array
-________________________________
-
 <a name="f_DumpScope"></a>
 ```cpp
 void VS::DumpScope(table table, bool printall = false, bool deepprint = true, bool guides = true, int depth = 0)
@@ -1400,14 +2275,7 @@ void VS::DumpPlayers(bool dumpscope = false)
 ```
 DumpEnt only players and bots
 
-<details><summary>Details</summary>
-
-If bots have targetnames, they 'become' humans
-
-If the event listeners are not set up, named bots will be shown as players
-
-</details>
-
+If bots have targetnames, they 'become' humans. If the event listeners are not set up, named bots will be shown as players.
 ________________________________
 
 <a name="f_ArrayToTable"></a>
@@ -1417,40 +2285,11 @@ table VS::ArrayToTable(array a)
 
 ________________________________
 
-<a name="f_GetStackInfo"></a>
+<a name="f_PrintStack"></a>
 ```cpp
-void VS::GetStackInfo(bool deepprint = false, bool printall = false)
+void VS::PrintStack(int startlevel = 0)
 ```
-Print current stack info
-
-Put in the function you want to get stack info from. if deepprint && scope not roottable then deepprint
-
-<details><summary>Details</summary>
-
-```
-Engine function calls are done through Call(...), that's why these 2 stacks are excluded.
-	 ---
-	line = -1
-	locals(TABLE) : 0
-	src = "NATIVE"
-	func = "pcall"
-	 ---
-	line = 360
-	locals(TABLE) : 5
-	{
-	   i = 0
-	   args(ARRAY) : 0
-	   this = (instance : 0x00000000)
-	   result = (null : 0x00000000)
-	   func = (function : 0x00000000)
-	}
-	src = "unnamed"
-	func = "Call"
-	 ---
-```
-
-</details>
-
+Print stack
 ________________________________
 
 <a name="f_GetCallerFunc"></a>
@@ -1471,8 +2310,7 @@ ________________________________
 ```cpp
 string[] VS::GetTableDir(table input)
 ```
-
-<details><summary>Example</summary>
+Does a linear search through the root table.
 
 ```cpp
 ::t1.t2.t3.t4 <- {}
@@ -1482,32 +2320,27 @@ VS.GetTableDir( VS.FindVarByName( "t4" ) )
 
 You can quickly print the array with VS.DumpScope(output) for debug purposes
 ```
-
-</details>
-
 ________________________________
 
 <a name="f_FindVarByName"></a>
 ```cpp
 TYPE VS::FindVarByName(string str)
 ```
-
-<details><summary>Example</summary>
+Does a linear search through the root table.
 
 ```cpp
 ::t1.t2.t3.t4 <- {}
 VS.FindVarByName( "t4" )
 -> returns table <t1.t2.t3.t4>
 ```
-
-</details>
-
 ________________________________
 
 <a name="f_GetVarName"></a>
 ```cpp
 string VS::GetVarName(TYPE v)
 ```
+Does a linear search through the root table.
+
 Doesn't work with primitive variables if there are multiple variables with the same value. But it can work if the value is unique, like a unique string.
 
 <details><summary>Example</summary>
@@ -1527,7 +2360,8 @@ printl( VS.GetVarName(somefunc) )
 
 ________________________________
 
-### [vs_entity](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_entity.nut)
+
+### [vs_entity](https://github.com/samisalreadytaken/vs_library/blob/master/src/vs_entity.nut)
 ________________________________
 
 <a name="f_EntFireByHandle"></a>
@@ -1566,31 +2400,6 @@ ________________________________
 void VS::SetParent(handle child, handle parent)
 ```
 Set child's parent. if parent == null then unparent child
-________________________________
-
-<a name="f_ShowGameText"></a>
-```cpp
-void VS::ShowGameText(handle ent, handle target, string msg = null, float delay = 0.0)
-```
-Show gametext
-
-if ent == handle then set msg
-________________________________
-
-<a name="f_ShowHudHint"></a>
-```cpp
-void VS::ShowHudHint(handle ent, handle target, string msg = null, float delay = 0.0)
-```
-Show hudhint
-
-if ent == handle then set msg
-________________________________
-
-<a name="f_HideHudHint"></a>
-```cpp
-void VS::HideHudHint(handle ent, handle target, float delay = 0.0)
-```
-Hide hudhint
 ________________________________
 
 <a name="f_CreateMeasure"></a>
@@ -1780,13 +2589,6 @@ VS.AddOutput( hButton, "OnPressed", MyFunction )
 
 ________________________________
 
-<a name="f_AddOutput2"></a>
-```cpp
-void VS::AddOutput2(handle ent, string output, string exec, table scope = null, bool bExecInEnt = false)
-```
-
-________________________________
-
 <a name="f_CreateEntity"></a>
 ```cpp
 handle VS::CreateEntity(string classname, table keyvalues = null, bool preserve = false)
@@ -1923,40 +2725,53 @@ handle VS::FindEntityClassNearestFacingNearest(Vector vOrigin, Vector vFacing, f
 When two candidate entities are in front of each other, pick the closer one
 ________________________________
 
-### [vs_events](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_events.nut)
+
+### [vs_events](https://github.com/samisalreadytaken/vs_library/blob/master/src/vs_events.nut)
 ________________________________
 
 <a name="f_GetPlayerByUserid"></a>
 ```cpp
 handle VS::GetPlayerByUserid(int userid)
 ```
-If event listeners are correctly set up, get the player handle from their userid.
+If event listener setup is done, get the player handle from their userid.
 
 Return null if no player is found.
+________________________________
 
-See [Setting up basis event listeners](#setting-up-basis-event-listeners)
+<a name="f_ListenToGameEvent"></a>
+```cpp
+void VS::ListenToGameEvent( string szEventname, closure fnCallback, string pContext )
+```
+Register a listener for a game event from script. Requires event listener setup.
+________________________________
+
+<a name="f_StopListeningToAllGameEvents"></a>
+```cpp
+void VS::StopListeningToAllGameEvents( string context )
+```
+Stop listening to all game events within a specific context.
 ________________________________
 
 <a name="f_ForceValidateUserid"></a>
 ```cpp
 void VS::ForceValidateUserid(handle player)
 ```
-if something has gone wrong with automatic validation, force add userid.
-
-Calling multiple times in a frame will cause problems; either delay, or use ValidateUseridAll.
+if something has gone wrong with automatic validation, force add userid. Not needed when event listener setup is done.
 ________________________________
 
 <a name="f_ValidateUseridAll"></a>
 ```cpp
-void VS::ValidateUseridAll(bool force = false)
+void VS::ValidateUseridAll()
 ```
-Make sure all player userids are validated. Asynchronous.
+Make sure all player userids are validated. Asynchronous. Not needed when event listener setup is done.
 ________________________________
 
 <a name="f_FixupEventListener"></a>
 ```cpp
 void VS::FixupEventListener( handle eventlistener )
 ```
+Not needed when event listeners are registered using `VS.ListenToGameEvent`.
+
 Details:
 
 While event listeners dump the event data whenever events are fired, entity outputs are added to the event queue to be executed in the next frame. Because of this delay, when an event is fired multiple times before the output is fired - before the script function is executed via the output - previous events would be lost.
@@ -1964,7 +2779,15 @@ While event listeners dump the event data whenever events are fired, entity outp
 This function catches each event data dump, saving it for the next time it is fetched by user script which is called by the event listener output. Because of this save-restore action, the event data can only be fetched once. This means there can only be 1 event listener output with event_data access.
 ________________________________
 
-### [vs_log](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_log.nut)
+<a name="f_InitTemplate"></a>
+```cpp
+void VS::Events::InitTemplate( table entityScope )
+```
+Initialise point_template for automatic user data validation and dynamic event listening.
+________________________________
+
+
+### [vs_log](https://github.com/samisalreadytaken/vs_library/blob/master/src/vs_log.nut)
 
 Print and export custom log lines.
 
@@ -2075,1074 +2898,6 @@ VS.Log.filter = "L "
 Export filter
 ________________________________
 
-### [vs_math2](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_math2.nut)
-________________________________
-
-<a name="f_Quaternion"></a>
-```cpp
-class Quaternion
-{
-	float x, y, z, w
-}
-```
-________________________________
-
-```cpp
-Quaternion Quaternion()
-Quaternion Quaternion(x, y, z, w)
-```
-
-________________________________
-
-<a name="f_matrix3x4_t"></a>
-```cpp
-class matrix3x4_t
-{
-	float m[3][4]
-
-	void Init()
-}
-```
-
-________________________________
-
-```cpp
-matrix3x4_t matrix3x4_t()
-matrix3x4_t matrix3x4_t(Vector xAxis, Vector yAxis, Vector zAxis, Vector vecOrigin)
-```
-Creates a matrix where the X axis = forward  
-the Y axis = left, and the Z axis = up
-________________________________
-
-<a name="f_VMatrix"></a>
-```cpp
-class VMatrix
-{
-	VMatrix()
-	float m[4][4]
-}
-```
-
-________________________________
-
-<a name="f_RandomVectorInUnitSphere"></a>
-```cpp
-float VS::RandomVectorInUnitSphere(Vector &out)
-```
-Guarantee uniform random distribution within a sphere
-________________________________
-
-<a name="f_RandomVectorOnUnitSphere"></a>
-```cpp
-void VS::RandomVectorOnUnitSphere(Vector &out)
-```
-Guarantee uniform random distribution on a sphere
-________________________________
-
-<a name="f_InvRSquared"></a>
-```cpp
-float VS::InvRSquared(Vector v)
-```
-
-________________________________
-
-<a name="f_a_swap"></a>
-```cpp
-void VS::a_swap(array a1, int i1, array a2, int i2)
-```
-
-________________________________
-
-<a name="f_MatrixRowDotProduct"></a>
-```cpp
-float VS::MatrixRowDotProduct(matrix3x4_t in1, int row, Vector in2)
-```
-
-________________________________
-
-<a name="f_MatrixColumnDotProduct"></a>
-```cpp
-float VS::MatrixColumnDotProduct(matrix3x4_t in1, int col, Vector in2)
-```
-
-________________________________
-
-<a name="f_DotProductAbs"></a>
-```cpp
-float VS::DotProductAbs(Vector in1, Vector in2)
-```
-
-________________________________
-
-<a name="f_VectorTransform"></a>
-```cpp
-Vector VS::VectorTransform(Vector in1, matrix3x4_t in2, Vector& out = _VEC)
-```
-transform in1 by the matrix in2
-________________________________
-
-<a name="f_VectorITransform"></a>
-```cpp
-Vector VS::VectorITransform(Vector in1, matrix3x4_t in2, Vector& out = _VEC)
-```
-assuming the matrix is orthonormal, transform in1 by the transpose (also the inverse in this case) of in2.
-________________________________
-
-<a name="f_VectorRotate"></a>
-```cpp
-Vector VS::VectorRotate(Vector in1, matrix3x4_t in2, Vector& out = _VEC)
-```
-assume in2 is a rotation and rotate the input vector
-________________________________
-
-<a name="f_VectorRotate2"></a>
-```cpp
-Vector VS::VectorRotate2(Vector in1, QAngle in2, Vector& out = _VEC)
-```
-assume in2 is a rotation and rotate the input vector
-________________________________
-
-<a name="f_VectorRotate3"></a>
-```cpp
-Vector VS::VectorRotate3(Vector in1, Quaternion in2, Vector& out = _VEC)
-```
-assume in2 is a rotation and rotate the input vector
-________________________________
-
-<a name="f_VectorIRotate"></a>
-```cpp
-Vector VS::VectorIRotate(Vector in1, matrix3x4_t in2, Vector& out = _VEC)
-```
-rotate by the inverse of the matrix
-________________________________
-
-<a name="f_VectorMA"></a>
-```cpp
-Vector VS::VectorMA(Vector start, float scale, Vector direction, Vector& dest = _VEC)
-```
-
-________________________________
-
-<a name="f_QuaternionsAreEqual"></a>
-```cpp
-bool VS::QuaternionsAreEqual(Quaternion a, Quaternion b, float tolerance = 0.0)
-```
-
-________________________________
-
-<a name="f_QuaternionMA"></a>
-```cpp
-Quaternion VS::QuaternionMA(Quaternion p, float s, Quaternion q, Quaternion& qt = _QUAT)
-```
-`qt = p * ( s * q )`
-________________________________
-
-<a name="f_QuaternionAdd"></a>
-```cpp
-Quaternion VS::QuaternionAdd(Quaternion p, Quaternion q, Quaternion& qt = _QUAT)
-```
-
-________________________________
-
-<a name="f_QuaternionDotProduct"></a>
-```cpp
-float VS::QuaternionDotProduct(Quaternion p, Quaternion q)
-```
-
-________________________________
-
-<a name="f_QuaternionMult"></a>
-```cpp
-Quaternion VS::QuaternionMult(Quaternion p, Quaternion q, Quaternion& qt = _QUAT)
-```
-`qt = p * q`
-________________________________
-
-<a name="f_QuaternionAlign"></a>
-```cpp
-Quaternion VS::QuaternionAlign(Quaternion p, Quaternion q, Quaternion& qt = _QUAT)
-```
-make sure quaternions are within 180 degrees of one another, if not, reverse q
-________________________________
-
-<a name="f_QuaternionBlend"></a>
-```cpp
-Quaternion VS::QuaternionBlend(Quaternion p, Quaternion q, float t, Quaternion& qt = _QUAT)
-```
-Do a piecewise addition of the quaternion elements. This is a cheap way to simulate a slerp.
-
-nlerp
-________________________________
-
-<a name="f_QuaternionBlendNoAlign"></a>
-```cpp
-Quaternion VS::QuaternionBlendNoAlign(Quaternion p, Quaternion q, float t, Quaternion& qt = _QUAT)
-```
-
-________________________________
-
-<a name="f_QuaternionIdentityBlend"></a>
-```cpp
-Quaternion VS::QuaternionIdentityBlend(Quaternion p, float t, Quaternion& qt = _QUAT)
-```
-
-________________________________
-
-<a name="f_QuaternionSlerp"></a>
-```cpp
-Quaternion VS::QuaternionSlerp(Quaternion p, Quaternion q, float t, Quaternion& qt = _QUAT)
-```
-Quaternion sphereical linear interpolation
-________________________________
-
-<a name="f_QuaternionSlerpNoAlign"></a>
-```cpp
-Quaternion VS::QuaternionSlerpNoAlign(Quaternion p, Quaternion q, float t, Quaternion& qt = _QUAT)
-```
-
-________________________________
-
-<a name="f_QuaternionExp"></a>
-```cpp
-void VS::QuaternionExp(Quaternion p, Quaternion &q)
-```
-Computes the exponential of a given pure quaternion. The w-component of the input quaternion is ignored in the calculation.
-________________________________
-
-<a name="f_QuaternionLn"></a>
-```cpp
-void VS::QuaternionLn(Quaternion p, Quaternion &q)
-```
-Computes the natural logarithm of a given unit quaternion. If input is not a unit quaternion, the returned value is undefined.
-________________________________
-
-<a name="f_QuaternionSquad"></a>
-```cpp
-void VS::QuaternionSquad(Quaternion q0, Quaternion q1, Quaternion q2, Quaternion q3, float t, Quaternion &qt)
-```
-Interpolates between quaternions Q1 to Q2, using spherical quadrangle interpolation.
-________________________________
-
-<a name="f_QuaternionAverageExponential"></a>
-```cpp
-void VS::QuaternionAverageExponential(Quaternion &q, int nCount, Quaternion[] stack)
-```
-
-________________________________
-
-<a name="f_QuaternionAngleDiff"></a>
-```cpp
-float VS::QuaternionAngleDiff(Quaternion p, Quaternion q)
-```
-Returns the angular delta between the two normalized quaternions in degrees.
-________________________________
-
-<a name="f_QuaternionScale"></a>
-```cpp
-void VS::QuaternionScale(Quaternion p, float t, Quaternion &q)
-```
-
-________________________________
-
-<a name="f_QuaternionConjugate"></a>
-```cpp
-void VS::QuaternionConjugate(Quaternion p, Quaternion& q)
-```
-
-________________________________
-
-<a name="f_QuaternionInvert"></a>
-```cpp
-void VS::QuaternionInvert(Quaternion p, Quaternion& q)
-```
-
-________________________________
-
-<a name="f_QuaternionNormalize"></a>
-```cpp
-float VS::QuaternionNormalize(Quaternion& q)
-```
-Make sure the quaternion is of unit length
-
-Return radius
-________________________________
-
-<a name="f_QuaternionMatrix"></a>
-```cpp
-void VS::QuaternionMatrix(Quaternion q, Vector pos, matrix3x4_t& matrix)
-```
-Quaternion -> matrix3x4
-________________________________
-
-<a name="f_QuaternionAngles"></a>
-```cpp
-QAngle VS::QuaternionAngles(Quaternion q, Vector& angles = _VEC)
-```
-Quaternion -> QAngle
-________________________________
-
-<a name="f_QuaternionAxisAngle"></a>
-```cpp
-float VS::QuaternionAxisAngle(Quaternion q, Vector& axis)
-```
-Converts a quaternion to an axis / angle in degrees (exponential map)
-________________________________
-
-<a name="f_AxisAngleQuaternion"></a>
-```cpp
-Quaternion VS::AxisAngleQuaternion(Vector axis, float angle, Quaternion& q = _QUAT)
-```
-Converts an exponential map (ang/axis) to a quaternion
-________________________________
-
-<a name="f_AngleQuaternion"></a>
-```cpp
-Quaternion VS::AngleQuaternion(QAngle angles, Quaternion& out = _QUAT)
-```
-QAngle -> Quaternion
-________________________________
-
-<a name="f_RotationDeltaAxisAngle"></a>
-```cpp
-void VS::RotationDeltaAxisAngle( QAngle srcAngles, QAngle destAngles, Vector &deltaAxis, float deltaAngle )
-```
-
-________________________________
-
-<a name="f_RotationDelta"></a>
-```cpp
-void VS::RotationDelta( QAngle srcAngles, QAngle destAngles, QAngle &out )
-```
-
-________________________________
-
-<a name="f_MatrixQuaternion"></a>
-```cpp
-Quaternion VS::MatrixQuaternion(matrix3x4_t mat, Quaternion& q = _QUAT)
-```
-matrix3x4 -> Quaternion
-________________________________
-
-<a name="f_MatrixQuaternionFast"></a>
-```cpp
-Quaternion VS::MatrixQuaternionFast(matrix3x4_t matrix, Quaternion& angles)
-```
-matrix3x4 -> Quaternion
-________________________________
-
-<a name="f_BasisToQuaternion"></a>
-```cpp
-Quaternion VS::BasisToQuaternion(Vector forward, Vector right, Vector up, Quaternion& q = _QUAT)
-```
-Converts a basis to a quaternion
-________________________________
-
-<a name="f_MatrixAngles"></a>
-```cpp
-QAngle VS::MatrixAngles(matrix3x4_t matrix, Vector& angles = _VEC, Vector &position = null)
-```
-Generates QAngle given a left-handed orientation matrix.
-________________________________
-
-<a name="f_AngleMatrix"></a>
-```cpp
-void VS::AngleMatrix(QAngle angles, Vector position, matrix3x4_t& matrix)
-```
-QAngle -> matrix3x4 (left-handed)
-________________________________
-
-<a name="f_AngleIMatrix"></a>
-```cpp
-void VS::AngleIMatrix(QAngle angles, Vector position, matrix3x4_t& mat)
-```
-
-________________________________
-
-<a name="f_MatrixVectors"></a>
-```cpp
-void VS::MatrixVectors(matrix3x4_t matrix, Vector& forward, Vector& right, Vector& up)
-```
-matrix3x4 -> basis
-
-Matrix is right-handed x=forward, y=left, z=up.
-
-Valve uses left-handed convention for vectors in the game code (forward, right, up)
-________________________________
-
-<a name="f_MatricesAreEqual"></a>
-```cpp
-bool VS::MatricesAreEqual(matrix3x4_t src1, matrix3x4_t src2, float flTolerance)
-```
-
-________________________________
-
-<a name="f_MatrixCopy"></a>
-```cpp
-matrix3x4_t VS::MatrixCopy(matrix3x4_t src, matrix3x4_t& dst)
-```
-
-________________________________
-
-<a name="f_MatrixInvert"></a>
-```cpp
-void VS::MatrixInvert(matrix3x4_t src, matrix3x4_t& dst)
-```
-NOTE: This is just the transpose not a general inverse
-________________________________
-
-<a name="f_MatrixInverseGeneral"></a>
-```cpp
-void VS::MatrixInverseGeneral(VMatrix src, VMatrix& dst)
-```
-
-________________________________
-
-<a name="f_MatrixInverseTR"></a>
-```cpp
-void VS::MatrixInverseTR(VMatrix src, VMatrix& dst)
-```
-Does a fast inverse, assuming the matrix only contains translation and rotation.
-________________________________
-
-<a name="f_MatrixGetColumn"></a>
-```cpp
-Vector VS::MatrixGetColumn(matrix3x4_t in1, int column, Vector& out)
-```
-
-________________________________
-
-<a name="f_MatrixSetColumn"></a>
-```cpp
-void VS::MatrixSetColumn(Vector in1, int column, matrix3x4_t& out)
-```
-
-________________________________
-
-<a name="f_MatrixScaleBy"></a>
-```cpp
-void VS::MatrixScaleBy(float flScale, matrix3x4_t& out)
-```
-
-________________________________
-
-<a name="f_MatrixScaleByZero"></a>
-```cpp
-void VS::MatrixScaleByZero(matrix3x4_t& out)
-```
-
-________________________________
-
-<a name="f_SetIdentityMatrix"></a>
-```cpp
-void VS::SetIdentityMatrix(matrix3x4_t& matrix)
-```
-
-________________________________
-
-<a name="f_SetScaleMatrix"></a>
-```cpp
-void VS::SetScaleMatrix(float x, float y, float z, matrix3x4_t& dst)
-```
-Builds a scale matrix
-________________________________
-
-<a name="f_ComputeCenterMatrix"></a>
-```cpp
-void VS::ComputeCenterMatrix(Vector origin, QAngle angles, Vector mins, Vector maxs, matrix3x4_t& matrix)
-```
-Compute a matrix that has the correct orientation but which has an origin at the center of the bounds
-________________________________
-
-<a name="f_ComputeCenterIMatrix"></a>
-```cpp
-void VS::ComputeCenterIMatrix(Vector origin, QAngle angles, Vector mins, Vector maxs, matrix3x4_t& matrix)
-```
-
-________________________________
-
-<a name="f_ComputeAbsMatrix"></a>
-```cpp
-void VS::ComputeAbsMatrix(matrix3x4_t in1, matrix3x4_t& out)
-```
-Compute a matrix which is the absolute value of another
-________________________________
-
-<a name="f_ConcatRotations"></a>
-```cpp
-void VS::ConcatRotations(matrix3x4_t in1, matrix3x4_t in2, matrix3x4_t& out)
-```
-
-________________________________
-
-<a name="f_ConcatTransforms"></a>
-```cpp
-void VS::ConcatTransforms(matrix3x4_t in1, matrix3x4_t in2, matrix3x4_t& out)
-```
-`MatrixMultiply`
-________________________________
-
-<a name="f_MatrixMultiply"></a>
-```cpp
-void VS::MatrixMultiply(VMatrix in1, VMatrix in2, VMatrix& out)
-```
-
-________________________________
-
-<a name="f_MatrixBuildRotationAboutAxis"></a>
-```cpp
-void VS::MatrixBuildRotationAboutAxis(Vector vAxisOfRot, float angleDegrees, matrix3x4_t& dst)
-```
-Builds the matrix for a counterclockwise rotation about an arbitrary axis.
-________________________________
-
-<a name="f_MatrixBuildRotation"></a>
-```cpp
-void VS::MatrixBuildRotation( matrix3x4_t& dst, Vector initialDirection, Vector finalDirection )
-```
-Builds a rotation matrix that rotates one direction vector into another.
-________________________________
-
-<a name="f_Vector3DMultiplyProjective"></a>
-```cpp
-void VS::Vector3DMultiplyProjective( VMatrix src1, Vector src2, Vector &dst )
-```
-Vector3DMultiplyProjective treats src2 as if it's a direction and does the perspective divide at the end.
-________________________________
-
-<a name="f_Vector3DMultiplyPositionProjective"></a>
-```cpp
-void VS::Vector3DMultiplyPositionProjective( VMatrix src1, Vector src2, Vector &dst )
-```
-Vector3DMultiplyPositionProjective treats src2 as if it's a point and does the perspective divide at the end
-________________________________
-
-<a name="f_TransformAABB"></a>
-```cpp
-void VS::TransformAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
-```
-Transforms a AABB into another space; which will inherently grow the box.
-________________________________
-
-<a name="f_ITransformAABB"></a>
-```cpp
-void VS::ITransformAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
-```
-Uses the inverse transform of in1
-________________________________
-
-<a name="f_RotateAABB"></a>
-```cpp
-void VS::RotateAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
-```
-Rotates a AABB into another space; which will inherently grow the box.
-
-(same as TransformAABB, but doesn't take the translation into account)
-________________________________
-
-<a name="f_IRotateAABB"></a>
-```cpp
-void VS::IRotateAABB(matrix3x4_t transform, Vector vecMinsIn, Vector vecMaxsIn, Vector& vecMinsOut, Vector& vecMaxsOut)
-```
-________________________________
-
-<a name="f_GetBoxVertices"></a>
-```cpp
-void VS::GetBoxVertices( Vector origin, QAngle angles, Vector mins, Vector maxs, Vector[8] pVertices )
-```
-Get the vertices of a rotated box.
-
-```
-+z
-^   +y
-|  /
-| /
-   ----> +x
-
-   3-------7
-  /|      /|
- / |     / |
-1--2----5  6
-| /     | /
-|/      |/
-0-------4
-```
-
-________________________________
-
-<a name="f_MatrixBuildPerspective"></a>
-```cpp
-void VS::MatrixBuildPerspective( VMatrix& dst, float fovX, float flAspect, float zNear, float zFar )
-```
-Build a perspective matrix.  
-zNear and zFar are assumed to be positive.  
-You end up looking down positive Z, X is to the right, Y is up.  
-X range: [0..1]  
-Y range: [0..1]  
-Z range: [0..1]
-________________________________
-
-<a name="f_ComputeViewMatrix"></a>
-```cpp
-void VS::ComputeViewMatrix( VMatrix &pWorldToView, Vector origin, Vector forward, Vector left, Vector up )
-```
-
-________________________________
-
-<a name="f_ScreenToWorld"></a>
-```cpp
-Vector VS::ScreenToWorld( float x, float y, Vector origin, Vector forward, Vector right, Vector up, float fov, float flAspect, float zFar )
-```
-```cs
-{
-	local x = 0.35
-	local y = 0.65
-	local eyeAng = playerEye.GetAngles()
-	local eyePos = player.EyePosition()
-	local worldPos = VS.ScreenToWorld( x, y,
-		eyePos,
-		playerEye.GetForwardVector(),
-		playerEye.GetLeftVector(),
-		playerEye.GetUpVector(),
-		90.0, 16.0/9.0, 16.0 )
-
-	local maxs = vec3_t( 0.0, 0.5, 0.5 );
-	DrawBoxAnglesFilled( worldPos, -maxs, maxs, eyeAng, 0, 255, 255, 64, 5.0 );
-}
-```
-________________________________
-
-<a name="f_ComputeCameraVariables"></a>
-```cpp
-void VS::ComputeCameraVariables( Vector vecOrigin, Vector pVecForward, Vector pVecRight, Vector pVecUp, VMatrix &pMatCamInverse )
-```
-Compute camera matrix.
-
-This returns the inverted inverse camera matrix to simplify its local usage - _technically_ it's not the camera matrix. This may have unwanted effects if not expected, but for the purposes of its usage here, it is fine.
-________________________________
-
-<a name="f_CalcFovY"></a>
-```cpp
-float VS::CalcFovY( float flFovX, float flAspect )
-```
-Computes Y fov from an X fov and a screen aspect ratio
-________________________________
-
-<a name="f_CalcFovX"></a>
-```cpp
-float VS::CalcFovX( float flFovY, float flAspect )
-```
-Computes X fov from an Y fov and a screen aspect ratio
-________________________________
-
-<a name="f_DrawFrustum"></a>
-```cpp
-void VS::DrawFrustum( matWorldToView, r, g, b, z, time )
-```
-________________________________
-
-<a name="f_DrawViewFrustum"></a>
-```cpp
-void VS::DrawViewFrustum( vecOrigin, vecForward, vecRight, vecUp,
-		flFovX, flAspect, zNear, zFar, r, g, b, z, time )
-```
-________________________________
-
-<a name="f_DrawBoxAngles"></a>
-```cpp
-void VS::DrawBoxAngles( origin, mins, maxs, angles, r, g, b, z, time )
-```
-________________________________
-
-<a name="f_DrawEntityBounds"></a>
-```cpp
-void VS::DrawEntityBounds( ent, r, g, b, z, time )
-```
-________________________________
-
-<a name="f_DrawSphere"></a>
-```cpp
-void VS::DrawSphere( Vector vCenter, float flRadius, int nTheta, int nPhi, int r, int g, int b, bool z, float time )
-```
-________________________________
-
-<a name="f_DrawCapsule"></a>
-```cpp
-void VS::DrawCapsule( start, end, radius, r, g, b, z, time )
-```
-________________________________
-
-### [vs_collision](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_collision.nut)
-
-________________________________
-
-<a name="f_Ray_t"></a>
-```cpp
-class Ray_t
-{
-	Vector m_Start
-	Vector m_Delta
-	Vector m_StartOffset
-	Vector m_Extents
-	bool m_IsRay
-	bool m_IsSwept
-
-	void Init( Vector start, Vector end, Vector mins = null, Vector maxs = null )
-}
-```
-
-________________________________
-
-<a name="f_Collision_ClearTrace"></a>
-```cpp
-void VS::Collision_ClearTrace(Vector vecRayStart, Vector vecRayDelta, trace_t& pTrace)
-```
-Clears the trace
-________________________________
-
-<a name="f_ComputeBoxOffset"></a>
-```cpp
-float VS::ComputeBoxOffset(Ray_t ray)
-```
-Compute the offset in t along the ray that we'll use for the collision
-________________________________
-
-<a name="f_IsPointInCone"></a>
-```cpp
-bool VS::IsPointInCone(Vector pt, Vector origin, Vector axis, float cosAngle, float length)
-```
-returns true if pt intersects the truncated cone
-
-origin - cone tip,  
-axis - unit cone axis,  
-cosAngle - cosine of cone axis to surface angle
-________________________________
-
-<a name="f_IsSphereIntersectingSphere"></a>
-```cpp
-bool VS::IsSphereIntersectingSphere(Vector center1, float radius1, Vector center2, float radius2)
-```
-Returns true if a box intersects with a sphere
-________________________________
-
-<a name="f_IsBoxIntersectingSphere"></a>
-```cpp
-bool VS::IsBoxIntersectingSphere(Vector boxMin, Vector boxMax, Vector center, float radius)
-```
-Returns true if a box intersects with a sphere
-________________________________
-
-<a name="f_IsCircleIntersectingRectangle"></a>
-```cpp
-bool VS::IsCircleIntersectingRectangle(Vector boxMin, Vector boxMax, Vector center, float radius)
-```
-Returns true if a rectangle intersects with a circle
-________________________________
-
-<a name="f_IsRayIntersectingSphere"></a>
-```cpp
-bool VS::IsRayIntersectingSphere(Vector vecRayOrigin, Vector vecRayDelta, Vector vecCenter, float flRadius, float flTolerance = 0.0)
-```
-returns true if there's an intersection between ray and sphere
-
-`flTolerance [0..1]`
-________________________________
-
-<a name="f_IntersectInfiniteRayWithSphere"></a>
-```cpp
-bool VS::IntersectInfiniteRayWithSphere( Vector vecRayOrigin, Vector vecRayDelta, Vector vecSphereCenter, float flRadius, float pT[2] )
-```
-Returns whether or not there was an intersection. Returns the two intersection points.
-________________________________
-
-<a name="f_IsBoxIntersectingRay"></a>
-```cpp
-bool VS::IsBoxIntersectingRay(Vector boxMin, Vector boxMax, Vector origin, Vector vecDelta, float flTolerance = 0.0)
-```
-Intersects a ray with a AABB, return true if they intersect
-
-Input  : worldMins, worldMaxs
-________________________________
-
-<a name="f_IsBoxIntersectingRay2"></a>
-```cpp
-bool VS::IsBoxIntersectingRay2(Vector origin, Vector vecBoxMin, Vector vecBoxMax, Ray_t ray, float flTolerance = 0.0)
-```
-Intersects a ray with a AABB, return true if they intersect
-
-Input  : localMins, localMaxs
-________________________________
-
-<a name="f_IntersectRayWithRay"></a>
-```cpp
-bool VS::IntersectRayWithRay( Vector vecStart0, Vector vecDelta0, Vector vecStart1, Vector vecDelta1 )
-```
-Intersects a ray with a ray, return true if they intersect
-________________________________
-
-<a name="f_IntersectRayWithPlane"></a>
-```cpp
-float VS::IntersectRayWithPlane( Vector start, Vector dir, Vector normal, float dist )
-```
-returns distance along ray
-________________________________
-
-<a name="f_IsRayIntersectingOBB"></a>
-```cpp
-bool VS::IsRayIntersectingOBB( Ray_t ray, Vector org, QAngle angles, Vector mins, Vector maxs )
-```
-Swept OBB test
-________________________________
-
-### [vs_interp](https://github.com/samisalreadytaken/vs_library/blob/master/vs_library/vs_interp.nut)
-________________________________
-
-<a name="f_INTERPOLATE"></a>
-```cpp
-enum INTERPOLATE
-{
-	DEFAULT,
-	CATMULL_ROM_NORMALIZEX,
-	EASE_IN,
-	EASE_OUT,
-	EASE_INOUT,
-	BSPLINE,
-	LINEAR_INTERP,
-	KOCHANEK_BARTELS,
-	KOCHANEK_BARTELS_EARLY,
-	KOCHANEK_BARTELS_LATE,
-	SIMPLE_CUBIC,
-	CATMULL_ROM,
-	CATMULL_ROM_NORMALIZE,
-	CATMULL_ROM_TANGENT,
-	EXPONENTIAL_DECAY,
-	HOLD
-}
-```
-
-________________________________
-
-<a name="f_Interpolator_GetKochanekBartelsParams"></a>
-```cpp
-void VS::Interpolator_GetKochanekBartelsParams(int interpolationType, float& tbc[3])
-```
-
-________________________________
-
-<a name="f_Interpolator_CurveInterpolate"></a>
-```cpp
-Vector VS::Interpolator_CurveInterpolate(int interpolationType, Vector vPre, Vector vStart, Vector vEnd, Vector vNext, f, Vector& vOut)
-```
-
-________________________________
-
-<a name="f_Interpolator_CurveInterpolate_NonNormalized"></a>
-```cpp
-Vector VS::Interpolator_CurveInterpolate_NonNormalized(int interpolationType, Vector vPre, Vector vStart, Vector vEnd, Vector vNext, f, Vector& vOut)
-```
-
-________________________________
-
-<a name="f_Spline_Normalize"></a>
-```cpp
-void VS::Spline_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, Vector p1n, Vector p4n)
-```
-A helper function to normalize p2.x->p1.x and p3.x->p4.x to be the same length as p2.x->p3.x
-________________________________
-
-<a name="f_Catmull_Rom_Spline"></a>
-```cpp
-Vector VS::Catmull_Rom_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-Interpolate a Catmull-Rom spline.
-
-t is a [0,1] value and interpolates a curve between p2 and p3.
-________________________________
-
-<a name="f_Catmull_Rom_Spline_Tangent"></a>
-```cpp
-Vector VS::Catmull_Rom_Spline_Tangent(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-Interpolate a Catmull-Rom spline.
-
-Returns the tangent of the point at t of the spline
-________________________________
-
-<a name="f_Catmull_Rom_Spline_Integral"></a>
-```cpp
-Vector VS::Catmull_Rom_Spline_Integral(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-area under the curve [0..t]
-________________________________
-
-<a name="f_Catmull_Rom_Spline_Integral2"></a>
-```cpp
-Vector VS::Catmull_Rom_Spline_Integral2(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-area under the curve [0..1]
-________________________________
-
-<a name="f_Catmull_Rom_Spline_Normalize"></a>
-```cpp
-Vector VS::Catmull_Rom_Spline_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-Interpolate a Catmull-Rom spline.
-
-Normalize p2->p1 and p3->p4 to be the same length as p2->p3
-________________________________
-
-<a name="f_Catmull_Rom_Spline_Integral_Normalize"></a>
-```cpp
-Vector VS::Catmull_Rom_Spline_Integral_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-area under the curve [0..t]
-
-Normalize p2->p1 and p3->p4 to be the same length as p2->p3
-________________________________
-
-<a name="f_Catmull_Rom_Spline_NormalizeX"></a>
-```cpp
-Vector VS::Catmull_Rom_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-Interpolate a Catmull-Rom spline.
-
-Normalize p2.x->p1.x and p3.x->p4.x to be the same length as p2.x->p3.x
-________________________________
-
-<a name="f_Hermite_Spline"></a>
-```cpp
-Vector VS::Hermite_Spline(Vector p1, Vector p2, Vector d1, Vector d2, float t, Vector& output)
-```
-Basic hermite spline
-
-t = 0 returns p1,  
-t = 1 returns p2,  
-d1 and d2 are used to entry and exit slope of curve
-________________________________
-
-<a name="f_Hermite_SplineF"></a>
-```cpp
-float VS::Hermite_SplineF(float p1, float p2, float d1, float d2, float t)
-```
-
-________________________________
-
-<a name="f_Hermite_SplineBasis"></a>
-```cpp
-void VS::Hermite_SplineBasis(float t, float& basis[4])
-```
-
-________________________________
-
-<a name="f_Hermite_Spline3V"></a>
-```cpp
-Vector VS::Hermite_Spline3V(Vector p0, Vector p1, Vector p2, float t, Vector& output)
-```
-Simple three data point hermite spline.
-
-t = 0 returns p1, t = 1 returns p2,  
-slopes are generated from the p0->p1 and p1->p2 segments  
-this is reasonable C1 method when there's no "p3" data yet.
-________________________________
-
-<a name="f_Hermite_Spline3F"></a>
-```cpp
-float VS::Hermite_Spline3F(float p0, float p1, float p2, float t)
-```
-
-________________________________
-
-<a name="f_Hermite_Spline3Q"></a>
-```cpp
-Quaternion VS::Hermite_Spline3Q(Quaternion q0, Quaternion q1, Quaternion q2, float t, Quaternion& output)
-```
-
-________________________________
-
-<a name="f_Kochanek_Bartels_Spline"></a>
-```cpp
-Vector VS::Kochanek_Bartels_Spline(float tension, float bias, float continuity, Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-
-<details><summary>Details</summary>
-
-See http://en.wikipedia.org/wiki/Kochanek-Bartels_curves
-
-Tension:    -1 = Round -> 1 = Tight  
-Bias:       -1 = Pre-shoot (bias left) -> 1 = Post-shoot (bias right)  
-Continuity: -1 = Box corners -> 1 = Inverted corners
-
-If T=B=C=0 it's the same matrix as Catmull-Rom.  
-If T=1 & B=C=0 it's the same as Cubic.  
-If T=B=0 & C=-1 it's just linear interpolation
-
-See http://news.povray.org/povray.binaries.tutorials/attachment/%3CXns91B880592482seed7@povray.org%3E/Splines.bas.txt
-for example code and descriptions of various spline types...
-
-</details>
-
-________________________________
-
-<a name="f_Kochanek_Bartels_Spline_NormalizeX"></a>
-```cpp
-Vector VS::Kochanek_Bartels_Spline_NormalizeX(float tension, float bias, float continuity, Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-
-________________________________
-
-<a name="f_Cubic_Spline"></a>
-```cpp
-Vector VS::Cubic_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-See link at Kochanek_Bartels_Spline for info on the basis matrix used
-________________________________
-
-<a name="f_Cubic_Spline_NormalizeX"></a>
-```cpp
-Vector VS::Cubic_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-
-________________________________
-
-<a name="f_BSpline"></a>
-```cpp
-Vector VS::BSpline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-See link at Kochanek_Bartels_Spline for info on the basis matrix used
-________________________________
-
-<a name="f_BSpline_NormalizeX"></a>
-```cpp
-Vector VS::BSpline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-
-________________________________
-
-<a name="f_Parabolic_Spline"></a>
-```cpp
-Vector VS::Parabolic_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-See link at Kochanek_Bartels_Spline for info on the basis matrix used
-________________________________
-
-<a name="f_Parabolic_Spline_NormalizeX"></a>
-```cpp
-Vector VS::Parabolic_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
-```
-
-________________________________
-
-<a name="f_RangeCompressor"></a>
-```cpp
-float VS::RangeCompressor(float flValue, float flMin, float flMax, float flBase)
-```
-Compress the input values for a ranged result such that from 75% to 200% smoothly of the range maps
-________________________________
-
-<a name="f_InterpolateAngles"></a>
-```cpp
-QAngle VS::InterpolateAngles(QAngle v1, QAngle v2, float flPercent, QAngle &out)
-```
-QAngle slerp
 ________________________________
 **END OF DOC**
 ________________________________

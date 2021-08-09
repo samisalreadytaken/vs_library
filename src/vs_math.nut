@@ -3,23 +3,122 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 //
-// Advanced math. Mostly sourced from the Source Engine
-//
-// Not included in 'vs_library.nut'
+// Math library. Contains code from the Source Engine and DirectX.
 //
 //-----------------------------------------------------------------------
 
-// if already included
-if( "VectorTransform" in VS )
-	return;;
 
-const FLT_EPSILON = 1.19209290E-07;;
-const FLT_MAX = 1.E+37;;
-const FLT_MIN = 1.E-37;;
-// const INT_MAX = 0x7FFFFFFF;;
-// const INT_MIN = -0x7FFFFFFF - 1;;
+if ( !("VS" in getroottable()) )
+	::VS <- { version = "vs_library 0.0.0" };
 
-local vec3_origin = Vector();
+if ( "VectorRotate" in VS )
+	return;
+
+
+const FLT_EPSILON		= 1.192092896e-7;;
+const FLT_MAX			= 3.402823466e+38;;
+const FLT_MIN			= 1.175494351e-38;;
+
+// Assert( _intsize_ == 4 );
+const INT_MAX			= 0x7FFFFFFF;;
+const INT_MIN			= 0x80000000;;
+
+const DEG2RAD			= 0.017453293;;			// PI / 180 = 0.01745329251994329576
+const RAD2DEG			= 57.295779513;; 		// 180 / PI = 57.29577951308232087679
+const PI				= 3.141592654;;			// 3.14159265358979323846
+const RAND_MAX			= 0x7FFF;;
+const MAX_COORD_FLOAT	= 16384.0;;
+const MAX_TRACE_LENGTH	= 56755.840862417;;	 	// sqrt(3) * 2 * MAX_COORD_FLOAT = 56755.84086241697115430736
+
+::CONST <- getconsttable();
+::DEG2RAD <- DEG2RAD;
+::RAD2DEG <- RAD2DEG;
+::MAX_COORD_FLOAT <- MAX_COORD_FLOAT;
+::MAX_TRACE_LENGTH <- MAX_TRACE_LENGTH;
+
+
+const DEG2RADDIV2		= 0.008726646;;
+const RAD2DEG2			= 114.591559026;;
+const PI2				= 6.283185307;;			// 6.28318530717958647692
+const PIDIV2			= 1.570796327;;			// 1.57079632679489661923
+const FLT_MAX_N			= -3.402823466e+38;;
+
+delete CONST.DEG2RADDIV2;
+delete CONST.RAD2DEG2;
+delete CONST.PI2;
+delete CONST.PIDIV2;
+delete CONST.FLT_MAX_N;
+
+
+// NOTE: Vector extensions will only be applied if these were run before creating an instance.
+// This cannot be guaranteed when the library is executed post server init -
+// where other scripts could have created a vector instance.
+
+// REMOVED: While I could keep this in for map scripts where this would be guaranteed,
+// I am wary of the uncertain edge cases.
+// For personal uses, use this vec3_t class.
+/*
+// class ::vec3_t extends Vector {}
+// local Vector = vec3_t;
+
+function Vector::IsValid()
+{
+	return ( x > -FLT_MAX && x < FLT_MAX ) &&
+		( y > -FLT_MAX && y < FLT_MAX ) &&
+		( z > -FLT_MAX && z < FLT_MAX );
+}
+
+function Vector::IsZero()
+{
+	return !x && !y && !z;
+}
+
+function Vector::_unm()
+{
+	return this * -1.0;
+}
+
+function Vector::_div(f)
+{
+	return this * ( 1.0 / f );
+}
+
+function Vector::Negate()
+{
+	x = -x;
+	y = -y;
+	z = -z;
+}
+
+function Vector::Init(X, Y, Z)
+{
+	x = X;
+	y = Y;
+	z = Z;
+}
+
+function Vector::Copy(v)
+{
+	x = v.x;
+	y = v.y;
+	z = v.z;
+}
+
+function Vector::Replicate(f)
+{
+	x = y = z = f;
+}
+
+function Vector::Normalized()
+{
+	local v = this * 1.0;
+	v.Norm();
+	return v;
+}
+*/
+
+
+local Fmt = format;
 
 class ::Quaternion
 {
@@ -38,122 +137,761 @@ class ::Quaternion
 
 	function IsValid()
 	{
-		return ( x > -FLT_MAX && x < FLT_MAX ) &&
-			( y > -FLT_MAX && y < FLT_MAX ) &&
-			( z > -FLT_MAX && z < FLT_MAX ) &&
-			( w > -FLT_MAX && w < FLT_MAX );
+		return ( x > FLT_MAX_N && x < FLT_MAX ) &&
+			( y > FLT_MAX_N && y < FLT_MAX ) &&
+			( z > FLT_MAX_N && z < FLT_MAX ) &&
+			( w > FLT_MAX_N && w < FLT_MAX );
+	}
+
+	function _get(i)
+	{
+		switch (i)
+		{
+			case 0: return x;
+			case 1: return y;
+			case 2: return z;
+			case 3: return w;
+		}
+		return rawget(i);
+	}
+
+	function _set(i,v)
+	{
+		switch (i)
+		{
+			case 0: return x = v;
+			case 1: return y = v;
+			case 2: return z = v;
+			case 3: return w = v;
+		}
+		return rawset(i,v);
+	}
+
+	function _typeof()
+	{
+		return "Quaternion";
+	}
+
+	function _tostring():(Fmt)
+	{
+		return Fmt("Quaternion(%.6g, %.6g, %.6g, %.6g)", x, y, z, w);
 	}
 }
-
-local Fmt = format;
 
 function Quaternion::_add(d):(Quaternion) { return Quaternion( x+d.x,y+d.y,z+d.z,w+d.w ) }
 function Quaternion::_sub(d):(Quaternion) { return Quaternion( x-d.x,y-d.y,z-d.z,w-d.w ) }
 function Quaternion::_mul(d):(Quaternion) { return Quaternion( x*d,y*d,z*d,w*d ) }
 function Quaternion::_div(d):(Quaternion) { local f = 1.0/d; return Quaternion( x*f,y*f,z*f,w*f ) }
 function Quaternion::_unm() :(Quaternion) { return Quaternion( -x,-y,-z,-w ) }
-function Quaternion::_typeof() { return "Quaternion" }
-function Quaternion::_tostring():(Fmt) { return Fmt("Quaternion(%g, %g, %g, %g)",x,y,z,w) }
+
 
 class ::matrix3x4_t
 {
-	//-----------------------------------------------------------------------------
-	// Creates a matrix where the X axis = forward
-	// the Y axis = left, and the Z axis = up
-	//-----------------------------------------------------------------------------
-	constructor( xAxis = vec3_origin, yAxis = vec3_origin, zAxis = vec3_origin, vecOrigin = vec3_origin )
-	{
-		Init();
-
-		m[0][0] = xAxis.x; m[0][1] = yAxis.x; m[0][2] = zAxis.x; m[0][3] = vecOrigin.x;
-		m[1][0] = xAxis.y; m[1][1] = yAxis.y; m[1][2] = zAxis.y; m[1][3] = vecOrigin.y;
-		m[2][0] = xAxis.z; m[2][1] = yAxis.z; m[2][2] = zAxis.z; m[2][3] = vecOrigin.z;
-	}
-
-	function Init()
+	constructor(
+		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
+		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
+		m20 = 0.0, m21 = 0.0, m22 = 0.0, m23 = 0.0 )
 	{
 		m =	[
-				[ 0.0, 0.0, 0.0, 0.0 ],
-				[ 0.0, 0.0, 0.0, 0.0 ],
-				[ 0.0, 0.0, 0.0, 0.0 ]
+				[ m00, m01, m02, m03 ],
+				[ m10, m11, m12, m13 ],
+				[ m20, m21, m22, m23 ]
 			];
 	}
 
-	function _typeof() { return "matrix3x4_t" }
+	function Init(
+		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
+		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
+		m20 = 0.0, m21 = 0.0, m22 = 0.0, m23 = 0.0 )
+	{
+		local m0 = m[0];
+		local m1 = m[1];
+		local m2 = m[2];
+
+		m0[0] = m00;
+		m0[1] = m01;
+		m0[2] = m02;
+		m0[3] = m03;
+
+		m1[0] = m10;
+		m1[1] = m11;
+		m1[2] = m12;
+		m1[3] = m13;
+
+		m2[0] = m20;
+		m2[1] = m21;
+		m2[2] = m22;
+		m2[3] = m23;
+	}
+
+	function _cloned( src )
+	{
+		src = src.m;
+		constructor(
+			src[0][0], src[0][1], src[0][2], src[0][3],
+			src[1][0], src[1][1], src[1][2], src[1][3],
+			src[2][0], src[2][1], src[2][2], src[2][3]
+		);
+	}
+
+	function _tostring() : (Fmt)
+	{
+		local m = m;
+		return Fmt( "[ (%.6g, %.6g, %.6g), (%.6g, %.6g, %.6g), (%.6g, %.6g, %.6g), (%.6g, %.6g, %.6g) ]",
+			m[0][0], m[0][1], m[0][2],
+			m[1][0], m[1][1], m[1][2],
+			m[2][0], m[2][1], m[2][2],
+			m[0][3], m[1][3], m[2][3] );
+	}
+
+	function _typeof()
+	{
+		return "matrix3x4_t";
+	}
+
+	function _get(i)
+	{
+		switch (i)
+		{
+			case 0: return m[0];
+			case 1: return m[1];
+			case 2: return m[2];
+		}
+		return rawget(i);
+	}
 
 	m = null;
-}
-
-function matrix3x4_t::_cloned( src )
-{
-	Init();
-	::VS.MatrixCopy( src, this );
-}
-
-function matrix3x4_t::_tostring() : (Fmt)
-{
-	local m = m;
-	return Fmt( "[ (%g, %g, %g), (%g, %g, %g), (%g, %g, %g), (%g, %g, %g) ]", m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[2][0], m[2][1], m[2][2], m[0][3], m[1][3], m[2][3] );
 }
 
 
 class ::VMatrix extends matrix3x4_t
 {
-	constructor( xAxis = vec3_origin, yAxis = vec3_origin, zAxis = vec3_origin, vecOrigin = vec3_origin )
+	constructor(
+		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
+		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
+		m20 = 0.0, m21 = 0.0, m22 = 0.0, m23 = 0.0,
+		m30 = 0.0, m31 = 0.0, m32 = 0.0, m33 = 1.0 )
 	{
-		matrix3x4_t.constructor( xAxis, yAxis, zAxis, vecOrigin );
-	}
-
-	function Init()
-	{
-		matrix3x4_t.Init();
-		m.resize(4);
-		m[3] = [ 0.0, 0.0, 0.0, 1.0 ];
+		m =	[
+				[ m00, m01, m02, m03 ],
+				[ m10, m11, m12, m13 ],
+				[ m20, m21, m22, m23 ],
+				[ m30, m31, m32, m33 ]
+			];
 	}
 
 	function Identity()
 	{
-		m[0][0] = 1.0; m[0][1] = 0.0; m[0][2] = 0.0; m[0][3] = 0.0;
-		m[1][0] = 0.0; m[1][1] = 1.0; m[1][2] = 0.0; m[1][3] = 0.0;
-		m[2][0] = 0.0; m[2][1] = 0.0; m[2][2] = 1.0; m[2][3] = 0.0;
-		m[3][0] = 0.0; m[3][1] = 0.0; m[3][2] = 0.0; m[3][3] = 1.0;
+		local m = m;
+
+		m[0][0] = m[1][1] = m[2][2] = m[3][3] = 1.0;
+
+		m[0][1] = m[0][2] = m[0][3] =
+		m[1][0] = m[1][2] = m[1][3] =
+		m[2][0] = m[2][1] = m[2][3] =
+		m[3][0] = m[3][1] = m[3][2] = 0.0;
 	}
 
-	function _typeof() { return "VMatrix" }
+	function _cloned( src )
+	{
+		src = src.m;
+		constructor(
+			src[0][0], src[0][1], src[0][2], src[0][3],
+			src[1][0], src[1][1], src[1][2], src[1][3],
+			src[2][0], src[2][1], src[2][2], src[2][3],
+			src[3][0], src[3][1], src[3][2], src[3][3]
+		);
+	}
+
+	function _tostring() : (Fmt)
+	{
+		local m = m;
+		return Fmt( "[ (%.6g, %.6g, %.6g, %.6g), (%.6g, %.6g, %.6g, %.6g), (%.6g, %.6g, %.6g, %.6g), (%.6g, %.6g, %.6g, %.6g) ]",
+			m[0][0], m[0][1], m[0][2], m[0][3],
+			m[1][0], m[1][1], m[1][2], m[1][3],
+			m[2][0], m[2][1], m[2][2], m[2][3],
+			m[3][0], m[3][1], m[3][2], m[3][3] );
+	}
+
+	function _typeof()
+	{
+		return "VMatrix";
+	}
+
+	function _get(i)
+	{
+		switch (i)
+		{
+			case 0: return m[0];
+			case 1: return m[1];
+			case 2: return m[2];
+			case 3: return m[3];
+		}
+		return rawget(i);
+	}
 }
 
-function VMatrix::_cloned( src )
-{
-	Init();
-	::VS.MatrixCopy( src, this );
-	src = src.m;
-	m[3][0] = src[3][0];
-	m[3][1] = src[3][1];
-	m[3][2] = src[3][2];
-	m[3][3] = src[3][3];
-}
 
-function VMatrix::_tostring() : (Fmt)
-{
-	local m = m;
-	return Fmt( "[ (%g, %g, %g, %g), (%g, %g, %g, %g), (%g, %g, %g, %g), (%g, %g, %g, %g) ]", m[0][0], m[0][1], m[0][2], m[0][3], m[1][0], m[1][1], m[1][2], m[1][3], m[2][0], m[2][1], m[2][2], m[2][3], m[3][0], m[3][1], m[3][2], m[3][3] );
-}
-
-
+// static instances for reading values from functions with optional output parameters
 local _VEC = Vector();
 local _QUAT = Quaternion();
+
+
+function VS::fabs(f)
+{
+	// NOTE: hand order matters for -0.0
+	// Assert( -0.0 > 0.0 )
+	// Assert( 0.0 > -0.0 )
+
+	if ( 0.0 <= f )
+		return f;
+	return -f;
+}
+
+local fabs = VS.fabs;
+
+::max <- function( a, b )
+{
+	if ( a > b )
+		return a;
+	return b;
+}
+
+::min <- function( a, b )
+{
+	if ( a < b )
+		return a;
+	return b;
+}
+
+::clamp <- function( val, min, max )
+{
+	if ( max < min )
+		return max;
+	if ( val < min )
+		return min;
+	if ( val > max )
+		return max;
+	return val;
+	// (v < min) ? min : (max < v) ? max : v
+}
+
+function VS::IsInteger(f)
+{
+	return ( f.tointeger() == f );
+}
+
+/*
+function VS::IsFinite(f)
+{
+	return ( f > -FLT_MAX && f < FLT_MAX );
+}
+*/
+
+
+//-----------------------------------------------------------------------
+// IsLookingAt with tolerance
+// cosTolerance [-1..1]
+//
+// VIEW_FIELD_FULL         = -1.0 // +-180 degrees
+// VIEW_FIELD_WIDE         = -0.7 // +-135 degrees 0.1 // +-85 degrees
+// VIEW_FIELD_NARROW       =  0.7 // +-45 degrees
+// VIEW_FIELD_ULTRA_NARROW =  0.9 // +-25 degrees
+//-----------------------------------------------------------------------
+function VS::IsLookingAt( vSrc, vTarget, vDir, cosTolerance )
+{
+	local to = vTarget - vSrc;
+	to.Norm();
+	return to.Dot( vDir ) >= cosTolerance;
+}
+
+//-----------------------------------------------------------------------
+// Angle between 2 vectors
+// Identical to < VS.VectorAngles(vTo-vFrom) >
+// return QAngle
+//-----------------------------------------------------------------------
+function VS::GetAngle( vFrom, vTo ) : ( atan2 )
+{
+	local dt = vTo - vFrom;
+	local pitch = RAD2DEG * atan2( -dt.z, dt.Length2D() );
+	local yaw = RAD2DEG * atan2( dt.y, dt.x );
+
+	dt.x = pitch;
+	dt.y = yaw;
+	dt.z = 0.0;
+
+	return dt;
+}
+
+//-----------------------------------------------------------------------
+//
+//-----------------------------------------------------------------------
+function VS::VectorVectors( forward, right, up ) : (Vector)
+{
+	if ( !forward.x && !forward.y )
+	{
+		// pitch 90 degrees up/down from identity
+		right.y = -1.0;
+		up.x = -forward.z;
+		right.x = right.z = up.y = up.z = 0.0;
+	}
+	else
+	{
+		local r = forward.Cross( Vector(0.0, 0.0, 1.0) );
+		r.Norm();
+		right.x = r.x; right.y = r.y; right.z = r.z;
+
+		local u = right.Cross(forward);
+		u.Norm();
+		up.x = u.x; up.y = u.y; up.z = u.z;
+	};
+}
+
+local VectorVectors = VS.VectorVectors;
+
+//-----------------------------------------------------------------------
+// Euler QAngle -> Basis Vectors.  Each vector is optional
+// input vector pointers
+//-----------------------------------------------------------------------
+function VS::AngleVectors( angle, forward = _VEC, right = null, up = null ) : (sin, cos)
+{
+	local sr, cr,
+
+		yr = DEG2RAD*angle.y,
+		sy = sin(yr),
+		cy = cos(yr),
+
+		pr = DEG2RAD*angle.x,
+		sp = sin(pr),
+		cp = cos(pr);
+
+	if ( angle.z )
+	{
+		local rr = DEG2RAD*angle.z;
+		sr = -sin(rr);
+		cr = cos(rr);
+	}
+	else
+	{
+		sr = 0.0;
+		cr = 1.0;
+	};
+
+	if ( forward )
+	{
+		forward.x = cp*cy;
+		forward.y = cp*sy;
+		forward.z = -sp;
+	};
+
+	if ( right )
+	{
+		right.x = sr*sp*cy+cr*sy;
+		right.y = sr*sp*sy-cr*cy;
+		right.z = sr*cp;
+	};
+
+	if ( up )
+	{
+		up.x = cr*sp*cy-sr*sy;
+		up.y = cr*sp*sy+sr*cy;
+		up.z = cr*cp;
+	};
+
+	return forward;
+}
+
+//-----------------------------------------------------------------------
+// Forward direction vector -> Euler QAngle
+//-----------------------------------------------------------------------
+function VS::VectorAngles( forward, vOut = _VEC ) : ( Vector, atan2 )
+{
+	local yaw, pitch;
+
+	if ( !forward.y && !forward.x )
+	{
+		yaw = 0.0;
+		if ( forward.z > 0.0 )
+			pitch = 270.0;
+		else
+			pitch = 90.0;
+	}
+	else
+	{
+		yaw = RAD2DEG * atan2( forward.y, forward.x );
+		if ( yaw < 0.0 )
+			yaw += 360.0;
+
+		pitch = RAD2DEG * atan2( -forward.z, forward.Length2D() );
+		if ( pitch < 0.0 )
+			pitch += 360.0;
+	};
+
+	vOut.x = pitch;
+	vOut.y = yaw;
+	vOut.z = 0.0;
+
+	return vOut;
+}
+
+//-----------------------------------------------------------------------
+// Rotate a vector around the Z axis (YAW)
+//-----------------------------------------------------------------------
+function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC ) : (sin, cos)
+{
+	local rad = DEG2RAD * fYaw;
+	local sy  = sin(rad);
+	local cy  = cos(rad);
+
+	vOut.x = vIn.x * cy - vIn.y * sy;
+	vOut.y = vIn.x * sy + vIn.y * cy;
+	vOut.z = vIn.z;
+
+	return vOut;
+}
+
+function VS::YawToVector( yaw ) : (Vector, sin, cos)
+{
+	local ang = DEG2RAD * yaw;
+	return Vector( cos(ang), sin(ang), 0.0 );
+}
+
+function VS::VecToYaw( vec ) : (atan2)
+{
+	if ( !vec.y && !vec.x )
+		return 0.0;
+
+	local yaw = RAD2DEG * atan2( vec.y, vec.x );
+
+	return yaw;
+}
+
+function VS::VecToPitch( vec ) : (atan2)
+{
+	if ( !vec.y && !vec.x )
+	{
+		if ( vec.z < 0.0 )
+			return 180.0;
+		return -180.0;
+	};
+
+	return RAD2DEG * atan2( -vec.z, vec.Length2D() );
+}
+
+function VS::VectorIsZero(v)
+{
+	return !v.x && !v.y && !v.z;
+}
+
+//-----------------------------------------------------------------------
+// Vector equality with tolerance
+//-----------------------------------------------------------------------
+function VS::VectorsAreEqual( a, b, tolerance = 0.0 )
+{
+	local x = a.x - b.x;
+	if (0.0 > x) x = -x;
+
+	local y = a.y - b.y;
+	if (0.0 > y) y = -y;
+
+	local z = a.z - b.z;
+	if (0.0 > z) z = -z;
+
+	return ( x <= tolerance &&
+		y <= tolerance &&
+		z <= tolerance );
+}
+
+//-----------------------------------------------------------------------
+// Angle equality with tolerance
+//-----------------------------------------------------------------------
+function VS::AnglesAreEqual( a, b, tolerance = 0.0 )
+{
+	local d = AngleDiff(a, b)
+	if (0.0 > d)
+		d = -d;
+
+	return d <= tolerance;
+}
+
+//-----------------------------------------------------------------------
+// Equality with tolerance
+//-----------------------------------------------------------------------
+function VS::CloseEnough( a, b, e = 1.e-3 )
+{
+	local d = a - b;
+	if (0.0 > d)
+		d = -d;
+
+	return d <= e;
+}
+
+function VS::Approach( target, value, speed )
+{
+	local delta = target - value;
+
+	if ( delta > speed )
+		return value + speed;
+	if ( -speed > delta )
+		return value - speed;
+	return target;
+}
+
+/*
+// Vector, Vector, float
+function VS::ApproachVector( target, value, speed )
+{
+	local dv = target - value;
+	local delta = dv.Norm();
+
+	if ( delta > speed )
+		return value + dv * speed;
+	if ( -speed > delta )
+		return value - dv * speed;
+	return target;
+}
+*/
+
+function VS::ApproachAngle( target, value, speed )
+{
+	target = AngleNormalize( target );
+	value = AngleNormalize( value );
+
+	local delta = AngleDiff( target, value );
+
+	if (speed < 0.0)
+		speed = -speed;
+
+	if ( delta > speed )
+		return value + speed;
+	if ( -speed > delta )
+		return value - speed;
+	return target;
+}
+
+// float, float
+function VS::AngleDiff( destAngle, srcAngle )
+{
+	return AngleNormalize( destAngle - srcAngle );
+}
+
+// float
+function VS::AngleNormalize( angle )
+{
+	angle %= 360.0;
+
+	if ( angle > 180.0 )
+		return angle - 360.0;
+	if ( -180.0 > angle )
+		return angle + 360.0;
+	return angle;
+}
+
+// input vector pointer
+function VS::QAngleNormalize( vAng )
+{
+	vAng.x = AngleNormalize( vAng.x );
+	vAng.y = AngleNormalize( vAng.y );
+	vAng.z = AngleNormalize( vAng.z );
+	return vAng;
+}
+
+//-----------------------------------------------------------------------------
+// Snaps the input vector to the closest axis
+// input vector pointer [ normalised direction vector ]
+//-----------------------------------------------------------------------------
+function VS::SnapDirectionToAxis( vDirection, epsilon = 0.002 )
+{
+	local proj = 1.0 - epsilon;
+	local f = vDirection.x < 0.0;
+
+	if( (f ? -vDirection.x : vDirection.x) > proj )
+	{
+		vDirection.x = f ? -1.0 : 1.0;
+		vDirection.y = vDirection.z = 0.0;
+
+		return vDirection;
+	};
+
+	f = vDirection.y < 0.0;
+
+	if( (f ? -vDirection.y : vDirection.y) > proj )
+	{
+		vDirection.y = f ? -1.0 : 1.0;
+		vDirection.z = vDirection.x = 0.0;
+
+		return vDirection;
+	};
+
+	f = vDirection.z < 0.0;
+
+	if( (f ? -vDirection.z : vDirection.z) > proj )
+	{
+		vDirection.z = f ? -1.0 : 1.0;
+		vDirection.x = vDirection.y = 0.0;
+
+		return vDirection;
+	};
+}
+
+function VS::VectorNegate( vec )
+{
+	vec.x = -vec.x;
+	vec.y = -vec.y;
+	vec.z = -vec.z;
+
+	return vec;
+}
+
+//-----------------------------------------------------------------------------
+// Copy source's values into destination
+//-----------------------------------------------------------------------------
+function VS::VectorCopy( src, dst )
+{
+	dst.x = src.x;
+	dst.y = src.y;
+	dst.z = src.z;
+
+	return dst;
+}
+
+//-----------------------------------------------------------------------------
+// Store the min or max of each of x, y, and z into the result.
+//-----------------------------------------------------------------------------
+function VS::VectorMin( a, b, o = _VEC )
+{
+	if ( a.x < b.x )
+		o.x = a.x;
+	else
+		o.x = b.x;
+
+	if ( a.y < b.y )
+		o.y = a.y;
+	else
+		o.y = b.y;
+
+	if ( a.z < b.z )
+		o.z = a.z;
+	else
+		o.z = b.z;
+
+	return o;
+}
+
+function VS::VectorMax( a, b, o = _VEC )
+{
+	if ( a.x > b.x )
+		o.x = a.x;
+	else
+		o.x = b.x;
+
+	if ( a.y > b.y )
+		o.y = a.y;
+	else
+		o.y = b.y;
+
+	if ( a.z > b.z )
+		o.z = a.z;
+	else
+		o.z = b.z;
+
+	return o;
+}
+
+// input vector pointer
+function VS::VectorAbs( v )
+{
+	if (0.0 > v.x) v.x = -v.x;
+	if (0.0 > v.y) v.y = -v.y;
+	if (0.0 > v.z) v.z = -v.z;
+
+	return v;
+}
+
+// Vector a + Vector b
+function VS::VectorAdd( a, b, o )
+{
+	o.x = a.x + b.x;
+	o.y = a.y + b.y;
+	o.z = a.z + b.z;
+
+	return o;
+}
+
+// Vector a - Vector b
+function VS::VectorSubtract( a, b, o )
+{
+	o.x = a.x - b.x;
+	o.y = a.y - b.y;
+	o.z = a.z - b.z;
+
+	return o;
+}
+
+// scalar
+// Vector a * b
+function VS::VectorScale( a, b, o )
+{
+	o.x = a.x * b;
+	o.y = a.y * b;
+	o.z = a.z * b;
+
+	return o;
+}
+/*
+// Vector a * Vector b
+function VS::VectorMultiply( a, b, o )
+{
+	o.x = a.x*b.x;
+	o.y = a.y*b.y;
+	o.z = a.z*b.z;
+
+	return o;
+}
+
+// Vector a / Vector b
+function VS::VectorDivide( a, b, o )
+{
+	o.x = a.x/b.x;
+	o.y = a.y/b.y;
+	o.z = a.z/b.z;
+
+	return o;
+}
+*/
+
+function VS::VectorMA( start, scale, direction, dest = _VEC )
+{
+	dest.x = start.x + scale * direction.x;
+	dest.y = start.y + scale * direction.y;
+	dest.z = start.z + scale * direction.z;
+
+	return dest;
+}
+
 local VectorAdd = VS.VectorAdd;
 local VectorSubtract = VS.VectorSubtract;
-local Line = DebugDrawLine;
 
+function VS::ComputeVolume( vecMins, vecMaxs )
+{
+	return (vecMaxs - vecMins).LengthSqr();
+}
+
+//-----------------------------------------------------------------------------
+// Get a random vector
+//-----------------------------------------------------------------------------
+function VS::RandomVector( minVal = -RAND_MAX, maxVal = RAND_MAX ) : ( Vector, RandomFloat )
+{
+	return Vector( RandomFloat( minVal, maxVal ), RandomFloat( minVal, maxVal ), RandomFloat( minVal, maxVal ) );
+}
 
 // Guarantee uniform random distribution within a sphere
 function VS::RandomVectorInUnitSphere( out ) : ( rand, sin, cos, acos, pow )
 {
-	local rd = 2.0 / 32767;
-	local phi = acos( 1.0 - rand() * rd );
-	local theta = 3.14159265 * rand() * rd;
-	local r = pow( rand() * rd * 0.5, 0.333333 );
+	// local rd = 2.0 / RAND_MAX; // 0.00006103702
+	local phi = acos( 1.0 - rand() * 0.00006103702 );
+	local theta = rand() * 0.00019175345; // rd * PI
+	local r = pow( rand() * 0.00003051851, 0.333333 );
 	local sp = r * sin( phi );
 	out.x = sp * cos( theta );
 	out.y = sp * sin( theta );
@@ -164,9 +902,9 @@ function VS::RandomVectorInUnitSphere( out ) : ( rand, sin, cos, acos, pow )
 // Guarantee uniform random distribution on a sphere
 function VS::RandomVectorOnUnitSphere( out ) : ( rand, sin, cos, acos )
 {
-	local rd = 2.0 / 32767;
-	local phi = acos( 1.0 - rand() * rd );
-	local theta = 3.14159265 * rand() * rd;
+	// local rd = 2.0 / RAND_MAX; // 0.00006103702
+	local phi = acos( 1.0 - rand() * 0.00006103702 );
+	local theta = rand() * 0.00019175345; // rd * PI
 	// r = 1
 	local sp = sin( phi );
 	out.x = sp * cos( theta );
@@ -174,52 +912,276 @@ function VS::RandomVectorOnUnitSphere( out ) : ( rand, sin, cos, acos )
 	out.z = cos( phi );
 }
 
-function VS::InvRSquared(v):(max)
+// decayTo is factor the value should decay to in decayTime
+function VS::ExponentialDecay( decayTo, decayTime, dt ) : (log, exp)
 {
-	return 1.0 / max( 1.0, v.LengthSqr() );
+	return exp( log(decayTo) / decayTime * dt );
 }
 
-function VS::a_swap( a1, i1, a2, i2 )
+// halflife is time for value to reach 50%
+function VS::ExponentialDecay2( halflife, dt ) : (exp)
 {
-	local t = a1[i1];
-	a1[i1] = a2[i2];
-	a2[i2] = t;
+	// log(0.5) == -0.69314718055994530941723212145818
+	return exp( -0.6931471806 / halflife * dt );
 }
 
-local a_swap = VS.a_swap;
-
-// matrix, int, vector
-function VS::MatrixRowDotProduct( in1, row, in2 )
+// Get the integrated distanced traveled
+// decayTo is factor the value should decay to in decayTime
+// dt is the time relative to the last velocity update
+function VS::ExponentialDecayIntegral( decayTo, decayTime, dt ) : (log, pow)
 {
-	in1 = in1.m;
-	return in1[row][0] * in2.x + in1[row][1] * in2.y + in1[row][2] * in2.z;
+	return (pow(decayTo, dt / decayTime) * decayTime - decayTime) / log(decayTo);
 }
 
-function VS::MatrixColumnDotProduct( in1, col, in2 )
+// hermite basis function for smooth interpolation
+// very cheap to call
+// value should be between 0 & 1 inclusive
+function VS::SimpleSpline( value )
 {
-	in1 = in1.m;
-	return in1[0][col] * in2.x + in1[1][col] * in2.y + in1[2][col] * in2.z;
+	local valueSquared = value * value;
+
+	// Nice little ease-in, ease-out spline-like curve
+	return ( 3.0 * valueSquared - 2.0 * valueSquared * value );
 }
 
-function VS::DotProductAbs( in1, in2 ):(fabs)
+// remaps a value in [startInterval, startInterval+rangeInterval] from linear to
+// spline using SimpleSpline
+function VS::SimpleSplineRemapVal( val, A, B, C, D )
 {
-	return fabs(in1.x*in2.x) + fabs(in1.y*in2.y) + fabs(in1.z*in2.z);
+	if ( A == B )
+	{
+		if ( val >= B )
+			return D;
+		return C;
+	};
+	local cVal = (val - A) / (B - A);
+	local sqr = cVal * cVal;
+	return C + (D - C) * ( 3.0 * sqr - 2.0 * sqr * cVal );
 }
-/*
-function VS::DotProductAbsV()
 
-// array X array
-function VS::DotProduct( tmp, out[3] )
+// remaps a value in [startInterval, startInterval+rangeInterval] from linear to
+// spline using SimpleSpline
+function VS::SimpleSplineRemapValClamped( val, A, B, C, D )
 {
-	return tmp[0]*out[0] + tmp[1]*out[1] + tmp[2]*out[2];
+	if ( A == B )
+	{
+		if ( val >= B )
+			return D;
+		return C;
+	};
+	local cVal = (val - A) / (B - A);
+	if ( cVal < 0.0 )
+		cVal = 0.0;
+	else if ( cVal > 1.0 )
+		cVal = 1.0;;
+	local sqr = cVal * cVal;
+	return C + (D - C) * ( 3.0 * sqr - 2.0 * sqr * cVal );
 }
 
-// vector X array
-function VS::DotProductV( tmp, out[3] )
+// Remap a value in the range [A,B] to [C,D].
+function VS::RemapVal( val, A, B, C, D )
 {
-	return tmp.x*out[0] + tmp.y*out[1] + tmp.z*out[2];
+	if ( A == B )
+	{
+		if ( val >= B )
+			return D;
+		return C;
+	};
+	return C + (D - C) * (val - A) / (B - A);
 }
-*/
+
+function VS::RemapValClamped( val, A, B, C, D )
+{
+	if ( A == B )
+	{
+		if ( val >= B )
+			return D;
+		return C;
+	};
+	local cVal = (val - A) / (B - A);
+	if ( cVal < 0.0 )
+		cVal = 0.0;
+	else if ( cVal > 1.0 )
+		cVal = 1.0;;
+	return C + (D - C) * cVal;
+}
+
+//
+// Bias takes an X value between 0 and 1 and returns another value between 0 and 1
+// The curve is biased towards 0 or 1 based on biasAmt, which is between 0 and 1.
+// Lower values of biasAmt bias the curve towards 0 and higher values bias it towards 1.
+//
+// For example, with biasAmt = 0.2, the curve looks like this:
+//
+// 1
+// |                  *
+// |                  *
+// |                 *
+// |               **
+// |             **
+// |         ****
+// |*********
+// |___________________
+// 0                   1
+//
+//
+// With biasAmt = 0.8, the curve looks like this:
+//
+// 1
+// |    **************
+// |  **
+// | *
+// | *
+// |*
+// |*
+// |*
+// |___________________
+// 0                   1
+//
+// With a biasAmt of 0.5, Bias returns X.
+//
+function VS::Bias( x, biasAmt ) : ( log, pow )
+{
+	// local lastAmt = -1.0;
+	local lastExponent = 0.0;
+	if ( -1.0 != biasAmt )
+		lastExponent = log(biasAmt) * -1.442695041; // (-1.442695041 = 1 / log(0.5))
+	return pow( x, lastExponent );
+}
+
+//
+// Gain is similar to Bias, but biasAmt biases towards or away from 0.5.
+// Lower bias values bias towards 0.5 and higher bias values bias away from it.
+//
+// For example, with biasAmt = 0.2, the curve looks like this:
+//
+// 1
+// |                  *
+// |                 *
+// |                **
+// |  ***************
+// | **
+// | *
+// |*
+// |___________________
+// 0                   1
+//
+//
+// With biasAmt = 0.8, the curve looks like this:
+//
+// 1
+// |            *****
+// |         ***
+// |        *
+// |        *
+// |        *
+// |     ***
+// |*****
+// |___________________
+// 0                   1
+//
+local Bias = VS.Bias;
+
+function VS::Gain( x, biasAmt ) : (Bias)
+{
+	if ( x < 0.5 )
+		return 0.5 * Bias( 2.0*x, 1.0-biasAmt );
+	return 1.0 - 0.5 * Bias( 2.0 - 2.0*x, 1.0-biasAmt );
+}
+
+//
+// SmoothCurve maps a 0-1 value into another 0-1 value based on a cosine wave
+// where the derivatives of the function at 0 and 1 (and 0.5) are 0. This is useful for
+// any fadein/fadeout effect where it should start and end smoothly.
+//
+// The curve looks like this:
+//
+// 1
+// |        **
+// |       *  *
+// |      *    *
+// |      *    *
+// |     *      *
+// |   **        **
+// |***            ***
+// |___________________
+// 0                   1
+//
+function VS::SmoothCurve( x ) : (cos)
+{
+	return (1.0 - cos(x * PI)) * 0.5;
+}
+
+function VS::MovePeak( x, flPeakPos )
+{
+	if ( x < flPeakPos )
+		return x * 0.5 / flPeakPos;
+	return 0.5 + 0.5 * (x - flPeakPos) / (1.0 - flPeakPos);
+}
+
+local MovePeak = VS.MovePeak;
+local Gain = VS.Gain;
+
+// This works like SmoothCurve, with two changes:
+//
+// 1. Instead of the curve peaking at 0.5, it will peak at flPeakPos.
+//    (So if you specify flPeakPos=0.2, then the peak will slide to the left).
+//
+// 2. flPeakSharpness is a 0-1 value controlling the sharpness of the peak.
+//    Low values blunt the peak and high values sharpen the peak.
+function VS::SmoothCurve_Tweak( x, flPeakPos, flPeakSharpness ) : (MovePeak, Gain, cos)
+{
+	local flMovedPeak = MovePeak( x, flPeakPos );
+	local flSharpened = Gain( flMovedPeak, flPeakSharpness );
+	return (1.0 - cos(flSharpened * PI)) * 0.5;
+}
+
+function VS::Lerp( A, B, f )
+{
+	return A + ( B - A ) * f;
+}
+
+//
+// 5-argument floating point linear interpolation.
+// FLerp(f1,f2,i1,i2,x)=
+//    f1 at x=i1
+//    f2 at x=i2
+//   smooth lerp between f1 and f2 at x>i1 and x<i2
+//   extrapolation for x<i1 or x>i2
+//
+//   If you know a function f(x)'s value (f1) at position i1, and its value (f2) at position i2,
+//   the function can be linearly interpolated with FLerp(f1,f2,i1,i2,x)
+//    i2=i1 will cause a divide by zero.
+//
+function VS::FLerp( f1, f2, i1, i2, x )
+{
+	return f1 + ( f2 - f1 ) * ( x - i1 ) / ( i2 - i1 );
+}
+
+function VS::VectorLerp( v1, v2, f, o = _VEC )
+{
+	local v = v1 + ( v2 - v1 ) * f;
+	o.x = v.x;
+	o.y = v.y;
+	o.z = v.z;
+
+	return o;
+}
+
+function VS::DotProductAbs( in1, in2 )
+{
+	local x = in1.x * in2.x;
+	local y = in1.y * in2.y;
+	local z = in1.z * in2.z;
+
+	if ( 0.0 > x ) x = -x;
+	if ( 0.0 > y ) y = -y;
+	if ( 0.0 > z ) z = -z;
+
+	return x + y + z;
+}
+
+local DotProductAbs = VS.DotProductAbs;
 
 // transform in1 by the matrix in2
 function VS::VectorTransform( in1, in2, out = _VEC )
@@ -258,9 +1220,6 @@ function VS::VectorITransform( in1, in2, out = _VEC )
 	return out;
 }
 
-local VectorITransform = VS.VectorITransform;
-local VectorTransform = VS.VectorTransform;
-
 // assume in2 is a rotation (matrix3x4_t) and rotate the input vector
 function VS::VectorRotate( in1, in2, out = _VEC )
 {
@@ -281,17 +1240,15 @@ function VS::VectorRotate( in1, in2, out = _VEC )
 local VectorRotate = VS.VectorRotate;
 
 // assume in2 is a rotation (QAngle) and rotate the input vector
-function VS::VectorRotate2( in1, in2, out = _VEC ):(matrix3x4_t,VectorRotate)
+function VS::VectorRotate2( in1, in2, out = _VEC ) : (matrix3x4_t, VectorRotate)
 {
 	local matRotate = matrix3x4_t();
 	AngleMatrix( in2, null, matRotate );
-	VectorRotate( in1, matRotate, out );
-
-	return out;
+	return VectorRotate( in1, matRotate, out );
 }
 
 // assume in2 is a rotation (Quaternion) and rotate the input vector
-function VS::VectorRotate3( in1, in2, out = _VEC ):(Quaternion)
+function VS::VectorRotate3( in1, in2, out = _VEC )
 {
 //	local matRotate = matrix3x4_t();
 //	QuaternionMatrix( in2, matRotate );
@@ -299,25 +1256,21 @@ function VS::VectorRotate3( in1, in2, out = _VEC ):(Quaternion)
 
 	// rotation ( q * v ) * q^-1
 
-	// q^-1
-	// QuaternionConjugate
-	local conjugate = Quaternion();
-	conjugate.x = -in2.x;
-	conjugate.y = -in2.y;
-	conjugate.z = -in2.z;
-	conjugate.w = in2.w;
+	local in2x = in2.x;
+	local in2y = in2.y;
+	local in2z = in2.z;
+	local in2w = in2.w;
 
 	// q*v
-	// QuaternionMult
-	local qv = Quaternion();
-	qv.x =  in2.y * in1.z - in2.z * in1.y + in2.w * in1.x;
-	qv.y = -in2.x * in1.z + in2.z * in1.x + in2.w * in1.y;
-	qv.z =  in2.x * in1.y - in2.y * in1.x + in2.w * in1.z;
-	qv.w = -in2.x * in1.x - in2.y * in1.y - in2.z * in1.z;
+	local qvx = in2y * in1.z - in2z * in1.y + in2w * in1.x;
+	local qvy = in2z * in1.x + in2w * in1.y - in2x * in1.z;
+	local qvz = in2x * in1.y - in2y * in1.x + in2w * in1.z;
+	local qvw = in2x * in1.x + in2y * in1.y + in2z * in1.z;
 
-	out.x =  qv.x * conjugate.w + qv.y * conjugate.z - qv.z * conjugate.y + qv.w * conjugate.x;
-	out.y = -qv.x * conjugate.z + qv.y * conjugate.w + qv.z * conjugate.x + qv.w * conjugate.y;
-	out.z =  qv.x * conjugate.y - qv.y * conjugate.x + qv.z * conjugate.w + qv.w * conjugate.z;
+	// qv*(q^-1)
+	out.x = qvx * in2w - qvy * in2z + qvz * in2y + qvw * in2x;
+	out.y = qvx * in2z + qvy * in2w - qvz * in2x + qvw * in2y;
+	out.z = qvy * in2x + qvz * in2w + qvw * in2z - qvx * in2y;
 
 	return out;
 }
@@ -338,8 +1291,10 @@ function VS::VectorIRotate( in1, in2, out = _VEC )
 	return out;
 }
 
+local VectorITransform = VS.VectorITransform;
+local VectorTransform = VS.VectorTransform;
 local VectorIRotate = VS.VectorIRotate;
-local VectorVectors = VS.VectorVectors;
+
 
 function VS::VectorMatrix( forward, matrix ) : ( Vector, VectorVectors )
 {
@@ -364,41 +1319,231 @@ function VS::VectorMatrix( forward, matrix ) : ( Vector, VectorVectors )
 	matrix[2][2] = up.z;
 }
 
-function VS::VectorMA( start, scale, direction, dest = _VEC )
+// Matrix is right-handed x=forward, y=left, z=up.  Valve uses left-handed convention for vectors in the game code (forward, right, up)
+function VS::MatrixVectors( matrix, pForward, pRight, pUp )
 {
-	dest.x = start.x + scale * direction.x;
-	dest.y = start.y + scale * direction.y;
-	dest.z = start.z + scale * direction.z;
+	matrix = matrix.m;
 
-	return dest;
+	// MatrixGetColumn( matrix, 0, pForward );
+	pForward.x = matrix[0][0];
+	pForward.y = matrix[1][0];
+	pForward.z = matrix[2][0];
+
+	// MatrixGetColumn( matrix, 1, pRight );
+	pRight.x = -matrix[0][1];
+	pRight.y = -matrix[1][1];
+	pRight.z = -matrix[2][1];
+
+	// MatrixGetColumn( matrix, 2, pUp );
+	pUp.x = matrix[0][2];
+	pUp.y = matrix[1][2];
+	pUp.z = matrix[2][2];
 }
 
-function VS::QuaternionsAreEqual( a, b, tolerance = 0.0 ):(fabs)
+//-----------------------------------------------------------------------------
+// Purpose: Generates Euler angles given a left-handed orientation matrix. The
+//			columns of the matrix contain the forward, left, and up vectors.
+// Input  : matrix - Left-handed orientation matrix.
+//          angles[PITCH, YAW, ROLL]. Receives right-handed counterclockwise
+//               rotations in degrees around Y, Z, and X respectively.
+//-----------------------------------------------------------------------------
+function VS::MatrixAngles( matrix, angles = _VEC, position = null ) : (sqrt,atan2)
 {
-	return ( fabs( a.x - b.x ) <= tolerance &&
-	         fabs( a.y - b.y ) <= tolerance &&
-	         fabs( a.z - b.z ) <= tolerance &&
-	         fabs( a.w - b.w ) <= tolerance );
+	matrix = matrix.m;
+
+	if ( position )
+	{
+		// MatrixGetColumn( matrix, 3, position );
+		position.x = matrix[0][3];
+		position.y = matrix[1][3];
+		position.z = matrix[2][3];
+	};
+
+	//
+	// Extract the basis vectors from the matrix. Since we only need the Z
+	// component of the up vector, we don't get X and Y.
+	//
+	local forward0 = matrix[0][0];
+	local forward1 = matrix[1][0];
+	local forward2 = matrix[2][0];
+
+	local left0 = matrix[0][1];
+	local left1 = matrix[1][1];
+	local left2 = matrix[2][1];
+
+	local up2 = matrix[2][2];
+
+	local xyDist = sqrt( forward0 * forward0 + forward1 * forward1 );
+
+	// enough here to get angles?
+	if( xyDist > 0.001 )
+	{
+		// (yaw)	y = ATAN( forward[1], forward[0] );		-- in our space, forward is the X axis
+		angles.y = RAD2DEG*atan2( forward1, forward0 );
+
+		// (pitch)	x = ATAN( -forward[2], sqrt(forward[0]*forward[0]+forward[1]*forward[1]) );
+		angles.x = RAD2DEG*atan2( -forward2, xyDist );
+
+		// (roll)	z = ATAN( left[2], up[2] );
+		angles.z = RAD2DEG*atan2( left2, up2 );
+	}
+	else	// forward is mostly Z, gimbal lock-
+	{
+		// (yaw)	y = ATAN( -left[0], left[1] );			-- forward is mostly z, so use right for yaw
+		angles.y = RAD2DEG*atan2( -left0, left1 );
+
+		// (pitch)	x = ATAN( -forward[2], sqrt(forward[0]*forward[0]+forward[1]*forward[1]) );
+		angles.x = RAD2DEG*atan2( -forward2, xyDist );
+
+		// Assume no roll in this case as one degree of freedom has been lost (i.e. yaw == roll)
+		angles.z = 0.0;
+	};
+
+	return angles;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: converts engine euler angles into a matrix
+// Input  : vec3_t angles - PITCH, YAW, ROLL
+// Output : *matrix - left-handed column matrix
+//          the basis vectors for the rotations will be in the columns as follows:
+//          matrix[][0] is forward
+//          matrix[][1] is left
+//          matrix[][2] is up
+//-----------------------------------------------------------------------------
+function VS::AngleMatrix( angles, position, matrix ):(sin,cos)
+{
+	local ay = DEG2RAD*angles.y,
+		ax = DEG2RAD*angles.x,
+		az = DEG2RAD*angles.z;
+
+	local sy = sin(ay),
+		cy = cos(ay),
+
+		sp = sin(ax),
+		cp = cos(ax),
+
+		sr = sin(az),
+		cr = cos(az);
+
+	matrix = matrix.m;
+	// matrix = (YAW * PITCH) * ROLL
+	matrix[0][0] = cp*cy;
+	matrix[1][0] = cp*sy;
+	matrix[2][0] = -sp;
+
+	local crcy = cr*cy,
+		crsy = cr*sy,
+		srcy = sr*cy,
+		srsy = sr*sy;
+
+	matrix[0][1] = sp*srcy-crsy;
+	matrix[1][1] = sp*srsy+crcy;
+	matrix[2][1] = sr*cp;
+
+	matrix[0][2] = sp*crcy+srsy;
+	matrix[1][2] = sp*crsy-srcy;
+	matrix[2][2] = cr*cp;
+
+	if ( position )
+	{
+		// MatrixSetColumn( position, 3, matrix );
+		matrix[0][3] = position.x;
+		matrix[1][3] = position.y;
+		matrix[2][3] = position.z;
+	}
+	else
+	{
+		matrix[0][3] = matrix[1][3] = matrix[2][3] = 0.0;
+	};
+}
+
+function VS::AngleIMatrix( angles, position, matrix ) : (sin, cos, VectorRotate)
+{
+	local ay = DEG2RAD*angles.y,
+		ax = DEG2RAD*angles.x,
+		az = DEG2RAD*angles.z;
+
+	local sy = sin(ay),
+		cy = cos(ay),
+
+		sp = sin(ax),
+		cp = cos(ax),
+
+		sr = sin(az),
+		cr = cos(az);
+
+	local m = matrix.m;
+	// matrix = (YAW * PITCH) * ROLL
+	m[0][0] = cp*cy;
+	m[0][1] = cp*sy;
+	m[0][2] = -sp;
+
+	local srsp = sr*sp, crsp = cr*sp;
+
+	m[1][0] = srsp*cy-cr*sy;
+	m[1][1] = srsp*sy+cr*cy;
+	m[1][2] = sr*cp;
+
+	m[2][0] = crsp*cy+sr*sy;
+	m[2][1] = crsp*sy-sr*cy;
+	m[2][2] = cr*cp;
+
+	if ( position )
+	{
+		local vecTranslation = VectorRotate( position, matrix );
+		// MatrixSetColumn( vecTranslation * -1, 3, matrix );
+		m[0][3] = -vecTranslation.x;
+		m[1][3] = -vecTranslation.y;
+		m[2][3] = -vecTranslation.z;
+	}
+	else
+	{
+		m[0][3] = m[1][3] = m[2][3] = 0.0;
+	};
+}
+
+local MatrixAngles = VS.MatrixAngles;
+local AngleMatrix = VS.AngleMatrix;
+local AngleIMatrix = VS.AngleIMatrix;
+
+
+function VS::QuaternionsAreEqual( a, b, tolerance = 0.0 )
+{
+	local x = a.x - b.x;
+	if (0.0 > x) x = -x;
+
+	local y = a.y - b.y;
+	if (0.0 > y) y = -y;
+
+	local z = a.z - b.z;
+	if (0.0 > z) z = -z;
+
+	local w = a.w - b.w;
+	if (0.0 > w) w = -w;
+
+	return ( x <= tolerance &&
+		y <= tolerance &&
+		z <= tolerance &&
+		w <= tolerance );
 }
 
 //-----------------------------------------------------------------------------
 // Make sure the quaternion is of unit length
 //-----------------------------------------------------------------------------
-function VS::QuaternionNormalize(q):(sqrt)
+function VS::QuaternionNormalize(q) : (sqrt)
 {
-	local iradius, radius = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
+	local radius = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
 
-	if( radius ) // > FLT_EPSILON && ((radius < 1.0 - 4*FLT_EPSILON) || (radius > 1.0 + 4*FLT_EPSILON))
+	if ( radius ) // > FLT_EPSILON && ((radius < 1.0 - 4*FLT_EPSILON) || (radius > 1.0 + 4*FLT_EPSILON))
 	{
-		radius = sqrt(radius);
-		iradius = 1.0/radius;
-		q.w *= iradius;
-		q.z *= iradius;
-		q.y *= iradius;
-		q.x *= iradius;
+		local ir = 1.0 / sqrt(radius);
+		q.w *= ir;
+		q.z *= ir;
+		q.y *= ir;
+		q.x *= ir;
 	};
-
-	return 0.0;
+	return radius;
 }
 
 //-----------------------------------------------------------------------------
@@ -406,26 +1551,37 @@ function VS::QuaternionNormalize(q):(sqrt)
 //-----------------------------------------------------------------------------
 function VS::QuaternionAlign( p, q, qt = _QUAT )
 {
+	local px = p.x,
+		py = p.y,
+		pz = p.z,
+		pw = p.w,
+		qx = q.x,
+		qy = q.y,
+		qz = q.z,
+		qw = q.w;
+
 	// a = dot(p-q)
 	// b = dot(p+q)
-	local a = (p.x-q.x)*(p.x-q.x)+(p.y-q.y)*(p.y-q.y)+
-	          (p.z-q.z)*(p.z-q.z)+(p.w-q.w)*(p.w-q.w),
-	      b = (p.x+q.x)*(p.x+q.x)+(p.y+q.y)*(p.y+q.y)+
-	          (p.z+q.z)*(p.z+q.z)+(p.w+q.w)*(p.w+q.w);
+	local a =
+		(px-qx)*(px-qx)+(py-qy)*(py-qy)+
+		(pz-qz)*(pz-qz)+(pw-qw)*(pw-qw);
+	local b =
+		(px+qx)*(px+qx)+(py+qy)*(py+qy)+
+		(pz+qz)*(pz+qz)+(pw+qw)*(pw+qw);
 
-	if( a > b )
+	if ( a > b )
 	{
-		qt.x = -q.x;
-		qt.y = -q.y;
-		qt.z = -q.z;
-		qt.w = -q.w;
+		qt.x = -qx;
+		qt.y = -qy;
+		qt.z = -qz;
+		qt.w = -qw;
 	}
-	else if( qt != q )
+	else if ( qt != q )
 	{
-		qt.x = q.x;
-		qt.y = q.y;
-		qt.z = q.z;
-		qt.w = q.w;
+		qt.x = qx;
+		qt.y = qy;
+		qt.z = qz;
+		qt.w = qw;
 	};;
 
 	return qt;
@@ -437,22 +1593,30 @@ local QuaternionAlign = VS.QuaternionAlign;
 //-----------------------------------------------------------------------------
 // qt = p * q
 //-----------------------------------------------------------------------------
-function VS::QuaternionMult( p, q, qt = _QUAT ):(Quaternion,QuaternionAlign)
+function VS::QuaternionMult( p, q, qt = _QUAT ) : (QuaternionAlign, Quaternion)
 {
-	if( p == qt )
+	if ( p == qt )
 	{
-		local p2 = Quaternion(p.x,p.y,p.z,p.w);
-		QuaternionMult( p2, q, qt );
-		return qt;
+		local p2 = Quaternion( p.x, p.y, p.z, p.w );
+		return QuaternionMult( p2, q, qt );
 	};
 
 	// decide if one of the quaternions is backwards
 	local q2 = QuaternionAlign( p, q );
 
-	qt.x =  p.x * q2.w + p.y * q2.z - p.z * q2.y + p.w * q2.x;
-	qt.y = -p.x * q2.z + p.y * q2.w + p.z * q2.x + p.w * q2.y;
-	qt.z =  p.x * q2.y - p.y * q2.x + p.z * q2.w + p.w * q2.z;
-	qt.w = -p.x * q2.x - p.y * q2.y - p.z * q2.z + p.w * q2.w;
+	local px = p.x,
+		py = p.y,
+		pz = p.z,
+		pw = p.w,
+		qx = q2.x,
+		qy = q2.y,
+		qz = q2.z,
+		qw = q2.w;
+
+	qt.x = px * qw + py * qz - pz * qy + pw * qx;
+	qt.y = py * qw + pz * qx + pw * qy - px * qz;
+	qt.z = px * qy - py * qx + pz * qw + pw * qz;
+	qt.w = pw * qw - px * qx - py * qy - pz * qz;
 
 	return qt;
 }
@@ -470,7 +1634,7 @@ function VS::QuaternionConjugate( p, q )
 //-----------------------------------------------------------------------------
 // qt = p * ( s * q )
 //-----------------------------------------------------------------------------
-function VS::QuaternionMA( p, s, q, qt = _QUAT ):(Quaternion,QuaternionNormalize,QuaternionMult)
+function VS::QuaternionMA( p, s, q, qt = _QUAT ) : ( Quaternion, QuaternionNormalize, QuaternionMult )
 {
 	local q1 = Quaternion();
 	QuaternionScale( q, s, q1 );
@@ -485,12 +1649,10 @@ function VS::QuaternionMA( p, s, q, qt = _QUAT ):(Quaternion,QuaternionNormalize
 	return qt;
 }
 
-function VS::QuaternionAdd( p, q, qt = _QUAT ):(Quaternion,QuaternionAlign)
+function VS::QuaternionAdd( p, q, qt = _QUAT ) : ( Quaternion, QuaternionAlign )
 {
-	// decide if one of the quaternions is backwards
 	local q2 = QuaternionAlign( p, q );
 
-	// is this right???
 	qt.x = p.x + q2.x;
 	qt.y = p.y + q2.y;
 	qt.z = p.z + q2.z;
@@ -505,29 +1667,24 @@ function VS::QuaternionDotProduct( p, q )
 	return p.x * q.x + p.y * q.y + p.z * q.z + p.w * q.w;
 }
 
+//-----------------------------------------------------------------------------
+// q = p^-1 / pLenSqr
+//-----------------------------------------------------------------------------
 function VS::QuaternionInvert( p, q )
 {
-	// QuaternionConjugate
-	q.x = -p.x;
-	q.y = -p.y;
-	q.z = -p.z;
-	q.w = p.w;
-
 	// QuaternionDotProduct
 	local magnitudeSqr = p.x*p.x + p.y*p.y + p.z*p.z + p.w*p.w;
 
-	if( magnitudeSqr )
+	if ( magnitudeSqr )
 	{
 		local inv = 1.0 / magnitudeSqr;
-		q.x *= inv;
-		q.y *= inv;
-		q.z *= inv;
-		q.w *= inv;
-
-		return;
+		q.x = -p.x * inv;
+		q.y = -p.y * inv;
+		q.z = -p.z * inv;
+		q.w = p.w * inv;
 	};
 
-	Assert( magnitudeSqr );
+	// Assert( magnitudeSqr );
 }
 
 //-----------------------------------------------------------------------------
@@ -535,12 +1692,9 @@ function VS::QuaternionInvert( p, q )
 // mathematical sense, but it's a cheap way to simulate a slerp.
 // nlerp
 //-----------------------------------------------------------------------------
-function VS::QuaternionBlendNoAlign( p, q, t, qt = _QUAT ):(QuaternionNormalize)
+function VS::QuaternionBlendNoAlign( p, q, t, qt = _QUAT ) : (QuaternionNormalize)
 {
-	local sclp = 1.0 - t,
-	      sclq = t;
-
-	// 0.0 returns p, 1.0 return q.
+	local sclp = 1.0 - t, sclq = t;
 
 	qt.x = sclp * p.x + sclq * q.x;
 	qt.y = sclp * p.y + sclq * q.y;
@@ -554,15 +1708,14 @@ function VS::QuaternionBlendNoAlign( p, q, t, qt = _QUAT ):(QuaternionNormalize)
 
 local QuaternionBlendNoAlign = VS.QuaternionBlendNoAlign;
 
-function VS::QuaternionBlend( p, q, t, qt = _QUAT ):(Quaternion,QuaternionAlign)
+function VS::QuaternionBlend( p, q, t, qt = _QUAT ) : (QuaternionAlign, QuaternionBlendNoAlign)
 {
 	// decide if one of the quaternions is backwards
 	local q2 = QuaternionAlign( p, q );
-	QuaternionBlendNoAlign( p, q2, t, qt );
-	return qt;
+	return QuaternionBlendNoAlign( p, q2, t, qt );
 }
 
-function VS::QuaternionIdentityBlend( p, t, qt = _QUAT ):(QuaternionNormalize)
+function VS::QuaternionIdentityBlend( p, t, qt = _QUAT ) : (QuaternionNormalize)
 {
 	local sclp = 1.0 - t;
 
@@ -590,8 +1743,6 @@ function VS::QuaternionIdentityBlend( p, t, qt = _QUAT ):(QuaternionNormalize)
 function VS::QuaternionSlerpNoAlign( p, q, t, qt = _QUAT ) : ( sin, acos )
 {
 	local sclp, sclq;
-
-	// 0.0 returns p, 1.0 return q.
 
 	// QuaternionDotProduct
 	local cosom = p.x*q.x + p.y*q.y + p.z*q.z + p.w*q.w;
@@ -625,8 +1776,8 @@ function VS::QuaternionSlerpNoAlign( p, q, t, qt = _QUAT ) : ( sin, acos )
 		// qt.y = q.x;
 		// qt.z = -q.w;
 		// qt.w = q.z;
-		sclp = sin( (1.0 - t) * 1.5708 );
-		sclq = sin( t * 1.5708 );
+		sclp = sin( (1.0 - t) * PIDIV2 );
+		sclq = sin( t * PIDIV2 );
 
 		qt.x = sclp * p.x - sclq * q.y;
 		qt.y = sclp * p.y + sclq * q.x;
@@ -639,16 +1790,11 @@ function VS::QuaternionSlerpNoAlign( p, q, t, qt = _QUAT ) : ( sin, acos )
 
 local QuaternionSlerpNoAlign = VS.QuaternionSlerpNoAlign;
 
-function VS::QuaternionSlerp( p, q, t, qt = _QUAT ):(Quaternion,QuaternionAlign,QuaternionSlerpNoAlign)
+function VS::QuaternionSlerp( p, q, t, qt = _QUAT ) : (QuaternionAlign, QuaternionSlerpNoAlign)
 {
-	// 0.0 returns p, 1.0 return q.
-
 	// decide if one of the quaternions is backwards
 	local q2 = QuaternionAlign( p, q );
-
-	QuaternionSlerpNoAlign( p, q2, t, qt );
-
-	return qt;
+	return QuaternionSlerpNoAlign( p, q2, t, qt );
 }
 
 //-------------------------------------------------
@@ -664,11 +1810,8 @@ function VS::QuaternionExp( p, q ) : (sqrt, sin, cos)
 	// Theta = XMVector3Length(Q);
 	local Theta = sqrt( p.x*q.x + p.y*q.y + p.z*q.z );
 
-	// XMVectorSinCos(&SinTheta, &CosTheta, Theta);
-	local CosTheta = cos(Theta);
-
 	// Control = XMVectorNearEqual(Theta, Zero, g_XMEpsilon.v);
-	if ( Theta > 1.192092896e-7 )
+	if ( Theta > FLT_EPSILON )
 	{
 		// XMVectorSinCos(&SinTheta, &CosTheta, Theta);
 		local SinTheta = sin(Theta);
@@ -690,7 +1833,7 @@ function VS::QuaternionExp( p, q ) : (sqrt, sin, cos)
 		q.z = p.z;
 	};
 	// Result = XMVectorSelect(CosTheta, Result, g_XMSelect1110.v);
-	q.w = CosTheta
+	q.w = cos(Theta);
 }
 
 //-------------------------------------------------
@@ -703,7 +1846,7 @@ function VS::QuaternionLn( p, q ) : (acos, sin)
 	// const OneMinusEpsilon = XMVectorReplicate(1.0f - 0.00001f);
 
 	// ControlW = XMVectorInBounds(QW, OneMinusEpsilon.v);
-	if ( p.w > 0.99999 || p.w < (-0.99999) )
+	if ( p.w > 0.99999 || -0.99999 > p.w )
 	{
 		// Theta = XMVectorACos(QW);
 		local Theta = acos(p.w);
@@ -733,7 +1876,7 @@ function VS::QuaternionLn( p, q ) : (acos, sin)
 //
 // DirectX (c) Microsoft
 //-------------------------------------------------
-function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, out ) : (Quaternion)
+function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, out ) : (Quaternion, QuaternionSlerpNoAlign)
 {
 	// FLOAT T;
 	// XMVECTOR Q0;
@@ -973,31 +2116,28 @@ function VS::QuaternionAverageExponential( q, nCount, pStack ) : (Quaternion)
 //-----------------------------------------------------------------------------
 // Purpose: Returns the angular delta between the two normalized quaternions in degrees.
 //-----------------------------------------------------------------------------
-function VS::QuaternionAngleDiff( p, q ):(Quaternion,QuaternionMult,min,sqrt,asin)
+function VS::QuaternionAngleDiff( p, q ) : ( Quaternion, QuaternionMult, sqrt, asin )
 {
-// #if(1){
+// #if 1
 	// this code path is here for 2 reasons:
 	// 1 - acos maps 1-epsilon to values much larger than epsilon (vs asin, which maps epsilon to itself)
 	//     this means that in floats, anything below ~0.05 degrees truncates to 0
 	// 2 - normalized quaternions are frequently slightly non-normalized due to float precision issues,
 	//     and the epsilon off of normalized can be several percents of a degree
-	local qInv = Quaternion(),
-	      diff = Quaternion();
 
 	// QuaternionConjugate( q, qInv );
-	qInv.x = -q.x;
-	qInv.y = -q.y;
-	qInv.z = -q.z;
-	qInv.w = q.w;
-
-	QuaternionMult( p, qInv, diff );
+	local qInv = Quaternion( -q.x, -q.y, -q.z, q.w );
+	local diff = QuaternionMult( p, qInv );
 
 	// Note if the quaternion is slightly non-normalized the square root below may be more than 1,
 	// the value is clamped to one otherwise it may result in asin() returning an undefined result.
-	local sinang = min( 1.0, sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z) );
-	local angle = asin(sinang) * 114.591559026; // RAD2DEG * 2.0
-	return angle;
-/* #}else{
+	local sinang = sqrt( diff.x * diff.x + diff.y * diff.y + diff.z * diff.z );
+	if ( sinang > 1.0 )
+		sinang = 1.0;
+
+	return asin(sinang) * RAD2DEG2;
+/*
+#else
 	local q2 = Quaternion();
 	QuaternionAlign( p, q, q2 );
 	local cosom = p.x * q2.x + p.y * q2.y + p.z * q2.z + p.w * q2.w;
@@ -1006,17 +2146,18 @@ function VS::QuaternionAngleDiff( p, q ):(Quaternion,QuaternionMult,min,sqrt,asi
 		if( cosom < 1.0 )
 		{
 			local omega = 2 * fabs( acos( cosom ) );
-			return 57.29577951*omega; // RAD2DEG
+			return RAD2DEG*omega;
 		}
 		return 0.0;
 	}
 	return 180.0;
-}*/
+*/
 }
 
-function VS::QuaternionScale( p, t, q ) : (Vector,min,sqrt,sin,asin)
+function VS::QuaternionScale( p, t, q ) : ( Vector, sqrt, sin, asin )
 {
-if(0){
+/*
+#if 0
 	local p0 = Quaternion();
 	local q = Quaternion();
 	p0.Init( 0.0, 0.0, 0.0, 1.0 );
@@ -1027,16 +2168,15 @@ if(0){
 	{
 		q.w = -q.w;
 	}
-} else {
-	local r;
-
+#else
+*/
 	// FIXME: this isn't overly sensitive to accuracy, and it may be faster to
 	// use the cos part (w) of the quaternion (sin(omega)*N,cos(omega)) to figure the new scale.
 
 	local qv = Vector(p.x,p.y,p.z);
-	local sinom = sqrt( qv.Dot(qv) );
-
-	sinom = min( sinom, 1.0 );
+	local sinom = qv.Length();
+	if ( sinom > 1.0 )
+		sinom = 1.0;
 
 	local sinsom = sin( asin( sinom ) * t );
 
@@ -1044,31 +2184,30 @@ if(0){
 	VectorScale( qv, t, q );
 
 	// rescale rotation
-	r = 1.0 - sinsom * sinsom;
+	local r = 1.0 - sinsom * sinsom;
 
 	// Assert( r >= 0 );
-	if(r < 0.0)
+	if ( r < 0.0 )
 		r = 0.0;
 	r = sqrt( r );
 
 	// keep sign of rotation
-	if(p.w < 0)
+	if ( 0.0 > p.w )
 		q.w = -r;
 	else
 		q.w = r;
-}
 }
 
 // QAngle , QAngle , Vector, float
 function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis, deltaAngle ) : (Quaternion)
 {
 	local srcQuat = Quaternion(),
-	      destQuat = Quaternion(),
-	      srcQuatInv = Quaternion(),
-	      out = Quaternion();
+		destQuat = Quaternion(),
+		srcQuatInv = Quaternion(),
+		out = Quaternion();
 	AngleQuaternion( srcAngles, srcQuat );
 	AngleQuaternion( destAngles, destQuat );
-	QuaternionScale( srcQuat, -1, srcQuatInv );
+	QuaternionScale( srcQuat, -1.0, srcQuatInv );
 	QuaternionMult( destQuat, srcQuatInv, out );
 
 	QuaternionNormalize( out );
@@ -1076,12 +2215,12 @@ function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis, deltaAngl
 }
 
 // QAngle , QAngle , Vector, float
-function VS::RotationDelta( srcAngles, destAngles, out ) : ( matrix3x4_t, Vector )
+function VS::RotationDelta( srcAngles, destAngles, out ) : ( matrix3x4_t )
 {
 	local src = matrix3x4_t(),
-	      srcInv = matrix3x4_t(),
-	      dest = matrix3x4_t(),
-	      xform = matrix3x4_t();
+		srcInv = matrix3x4_t(),
+		dest = matrix3x4_t(),
+		xform = matrix3x4_t();
 
 	AngleMatrix( srcAngles, null, src );
 	AngleMatrix( destAngles, null, dest );
@@ -1091,71 +2230,6 @@ function VS::RotationDelta( srcAngles, destAngles, out ) : ( matrix3x4_t, Vector
 
 	// xformAngles
 	MatrixAngles( dest, out );
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Generates Euler angles given a left-handed orientation matrix. The
-//			columns of the matrix contain the forward, left, and up vectors.
-// Input  : matrix - Left-handed orientation matrix.
-//          angles[PITCH, YAW, ROLL]. Receives right-handed counterclockwise
-//               rotations in degrees around Y, Z, and X respectively.
-//-----------------------------------------------------------------------------
-// QAngle
-function VS::MatrixAngles( matrix, angles = _VEC, position = null ):(sqrt,atan2)
-{
-	matrix = matrix.m;
-
-	if( position )
-	{
-		// MatrixGetColumn( matrix, 3, position );
-		position.x = matrix[0][3];
-		position.y = matrix[1][3];
-		position.z = matrix[2][3];
-	};
-
-	//
-	// Extract the basis vectors from the matrix. Since we only need the Z
-	// component of the up vector, we don't get X and Y.
-	//
-	local forward0 = matrix[0][0];
-	local forward1 = matrix[1][0];
-	local forward2 = matrix[2][0];
-
-	local left0    = matrix[0][1];
-	local left1    = matrix[1][1];
-	local left2    = matrix[2][1];
-
-	local up0      = null;
-	local up1      = null;
-	local up2      = matrix[2][2];
-
-	local xyDist = sqrt( forward0 * forward0 + forward1 * forward1 );
-
-	// enough here to get angles?
-	if( xyDist > 0.001 )
-	{
-		// (yaw)	y = ATAN( forward[1], forward[0] );		-- in our space, forward is the X axis
-		angles.y = 57.29577951*atan2( forward1, forward0 ); // RAD2DEG
-
-		// (pitch)	x = ATAN( -forward[2], sqrt(forward[0]*forward[0]+forward[1]*forward[1]) );
-		angles.x = 57.29577951*atan2( -forward2, xyDist );
-
-		// (roll)	z = ATAN( left[2], up[2] );
-		angles.z = 57.29577951*atan2( left2, up2 );
-	}
-	else	// forward is mostly Z, gimbal lock-
-	{
-		// (yaw)	y = ATAN( -left[0], left[1] );			-- forward is mostly z, so use right for yaw
-		angles.y = 57.29577951*atan2( -left0, left1 );
-
-		// (pitch)	x = ATAN( -forward[2], sqrt(forward[0]*forward[0]+forward[1]*forward[1]) );
-		angles.x = 57.29577951*atan2( -forward2, xyDist );
-
-		// Assume no roll in this case as one degree of freedom has been lost (i.e. yaw == roll)
-		angles.z = 0;
-	};
-
-	return angles;
 }
 
 function VS::MatrixQuaternionFast( matrix, q ) : (sqrt)
@@ -1183,7 +2257,7 @@ function VS::MatrixQuaternionFast( matrix, q ) : (sqrt)
 	}
 	else
 	{
-		if ( matrix[0][0] < (-matrix[1][1]) )
+		if ( -matrix[1][1] > matrix[0][0] )
 		{
 			trace = 1.0 - matrix[0][0] - matrix[1][1] + matrix[2][2];
 			q.x = matrix[0][2] + matrix[2][0];
@@ -1207,17 +2281,14 @@ function VS::MatrixQuaternionFast( matrix, q ) : (sqrt)
 	q.w *= f;
 }
 
-local MatrixAngles = VS.MatrixAngles;
+
 local MatrixQuaternionFast = VS.MatrixQuaternionFast;
 
 function VS::QuaternionMatrix( q, pos, matrix )
 {
 	matrix = matrix.m;
-
-// Original code
-// This should produce the same code as below with optimization, but looking at the assmebly,
-// it doesn't.  There are 7 extra multiplies in the release build of this, go figure.
-// #if(1){
+/*
+#if 1
 	matrix[0][0] = 1.0 - 2.0 * q.y * q.y - 2.0 * q.z * q.z;
 	matrix[1][0] = 2.0 * q.x * q.y + 2.0 * q.w * q.z;
 	matrix[2][0] = 2.0 * q.x * q.z - 2.0 * q.w * q.y;
@@ -1233,40 +2304,43 @@ function VS::QuaternionMatrix( q, pos, matrix )
 	matrix[0][3] = 0.0;
 	matrix[1][3] = 0.0;
 	matrix[2][3] = 0.0;
-/* #}else{
-   float wx, wy, wz, xx, yy, yz, xy, xz, zz, x2, y2, z2;
-    // precalculate common multiplitcations
-    x2 = q.x + q.x;
-	y2 = q.y + q.y;
-    z2 = q.z + q.z;
-    xx = q.x * x2;
-	xy = q.x * y2;
-	xz = q.x * z2;
-    yy = q.y * y2;
-	yz = q.y * z2;
-	zz = q.z * z2;
-    wx = q.w * x2;
-	wy = q.w * y2;
-	wz = q.w * z2;
-    matrix[0][0] = 1.0 - (yy + zz);
-    matrix[0][1] = xy - wz;
-	matrix[0][2] = xz + wy;
-    matrix[0][3] = 0.0;
-    matrix[1][0] = xy + wz;
-	matrix[1][1] = 1.0 - (xx + zz);
-    matrix[1][2] = yz - wx;
-	matrix[1][3] = 0.0;
-    matrix[2][0] = xz - wy;
-	matrix[2][1] = yz + wx;
-    matrix[2][2] = 1.0 - (xx + yy);
-	matrix[2][3] = 0.0;
-#} */
+#else
+*/
+	local x = q.x, y = q.y, z = q.z, w = q.w;
+	local x2 = x + x,
+		y2 = y + y,
+		z2 = z + z,
+		xx = x * x2,
+		xy = x * y2,
+		xz = x * z2,
+		yy = y * y2,
+		yz = y * z2,
+		zz = z * z2,
+		wx = w * x2,
+		wy = w * y2,
+		wz = w * z2;
 
-	if(pos)
+	matrix[0][0] = 1.0 - (yy + zz);
+	matrix[1][0] = xy + wz;
+	matrix[2][0] = xz - wy;
+
+	matrix[0][1] = xy - wz;
+	matrix[1][1] = 1.0 - (xx + zz);
+	matrix[2][1] = yz + wx;
+
+	matrix[0][2] = xz + wy;
+	matrix[1][2] = yz - wx;
+	matrix[2][2] = 1.0 - (xx + yy);
+
+	if (pos)
 	{
 		matrix[0][3] = pos.x;
 		matrix[1][3] = pos.y;
 		matrix[2][3] = pos.z;
+	}
+	else
+	{
+		matrix[0][3] = matrix[1][3] = matrix[2][3] = 0.0;
 	};
 }
 
@@ -1277,35 +2351,35 @@ function VS::QuaternionMatrix( q, pos, matrix )
 //-----------------------------------------------------------------------------
 function VS::QuaternionAngles2( q, angles = _VEC ):(asin,atan2)
 {
-/*# if(1){
+/*
+#if 1
 	// FIXME: doing it this way calculates too much data, needs to do an optimized version...
 	local matrix = matrix3x4_t();
 	QuaternionMatrix( q, matrix );
 	MatrixAngles( matrix, angles );
-#}else{ */
+#else
+*/
 	local m11 = ( 2.0 * q.w * q.w ) + ( 2.0 * q.x * q.x ) - 1.0,
 	      m12 = ( 2.0 * q.x * q.y ) + ( 2.0 * q.w * q.z ),
 	      m13 = ( 2.0 * q.x * q.z ) - ( 2.0 * q.w * q.y ),
 	      m23 = ( 2.0 * q.y * q.z ) + ( 2.0 * q.w * q.x ),
 	      m33 = ( 2.0 * q.w * q.w ) + ( 2.0 * q.z * q.z ) - 1.0;
 	// FIXME: this code has a singularity near PITCH +-90
-	angles.y = 57.29577951*atan2(m12, m11);
-	angles.x = 57.29577951*asin(-m13); // RAD2DEG
-	angles.z = 57.29577951*atan2(m23, m33);
-//#}
+	angles.y = RAD2DEG*atan2(m12, m11);
+	angles.x = RAD2DEG*asin(-m13);
+	angles.z = RAD2DEG*atan2(m23, m33);
+
 	return angles;
 }
 
 local QuaternionMatrix = VS.QuaternionMatrix;
 
-function VS::QuaternionAngles( q, angles = _VEC ):(matrix3x4_t,QuaternionMatrix,MatrixAngles)
+function VS::QuaternionAngles( q, angles = _VEC ) : ( matrix3x4_t, QuaternionMatrix, MatrixAngles )
 {
 	// FIXME: doing it this way calculates too much data, needs to do an optimized version...
 	local matrix = matrix3x4_t();
 	QuaternionMatrix( q, null, matrix );
-	MatrixAngles( matrix, angles );
-
-	return angles;
+	return MatrixAngles( matrix, angles );
 }
 
 //-----------------------------------------------------------------------------
@@ -1314,7 +2388,7 @@ function VS::QuaternionAngles( q, angles = _VEC ):(matrix3x4_t,QuaternionMatrix,
 //-----------------------------------------------------------------------------
 function VS::QuaternionAxisAngle( q, axis ):(acos)
 {
-	local angle = acos(q.w)*114.591559026; // RAD2DEG * 2.0
+	local angle = acos(q.w)*RAD2DEG2;
 
 	// AngleNormalize
 	if( angle > 180.0 )
@@ -1333,15 +2407,14 @@ function VS::QuaternionAxisAngle( q, axis ):(acos)
 //-----------------------------------------------------------------------------
 function VS::AxisAngleQuaternion( axis, angle, q = _QUAT ):(sin,cos)
 {
-	angle = angle * 0.008726646; // DEG2RAD / 2.0
+	angle *= DEG2RADDIV2;
 
-	local sa = sin(angle),
-	      ca = cos(angle);
+	local sa = sin(angle);
 
 	q.x = axis.x * sa;
 	q.y = axis.y * sa;
 	q.z = axis.z * sa;
-	q.w = ca;
+	q.w = cos(angle);
 
 	return q;
 }
@@ -1356,54 +2429,52 @@ function VS::AxisAngleQuaternion( axis, angle, q = _QUAT ):(sin,cos)
 //-----------------------------------------------------------------------------
 function VS::AngleQuaternion( angles, outQuat = _QUAT ):(sin,cos)
 {
-	local ay = angles.y * 0.008726646, // DEG2RAD / 2
-	      ax = angles.x * 0.008726646,
-	      az = angles.z * 0.008726646;
+	local ay = angles.y * DEG2RADDIV2,
+		ax = angles.x * DEG2RADDIV2,
+		az = angles.z * DEG2RADDIV2;
 
 	local sy = sin(ay),
-	      cy = cos(ay),
+		cy = cos(ay),
 
-	      sp = sin(ax),
-	      cp = cos(ax),
+		sp = sin(ax),
+		cp = cos(ax),
 
-	      sr = sin(az),
-	      cr = cos(az);
+		sr = sin(az),
+		cr = cos(az);
 
 	local srXcp = sr * cp, crXsp = cr * sp;
-	outQuat.x = srXcp*cy-crXsp*sy; // X
-	outQuat.y = crXsp*cy+srXcp*sy; // Y
+	outQuat.x = srXcp*cy-crXsp*sy;
+	outQuat.y = crXsp*cy+srXcp*sy;
 
 	local crXcp = cr * cp, srXsp = sr * sp;
-	outQuat.z = crXcp*sy-srXsp*cy; // Z
-	outQuat.w = crXcp*cy+srXsp*sy; // W (real component)
+	outQuat.z = crXcp*sy-srXsp*cy;
+	outQuat.w = crXcp*cy+srXsp*sy;
 
 	return outQuat;
 }
 
 local AngleQuaternion = VS.AngleQuaternion;
 
-function VS::MatrixQuaternion( mat, q = _QUAT ):(AngleQuaternion,MatrixAngles)
+function VS::MatrixQuaternion( mat, q = _QUAT ) : (AngleQuaternion, MatrixAngles)
 {
 	local angles = MatrixAngles( mat );
-	AngleQuaternion( angles, q );
-	return q;
+	return AngleQuaternion( angles, q );
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: Converts a basis to a quaternion
 //-----------------------------------------------------------------------------
-function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT ):(matrix3x4_t,fabs,MatrixQuaternionFast)
+function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT ) : ( matrix3x4_t, MatrixQuaternionFast )
 {
-	Assert( fabs( vecForward.LengthSqr() - 1.0 ) < 1.e-3 );
-	Assert( fabs( vecRight.LengthSqr() - 1.0 ) < 1.e-3 );
-	Assert( fabs( vecUp.LengthSqr() - 1.0 ) < 1.e-3 );
+	// Assert( fabs( vecForward.LengthSqr() - 1.0 ) < 1.e-3 );
+	// Assert( fabs( vecRight.LengthSqr() - 1.0 ) < 1.e-3 );
+	// Assert( fabs( vecUp.LengthSqr() - 1.0 ) < 1.e-3 );
 
-	// local vecLeft = vecRight;
-	local vecLeft = vecRight * -1.0;
+	// local vecLeft = vecRight * -1.0;
 
 	// FIXME: Don't know why, but this doesn't match at all with other result
 	// so we can't use this super-fast way.
-	/*
+/*
 	// Find the trace of the matrix:
 	local flTrace = vecForward.x + vecLeft.y + vecUp.z + 1.0;
 	if( flTrace > 1.e-6 )
@@ -1446,16 +2517,14 @@ function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT ):(matrix
 		}
 	}
 	QuaternionNormalize( q );
-	*/
+*/
 
-	// Version 2: Go through angles
+	// Version 2:
 
-	local mat = matrix3x4_t( vecForward, vecLeft, vecUp );
-
-	// mat -> QAng -> Quat
-	// local angles = Vector();
-	// MatrixAngles( mat, angles );
-	// AngleQuaternion( angles, q );
+	local mat = matrix3x4_t(
+		vecForward.x, -vecRight.x, vecUp.x, 0.0,
+		vecForward.y, -vecRight.y, vecUp.y, 0.0,
+		vecForward.z, -vecRight.z, vecUp.z, 0.0 );
 
 	MatrixQuaternionFast( mat, q );
 
@@ -1467,147 +2536,21 @@ function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT ):(matrix
 	return q;
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: converts engine euler angles into a matrix
-// Input  : vec3_t angles - PITCH, YAW, ROLL
-// Output : *matrix - left-handed column matrix
-//          the basis vectors for the rotations will be in the columns as follows:
-//          matrix[][0] is forward
-//          matrix[][1] is left
-//          matrix[][2] is up
-//-----------------------------------------------------------------------------
-function VS::AngleMatrix( angles, position, matrix ):(sin,cos)
-{
-	local ay = 0.01745329*angles.y, // DEG2RAD
-	      ax = 0.01745329*angles.x,
-	      az = 0.01745329*angles.z;
 
-	local sy = sin(ay),
-	      cy = cos(ay),
-
-	      sp = sin(ax),
-	      cp = cos(ax),
-
-	      sr = sin(az),
-	      cr = cos(az);
-
-	matrix = matrix.m;
-	// matrix = (YAW * PITCH) * ROLL
-	matrix[0][0] = cp*cy;
-	matrix[1][0] = cp*sy;
-	matrix[2][0] = -sp;
-
-	local crcy = cr*cy,
-	      crsy = cr*sy,
-	      srcy = sr*cy,
-	      srsy = sr*sy;
-
-	matrix[0][1] = sp*srcy-crsy;
-	matrix[1][1] = sp*srsy+crcy;
-	matrix[2][1] = sr*cp;
-
-	matrix[0][2] = (sp*crcy+srsy);
-	matrix[1][2] = (sp*crsy-srcy);
-	matrix[2][2] = cr*cp;
-
-	matrix[0][3] = 0.0;
-	matrix[1][3] = 0.0;
-	matrix[2][3] = 0.0;
-
-	if( position )
-	{
-		// MatrixSetColumn( position, 3, matrix );
-		matrix[0][3] = position.x;
-		matrix[1][3] = position.y;
-		matrix[2][3] = position.z;
-	};
-}
-
-function VS::AngleIMatrix( angles, position, matrix ):(sin,cos,VectorRotate)
-{
-	local ay = 0.01745329*angles.y, // DEG2RAD
-	      ax = 0.01745329*angles.x,
-	      az = 0.01745329*angles.z;
-
-	local sy = sin(ay),
-	      cy = cos(ay),
-
-	      sp = sin(ax),
-	      cp = cos(ax),
-
-	      sr = sin(az),
-	      cr = cos(az);
-
-	local m = matrix.m;
-	// matrix = (YAW * PITCH) * ROLL
-	m[0][0] = cp*cy;
-	m[0][1] = cp*sy;
-	m[0][2] = -sp;
-
-	m[1][0] = sr*sp*cy+cr*-sy;
-	m[1][1] = sr*sp*sy+cr*cy;
-	m[1][2] = sr*cp;
-
-	m[2][0] = (cr*sp*cy+-sr*-sy);
-	m[2][1] = (cr*sp*sy+-sr*cy);
-	m[2][2] = cr*cp;
-
-	m[0][3] = 0.0;
-	m[1][3] = 0.0;
-	m[2][3] = 0.0;
-
-	if( position )
-	{
-		local vecTranslation = VectorRotate( position, matrix ) * -1.0;
-		// MatrixSetColumn( vecTranslation, 3, matrix );
-		m[0][3] = vecTranslation.x;
-		m[1][3] = vecTranslation.y;
-		m[2][3] = vecTranslation.z;
-	};
-}
-
-local AngleMatrix = VS.AngleMatrix;
-local AngleIMatrix = VS.AngleIMatrix;
-
-// Matrix is right-handed x=forward, y=left, z=up.  Valve uses left-handed convention for vectors in the game code (forward, right, up)
-function VS::MatrixVectors( matrix, pForward, pRight, pUp )
-{
-	matrix = matrix.m;
-
-	// MatrixGetColumn( matrix, 0, pForward );
-	pForward.x = matrix[0][0];
-	pForward.y = matrix[1][0];
-	pForward.z = matrix[2][0];
-
-	// MatrixGetColumn( matrix, 1, pRight );
-	pRight.x = matrix[0][1];
-	pRight.y = matrix[1][1];
-	pRight.z = matrix[2][1];
-
-	// MatrixGetColumn( matrix, 2, pUp );
-	pUp.x = matrix[0][2];
-	pUp.y = matrix[1][2];
-	pUp.z = matrix[2][2];
-
-	// VectorMultiply( pRight, -1.0, pRight );
-	pRight.x *= -1.0;
-	pRight.y *= -1.0;
-	pRight.z *= -1.0;
-}
-
-function VS::MatricesAreEqual( src1, src2, flTolerance ):(fabs)
+function VS::MatricesAreEqual( src1, src2, flTolerance )
 {
 	src1 = src1.m;
 	src2 = src2.m;
 
-	for( local i = 0; i < 3; ++i )
-	{
-		for( local j = 0; j < 4; ++j )
+	for ( local i = 3; i--; )
+		for ( local j = 4; j--; )
 		{
-			if( fabs( src1[i][j] - src2[i][j] ) > flTolerance )
+			local f = src1[i][j] - src2[i][j];
+			if ( 0.0 > f ) f = -f;
+			if ( f > flTolerance )
 				return false;
 		}
-	}
+
 	return true;
 }
 
@@ -1633,16 +2576,24 @@ function VS::MatrixCopy( src, dst )
 }
 
 // NOTE: This is just the transpose not a general inverse
-function VS::MatrixInvert( in1, out ):(a_swap)
+function VS::MatrixInvert( in1, out )
 {
 	in1 = in1.m;
 	out = out.m;
 
-	if( in1 == out )
+	if ( in1 == out )
 	{
-		a_swap(out[0],1,out[1],0);
-		a_swap(out[0],2,out[2],0);
-		a_swap(out[1],2,out[2],1);
+		local t = out[0][1];
+		out[0][1] = out[1][0];
+		out[1][0] = t;
+
+		t = out[0][2];
+		out[0][2] = out[2][0];
+		out[2][0] = t;
+
+		t = out[1][2];
+		out[1][2] = out[2][1];
+		out[2][1] = t;
 	}
 	else
 	{
@@ -1676,15 +2627,11 @@ function VS::MatrixInvert( in1, out ):(a_swap)
 //-----------------------------------------------------------------------------
 function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 {
-	local iRow, i, j, iTemp, iTest;
-	local mul, fTest, fLargest;
-
 	local mat = array( 4 );
 	for ( local i = 4; i--; )
 		mat[i] = array( 8, 0.0 );
 
-	local rowMap = array( 4, 0 ), iLargest;
-	local pOut, pRow, pScaleRow;
+	local rowMap = array( 4, 0 );
 
 	// How it's done.
 	// AX = I
@@ -1695,10 +2642,10 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 	src = src.m;
 
 	// Setup AI
-	for( i = 0; i < 4; i++ )
+	for ( local i = 0; i < 4; ++i )
 	{
 		local pIn = src[i];
-		pOut = mat[i];
+		local pOut = mat[i];
 
 		pOut[0] = pIn[0];
 		pOut[1] = pIn[1];
@@ -1718,15 +2665,15 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 	// 2. Add a multiple of one row to another.
 	// 3. Interchange two rows.
 
-	for(iRow=0; iRow < 4; iRow++)
+	for ( local iRow = 0; iRow < 4; ++iRow )
 	{
 		// Find the row with the largest element in this column.
-		fLargest = 0.00001;
-		iLargest = -1;
-		for(iTest=iRow; iTest < 4; iTest++)
+		local fLargest = 0.00001;
+		local iLargest = 0xFFFFFFFF;
+		for ( local iTest = iRow; iTest < 4; ++iTest )
 		{
-			fTest = fabs(mat[rowMap[iTest]][iRow]);
-			if(fTest > fLargest)
+			local fTest = fabs( mat[rowMap[iTest]][iRow] );
+			if (fTest > fLargest)
 			{
 				iLargest = iTest;
 				fLargest = fTest;
@@ -1734,18 +2681,18 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 		}
 
 		// They're all too small.. sorry.
-		if(iLargest == -1)
+		if (iLargest == 0xFFFFFFFF)
 			return false;
 
 		// Swap the rows.
-		iTemp = rowMap[iLargest];
+		local iTemp = rowMap[iLargest];
 		rowMap[iLargest] = rowMap[iRow];
 		rowMap[iRow] = iTemp;
 
-		pRow = mat[rowMap[iRow]];
+		local pRow = mat[rowMap[iRow]];
 
 		// Divide this row by the element.
-		mul = 1.0 / pRow[iRow];
+		local mul = 1.0 / pRow[iRow];
 			pRow[0] *= mul;
 			pRow[1] *= mul;
 			pRow[2] *= mul;
@@ -1754,28 +2701,26 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 			pRow[5] *= mul;
 			pRow[6] *= mul;
 			pRow[7] *= mul;
-
 		pRow[iRow] = 1.0; // Preserve accuracy...
 
 		// Eliminate this element from the other rows using operation 2.
-		for(i=0; i < 4; i++)
+		for ( local i = 0; i < 4; ++i )
 		{
-			if(i == iRow)
+			if (i == iRow)
 				continue;
 
-			pScaleRow = mat[rowMap[i]];
+			local pScaleRow = mat[rowMap[i]];
 
 			// Multiply this row by -(iRow*the element).
-			mul = -pScaleRow[iRow];
-				pScaleRow[0] += pRow[0] * mul;
-				pScaleRow[1] += pRow[1] * mul;
-				pScaleRow[2] += pRow[2] * mul;
-				pScaleRow[3] += pRow[3] * mul;
-				pScaleRow[4] += pRow[4] * mul;
-				pScaleRow[5] += pRow[5] * mul;
-				pScaleRow[6] += pRow[6] * mul;
-				pScaleRow[7] += pRow[7] * mul;
-
+			local mul = pScaleRow[iRow];
+				pScaleRow[0] -= pRow[0] * mul;
+				pScaleRow[1] -= pRow[1] * mul;
+				pScaleRow[2] -= pRow[2] * mul;
+				pScaleRow[3] -= pRow[3] * mul;
+				pScaleRow[4] -= pRow[4] * mul;
+				pScaleRow[5] -= pRow[5] * mul;
+				pScaleRow[6] -= pRow[6] * mul;
+				pScaleRow[7] -= pRow[7] * mul;
 			pScaleRow[iRow] = 0.0; // Preserve accuracy...
 		}
 	}
@@ -1783,10 +2728,10 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 	dst = dst.m;
 
 	// The inverse is on the right side of AX now (the identity is on the left).
-	for(i=0; i < 4; i++)
+	for ( local i = 0; i < 4; ++i )
 	{
 		local pIn = mat[rowMap[i]];
-		pOut = dst[i];
+		local pOut = dst[i];
 			pOut[0] = pIn[0 + 4];
 			pOut[1] = pIn[1 + 4];
 			pOut[2] = pIn[2 + 4];
@@ -1820,6 +2765,21 @@ function VS::MatrixInverseTR( src, dst )
 	dst[3][0] = dst[3][1] = dst[3][2] = 0.0;
 	dst[3][3] = 1.0;
 }
+
+/*
+// matrix, int, vector
+function VS::MatrixRowDotProduct( in1, row, in2 )
+{
+	in1row = in1.m[row];
+	return in1row[0] * in2.x + in1row[1] * in2.y + in1row[2] * in2.z;
+}
+
+function VS::MatrixColumnDotProduct( in1, col, in2 )
+{
+	in1 = in1.m;
+	return in1[0][col] * in2.x + in1[1][col] * in2.y + in1[2][col] * in2.z;
+}
+*/
 
 function VS::MatrixGetColumn( in1, column, out = _VEC )
 {
@@ -1860,14 +2820,14 @@ function VS::MatrixScaleByZero( out )
 {
 	out = out.m;
 
-	out[0][0] = 0.0;
-	out[1][0] = 0.0;
-	out[2][0] = 0.0;
-	out[0][1] = 0.0;
-	out[1][1] = 0.0;
-	out[2][1] = 0.0;
-	out[0][2] = 0.0;
-	out[1][2] = 0.0;
+	out[0][0] =
+	out[1][0] =
+	out[2][0] =
+	out[0][1] =
+	out[1][1] =
+	out[2][1] =
+	out[0][2] =
+	out[1][2] =
 	out[2][2] = 0.0;
 }
 
@@ -1877,9 +2837,11 @@ function VS::SetIdentityMatrix( matrix )
 
 	matrix = matrix.m;
 
-	matrix[0][0] = 1.0; matrix[0][1] = 0.0; matrix[0][2] = 0.0; matrix[0][3] = 0.0;
-	matrix[1][0] = 0.0; matrix[1][1] = 1.0; matrix[1][2] = 0.0; matrix[1][3] = 0.0;
-	matrix[2][0] = 0.0; matrix[2][1] = 0.0; matrix[2][2] = 1.0; matrix[2][3] = 0.0;
+	matrix[0][0] = matrix[1][1] = matrix[2][2] = 1.0;
+
+	matrix[0][1] = matrix[0][2] = matrix[0][3] =
+	matrix[1][0] = matrix[1][2] = matrix[1][3] =
+	matrix[2][0] = matrix[2][1] = matrix[2][3] = 0.0;
 }
 
 //-----------------------------------------------------------------------------
@@ -1889,20 +2851,24 @@ function VS::SetScaleMatrix( x, y, z, dst )
 {
 	dst = dst.m;
 
-	dst[0][0] = x;   dst[0][1] = 0.0; dst[0][2] = 0.0; dst[0][3] = 0.0;
-	dst[1][0] = 0.0; dst[1][1] = y;   dst[1][2] = 0.0; dst[1][3] = 0.0;
-	dst[2][0] = 0.0; dst[2][1] = 0.0; dst[2][2] = z;   dst[2][3] = 0.0;
+	dst[0][0] = x;
+	dst[1][1] = y;
+	dst[2][2] = z;
+
+	dst[0][1] = dst[0][2] = dst[0][3] =
+	dst[1][0] = dst[1][2] = dst[1][3] =
+	dst[2][0] = dst[2][1] = dst[2][3] = 0.0;
 }
 
 //-----------------------------------------------------------------------------
 // Compute a matrix that has the correct orientation but which has an origin at
 // the center of the bounds
 //-----------------------------------------------------------------------------
-function VS::ComputeCenterMatrix( origin, angles, mins, maxs, matrix ):(VectorRotate,AngleMatrix)
+function VS::ComputeCenterMatrix( origin, angles, mins, maxs, matrix ) : (VectorRotate, AngleMatrix)
 {
-	local centroid = (mins + maxs)*0.5;
 	AngleMatrix( angles, null, matrix );
 
+	local centroid = (mins + maxs)*0.5;
 	local worldCentroid = VectorRotate( centroid, matrix ) + origin;
 
 	// MatrixSetColumn( worldCentroid, 3, matrix );
@@ -1912,16 +2878,15 @@ function VS::ComputeCenterMatrix( origin, angles, mins, maxs, matrix ):(VectorRo
 	matrix[2][3] = worldCentroid.z;
 }
 
-function VS::ComputeCenterIMatrix( origin, angles, mins, maxs, matrix ):(VectorRotate,AngleIMatrix)
+function VS::ComputeCenterIMatrix( origin, angles, mins, maxs, matrix ) : (VectorRotate, AngleIMatrix)
 {
-	local centroid = (mins + maxs)*-0.5;
 	AngleIMatrix( angles, null, matrix );
 
 	// For the translational component here, note that the origin in world space
 	// is T = R * C + O, (R = rotation matrix, C = centroid in local space, O = origin in world space)
 	// The IMatrix translation = - transpose(R) * T = -C - transpose(R) * 0
 	local localOrigin = VectorRotate( origin, matrix );
-	centroid -= localOrigin;
+	local centroid = (mins + maxs)*-0.5 - localOrigin;
 
 	// MatrixSetColumn( centroid, 3, matrix );
 	matrix = matrix.m;
@@ -1933,7 +2898,7 @@ function VS::ComputeCenterIMatrix( origin, angles, mins, maxs, matrix ):(VectorR
 //-----------------------------------------------------------------------------
 // Compute a matrix which is the absolute value of another
 //-----------------------------------------------------------------------------
-function VS::ComputeAbsMatrix( in1, out ):(fabs)
+function VS::ComputeAbsMatrix( in1, out ) : (fabs)
 {
 	in1 = in1.m;
 	out = out.m;
@@ -2087,19 +3052,19 @@ function VS::MatrixTranslate( dst, vecTranslation )
 //-----------------------------------------------------------------------------
 function VS::MatrixBuildRotationAboutAxis( vAxisOfRot, angleDegrees, dst ) : ( sin, cos )
 {
-	local radians = angleDegrees * 0.01745329; // DEG2RAD
+	local radians = angleDegrees * DEG2RAD;
 	local fSin = sin( radians );
 	local fCos = cos( radians );
 
-	local axisXSquared = vAxisOfRot.x * vAxisOfRot.x;
-	local axisYSquared = vAxisOfRot.y * vAxisOfRot.y;
-	local axisZSquared = vAxisOfRot.z * vAxisOfRot.z;
+	local xx = vAxisOfRot.x * vAxisOfRot.x;
+	local yy = vAxisOfRot.y * vAxisOfRot.y;
+	local zz = vAxisOfRot.z * vAxisOfRot.z;
 
 	dst = dst.m;
 
-	dst[0][0] = axisXSquared + (1.0 - axisXSquared) * fCos;
-	dst[1][1] = axisYSquared + (1.0 - axisYSquared) * fCos;
-	dst[2][2] = axisZSquared + (1.0 - axisZSquared) * fCos;
+	dst[0][0] = xx + (1.0 - xx) * fCos;
+	dst[1][1] = yy + (1.0 - yy) * fCos;
+	dst[2][2] = zz + (1.0 - zz) * fCos;
 
 	fCos = 1.0 - fCos;
 
@@ -2123,6 +3088,8 @@ function VS::MatrixBuildRotationAboutAxis( vAxisOfRot, angleDegrees, dst ) : ( s
 	dst[0][3] = dst[1][3] = dst[2][3] = 0.0;
 }
 
+local MatrixBuildRotationAboutAxis = VS.MatrixBuildRotationAboutAxis;
+
 //-----------------------------------------------------------------------------
 // Builds a rotation matrix that rotates one direction vector into another
 //
@@ -2130,7 +3097,7 @@ function VS::MatrixBuildRotationAboutAxis( vAxisOfRot, angleDegrees, dst ) : ( s
 //          Vector
 //          Vector
 //-----------------------------------------------------------------------------
-function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Vector, fabs, acos )
+function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Vector, fabs, acos, MatrixBuildRotationAboutAxis )
 {
 	local angle = initialDirection.Dot( finalDirection );
 	// Assert( IsFinite(angle) );
@@ -2141,10 +3108,9 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Ve
 	if ( angle > 0.999 )
 	{
 		// parallel case
-		SetIdentityMatrix(dst);
-		return;
+		return SetIdentityMatrix(dst);
 	}
-	else if ( angle < (-0.999) )
+	else if ( -0.999 > angle )
 	{
 		// antiparallel case, pick any axis in the plane
 		// perpendicular to the final direction. Choose the direction (x,y,z)
@@ -2160,7 +3126,11 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Ve
 		axis = Vector();
 		axis[idx] = 1.0;
 
-		VectorMA( axis, -axis.Dot( finalDirection ), finalDirection, axis );
+		// VectorMA( axis, -axis.Dot( finalDirection ), finalDirection, axis );
+		local t = -axis.Dot( finalDirection );
+		axis.x += finalDirection.x * t;
+		axis.y += finalDirection.y * t;
+		axis.z += finalDirection.z * t;
 		axis.Norm();
 		angle = 180.0;
 	}
@@ -2168,7 +3138,7 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Ve
 	{
 		axis = initialDirection.Cross( finalDirection );
 		axis.Norm();
-		angle = acos(angle) * 57.29577951; // RAD2DEG
+		angle = acos(angle) * RAD2DEG;
 	};;
 
 	return MatrixBuildRotationAboutAxis( axis, angle, dst );
@@ -2176,7 +3146,7 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Ve
 /*
 #ifdef _DEBUG
 	local test = Vector();
-	VectorRotate( initialDirection, test, dst );
+	VectorRotate( initialDirection, dst, test );
 	test -= finalDirection;
 	Assert( test.LengthSqr() < 1e-3 );
 #endif
@@ -2235,10 +3205,10 @@ function VS::Vector3DMultiplyPosition( src1, src2, dst )
 function VS::Vector3DMultiplyProjective( src1, src2, dst )
 {
 	src1 = src1.m;
-	local invw = 1.0 / ( src1[3][0] * src2.x + src1[3][1] * src2.y + src1[3][2] * src2.z );
-	local x = invw   * ( src1[0][0] * src2.x + src1[0][1] * src2.y + src1[0][2] * src2.z );
-	local y = invw   * ( src1[1][0] * src2.x + src1[1][1] * src2.y + src1[1][2] * src2.z );
-	local z = invw   * ( src1[2][0] * src2.x + src1[2][1] * src2.y + src1[2][2] * src2.z );
+	local invw = 1.0  / ( src1[3][0] * src2.x + src1[3][1] * src2.y + src1[3][2] * src2.z );
+	local x    = invw * ( src1[0][0] * src2.x + src1[0][1] * src2.y + src1[0][2] * src2.z );
+	local y    = invw * ( src1[1][0] * src2.x + src1[1][1] * src2.y + src1[1][2] * src2.z );
+	local z    = invw * ( src1[2][0] * src2.x + src1[2][1] * src2.y + src1[2][2] * src2.z );
 
 	dst.x = x;
 	dst.y = y;
@@ -2269,7 +3239,8 @@ function VS::Vector3DMultiplyPositionProjective( src1, src2, dst )
 //-----------------------------------------------------------------------------
 // Transforms a AABB into another space; which will inherently grow the box.
 //-----------------------------------------------------------------------------
-function VS::TransformAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOut ):(Vector,fabs,VectorAdd,VectorSubtract,VectorTransform)
+function VS::TransformAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOut )
+	: ( Vector, fabs, VectorAdd, VectorSubtract, VectorTransform )
 {
 	local localCenter = (vecMinsIn + vecMaxsIn) * 0.5;
 
@@ -2279,17 +3250,18 @@ function VS::TransformAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxs
 
 	transform = transform.m;
 
-	local worldExtents = Vector( fabs(localExtents.x*transform[0][0]) +
-	                             fabs(localExtents.y*transform[0][1]) +
-	                             fabs(localExtents.z*transform[0][2]),
+	local worldExtents = Vector(
+		fabs( localExtents.x * transform[0][0] ) +
+		fabs( localExtents.y * transform[0][1] ) +
+		fabs( localExtents.z * transform[0][2] ),
 
-	                             fabs(localExtents.x*transform[1][0]) +
-	                             fabs(localExtents.y*transform[1][1]) +
-	                             fabs(localExtents.z*transform[1][2]),
+		fabs( localExtents.x * transform[1][0] ) +
+		fabs( localExtents.y * transform[1][1] ) +
+		fabs( localExtents.z * transform[1][2] ),
 
-	                             fabs(localExtents.x*transform[2][0]) +
-	                             fabs(localExtents.y*transform[2][1]) +
-	                             fabs(localExtents.z*transform[2][2]) );
+		fabs( localExtents.x * transform[2][0] ) +
+		fabs( localExtents.y * transform[2][1] ) +
+		fabs( localExtents.z * transform[2][2] ) );
 
 	VectorSubtract( worldCenter, worldExtents, vecMinsOut );
 	VectorAdd( worldCenter, worldExtents, vecMaxsOut );
@@ -2298,7 +3270,8 @@ function VS::TransformAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxs
 //-----------------------------------------------------------------------------
 // Uses the inverse transform of in1
 //-----------------------------------------------------------------------------
-function VS::ITransformAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOut ):(Vector,fabs,VectorAdd,VectorSubtract,VectorITransform)
+function VS::ITransformAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOut )
+	: ( Vector, fabs, VectorAdd, VectorSubtract, VectorITransform )
 {
 	local worldCenter = (vecMinsIn + vecMaxsIn) * 0.5;
 
@@ -2308,17 +3281,18 @@ function VS::ITransformAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMax
 
 	transform = transform.m;
 
-	local localExtents = Vector( fabs( worldExtents.x * transform[0][0] ) +
-	                             fabs( worldExtents.y * transform[1][0] ) +
-	                             fabs( worldExtents.z * transform[2][0] ),
+	local localExtents = Vector(
+		fabs( worldExtents.x * transform[0][0] ) +
+		fabs( worldExtents.y * transform[1][0] ) +
+		fabs( worldExtents.z * transform[2][0] ),
 
-	                             fabs( worldExtents.x * transform[0][1] ) +
-	                             fabs( worldExtents.y * transform[1][1] ) +
-	                             fabs( worldExtents.z * transform[2][1] ),
+		fabs( worldExtents.x * transform[0][1] ) +
+		fabs( worldExtents.y * transform[1][1] ) +
+		fabs( worldExtents.z * transform[2][1] ),
 
-	                             fabs( worldExtents.x * transform[0][2] ) +
-	                             fabs( worldExtents.y * transform[1][2] ) +
-	                             fabs( worldExtents.z * transform[2][2] ) );
+		fabs( worldExtents.x * transform[0][2] ) +
+		fabs( worldExtents.y * transform[1][2] ) +
+		fabs( worldExtents.z * transform[2][2] ) );
 
 	VectorSubtract( localCenter, localExtents, vecMinsOut );
 	VectorAdd( localCenter, localExtents, vecMaxsOut );
@@ -2328,7 +3302,8 @@ function VS::ITransformAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMax
 // Rotates a AABB into another space; which will inherently grow the box.
 // (same as TransformAABB, but doesn't take the translation into account)
 //-----------------------------------------------------------------------------
-function VS::RotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOut ):(Vector,fabs,VectorAdd,VectorSubtract,VectorRotate)
+function VS::RotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOut )
+	: ( Vector, fabs, VectorAdd, VectorSubtract, VectorRotate )
 {
 	local localCenter = (vecMinsIn + vecMaxsIn) * 0.5;
 
@@ -2338,17 +3313,18 @@ function VS::RotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOut
 
 	transform = transform.m;
 
-	local newExtents = Vector( fabs(localExtents.x*transform[0][0]) +
-	                           fabs(localExtents.y*transform[0][1]) +
-	                           fabs(localExtents.z*transform[0][2]),
+	local newExtents = Vector(
+		fabs( localExtents.x * transform[0][0] ) +
+		fabs( localExtents.y * transform[0][1] ) +
+		fabs( localExtents.z * transform[0][2] ),
 
-	                           fabs(localExtents.x*transform[1][0]) +
-	                           fabs(localExtents.y*transform[1][1]) +
-	                           fabs(localExtents.z*transform[1][2]),
+		fabs( localExtents.x * transform[1][0] ) +
+		fabs( localExtents.y * transform[1][1] ) +
+		fabs( localExtents.z * transform[1][2] ),
 
-	                           fabs(localExtents.x*transform[2][0]) +
-	                           fabs(localExtents.y*transform[2][1]) +
-	                           fabs(localExtents.z*transform[2][2]) );
+		fabs( localExtents.x * transform[2][0] ) +
+		fabs( localExtents.y * transform[2][1] ) +
+		fabs( localExtents.z * transform[2][2] ) );
 
 	VectorSubtract( newCenter, newExtents, vecMinsOut );
 	VectorAdd( newCenter, newExtents, vecMaxsOut );
@@ -2357,7 +3333,8 @@ function VS::RotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOut
 //-----------------------------------------------------------------------------
 // Uses the inverse transform of in1
 //-----------------------------------------------------------------------------
-function VS::IRotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOut ):(Vector,fabs,VectorAdd,VectorSubtract,VectorIRotate)
+function VS::IRotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOut )
+	: ( Vector, fabs, VectorAdd, VectorSubtract, VectorIRotate )
 {
 	local oldCenter = (vecMinsIn + vecMaxsIn) * 0.5;
 
@@ -2367,17 +3344,18 @@ function VS::IRotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOu
 
 	transform = transform.m;
 
-	local newExtents = Vector( fabs( oldExtents.x * transform[0][0] ) +
-	                           fabs( oldExtents.y * transform[1][0] ) +
-	                           fabs( oldExtents.z * transform[2][0] ),
+	local newExtents = Vector(
+		fabs( oldExtents.x * transform[0][0] ) +
+		fabs( oldExtents.y * transform[1][0] ) +
+		fabs( oldExtents.z * transform[2][0] ),
 
-	                           fabs( oldExtents.x * transform[0][1] ) +
-	                           fabs( oldExtents.y * transform[1][1] ) +
-	                           fabs( oldExtents.z * transform[2][1] ),
+		fabs( oldExtents.x * transform[0][1] ) +
+		fabs( oldExtents.y * transform[1][1] ) +
+		fabs( oldExtents.z * transform[2][1] ),
 
-	                           fabs( oldExtents.x * transform[0][2] ) +
-	                           fabs( oldExtents.y * transform[1][2] ) +
-	                           fabs( oldExtents.z * transform[2][2] ) );
+		fabs( oldExtents.x * transform[0][2] ) +
+		fabs( oldExtents.y * transform[1][2] ) +
+		fabs( oldExtents.z * transform[2][2] ) );
 
 	VectorSubtract( newCenter, newExtents, vecMinsOut );
 	VectorAdd( newCenter, newExtents, vecMaxsOut );
@@ -2400,7 +3378,8 @@ function VS::IRotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOu
 // |/      |/
 // 0-------4
 //
-function VS::GetBoxVertices( origin, angles, mins, maxs, pVerts ) : ( matrix3x4_t, Vector, VectorAdd, VectorRotate )
+function VS::GetBoxVertices( origin, angles, mins, maxs, pVerts )
+	: ( matrix3x4_t, Vector, VectorAdd, VectorRotate, AngleMatrix )
 {
 	local rotation = matrix3x4_t();
 	AngleMatrix( angles, null, rotation );
@@ -2484,7 +3463,7 @@ function VS::MatrixBuildPerspective( dst, fovX, flAspect, zNear, zFar ) : ( tan 
 	dst[2][0] = dst[2][1] =
 	dst[3][0] = dst[3][1] =             dst[3][3] = 0.0;
 
-	local invW = -0.5 / tan( fovX * 0.008726646 );
+	local invW = -0.5 / tan( fovX * DEG2RADDIV2 );
 	local range = zFar / ( zNear - zFar );
 
 	// create the final matrix directly
@@ -2729,11 +3708,7 @@ function VS::ComputeCameraVariables( vecOrigin, pVecForward, pVecRight, pVecUp, 
 
 function VS::ScreenToWorld( x, y, origin, forward, right, up, fov, flAspect, zFar ) : (Vector, VMatrix)
 {
-	// FIXME: why is this offset?
-	x += 0.25;
-	y -= 0.25;
-
-	local vecScreen = Vector( 2.0 * x - 1.0, 1.0 - 2.0 * y, 1.0 );
+	local vecScreen = Vector( x, 1.0 - y, 1.0 );
 
 	local viewToProj = VMatrix();
 	MatrixBuildPerspective( viewToProj, fov, flAspect, 1.0, zFar );
@@ -2767,17 +3742,15 @@ function VS::CalcFovY( flFovX, flAspect ) : ( tan, atan )
 	if ( flFovX < 1.0 || flFovX > 179.0)
 		flFovX = 90.0;
 
-	local val = atan( tan( 0.008726646 * flFovX ) / flAspect );		// DEG2RAD * 0.5
-	val = 114.591559026*val;	// RAD2DEG * 2.0
-	return val;
+	return RAD2DEG2 * atan( tan( DEG2RADDIV2 * flFovX ) / flAspect );
 }
 
 function VS::CalcFovX( flFovY, flAspect ) : ( tan, atan )
 {
-	return 114.591559026 * atan( tan( 0.008726646* flFovY ) * flAspect );	// DEG2RAD * 0.5 , RAD2DEG * 2.0
+	return RAD2DEG2 * atan( tan( DEG2RADDIV2 * flFovY ) * flAspect );
 }
 
-local initFrustumDraw = function() : (vec3_origin)
+local initFrustumDraw = function()
 {
 	local Line = DebugDrawLine;
 	local Vector3DMultiplyPositionProjective = VS.Vector3DMultiplyPositionProjective;
@@ -2795,7 +3768,7 @@ local initFrustumDraw = function() : (vec3_origin)
 		return Line( startWorldSpace, endWorldSpace, r, g, b, z, t );
 	}
 
-	local v000 = vec3_origin;
+	local v000 = Vector();
 	local v001 = Vector( 0.0, 0.0, 1.0 );
 	local v011 = Vector( 0.0, 1.0, 1.0 );
 	local v010 = Vector( 0.0, 1.0, 0.0 );
@@ -2871,7 +3844,7 @@ function VS::DrawViewFrustum( vecOrigin, vecForward, vecRight, vecUp,
 		flFovX, flAspect, zNear, zFar, r, g, b, z, time );
 }
 
-local initBoxDraw = function() : (vec3_origin)
+local initBoxDraw = function()
 {
 	local Box = DebugDrawBox;
 	local Line = DebugDrawLine;
@@ -2938,6 +3911,8 @@ function VS::DrawEntityBounds( ent, r, g, b, z, time ) : ( initBoxDraw )
 	return DrawEntityBounds( ent, r, g, b, z, time );
 }
 
+local Line = DebugDrawLine;
+
 function VS::DrawSphere( vCenter, flRadius, nTheta, nPhi, r, g, b, z, time ) : ( array, Vector, sin, cos, Line )
 {
 	// Make one more coordinate because (u,v) is discontinuous.
@@ -2953,14 +3928,14 @@ function VS::DrawSphere( vCenter, flRadius, nTheta, nPhi, r, g, b, z, time ) : (
 		{
 			local u = j / ( nTheta - 1 ).tofloat();
 			local v = i / ( nPhi - 1 ).tofloat();
-			local theta = 6.28318548 * u;	// 2 * PI
-			local phi = 3.14159265 * v;		// PI
+			local theta = PI2 * u;
+			local phi = PI * v;
 			local sp = flRadius * sin(phi);
 
-			pVerts[c++] = ( Vector(
+			pVerts[c++] = Vector(
 				vCenter.x + ( sp * cos(theta) ),
 				vCenter.y + ( sp * sin(theta) ),
-				vCenter.z + ( flRadius * cos(phi) ) ) );
+				vCenter.z + ( flRadius * cos(phi) ) );
 		}
 	}
 
@@ -3014,31 +3989,35 @@ local initCapsule = function()
 	];
 
 	local g_capsuleVerts = array(74);
-	local matCapsuleRotationSpace = matrix3x4_t();
-	VectorMatrix( Vector(0,0,1), matCapsuleRotationSpace );
+	// local matCapsuleRotationSpace = matrix3x4_t();
+	// VS.VectorMatrix( Vector(0,0,1), matCapsuleRotationSpace );
 
 	//-----------------------------------------------------------------------
 	// Draws a capsule at world origin.
 	//-----------------------------------------------------------------------
-	function VS::DrawCapsule( start, end, radius, r, g, b, z, time ) : ( g_capsuleVertPositions, g_capsuleLineIndices, g_capsuleVerts, matCapsuleRotationSpace, Line, Vector, matrix3x4_t )
+	function VS::DrawCapsule( start, end, radius, r, g, b, z, time )
+		: ( g_capsuleVertPositions, g_capsuleLineIndices, g_capsuleVerts, Line, Vector, matrix3x4_t )
 	{
-		local vecCapsuleCoreNormal = start - end;
+		// local vecCapsuleCoreNormal = start - end;
 		local vecLen = end - start;
-		vecCapsuleCoreNormal.Norm();
+		// vecCapsuleCoreNormal.Norm();
 
-		local matCapsuleSpace = matrix3x4_t();
-		VectorMatrix( vecCapsuleCoreNormal, matCapsuleSpace );
+		// local matCapsuleSpace = matrix3x4_t();
+		// VectorMatrix( vecCapsuleCoreNormal, matCapsuleSpace );
 
 		for ( local i = 0; i < 74; ++i )
 		{
-			local vert = Vector( g_capsuleVertPositions[i][0], g_capsuleVertPositions[i][1], g_capsuleVertPositions[i][2] );
+			local vert = Vector(
+				g_capsuleVertPositions[i][0],
+				g_capsuleVertPositions[i][1],
+				g_capsuleVertPositions[i][2] );
 
-			VectorRotate( vert, matCapsuleRotationSpace, vert );
-			VectorRotate( vert, matCapsuleSpace, vert );
+			// VectorRotate( vert, matCapsuleRotationSpace, vert );
+			// VectorRotate( vert, matCapsuleSpace, vert );
 
 			vert *= radius;
 
-			if ( g_capsuleVertPositions[i][2] > 0 )
+			if ( g_capsuleVertPositions[i][2] > 0.0 )
 			{
 				vert += vecLen;
 			};
@@ -3049,14 +4028,14 @@ local initCapsule = function()
 		while ( i < 117 )
 		{
 			local i0 = g_capsuleLineIndices[i];
-			if ( i0 == -1 )
+			if ( i0 == 0xFFFFFFFF )
 			{
 				i += 2;
 				continue;
 			};
 
 			local i1 = g_capsuleLineIndices[++i];
-			if ( i1 == -1 )
+			if ( i1 == 0xFFFFFFFF )
 			{
 				i += 2;
 				if ( i > 116 )
@@ -3064,9 +4043,7 @@ local initCapsule = function()
 				continue;
 			};
 
-			local v0 = g_capsuleVerts[ i0 ]
-			local v1 = g_capsuleVerts[ i1 ]
-			Line( v0, v1, r, g, b, z, time )
+			Line( g_capsuleVerts[i0], g_capsuleVerts[i1], r, g, b, z, time )
 		}
 	}
 }
@@ -3078,15 +4055,13 @@ function VS::DrawCapsule( start, end, radius, r, g, b, z, time ) : ( initCapsule
 }
 
 
-return; //=========================================================================
-
+/*
 class ::cplane_t
 {
 	normal = null;
 	dist = 0.0;
 	type = 0;			// for fast side tests
 	signbits = 0;		// signx + (signy<<1) + (signz<<1)
-	pad = array( 2, 0 );
 }
 
 local SignbitsForPlane = function( out )
@@ -3126,6 +4101,9 @@ class ::Frustum_t
 {
 	constructor()
 	{
+		m_Plane = [null,null,null,null,null,null];
+		m_AbsNormal = [null,null,null,null,null,null];
+
 		for ( local i = 6; i--; )
 		{
 			m_Plane[i] = cplane_t();
@@ -3146,8 +4124,8 @@ class ::Frustum_t
 		normal.z = fabs( vecNormal.z );
 	}
 
-	m_Plane = array(6);
-	m_AbsNormal = array(6);
+	m_Plane = null;
+	m_AbsNormal = null;
 }
 
 //-----------------------------------------------------------------------------
@@ -3184,3 +4162,1818 @@ function VS::GeneratePerspectiveFrustum( origin, vecForward, vecRight, vecUp, fl
 	frustum.SetPlane( FRUSTUM_BOTTOM, PLANE_ANYZ, normalPos, normalPos.Dot( origin ) );
 	frustum.SetPlane( FRUSTUM_TOP, PLANE_ANYZ, normalNeg, normalNeg.Dot( origin ) );
 }
+*/
+
+
+//==============================================================
+//==============================================================
+{
+
+
+local QuaternionAngles = VS.QuaternionAngles;
+local QuaternionSlerp = VS.QuaternionSlerp;
+local VectorMA = VS.VectorMA;
+local VectorLerp = VS.VectorLerp;
+
+
+enum INTERPOLATE
+{
+	DEFAULT,
+	CATMULL_ROM_NORMALIZEX,
+	EASE_IN,
+	EASE_OUT,
+	EASE_INOUT,
+	BSPLINE,
+	LINEAR_INTERP,
+	KOCHANEK_BARTELS,
+	KOCHANEK_BARTELS_EARLY,
+	KOCHANEK_BARTELS_LATE,
+	SIMPLE_CUBIC,
+	CATMULL_ROM,
+	CATMULL_ROM_NORMALIZE,
+	CATMULL_ROM_TANGENT,
+	EXPONENTIAL_DECAY,
+	HOLD
+}
+
+function VS::Interpolator_GetKochanekBartelsParams( interpolationType, tbc )
+{
+	// local tension, bias, continuity;
+	switch ( interpolationType )
+	{
+		case INTERPOLATE.KOCHANEK_BARTELS:
+			tbc[0] = 0.77;
+			tbc[1] = 0.0;
+			tbc[2] = 0.77;
+			break;
+		case INTERPOLATE.KOCHANEK_BARTELS_EARLY:
+			tbc[0] = 0.77;
+			tbc[1] = -1.0;
+			tbc[2] = 0.77;
+			break;
+		case INTERPOLATE.KOCHANEK_BARTELS_LATE:
+			tbc[0] = 0.77;
+			tbc[1] = 1.0;
+			tbc[2] = 0.77;
+			break;
+		default:
+			tbc[0] =
+			tbc[1] =
+			tbc[2] = 0.0;
+			// Assert( 0 );
+			break;
+	};
+}
+
+function VS::Interpolator_CurveInterpolate( interpolationType, vPre, vStart, vEnd, vNext, f, vOut )
+	: ( sin )
+{
+	vOut.x = vOut.y = vOut.z = 0.0;
+
+	switch ( interpolationType )
+	{
+		case INTERPOLATE.DEFAULT:
+		case INTERPOLATE.CATMULL_ROM_NORMALIZEX:
+			Catmull_Rom_Spline_NormalizeX(
+				vPre,
+				vStart,
+				vEnd,
+				vNext,
+				f,
+				vOut );
+			break;
+		case INTERPOLATE.CATMULL_ROM:
+			Catmull_Rom_Spline(
+				vPre,
+				vStart,
+				vEnd,
+				vNext,
+				f,
+				vOut );
+			break;
+		case INTERPOLATE.CATMULL_ROM_NORMALIZE:
+			Catmull_Rom_Spline_Normalize(
+				vPre,
+				vStart,
+				vEnd,
+				vNext,
+				f,
+				vOut );
+			break;
+		case INTERPOLATE.CATMULL_ROM_TANGENT:
+			Catmull_Rom_Spline_Tangent(
+				vPre,
+				vStart,
+				vEnd,
+				vNext,
+				f,
+				vOut );
+			break;
+		case INTERPOLATE.EASE_IN:
+			{
+				f = sin( f * PIDIV2 );
+				// ignores vPre and vNext
+				VectorLerp( vStart, vEnd, f, vOut );
+			}
+			break;
+		case INTERPOLATE.EASE_OUT:
+			{
+				f = 1.0 - sin( f * PIDIV2 + PIDIV2 );
+				// ignores vPre and vNext
+				VectorLerp( vStart, vEnd, f, vOut );
+			}
+			break;
+		case INTERPOLATE.EASE_INOUT:
+			{
+				f = SimpleSpline( f );
+				// ignores vPre and vNext
+				VectorLerp( vStart, vEnd, f, vOut );
+			}
+			break;
+		case INTERPOLATE.LINEAR_INTERP:
+			// ignores vPre and vNext
+			VectorLerp( vStart, vEnd, f, vOut );
+			break;
+		case INTERPOLATE.KOCHANEK_BARTELS:
+		case INTERPOLATE.KOCHANEK_BARTELS_EARLY:
+		case INTERPOLATE.KOCHANEK_BARTELS_LATE:
+			{
+				local tbc = [null,null,null];
+				Interpolator_GetKochanekBartelsParams( interpolationType, tbc );
+				Kochanek_Bartels_Spline_NormalizeX
+				(
+					tbc[0], tbc[1], tbc[2],
+					vPre,
+					vStart,
+					vEnd,
+					vNext,
+					f,
+					vOut
+				);
+			}
+			break;
+		case INTERPOLATE.SIMPLE_CUBIC:
+			Cubic_Spline_NormalizeX(
+				vPre,
+				vStart,
+				vEnd,
+				vNext,
+				f,
+				vOut );
+			break;
+		case INTERPOLATE.BSPLINE:
+			BSpline(
+				vPre,
+				vStart,
+				vEnd,
+				vNext,
+				f,
+				vOut );
+			break;
+		case INTERPOLATE.EXPONENTIAL_DECAY:
+			{
+				local dt = vEnd.x - vStart.x;
+				if ( dt > 0.0 )
+				{
+					local val = 1.0 - ExponentialDecay( 0.001, dt, f * dt );
+					vOut.y = vStart.y + val * ( vEnd.y - vStart.y );
+				}
+				else
+				{
+					vOut.y = vStart.y;
+				}
+			}
+			break;
+		case INTERPOLATE.HOLD:
+			{
+				vOut.y = vStart.y;
+			}
+			break;
+		default:
+			Msg( format("Unknown interpolation type %d\n", interpolationType) );
+	}
+}
+
+function VS::Interpolator_CurveInterpolate_NonNormalized( interpolationType, vPre, vStart, vEnd, vNext, f, vOut )
+	: ( sin )
+{
+	vOut.x = vOut.y = vOut.z = 0.0;
+
+	switch ( interpolationType )
+	{
+		case INTERPOLATE.CATMULL_ROM_NORMALIZEX:
+		case INTERPOLATE.DEFAULT:
+		case INTERPOLATE.CATMULL_ROM:
+		case INTERPOLATE.CATMULL_ROM_NORMALIZE:
+		case INTERPOLATE.CATMULL_ROM_TANGENT:
+			Catmull_Rom_Spline(
+				vPre,
+				vStart,
+				vEnd,
+				vNext,
+				f,
+				vOut );
+			break;
+		case INTERPOLATE.EASE_IN:
+			{
+				f = sin( f * PIDIV2 );
+				// ignores vPre and vNext
+				VectorLerp( vStart, vEnd, f, vOut );
+			}
+			break;
+		case INTERPOLATE.EASE_OUT:
+			{
+				f = 1.0 - sin( f * PIDIV2 + PIDIV2 );
+				// ignores vPre and vNext
+				VectorLerp( vStart, vEnd, f, vOut );
+			}
+			break;
+		case INTERPOLATE.EASE_INOUT:
+			{
+				f = SimpleSpline( f );
+				// ignores vPre and vNext
+				VectorLerp( vStart, vEnd, f, vOut );
+			}
+			break;
+		case INTERPOLATE.LINEAR_INTERP:
+			// ignores vPre and vNext
+			VectorLerp( vStart, vEnd, f, vOut );
+			break;
+		case INTERPOLATE.KOCHANEK_BARTELS:
+		case INTERPOLATE.KOCHANEK_BARTELS_EARLY:
+		case INTERPOLATE.KOCHANEK_BARTELS_LATE:
+			{
+				local tbc = [null,null,null];
+				Interpolator_GetKochanekBartelsParams( interpolationType, tbc );
+				Kochanek_Bartels_Spline
+				(
+					tbc[0], tbc[1], tbc[2],
+					vPre,
+					vStart,
+					vEnd,
+					vNext,
+					f,
+					vOut
+				);
+			}
+			break;
+		case INTERPOLATE.SIMPLE_CUBIC:
+			Cubic_Spline(
+				vPre,
+				vStart,
+				vEnd,
+				vNext,
+				f,
+				vOut );
+			break;
+		case INTERPOLATE.BSPLINE:
+			BSpline(
+				vPre,
+				vStart,
+				vEnd,
+				vNext,
+				f,
+				vOut );
+			break;
+		case INTERPOLATE.EXPONENTIAL_DECAY:
+			{
+				local dt = vEnd.x - vStart.x;
+				if( dt > 0.0 )
+				{
+					local val = 1.0 - ExponentialDecay( 0.001, dt, f * dt );
+					vOut.y = vStart.y + val * ( vEnd.y - vStart.y );
+				}
+				else
+				{
+					vOut.y = vStart.y;
+				};
+			}
+			break;
+		case INTERPOLATE.HOLD:
+			{
+				vOut.y = vStart.y;
+			}
+			break;
+		default:
+			Msg( format("Unknown interpolation type %d\n", interpolationType) );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: A helper function to normalize p2.x->p1.x and p3.x->p4.x to
+//  be the same length as p2.x->p3.x
+// Input  : Vector p2 -
+//          Vector p4 -
+//          Vector p4n -
+//-----------------------------------------------------------------------------
+function VS::Spline_Normalize( p1, p2, p3, p4, p1n, p4n ) : ( VectorLerp )
+{
+	local dt = p3.x - p2.x;
+
+	p1n.x = p1.x;
+	p1n.y = p1.y;
+	p1n.z = p1.z;
+
+	p4n.x = p4.x;
+	p4n.y = p4.y;
+	p4n.z = p4.z;
+
+	if ( dt )
+	{
+		if ( p1.x != p2.x )
+		{
+			VectorLerp( p2, p1, dt / (p2.x - p1.x), p1n );
+		};
+		if ( p4.x != p3.x )
+		{
+			VectorLerp( p3, p4, dt / (p4.x - p3.x), p4n );
+		};
+	};
+}
+
+local Spline_Normalize = VS.Spline_Normalize;
+
+// Interpolate a Catmull-Rom spline.
+// t is a [0,1] value and interpolates a curve between p2 and p3.
+function VS::Catmull_Rom_Spline( p1, p2, p3, p4, t, output )
+{
+	//         p1     p2    p3    p4
+	//
+	// t^3     -1     +3    -3    +1     /
+	// t^2     +2     -5     4    -1    /
+	// t^1     -1      0     1     0   /  2
+	// t^0      0      2     0     0  /
+
+	local th = t*0.5;
+	local t2 = t*th;
+	local t3 = t*t2;
+
+	local a = -t3 + 2.0 * t2 - th;
+	local b = 3.0 * t3 - 5.0 * t2 + 1.0;
+	local c = -3.0 * t3 + 4.0 * t2 + th;
+	local d = t3 - t2;
+
+	output.x = a * p1.x + b * p2.x + c * p3.x + d * p4.x;
+	output.y = a * p1.y + b * p2.y + c * p3.y + d * p4.y;
+	output.z = a * p1.z + b * p2.z + c * p3.z + d * p4.z;
+}
+
+local Catmull_Rom_Spline = VS.Catmull_Rom_Spline;
+
+// Interpolate a Catmull-Rom spline.
+// Returns the tangent of the point at t of the spline
+function VS::Catmull_Rom_Spline_Tangent( p1, p2, p3, p4, t, output )
+{
+	local t3 = 1.5 * t * t; // 3.0 * t * t * 0.5;
+	// local t2 = 2.0 * t * 0.5;
+	// local th = 0.5;
+
+	local a = -t3 + 2.0 * t - 0.5;
+	local b = 3.0 * t3 - 5.0 * t;
+	local c = -3.0 * t3 + 4.0 * t + 0.5;
+	local d = t3 - t;
+
+	output.x = a * p1.x + b * p2.x + c * p3.x + d * p4.x;
+	output.y = a * p1.y + b * p2.y + c * p3.y + d * p4.y;
+	output.z = a * p1.z + b * p2.z + c * p3.z + d * p4.z;
+}
+
+// area under the curve [0..t]
+function VS::Catmull_Rom_Spline_Integral( p1, p2, p3, p4, t, output )
+{
+	local tt = t*t;
+	local ttt = tt*t;
+
+	local o = p2*t
+			- 0.25*(p1 - p3)*tt
+			+ 0.166667*(2.0*p1 - 5.0*p2 + 4.0*p3 - p4)*ttt
+			- 0.125*(p1 - 3.0*p2 + 3.0*p3 - p4)*ttt*t;
+	output.x = o.x;
+	output.y = o.y;
+	output.z = o.z;
+}
+
+// area under the curve [0..1]
+function VS::Catmull_Rom_Spline_Integral2( p1, p2, p3, p4, t, output )
+{
+	local o = ( (p2 + p3)*3.25 - (p1 + p4)*0.25 ) * 0.166667;
+	output.x = o.x;
+	output.y = o.y;
+	output.z = o.z;
+}
+
+// Interpolate a Catmull-Rom spline.
+// Normalize p2->p1 and p3->p4 to be the same length as p2->p3
+function VS::Catmull_Rom_Spline_Normalize( p1, p2, p3, p4, t, output ) : ( VectorMA, Catmull_Rom_Spline )
+{
+	// Normalize p2->p1 and p3->p4 to be the same length as p2->p3
+	local dt = (p3-p2).Length();
+
+	local p1n = p1 - p2;
+	local p4n = p4 - p3;
+
+	p1n.Norm();
+	p4n.Norm();
+
+	VectorMA( p2, dt, p1n, p1n );
+	VectorMA( p3, dt, p4n, p4n );
+
+	return Catmull_Rom_Spline( p1n, p2, p3, p4n, t, output );
+}
+
+// area under the curve [0..t]
+// Normalize p2->p1 and p3->p4 to be the same length as p2->p3
+function VS::Catmull_Rom_Spline_Integral_Normalize( p1, p2, p3, p4, t, output ) : (VectorMA)
+{
+	// Normalize p2->p1 and p3->p4 to be the same length as p2->p3
+	local dt = (p3-p2).Length();
+
+	local p1n = p1 - p2;
+	local p4n = p4 - p3;
+
+	p1n.Norm();
+	p4n.Norm();
+
+	VectorMA( p2, dt, p1n, p1n );
+	VectorMA( p3, dt, p4n, p4n );
+
+	return Catmull_Rom_Spline_Integral( p1n, p2, p3, p4n, t, output );
+}
+
+// Interpolate a Catmull-Rom spline.
+// Normalize p2.x->p1.x and p3.x->p4.x to be the same length as p2.x->p3.x
+function VS::Catmull_Rom_Spline_NormalizeX( p1, p2, p3, p4, t, output ) :
+	( Vector, Spline_Normalize, Catmull_Rom_Spline )
+{
+	local p1n = Vector(), p4n = Vector();
+	Spline_Normalize( p1, p2, p3, p4, p1n, p4n );
+	return Catmull_Rom_Spline( p1n, p2, p3, p4n, t, output );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: basic hermite spline.  t = 0 returns p1, t = 1 returns p2,
+//			d1 and d2 are used to entry and exit slope of curve
+// Input  :
+//-----------------------------------------------------------------------------
+function VS::Hermite_Spline( p1, p2, d1, d2, t, output )
+{
+	local t2 = t*t;
+	local t3 = t*t2;
+
+	local b1 = 2.0 * t3 - 3.0 * t2 + 1.0;
+	local b2 = 1.0 - b1; // -2.0 * t3 + 3.0 * t2;
+	local b3 = t3 - 2.0 * t2 + t;
+	local b4 = t3 - t2;
+
+	output.x = b1 * p1.x + b2 * p2.x + b3 * d1.x + b4 * d2.x;
+	output.y = b1 * p1.y + b2 * p2.y + b3 * d1.y + b4 * d2.y;
+	output.z = b1 * p1.z + b2 * p2.z + b3 * d1.z + b4 * d2.z;
+}
+
+// return float
+function VS::Hermite_SplineF( p1, p2, d1, d2, t )
+{
+	local t2 = t*t;
+	local t3 = t*t2;
+
+	local b1 = 2.0 * t3 - 3.0 * t2 + 1.0;
+	// local b2 = 1.0 - b1; // -2.0 * t3 + 3.0 * t2;
+	// local b3 = t3 - 2.0 * t2 + t;
+	// local b4 = t3 - t2;
+
+	return b1 * p1 + (1.0 - b1) * p2 + (t3 - 2.0 * t2 + t) * d1 + (t3 - t2) * d2;
+}
+
+// float basis[4]
+function VS::Hermite_SplineBasis( t, basis )
+{
+	local t2 = t*t;
+	local t3 = t*t2;
+
+	basis[0] = 2.0 * t3 - 3.0 * t2 + 1.0;
+	basis[1] = 1.0 - basis[0]; // -2.0 * t3 + 3.0 * t2;
+	basis[2] = t3 - 2.0 * t2 + t;
+	basis[3] = t3 - t2;
+}
+
+local Hermite_Spline = VS.Hermite_Spline;
+local Hermite_SplineF = VS.Hermite_SplineF;
+
+//-----------------------------------------------------------------------------
+// Purpose: simple three data point hermite spline.
+//          t = 0 returns p1, t = 1 returns p2,
+//          slopes are generated from the p0->p1 and p1->p2 segments
+//          this is reasonable C1 method when there's no "p3" data yet.
+// Input  :
+//-----------------------------------------------------------------------------
+
+// input Vector
+function VS::Hermite_Spline3V( p0, p1, p2, t, output ) : ( Hermite_Spline )
+{
+	return Hermite_Spline( p1, p2, p1 - p0, p2 - p1, t, output );
+}
+
+// input float
+function VS::Hermite_Spline3F( p0, p1, p2, t ) : ( Hermite_SplineF )
+{
+	return Hermite_SplineF( p1, p2, p1 - p0, p2 - p1, t );
+}
+
+local Hermite_Spline3F = VS.Hermite_Spline3F;
+
+// input Quaternion
+function VS::Hermite_Spline3Q( q0, q1, q2, t, output )
+	: ( Quaternion, QuaternionAlign, QuaternionNormalize, Hermite_Spline3F )
+{
+	// cheap, hacked version of quaternions
+	local q0a = Quaternion(),
+		q1a = Quaternion();
+
+	QuaternionAlign( q2, q0, q0a );
+	QuaternionAlign( q2, q1, q1a );
+
+	output.x = Hermite_Spline3F( q0a.x, q1a.x, q2.x, t );
+	output.y = Hermite_Spline3F( q0a.y, q1a.y, q2.y, t );
+	output.z = Hermite_Spline3F( q0a.z, q1a.z, q2.z, t );
+	output.w = Hermite_Spline3F( q0a.w, q1a.w, q2.w, t );
+
+	QuaternionNormalize( output );
+}
+
+//-----------------------------------------------------------------------------
+// See http://en.wikipedia.org/wiki/Kochanek-Bartels_curves
+//
+// Tension:    -1 = Round -> 1 = Tight
+// Bias:       -1 = Pre-shoot (bias left) -> 1 = Post-shoot (bias right)
+// Continuity: -1 = Box corners -> 1 = Inverted corners
+//
+// If T=B=C=0 it's the same matrix as Catmull-Rom.
+// If T=1 & B=C=0 it's the same as Cubic.
+// If T=B=0 & C=-1 it's just linear interpolation
+//
+// See http://news.povray.org/povray.binaries.tutorials/attachment/%3CXns91B880592482seed7@povray.org%3E/Splines.bas.txt
+// for example code and descriptions of various spline types...
+//-----------------------------------------------------------------------------
+function VS::Kochanek_Bartels_Spline( tension, bias, continuity, p1, p2, p3, p4, t, output )
+{
+	local ffa = ( 1.0 - tension ) * ( 1.0 + continuity ) * ( 1.0 + bias );
+	local ffb = ( 1.0 - tension ) * ( 1.0 - continuity ) * ( 1.0 - bias );
+	local ffc = ( 1.0 - tension ) * ( 1.0 - continuity ) * ( 1.0 + bias );
+	local ffd = ( 1.0 - tension ) * ( 1.0 + continuity ) * ( 1.0 - bias );
+
+	//        p1      p2         p3       p4
+	//
+	// t^3    -A    4+A-B-C   -4+B+C-D     D     /
+	// t^2   +2A  -6-2A+2B+C  6-2B-C+D    -D    /
+	// t^1    -A     A-B         B         0   /  2
+	// t^0     0      2          0         0  /
+
+	// NOTE: Valve's original code (33 add, 46 mul, 91 mov):
+	//
+	// out = 0
+	//
+	// FA = p1*t3*m[0][0]
+	// FB = p2*t3*m[0][1]
+	// FC = p3*t3*m[0][2]
+	// FD = p4*t3*m[0][3]
+	//
+	// out += FA + FB + FC + FD
+	//
+	// FA = p1*t2*m[1][0]
+	// FB = p2*t2*m[1][1]
+	// FC = p3*t2*m[1][2]
+	// FD = p4*t2*m[1][3]
+	//
+	// out += FA + FB + FC + FD
+	//
+	// FA = p1*t1*m[2][0]
+	// FB = p2*t1*m[2][1]
+	// FC = p3*t1*m[2][2]
+	// FD = p4*t1*m[2][3]
+	//
+	// out += FA + FB + FC + FD
+	//
+	// FA = p1*m[3][0]
+	// FB = p2*m[3][1]
+	// FC = p3*m[3][2]
+	// FD = p4*m[3][3]
+	//
+
+	// Optimised version (13 add, 19 mul, 33 mov):
+	//
+	// FA = p1 * ( t3*m[0][0] + t2*m[1][0] + t1*m[2][0] + m[3][0] )
+	// FB = p2 * ( t3*m[0][1] + t2*m[1][1] + t1*m[2][1] + m[3][1] )
+	// FC = p3 * ( t3*m[0][2] + t2*m[1][2] + t1*m[2][2] + m[3][2] )
+	// FD = p4 * ( t3*m[0][3] + t2*m[1][3] + t1*m[2][3] + m[3][3] )
+	//
+	// out = FA + FB + FC + FD
+	//
+
+	local th = t*0.5;
+	local t2 = t*th;
+	local t3 = t*t2;
+
+	local a = t3 * -ffa + t2 * 2.0 * ffa - th * ffa;
+	local b = t3 * (4.0 + ffa - ffb - ffc) + t2 * (-6.0 - 2.0 * ffa + 2.0 * ffb + ffc) + th * (ffa - ffb) + 1.0;
+	local c = t3 * (-4.0 + ffb + ffc - ffd) + t2 * (6.0 - 2.0 * ffb - ffc + ffd) + th * ffb;
+	local d = t3 * ffd - t2 * ffd;
+
+	output.x = a * p1.x + b * p2.x + c * p3.x + d * p4.x;
+	output.y = a * p1.y + b * p2.y + c * p3.y + d * p4.y;
+	output.z = a * p1.z + b * p2.z + c * p3.z + d * p4.z;
+}
+
+local Kochanek_Bartels_Spline = VS.Kochanek_Bartels_Spline;
+
+function VS::Kochanek_Bartels_Spline_NormalizeX( tension, bias, continuity, p1, p2, p3, p4, t, output )
+	: ( Vector, Spline_Normalize, Kochanek_Bartels_Spline )
+{
+	local p1n = Vector(), p4n = Vector();
+	Spline_Normalize( p1, p2, p3, p4, p1n, p4n );
+	return Kochanek_Bartels_Spline( tension, bias, continuity, p1n, p2, p3, p4n, t, output );
+}
+
+// See link at Kochanek_Bartels_Spline for info on the basis matrix used
+function VS::Cubic_Spline( p1, p2, p3, p4, t, output )
+{
+	local t2 = t*t;
+	local t3 = t*t2;
+
+	// local a = 0;
+	local b = t3 * 2.0 - t2 * 3.0 + 1.0;
+	local c = t3 * -2.0 + t2 * 3.0;
+	// local d = 0;
+
+	output.x = b * p2.x + c * p3.x;
+	output.y = b * p2.y + c * p3.y;
+	output.z = b * p2.z + c * p3.z;
+}
+
+local Cubic_Spline = VS.Cubic_Spline;
+
+function VS::Cubic_Spline_NormalizeX( p1, p2, p3, p4, t, output ) : ( Vector, Spline_Normalize, Cubic_Spline )
+{
+	local p1n = Vector(), p4n = Vector();
+	Spline_Normalize( p1, p2, p3, p4, p1n, p4n );
+	return Cubic_Spline( p1n, p2, p3, p4n, t, output );
+}
+
+// See link at Kochanek_Bartels_Spline for info on the basis matrix used
+function VS::BSpline( p1, p2, p3, p4, t, output )
+{
+	local th = t*0.166667;
+	local t2 = t*th;
+	local t3 = t*t2;
+
+	local a = -t3 + t2 * 3.0 - th * 3.0 + 0.166667;
+	local b = t3 * 3.0 - t2 * 6.0 + 0.666668; // 4.0 * 0.166667;
+	local c = t3 * -3.0 + t2 * 3.0 + th * 3.0 + 0.166667;
+	// local d = t3;
+
+	output.x = a * p1.x + b * p2.x + c * p3.x + t3 * p4.x;
+	output.y = a * p1.y + b * p2.y + c * p3.y + t3 * p4.y;
+	output.z = a * p1.z + b * p2.z + c * p3.z + t3 * p4.z;
+}
+
+local BSpline = VS.BSpline;
+
+function VS::BSpline_NormalizeX( p1, p2, p3, p4, t, output ) : ( Vector, Spline_Normalize, BSpline )
+{
+	local p1n = Vector(), p4n = Vector();
+	Spline_Normalize( p1, p2, p3, p4, p1n, p4n );
+	return BSpline( p1n, p2, p3, p4n, t, output );
+}
+
+// See link at Kochanek_Bartels_Spline for info on the basis matrix used
+function VS::Parabolic_Spline( p1, p2, p3, p4, t, output )
+{
+	local th = t*0.5;
+	local t2 = t*th;
+
+	local a = t2 - t + 0.5;
+	local b = t2 * -2.0 + t + 0.5;
+	// local c = t2;
+	// local d = 0;
+
+	output.x = a * p1.x + b * p2.x + t2 * p3.x;
+	output.y = a * p1.y + b * p2.y + t2 * p3.y;
+	output.z = a * p1.z + b * p2.z + t2 * p3.z;
+}
+
+local Parabolic_Spline = VS.Parabolic_Spline;
+
+function VS::Parabolic_Spline_NormalizeX( p1, p2, p3, p4, t, output ) :
+	( Vector, Spline_Normalize, Parabolic_Spline )
+{
+	local p1n = Vector(), p4n = Vector();
+	Spline_Normalize( p1, p2, p3, p4, p1n, p4n );
+	return Parabolic_Spline( p1n, p2, p3, p4n, t, output );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Compress the input values for a ranged result such that from 75% to 200% smoothly of the range maps
+//-----------------------------------------------------------------------------
+function VS::RangeCompressor( flValue, flMin, flMax, flBase ) : ( Hermite_SplineF )
+{
+	// clamp base
+	if ( flBase < flMin )
+		flBase = flMin;
+	else if ( flBase > flMax )
+		flBase = flMax;;
+
+	// convert to 0 to 1 value
+	local flMid = (flBase + flValue - flMin) / (flMax - flMin);
+	// convert to -1 to 1 value
+	local flTarget = flMid * 2.0 - 1.0;
+
+	local fAbs;
+	if ( flTarget < 0.0 )
+		fAbs = -flTarget;
+	else
+		fAbs = flTarget;
+
+	if ( fAbs > 0.75 )
+	{
+		local t = (fAbs - 0.75) / 1.25;
+		if ( t < 1.0 )
+		{
+			if ( flTarget > 0.0 )
+			{
+				flTarget = Hermite_SplineF( 0.75, 1.0, 0.75, 0.0, t );
+			}
+			else
+			{
+				flTarget = -Hermite_SplineF( 0.75, 1.0, 0.75, 0.0, t );
+			};
+		}
+		else
+		{
+			if ( 0.0 < flTarget )
+				flTarget = 1.0;
+			else
+				flTarget = -1.0;
+		};
+	};
+
+	flMid = ( flTarget + 1.0 ) * 0.5;
+
+	return ( flMin * (1.0 - flMid) + flMax * flMid ) - flBase;
+}
+
+// QAngle slerp
+function VS::InterpolateAngles( v1, v2, flPercent, out ) :
+	( Quaternion, AngleQuaternion, QuaternionAngles, QuaternionSlerp )
+{
+	if ( v1 == v2 )
+		return v1;
+
+	local src = Quaternion();
+	AngleQuaternion( v1, src );
+	local dest = Quaternion();
+	AngleQuaternion( v2, dest );
+
+	local result = QuaternionSlerp( src, dest, flPercent );
+
+	return QuaternionAngles( result, out );
+}
+
+
+}
+//==============================================================
+//==============================================================
+
+
+function VS::PointOnLineNearestPoint( vStartPos, vEndPos, vPoint )
+{
+	local v1 = vEndPos - vStartPos;
+	local dist = v1.Dot(vPoint - vStartPos) / v1.LengthSqr();
+
+	if ( dist < 0.0 )
+		return vStartPos;
+	if ( dist > 1.0 )
+		return vEndPos;
+	return vStartPos + v1 * dist;
+}
+
+function VS::CalcSqrDistanceToAABB( mins, maxs, point )
+{
+	local flDelta;
+
+	if ( point.x < mins.x )
+	{
+		flDelta = mins.x - point.x;
+	}
+	else if ( point.x > maxs.x )
+	{
+		flDelta = point.x - maxs.x;
+	};;
+
+	if ( point.y < mins.y )
+	{
+		flDelta = mins.y - point.y;
+	}
+	else if ( point.y > maxs.y )
+	{
+		flDelta = point.y - maxs.y;
+	};;
+
+	if ( point.z < mins.z )
+	{
+		flDelta = mins.z - point.z;
+	}
+	else if ( point.z > maxs.z )
+	{
+		flDelta = point.z - maxs.z;
+	};;
+
+	return flDelta * flDelta;
+}
+
+function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut = _VEC )
+{
+	closestOut.x = (point.x < mins.x) ? mins.x : (maxs.x < point.x) ? maxs.x : point.x;
+	closestOut.y = (point.y < mins.y) ? mins.y : (maxs.y < point.y) ? maxs.y : point.y;
+	closestOut.z = (point.z < mins.z) ? mins.z : (maxs.z < point.z) ? maxs.z : point.z;
+}
+
+
+class ::Ray_t
+{
+	m_Start = null;
+	m_Delta = null;
+	m_StartOffset = null;
+	m_Extents = null;
+	m_IsRay = null;
+	m_IsSwept = null;
+
+	function Init( start, end, mins = null, maxs = null ) : (Vector)
+	{
+		m_Delta = end - start;
+		m_IsSwept = ( m_Delta.LengthSqr() != 0.0 );
+
+		if ( !mins )
+		{
+			m_Extents = Vector();
+			m_IsRay = true;
+			m_StartOffset = Vector();
+			m_Start = start * 1.0;
+		}
+		else
+		{
+			m_Extents = (maxs - mins) * 0.5;
+			m_IsRay = ( m_Extents.LengthSqr() < 1.e-6 );
+			m_StartOffset = (mins + maxs) * 0.5;
+			m_Start = start + m_StartOffset;
+			m_StartOffset *= -1.0;
+		};
+	}
+}
+
+/*
+//-----------------------------------------------------------------------------
+// Clears the trace
+//-----------------------------------------------------------------------------
+function VS::Collision_ClearTrace( vecRayStart, vecRayDelta, pTrace )
+{
+	pTrace.startpos = vecRayStart;
+	pTrace.endpos = vecRayStart + vecRayDelta;
+	pTrace.fraction = 1.0;
+}
+*/
+
+//-----------------------------------------------------------------------------
+// Compute the offset in t along the ray that we'll use for the collision
+//-----------------------------------------------------------------------------
+function VS::ComputeBoxOffset( ray ) : (fabs)
+{
+	if ( ray.m_IsRay )
+		return 1.e-3;
+
+	// Find the projection of the box diagonal along the ray...
+	local offset = fabs(ray.m_Extents.x * ray.m_Delta.x) +
+				fabs(ray.m_Extents.y * ray.m_Delta.y) +
+				fabs(ray.m_Extents.z * ray.m_Delta.z);
+
+	// We need to divide twice: Once to normalize the computation above
+	// so we get something in units of extents, and the second to normalize
+	// that with respect to the entire raycast.
+	local lsqr = ray.m_Delta.LengthSqr();
+	if ( lsqr >= 1.0 )
+		return (offset / lsqr) + 1.e-3;
+
+	// 1e-3 is an epsilon
+	return offset + 1.e-3;
+}
+
+// VectorWithinAABox
+function VS::IsPointInBox( vec, boxmin, boxmax )
+{
+	return ( vec.x >= boxmin.x && vec.x <= boxmax.x &&
+		vec.y >= boxmin.y && vec.y <= boxmax.y &&
+		vec.z >= boxmin.z && vec.z <= boxmax.z );
+}
+
+// Return true of the boxes intersect (but not if they just touch)
+function VS::IsBoxIntersectingBox( boxMin1, boxMax1, boxMin2, boxMax2 )
+{
+	if ( ( boxMin1.x > boxMax2.x ) || ( boxMax1.x < boxMin2.x ) )
+		return false;
+	if ( ( boxMin1.y > boxMax2.y ) || ( boxMax1.y < boxMin2.y ) )
+		return false;
+	if ( ( boxMin1.z > boxMax2.z ) || ( boxMax1.z < boxMin2.z ) )
+		return false;
+	return true;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: returns true if pt intersects the truncated cone
+// origin - cone tip, axis - unit cone axis, cosAngle - cosine of cone axis to surface angle
+//
+// Input  : Vector
+//          Vector
+//          Vector
+//          float
+//          float
+//-----------------------------------------------------------------------------
+function VS::IsPointInCone( pt, origin, axis, cosAngle, length )
+{
+	local delta = pt - origin;
+	local dist = delta.Norm();
+	local dot = delta.Dot(axis);
+
+	if ( dot < cosAngle )
+		return false;
+	if ( dist * dot > length )
+		return false;
+	return true;
+}
+
+//-----------------------------------------------------------------------------
+// Returns true if a box intersects with a sphere
+//-----------------------------------------------------------------------------
+function VS::IsSphereIntersectingSphere( center1, radius1, center2, radius2 )
+{
+	local radiusSum = radius1 + radius2;
+	return ((center2 - center1).LengthSqr() <= (radiusSum * radiusSum));
+}
+
+//-----------------------------------------------------------------------------
+// Returns true if a box intersects with a sphere
+//-----------------------------------------------------------------------------
+function VS::IsBoxIntersectingSphere( boxMin, boxMax, center, radius )
+{
+	// See Graphics Gems, box-sphere intersection
+	local flDelta;
+
+	if (center.x < boxMin.x)
+	{
+		flDelta = center.x - boxMin.x;
+	}
+	else if (center.x > boxMax.x)
+	{
+		flDelta = boxMax.x - center.x;
+	};;
+
+	if (center.y < boxMin.y)
+	{
+		flDelta = center.y - boxMin.y;
+	}
+	else if (center.y > boxMax.y)
+	{
+		flDelta = boxMax.y - center.y;
+	};;
+
+	if (center.z < boxMin.z)
+	{
+		flDelta = center.z - boxMin.z;
+	}
+	else if (center.z > boxMax.z)
+	{
+		flDelta = boxMax.z - center.z;
+	};;
+
+	return flDelta * flDelta < radius * radius;
+}
+
+//-----------------------------------------------------------------------------
+// Returns true if a rectangle intersects with a circle
+//-----------------------------------------------------------------------------
+function VS::IsCircleIntersectingRectangle( boxMin, boxMax, center, radius )
+{
+	// See Graphics Gems, box-sphere intersection
+	local flDelta;
+
+	if ( center.x < boxMin.x )
+	{
+		flDelta = center.x - boxMin.x;
+	}
+	else if ( center.x > boxMax.x )
+	{
+		flDelta = boxMax.x - center.x;
+	};;
+
+	if ( center.y < boxMin.y )
+	{
+		flDelta = center.y - boxMin.y;
+	}
+	else if ( center.y > boxMax.y )
+	{
+		flDelta = boxMax.y - center.y;
+	};;
+
+	return flDelta * flDelta < radius * radius;
+}
+
+//-----------------------------------------------------------------------------
+// returns true if there's an intersection between ray and sphere
+// flTolerance [0..1]
+//-----------------------------------------------------------------------------
+function VS::IsRayIntersectingSphere( vecRayOrigin, vecRayDelta, vecCenter, flRadius, flTolerance = 0.0 )
+{
+	// For this algorithm, find a point on the ray  which is closest to the sphere origin
+	// Do this by making a plane passing through the sphere origin
+	// whose normal is parallel to the ray. Intersect that plane with the ray.
+	// Plane: N dot P = I, N = D (ray direction), I = C dot N = C dot D
+	// Ray: P = O + D * t
+	// D dot ( O + D * t ) = C dot D
+	// D dot O + D dot D * t = C dot D
+	// t = (C - O) dot D / D dot D
+	// Clamp t to (0,1)
+	// Find distance of the point on the ray to the sphere center.
+	// Assert( flTolerance >= 0.0 );
+
+	flRadius += flTolerance;
+
+	local vecRayToSphere = vecCenter - vecRayOrigin;
+	local flNumerator = vecRayToSphere.Dot( vecRayDelta );
+
+	local t;
+	if ( flNumerator <= 0.0 )
+	{
+		t = 0.0;
+	}
+	else
+	{
+		local flDenominator = vecRayDelta.LengthSqr();
+		if ( flNumerator > flDenominator )
+			t = 1.0;
+		else
+			t = flNumerator / flDenominator;
+	};
+
+	local vecClosestPoint = vecRayOrigin + vecRayDelta * t;
+	return ( (vecClosestPoint-vecCenter).LengthSqr() <= flRadius * flRadius );
+}
+
+//-----------------------------------------------------------------------------
+// IntersectInfiniteRayWithSphere
+//
+// Returns whether or not there was an intersection.
+// Returns the two intersection points
+//-----------------------------------------------------------------------------
+function VS::IntersectInfiniteRayWithSphere( vecRayOrigin, vecRayDelta, vecSphereCenter, flRadius, pT ) : (sqrt)
+{
+	// Solve using the ray equation + the sphere equation
+	// P = o + dt
+	// (x - xc)^2 + (y - yc)^2 + (z - zc)^2 = r^2
+	// (ox + dx * t - xc)^2 + (oy + dy * t - yc)^2 + (oz + dz * t - zc)^2 = r^2
+	// (ox - xc)^2 + 2 * (ox-xc) * dx * t + dx^2 * t^2 +
+	//		(oy - yc)^2 + 2 * (oy-yc) * dy * t + dy^2 * t^2 +
+	//		(oz - zc)^2 + 2 * (oz-zc) * dz * t + dz^2 * t^2 = r^2
+	// (dx^2 + dy^2 + dz^2) * t^2 + 2 * ((ox-xc)dx + (oy-yc)dy + (oz-zc)dz) t +
+	//		(ox-xc)^2 + (oy-yc)^2 + (oz-zc)^2 - r^2 = 0
+	// or, t = (-b +/- sqrt( b^2 - 4ac)) / 2a
+	// a = DotProduct( vecRayDelta, vecRayDelta );
+	// b = 2 * DotProduct( vecRayOrigin - vecCenter, vecRayDelta )
+	// c = DotProduct(vecRayOrigin - vecCenter, vecRayOrigin - vecCenter) - flRadius * flRadius;
+
+	local vecSphereToRay = vecRayOrigin - vecSphereCenter;
+
+	local a = vecRayDelta.LengthSqr();
+
+	// This would occur in the case of a zero-length ray
+	if ( !a )
+	{
+		pT[0] = pT[1] = 0.0;
+		return vecSphereToRay.LengthSqr() <= flRadius * flRadius;
+	};
+
+	local b = 2.0 * vecSphereToRay.Dot( vecRayDelta );
+	local c = vecSphereToRay.LengthSqr() - flRadius * flRadius;
+	local flDiscrim = b * b - 4.0 * a * c;
+	if ( flDiscrim < 0.0 )
+		return false;
+
+	flDiscrim = sqrt( flDiscrim );
+	local oo2a = 0.5 / a;
+	pT[0] = ( -flDiscrim - b ) * oo2a;
+	pT[1] = ( flDiscrim - b ) * oo2a;
+	return true;
+}
+/*
+//-----------------------------------------------------------------------------
+// IntersectInfiniteRayWithSphere clamped to (0,1)
+//-----------------------------------------------------------------------------
+function VS::IntersectRayWithSphere( vecRayOrigin, vecRayDelta, vecSphereCenter, flRadius, pT )
+{
+	if ( !IntersectInfiniteRayWithSphere( vecRayOrigin, vecRayDelta, vecSphereCenter, flRadius, pT ) )
+		return false;
+
+	if (( pT[0] > 1.0 ) || ( pT[1] < 0.0 ))
+		return false;
+
+	if ( pT[0] < 0.0 )
+		pT[0] = 0.0;
+	if ( pT[1] > 1.0 )
+		pT[1] = 1.0;
+
+	return true;
+}
+*/
+//-----------------------------------------------------------------------------
+// Intersects a ray with a AABB, return true if they intersect
+// Input  : worldMins, worldMaxs
+//-----------------------------------------------------------------------------
+function VS::IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance = 0.0 ):(fabs)
+{
+	// Assert( boxMin.x <= boxMax.x );
+	// Assert( boxMin.y <= boxMax.y );
+	// Assert( boxMin.z <= boxMax.z );
+
+	// FIXME: Surely there's a faster way
+	local tmin = FLT_MIN, tmax = FLT_MAX;
+
+	// Parallel case...
+	if ( fabs(vecDelta.x) < 1.e-8 )
+	{
+		// Check that origin is in the box
+		// if not, then it doesn't intersect..
+		if ( (origin.x < boxMin.x - flTolerance) || (origin.x > boxMax.x + flTolerance) )
+			return false;
+	}
+	else
+	{
+		// non-parallel case
+		// Find the t's corresponding to the entry and exit of
+		// the ray along x, y, and z. The find the furthest entry
+		// point, and the closest exit point. Once that is done,
+		// we know we don't collide if the closest exit point
+		// is behind the starting location. We also don't collide if
+		// the closest exit point is in front of the furthest entry point
+		local invDelta = 1.0 / vecDelta.x;
+		local t1 = (boxMin.x - flTolerance - origin.x) * invDelta;
+		local t2 = (boxMax.x + flTolerance - origin.x) * invDelta;
+		if ( t1 > t2 )
+		{
+			local temp = t1;
+			t1 = t2;
+			t2 = temp;
+		};
+		if (t1 > tmin)
+			tmin = t1;
+		if (t2 < tmax)
+			tmax = t2;
+		if (tmin > tmax)
+			return false;
+		if (tmax < 0.0)
+			return false;
+		if (tmin > 1.0)
+			return false;
+	};
+
+	// other points:
+	if ( fabs(vecDelta.y) < 1.e-8 )
+	{
+		if ( (origin.y < boxMin.y - flTolerance) || (origin.y > boxMax.y + flTolerance) )
+			return false;
+	}
+	else
+	{
+		local invDelta = 1.0 / vecDelta.y;
+		local t1 = (boxMin.y - flTolerance - origin.y) * invDelta;
+		local t2 = (boxMax.y + flTolerance - origin.y) * invDelta;
+		if ( t1 > t2 )
+		{
+			local temp = t1;
+			t1 = t2;
+			t2 = temp;
+		};
+		if (t1 > tmin)
+			tmin = t1;
+		if (t2 < tmax)
+			tmax = t2;
+		if (tmin > tmax)
+			return false;
+		if (tmax < 0.0)
+			return false;
+		if (tmin > 1.0)
+			return false;
+	};
+
+	if ( fabs(vecDelta.z) < 1.e-8 )
+	{
+		if ( (origin.z < boxMin.z - flTolerance) || (origin.z > boxMax.z + flTolerance) )
+			return false;
+	}
+	else
+	{
+		local invDelta = 1.0 / vecDelta.z;
+		local t1 = (boxMin.z - flTolerance - origin.z) * invDelta;
+		local t2 = (boxMax.z + flTolerance - origin.z) * invDelta;
+		if ( t1 > t2 )
+		{
+			local temp = t1;
+			t1 = t2;
+			t2 = temp;
+		};
+		if (t1 > tmin)
+			tmin = t1;
+		if (t2 < tmax)
+			tmax = t2;
+		if (tmin > tmax)
+			return false;
+		if (tmax < 0.0)
+			return false;
+		if (tmin > 1.0)
+			return false;
+	};
+
+	return true;
+}
+
+local IsBoxIntersectingRay = VS.IsBoxIntersectingRay;
+
+//-----------------------------------------------------------------------------
+// Intersects a ray with a AABB, return true if they intersect
+// Input  : localMins, localMaxs
+//-----------------------------------------------------------------------------
+function VS::IsBoxIntersectingRay2( origin, vecBoxMin, vecBoxMax, ray, flTolerance = 0.0 )
+	: ( IsBoxIntersectingRay )
+{
+	if ( !ray.m_IsSwept )
+	{
+		local rayMins = ray.m_Start - ray.m_Extents;
+		local rayMaxs = ray.m_Start + ray.m_Extents;
+		if ( flTolerance )
+		{
+			rayMins.x -= flTolerance; rayMins.y -= flTolerance; rayMins.z -= flTolerance;
+			rayMaxs.x += flTolerance; rayMaxs.y += flTolerance; rayMaxs.z += flTolerance;
+		};
+		return IsBoxIntersectingBox( vecBoxMin, vecBoxMax, rayMins, rayMaxs );
+	};
+
+	// world
+	local vecExpandedBoxMin = vecBoxMin - ray.m_Extents + origin;
+	local vecExpandedBoxMax = vecBoxMax + ray.m_Extents + origin;
+
+	return IsBoxIntersectingRay( vecExpandedBoxMin, vecExpandedBoxMax, ray.m_Start, ray.m_Delta, flTolerance );
+}
+
+//-----------------------------------------------------------------------------
+// Intersects a ray with a ray, return true if they intersect
+// t, s = parameters of closest approach (if not intersecting!)
+//-----------------------------------------------------------------------------
+function VS::IntersectRayWithRay( vecStart0, vecDelta0, vecStart1, vecDelta1/* , pT = [0.0,0.0] */ )
+{
+	//
+	// r0 = p0 + v0t
+	// r1 = p1 + v1s
+	//
+	// intersection : r0 = r1 :: p0 + v0t = p1 + v1s
+	// NOTE: v(0,1) are unit direction vectors
+	//
+	// subtract p0 from both sides and cross with v1 (NOTE: v1 x v1 = 0)
+	//  (v0 x v1)t = ((p1 - p0 ) x v1)
+	//
+	// dotting  with (v0 x v1) and dividing by |v0 x v1|^2
+	//	t = Det | (p1 - p0) , v1 , (v0 x v1) | / |v0 x v1|^2
+	//  s = Det | (p1 - p0) , v0 , (v0 x v1) | / |v0 x v1|^2
+	//
+	//  Det | A B C | = -( A x C ) dot B or -( C x B ) dot A
+	//
+	//  NOTE: if |v0 x v1|^2 = 0, then the lines are parallel
+	//
+
+	local v0xv1 = vecDelta0.Cross( vecDelta1 );
+	local lengthSq = v0xv1.LengthSqr();
+	if ( !lengthSq )
+	{
+		// pT[0] = pT[1] = 0.0;
+		return false;		// parallel
+	};
+
+	local p1p0 = vecStart1 - vecStart0;
+
+	local AxC = p1p0.Cross( v0xv1 );
+	VectorNegate(AxC);
+	local detT = AxC.Dot( vecDelta1 );
+
+	AxC = p1p0.Cross( v0xv1 );
+	VectorNegate(AxC);
+	local detS = AxC.Dot( vecDelta0 );
+
+	local invL = 1.0 / lengthSq;
+	local t = detT * invL;
+	local s = detS * invL;
+	// pT[0] = t;
+	// pT[1] = s;
+
+	// intersection????
+	local i0 = vecStart0 + vecDelta0 * t;
+	local i1 = vecStart1 + vecDelta1 * s;
+
+	return ( i0.x == i1.x && i0.y == i1.y && i0.z == i1.z );
+}
+
+function VS::IntersectRayWithPlane( org, dir, normal, dist )
+{
+	local d	= dir.Dot( normal );
+	if ( d )
+		return ( dist - org.Dot( normal ) ) / d;
+	return 0.0;
+}
+
+//-----------------------------------------------------------------------------
+// Swept OBB test
+// Input  : localMins, localMaxs
+//-----------------------------------------------------------------------------
+function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs )
+	: ( matrix3x4_t, Vector, Ray_t, DotProductAbs )
+{
+	if ( VectorIsZero(angles) )
+	{
+		local vecWorldMins = org + mins;
+		local vecWorldMaxs = org + maxs;
+		return IsBoxIntersectingRay( vecWorldMins, vecWorldMaxs, ray.m_Start, ray.m_Delta );
+	};
+
+	if ( ray.m_IsRay )
+	{
+		local worldToBox = matrix3x4_t();
+		AngleIMatrix( angles, org, worldToBox );
+
+		local rotatedRay = Ray_t.instance();
+		rotatedRay.m_Start = Vector();
+		rotatedRay.m_Delta = Vector();
+
+		VectorTransform( ray.m_Start, worldToBox, rotatedRay.m_Start );
+		VectorRotate( ray.m_Delta, worldToBox, rotatedRay.m_Delta );
+
+		rotatedRay.m_StartOffset = Vector();
+		rotatedRay.m_Extents = Vector();
+		rotatedRay.m_IsRay = true;
+		rotatedRay.m_IsSwept = ray.m_IsSwept;
+
+		return IsBoxIntersectingRay2( rotatedRay.m_StartOffset, mins, maxs, rotatedRay );
+	};
+
+//	if ( !ray.m_IsSwept )
+//	{
+//		return ComputeSeparatingPlane2( ray.m_Start, Vector(), ray.m_Extents * -1, ray.m_Extents,
+//			org, angles, mins, maxs, 0.0 ) == false;
+//	};
+
+	// NOTE: See the comments in ComputeSeparatingPlane to understand this math
+
+	// First, compute the basis of box in the space of the ray
+	// NOTE: These basis place the origin at the centroid of each box!
+//	local worldToBox1 = matrix3x4_t();
+	local box2ToWorld = matrix3x4_t();
+	ComputeCenterMatrix( org, angles, mins, maxs, box2ToWorld );
+
+	// Find the center + extents of an AABB surrounding the ray
+//	local vecRayCenter = VectorMA( ray.m_Start, 0.5, ray.m_Delta ) * -1.0;
+//
+//	SetIdentityMatrix( worldToBox1 );
+//	MatrixSetColumn( vecRayCenter, 3, worldToBox1 );
+
+//	local box1Size = Vector( ray.m_Extents.x + fabs( ray.m_Delta.x ) * 0.5,
+//							ray.m_Extents.y + fabs( ray.m_Delta.y ) * 0.5,
+//							ray.m_Extents.z + fabs( ray.m_Delta.z ) * 0.5 );
+
+	// Then compute the size of the box
+	local box2Size = (maxs - mins)*0.5;
+
+//	// Do an OBB test of the box with the AABB surrounding the ray
+//	if ( ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, 0.0 ) )
+//		return false;
+
+	// Now deal with the planes which are the cross products of the ray sweep direction vs box edges
+	local vecRayDirection = ray.m_Delta * 1;
+	vecRayDirection.Norm();
+
+	// Rotate the ray direction into the space of the OBB
+	local vecAbsRayDirBox2 = VectorIRotate( vecRayDirection, box2ToWorld );
+
+	// Make abs versions of the ray in world space + ray in box2 space
+	VectorAbs( vecAbsRayDirBox2 );
+
+	box2ToWorld = box2ToWorld.m;
+	// Need a vector between ray center vs box center measured in the space of the ray (world)
+	local vecCenterDelta = Vector( box2ToWorld[0][3] - ray.m_Start.x,
+									box2ToWorld[1][3] - ray.m_Start.y,
+									box2ToWorld[2][3] - ray.m_Start.z );
+
+	// Now do the work for the planes which are perpendicular to the edges of the AABB
+	// and the sweep direction edges...
+
+	// In this example, the line to check is perpendicular to box edge x + ray delta
+	// we can compute this line by taking the cross-product:
+	//
+	// [  i  j  k ]
+	// [  1  0  0 ] = - dz j + dy k = l1
+	// [ dx dy dz ]
+
+	// Where dx, dy, dz is the ray delta (normalized)
+
+	// The projection of the box onto this line = the absolute dot product of the box size
+	// against the line, which =
+	// AbsDot( vecBoxHalfDiagonal, l1 ) = abs( -dz * vecBoxHalfDiagonal.y ) + abs( dy * vecBoxHalfDiagonal.z )
+
+	// Because the plane contains the sweep direction, the sweep will produce
+	// no extra projection onto the line normal to the plane.
+	// Therefore all we need to do is project the ray extents onto this line also:
+	// AbsDot( ray.m_Extents, l1 ) = abs( -dz * ray.m_Extents.y ) + abs( dy * ray.m_Extents.z )
+
+	local vecPlaneNormal, flBoxProjectionSum, flCenterDeltaProjection;
+
+	// box x x ray delta
+	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[0][0], box2ToWorld[1][0], box2ToWorld[2][0] ) );
+	flCenterDeltaProjection = vecPlaneNormal.Dot(vecCenterDelta);
+	if ( 0.0 > flCenterDeltaProjection )
+		flCenterDeltaProjection = -flCenterDeltaProjection;
+	flBoxProjectionSum =
+		vecAbsRayDirBox2.z * box2Size.y + vecAbsRayDirBox2.y * box2Size.z +
+		DotProductAbs( vecPlaneNormal, ray.m_Extents );
+	if ( flCenterDeltaProjection > flBoxProjectionSum )
+		return false;
+
+	// box y x ray delta
+	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[0][1], box2ToWorld[1][1], box2ToWorld[2][1] ) );
+	flCenterDeltaProjection = vecPlaneNormal.Dot(vecCenterDelta);
+	if ( 0.0 > flCenterDeltaProjection )
+		flCenterDeltaProjection = -flCenterDeltaProjection;
+	flBoxProjectionSum =
+		vecAbsRayDirBox2.z * box2Size.x + vecAbsRayDirBox2.x * box2Size.z +
+		DotProductAbs( vecPlaneNormal, ray.m_Extents );
+	if ( flCenterDeltaProjection > flBoxProjectionSum )
+		return false;
+
+	// box z x ray delta
+	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[0][2], box2ToWorld[1][2], box2ToWorld[2][2] ) );
+	flCenterDeltaProjection = vecPlaneNormal.Dot(vecCenterDelta);
+	if ( 0.0 > flCenterDeltaProjection )
+		flCenterDeltaProjection = -flCenterDeltaProjection;
+	flBoxProjectionSum =
+		vecAbsRayDirBox2.y * box2Size.x + vecAbsRayDirBox2.x * box2Size.y +
+		DotProductAbs( vecPlaneNormal, ray.m_Extents );
+	if ( flCenterDeltaProjection > flBoxProjectionSum )
+		return false;
+
+	return true;
+}
+/*
+//-----------------------------------------------------------------------------
+// Compute a separating plane between two boxes (expensive!)
+// Returns false if no separating plane exists
+//-----------------------------------------------------------------------------
+function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, tolerance, pNormalOut = _VEC )
+	: (matrix3x4_t, Vector, fabs)
+{
+	// The various separating planes can be either
+	// 1) A plane parallel to one of the box face planes
+	// 2) A plane parallel to the cross-product of an edge from each box
+
+	// First, compute the basis of second box in the space of the first box
+	// NOTE: These basis place the origin at the centroid of each box!
+	local box2ToBox1 = matrix3x4_t();
+	ConcatTransforms( worldToBox1, box2ToWorld, box2ToBox1 );
+	worldToBox1 = worldToBox1.m;
+
+	// We're going to be using the origin of box2 in the space of box1 alot,
+	// lets extract it from the matrix....
+	local box2Origin = Vector();
+	MatrixGetColumn( box2ToBox1, 3, box2Origin );
+
+	// Next get the absolute values of these entries and store in absbox2ToBox1.
+	local absBox2ToBox1 = matrix3x4_t();
+	ComputeAbsMatrix( box2ToBox1, absBox2ToBox1 );
+
+	// There are 15 tests to make.  The first 3 involve trying planes parallel
+	// to the faces of the first box.
+
+	// NOTE: The algorithm here involves finding the projections of the two boxes
+	// onto a particular line. If the projections on the line do not overlap,
+	// that means that there's a plane perpendicular to the line which separates
+	// the two boxes; and we've therefore found a separating plane.
+
+	// The way we check for overlay is we find the projections of the two boxes
+	// onto the line, and add them up. We compare the sum with the projection
+	// of the relative center of box2 onto the same line.
+
+	local boxProjectionSum, originProjection;
+
+	// NOTE: For these guys, we're taking advantage of the fact that the ith
+	// row of the box2ToBox1 is the direction of the box1 (x,y,z)-axis
+	// transformed into the space of box2.
+
+	// First side of box 1
+	boxProjectionSum = box1Size.x + MatrixRowDotProduct( absBox2ToBox1, 0, box2Size );
+	originProjection = fabs( box2Origin.x ) + tolerance;
+	if ( originProjection > boxProjectionSum )
+	{
+		pNormalOut.x = worldToBox1[0][0];
+		pNormalOut.y = worldToBox1[0][1];
+		pNormalOut.z = worldToBox1[0][2];
+		return true;
+	};
+
+	// Second side of box 1
+	boxProjectionSum = box1Size.y + MatrixRowDotProduct( absBox2ToBox1, 1, box2Size );
+	originProjection = fabs( box2Origin.y ) + tolerance;
+	if ( originProjection > boxProjectionSum )
+	{
+		pNormalOut.x = worldToBox1[1][0];
+		pNormalOut.y = worldToBox1[1][1];
+		pNormalOut.z = worldToBox1[1][2];
+		return true;
+	};
+
+	// Third side of box 1
+	boxProjectionSum = box1Size.z + MatrixRowDotProduct( absBox2ToBox1, 2, box2Size );
+	originProjection = fabs( box2Origin.z ) + tolerance;
+	if ( originProjection > boxProjectionSum )
+	{
+		pNormalOut.x = worldToBox1[2][0];
+		pNormalOut.y = worldToBox1[2][1];
+		pNormalOut.z = worldToBox1[2][2];
+		return true;
+	};
+
+	// The next three involve checking splitting planes parallel to the
+	// faces of the second box.
+
+	// NOTE: For these guys, we're taking advantage of the fact that the 0th
+	// column of the box2ToBox1 is the direction of the box2 x-axis
+	// transformed into the space of box1.
+	// Here, we're determining the distance of box2's center from box1's center
+	// by projecting it onto a line parallel to box2's axis
+
+	// First side of box 2
+	boxProjectionSum = box2Size.x +	MatrixColumnDotProduct( absBox2ToBox1, 0, box1Size );
+	originProjection = fabs( MatrixColumnDotProduct( box2ToBox1, 0, box2Origin ) ) + tolerance;
+	if ( originProjection > boxProjectionSum )
+	{
+		MatrixGetColumn( box2ToWorld, 0, pNormalOut );
+		return true;
+	};
+
+	// Second side of box 2
+	boxProjectionSum = box2Size.y +	MatrixColumnDotProduct( absBox2ToBox1, 1, box1Size );
+	originProjection = fabs( MatrixColumnDotProduct( box2ToBox1, 1, box2Origin ) ) + tolerance;
+	if ( originProjection > boxProjectionSum )
+	{
+		MatrixGetColumn( box2ToWorld, 1, pNormalOut );
+		return true;
+	};
+
+	// Third side of box 2
+	boxProjectionSum = box2Size.z +	MatrixColumnDotProduct( absBox2ToBox1, 2, box1Size );
+	originProjection = fabs( MatrixColumnDotProduct( box2ToBox1, 2, box2Origin ) ) + tolerance;
+	if ( originProjection > boxProjectionSum )
+	{
+		MatrixGetColumn( box2ToWorld, 2, pNormalOut );
+		return true;
+	};
+
+	// Next check the splitting planes which are orthogonal to the pairs
+	// of edges, one from box1 and one from box2.  As only direction matters,
+	// there are 9 pairs since each box has 3 distinct edge directions.
+
+	// Here, we take advantage of the fact that the edges from box 1 are all
+	// axis aligned; therefore the crossproducts are simplified. Let's walk through
+	// the example of b1e1 x b2e1:
+
+	// In this example, the line to check is perpendicular to b1e1 + b2e2
+	// we can compute this line by taking the cross-product:
+	//
+	// [  i  j  k ]
+	// [  1  0  0 ] = - ez j + ey k = l1
+	// [ ex ey ez ]
+
+	// Where ex, ey, ez is the components of box2's x axis in the space of box 1,
+	// which is == to the 0th column of of box2toBox1
+
+	// The projection of box1 onto this line = the absolute dot product of the box size
+	// against the line, which =
+	// AbsDot( box1Size, l1 ) = abs( -ez * box1.y ) + abs( ey * box1.z )
+
+	// To compute the projection of box2 onto this line, we'll do it in the space of box 2
+	//
+	// [  i  j  k ]
+	// [ fx fy fz ] = fz j - fy k = l2
+	// [  1  0  0 ]
+
+	// Where fx, fy, fz is the components of box1's x axis in the space of box 2,
+	// which is == to the 0th row of of box2toBox1
+
+	// The projection of box2 onto this line = the absolute dot product of the box size
+	// against the line, which =
+	// AbsDot( box2Size, l2 ) = abs( fz * box2.y ) + abs ( fy * box2.z )
+
+	// The projection of the relative origin position on this line is done in the
+	// space of box 1:
+	//
+	// originProjection = DotProduct( <-ez j + ey k>, box2Origin ) =
+	//		-ez * box2Origin.y + ey * box2Origin.z
+
+	// NOTE: These checks can be bogus if both edges are parallel. The if
+	// checks at the beginning of each block are designed to catch that case
+
+	absBox2ToBox1 = absBox2ToBox1.m;
+	box2ToBox1 = box2ToBox1.m;
+
+	// b1e1 x b2e1
+	if ( absBox2ToBox1[0][0] < 0.999 )
+	{
+		boxProjectionSum =
+			box1Size.y * absBox2ToBox1[2][0] + box1Size.z * absBox2ToBox1[1][0] +
+			box2Size.y * absBox2ToBox1[0][2] + box2Size.z * absBox2ToBox1[0][1];
+		originProjection = fabs( -box2Origin.y * box2ToBox1[2][0] + box2Origin.z * box2ToBox1[1][0] ) + tolerance;
+		if ( originProjection > boxProjectionSum )
+		{
+			MatrixGetColumn( box2ToWorld, 0, pNormalOut );
+			local v = worldToBox1[0].Cross(pNormalOut);
+			pNormalOut.x = v.x;
+			pNormalOut.y = v.y;
+			pNormalOut.z = v.z;
+			return true;
+		};
+	};
+
+	// b1e1 x b2e2
+	if ( absBox2ToBox1[0][1] < 0.999 )
+	{
+		boxProjectionSum =
+			box1Size.y * absBox2ToBox1[2][1] + box1Size.z * absBox2ToBox1[1][1] +
+			box2Size.x * absBox2ToBox1[0][2] + box2Size.z * absBox2ToBox1[0][0];
+		originProjection = fabs( -box2Origin.y * box2ToBox1[2][1] + box2Origin.z * box2ToBox1[1][1] ) + tolerance;
+		if ( originProjection > boxProjectionSum )
+		{
+			MatrixGetColumn( box2ToWorld, 1, pNormalOut );
+			local v = worldToBox1[0].Cross(pNormalOut);
+			pNormalOut.x = v.x;
+			pNormalOut.y = v.y;
+			pNormalOut.z = v.z;
+			return true;
+		};
+	};
+
+	// b1e1 x b2e3
+	if ( absBox2ToBox1[0][2] < 0.999 )
+	{
+		boxProjectionSum =
+			box1Size.y * absBox2ToBox1[2][2] + box1Size.z * absBox2ToBox1[1][2] +
+			box2Size.x * absBox2ToBox1[0][1] + box2Size.y * absBox2ToBox1[0][0];
+		originProjection = fabs( -box2Origin.y * box2ToBox1[2][2] + box2Origin.z * box2ToBox1[1][2] ) + tolerance;
+		if ( originProjection > boxProjectionSum )
+		{
+			MatrixGetColumn( box2ToWorld, 2, pNormalOut );
+			local v = worldToBox1[0].Cross(pNormalOut);
+			pNormalOut.x = v.x;
+			pNormalOut.y = v.y;
+			pNormalOut.z = v.z;
+			return true;
+		};
+	};
+
+	// b1e2 x b2e1
+	if ( absBox2ToBox1[1][0] < 0.999 )
+	{
+		boxProjectionSum =
+			box1Size.x * absBox2ToBox1[2][0] + box1Size.z * absBox2ToBox1[0][0] +
+			box2Size.y * absBox2ToBox1[1][2] + box2Size.z * absBox2ToBox1[1][1];
+		originProjection = fabs( box2Origin.x * box2ToBox1[2][0] - box2Origin.z * box2ToBox1[0][0] ) + tolerance;
+		if ( originProjection > boxProjectionSum )
+		{
+			MatrixGetColumn( box2ToWorld, 0, pNormalOut );
+			local v = worldToBox1[1].Cross(pNormalOut);
+			pNormalOut.x = v.x;
+			pNormalOut.y = v.y;
+			pNormalOut.z = v.z;
+			return true;
+		};
+	};
+
+	// b1e2 x b2e2
+	if ( absBox2ToBox1[1][1] < 0.999 )
+	{
+		boxProjectionSum =
+			box1Size.x * absBox2ToBox1[2][1] + box1Size.z * absBox2ToBox1[0][1] +
+			box2Size.x * absBox2ToBox1[1][2] + box2Size.z * absBox2ToBox1[1][0];
+		originProjection = fabs( box2Origin.x * box2ToBox1[2][1] - box2Origin.z * box2ToBox1[0][1] ) + tolerance;
+		if ( originProjection > boxProjectionSum )
+		{
+			MatrixGetColumn( box2ToWorld, 1, pNormalOut );
+			local v = worldToBox1[1].Cross(pNormalOut);
+			pNormalOut.x = v.x;
+			pNormalOut.y = v.y;
+			pNormalOut.z = v.z;
+			return true;
+		};
+	};
+
+	// b1e2 x b2e3
+	if ( absBox2ToBox1[1][2] < 0.999 )
+	{
+		boxProjectionSum =
+			box1Size.x * absBox2ToBox1[2][2] + box1Size.z * absBox2ToBox1[0][2] +
+			box2Size.x * absBox2ToBox1[1][1] + box2Size.y * absBox2ToBox1[1][0];
+		originProjection = fabs( box2Origin.x * box2ToBox1[2][2] - box2Origin.z * box2ToBox1[0][2] ) + tolerance;
+		if ( originProjection > boxProjectionSum )
+		{
+			MatrixGetColumn( box2ToWorld, 2, pNormalOut );
+			local v = worldToBox1[1].Cross(pNormalOut);
+			pNormalOut.x = v.x;
+			pNormalOut.y = v.y;
+			pNormalOut.z = v.z;
+			return true;
+		};
+	};
+
+	// b1e3 x b2e1
+	if ( absBox2ToBox1[2][0] < 0.999 )
+	{
+		boxProjectionSum =
+			box1Size.x * absBox2ToBox1[1][0] + box1Size.y * absBox2ToBox1[0][0] +
+			box2Size.y * absBox2ToBox1[2][2] + box2Size.z * absBox2ToBox1[2][1];
+		originProjection = fabs( -box2Origin.x * box2ToBox1[1][0] + box2Origin.y * box2ToBox1[0][0] ) + tolerance;
+		if ( originProjection > boxProjectionSum )
+		{
+			MatrixGetColumn( box2ToWorld, 0, pNormalOut );
+			local v = worldToBox1[2].Cross(pNormalOut);
+			pNormalOut.x = v.x;
+			pNormalOut.y = v.y;
+			pNormalOut.z = v.z;
+			return true;
+		};
+	};
+
+	// b1e3 x b2e2
+	if ( absBox2ToBox1[2][1] < 0.999 )
+	{
+		boxProjectionSum =
+			box1Size.x * absBox2ToBox1[1][1] + box1Size.y * absBox2ToBox1[0][1] +
+			box2Size.x * absBox2ToBox1[2][2] + box2Size.z * absBox2ToBox1[2][0];
+		originProjection = fabs( -box2Origin.x * box2ToBox1[1][1] + box2Origin.y * box2ToBox1[0][1] ) + tolerance;
+		if ( originProjection > boxProjectionSum )
+		{
+			MatrixGetColumn( box2ToWorld, 1, pNormalOut );
+			local v = worldToBox1[2].Cross(pNormalOut);
+			pNormalOut.x = v.x;
+			pNormalOut.y = v.y;
+			pNormalOut.z = v.z;
+			return true;
+		};
+	};
+
+	// b1e3 x b2e3
+	if ( absBox2ToBox1[2][2] < 0.999 )
+	{
+		boxProjectionSum =
+			box1Size.x * absBox2ToBox1[1][2] + box1Size.y * absBox2ToBox1[0][2] +
+			box2Size.x * absBox2ToBox1[2][1] + box2Size.y * absBox2ToBox1[2][0];
+		originProjection = fabs( -box2Origin.x * box2ToBox1[1][2] + box2Origin.y * box2ToBox1[0][2] ) + tolerance;
+		if ( originProjection > boxProjectionSum )
+		{
+			MatrixGetColumn( box2ToWorld, 2, pNormalOut );
+			local v = worldToBox1[2].Cross(pNormalOut);
+			pNormalOut.x = v.x;
+			pNormalOut.y = v.y;
+			pNormalOut.z = v.z;
+			return true;
+		};
+	};
+	return false;
+}
+
+//-----------------------------------------------------------------------------
+// Compute a separating plane between two boxes (expensive!)
+// Returns false if no separating plane exists
+//-----------------------------------------------------------------------------
+function VS::ComputeSeparatingPlane2( org1, angles1, min1, max1, org2, angles2, min2, max2, tolerance, pNormal = _VEC )
+	: (matrix3x4_t)
+{
+	local worldToBox1 = matrix3x4_t(),
+		box2ToWorld = matrix3x4_t();
+
+	ComputeCenterIMatrix( org1, angles1, min1, max1, worldToBox1 );
+	ComputeCenterMatrix( org2, angles2, min2, max2, box2ToWorld );
+
+	// Then compute the size of the two boxes
+	local box1Size = (max1 - min1) * 0.5;
+	local box2Size = (max2 - min2) * 0.5;
+
+	return ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, tolerance, pNormal );
+}
+*/

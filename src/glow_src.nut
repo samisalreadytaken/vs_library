@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------
 //------------------- Copyright (c) samisalreadytaken -------------------
 //                       github.com/samisalreadytaken
-//- v1.0.10 -------------------------------------------------------------
+//- v1.0.11 -------------------------------------------------------------
 //
 // Easy glow handling library.
 // Can be used on any entity that has a model.
@@ -44,7 +44,7 @@ if ( !("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Gl
 			local h = _list[i];
 			if (h)
 			{
-				if( h.GetMoveParent() == src )
+				if( h.GetOwner() == src )
 					return h;
 			}
 			else _list.remove(i);
@@ -72,7 +72,7 @@ if ( !("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Gl
 		if ( !glow )
 		{
 			foreach( v in _list )
-				if( v && !v.GetMoveParent() )
+				if( v && !v.GetOwner() )
 				{
 					glow = v;
 					break;
@@ -93,6 +93,9 @@ if ( !("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Gl
 
 			// SetParent
 			AddEvent( glow, "SetParent", "!activator", 0.0, src, null );
+
+			// need a synchronous mark
+			glow.SetOwner( src );
 
 			// MakePersistent
 			glow.__KeyValueFromString( "classname", "soundent" );
@@ -125,8 +128,9 @@ if ( !("Glow" in ::getroottable()) || typeof::Glow != "table" || !("Set" in ::Gl
 		if (glow)
 		{
 			glow.__KeyValueFromInt( "effects", 18465 ); // EF_DEFAULT|EF_NODRAW
-			AddEvent( glow, "ClearParent", "", 0.0, null, null );
+			AddEvent( glow, "SetParent", "", 0.0, null, null );
 			AddEvent( glow, "SetGlowDisabled", "", 0.0, null, null );
+			glow.SetOwner( null );
 			// glow.SetAbsOrigin( MAX_COORD_VEC );
 		};
 

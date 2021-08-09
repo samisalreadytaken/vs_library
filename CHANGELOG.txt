@@ -3,6 +3,41 @@
 
 --------------------------------
 
+2021-08-09 [v2.41.0]
+- Added rudimentary version control on load
+- Completely automated userid validation, requiring no manual input
+- Added userid caching - significantly better performane on VS.GetPlayerByUserid
+- VS.ValidateUseridAll now only takes 1 frame to validate all players (requires fixup)
+- Fixed automatic userid validation skipping players when the listeners were not fixed up
+- Added mask parameter on VS.TraceLine
+- Math library optimisations
+- Bytecode optimisations
+- Fixed return value of VS.QuaternionNormalize
+- Fixed VS.ScreenToWorld
+- Fixed FLT_MAX, FLT_MIN, FLT_EPSILON values
+- Fixed VS.DumpScope not skipping documentation
+- Rewrote VS.GetStackInfo in the style of default error print
+- Renamed VS.GetStackInfo to VS.PrintStack
+- Fixed VS.ArrayToTable
+- Added fallback array access to Quaternion, matrix3x4_t and VMatrix classes
+- Changed matrix constructor parameters (signature change!)
+- Removed format parameters of VecToString to keep its purpose simple
+- Removed VS.GetAngle2D (as it is identical to VS.VecToYaw)
+- Removed VS.AddOutput2
+- Removed VS.GetTickrate
+- Removed VS.InvRSquared
+- Removed VS.a_swap
+- Removed VS.MatrixRowDotProduct
+- Removed VS.MatrixColumnDotProduct
+- Removed VS.Collision_ClearTrace
+- Removed VS.arrayFind
+- Removed VS.arrayApply
+- Removed VS.arrayMap
+- Temporarily removed VS.IsDedicatedServer
+- Merged math files (vs_math, vs_math2, vs_interp, vs_collision)
+- vs_math and vs_events can now be used independently
+- Fixed setting multiple glows synchronously
+
 2021-06-27 [v2.40.3]
 - Removed VS.TraceLine.Ray()
 - Fixed VS.AngleIMatrix

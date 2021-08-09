@@ -7,7 +7,7 @@
 //
 //-----------------------------------------------------------------------
 
-VS.Log <-
+local Log =
 {
 	enabled     = false,
 	export      = false,
@@ -20,6 +20,8 @@ VS.Log <-
 	// _file       = null
 }
 
+VS.Log <- Log;
+
 VS.Log._data = VS.Log.m_data.weakref();
 
 
@@ -28,29 +30,26 @@ VS.Log.Add <- function(s)
 	local L = _data;
 	// logs may have thousands of entries, allocate memory size+1 instead of size*2
 	L.insert( L.len(), s );
-}.bindenv(VS.Log)
+}.bindenv(VS.Log);
 
 
 
 VS.Log.Pop <- function()
 {
 	return _data.pop();
-}.bindenv(VS.Log)
+}.bindenv(VS.Log);
 
 
 
 VS.Log.Clear <- function()
 {
 	_data.clear();
-}.bindenv(VS.Log)
+}.bindenv(VS.Log);
 
 
 
 VS.Log.Run <- function( data = null, callback = null )
 {
-	if ( VS.IsDedicatedServer() )
-		Msg("!!! VS.Log unavailable on dedicated servers\n");
-
 	if ( !enabled )
 		return;
 
@@ -59,7 +58,7 @@ VS.Log.Run <- function( data = null, callback = null )
 	_env = _cb ? VS.GetCaller() : null;
 
 	return _Start();
-}.bindenv(VS.Log)
+}.bindenv(VS.Log);
 
 /*
 //
@@ -231,8 +230,7 @@ function VS::Log::_Write() : ( Msg, delay )
 		nD = null;
 		nC = null;
 		nN = null;
-		_Stop();
-		return;
+		return _Stop();
 	};
 
 	return delay( _Write, 0.001, this );
