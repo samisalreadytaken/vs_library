@@ -34,6 +34,8 @@ It only needs to be included once in the lifetime of the map running in the serv
 
 
 ### Event listener setup
+[![](https://img.shields.io/badge/video-red?logo=youtube)](https://www.youtube.com/watch?v=JGnBQ1lwzzg)
+
 Setting up these 2 entities will automatically acquire player userid, SteamID and Steam names; and also expose event listener registration from script with `VS.ListenToGameEvent`.
 
 ```
