@@ -14,6 +14,7 @@ local Events = delegate ::VS :
 	m_pListeners = null,
 	s_szEventName = null,
 	s_hListener = null,
+	s_fnSynchronous = null,
 	__rem = null,
 	__tmp = null,
 
@@ -428,30 +429,32 @@ VS.Events.PostSpawn <- function( pEntities ) : (AddEvent)
 		local sc = ent.GetScriptScope();
 
 		// synchronous callbacks, not possible to dump call stack when exception is thrown
-		/*
+		if ( s_fnSynchronous )
+		{
+			SetName( ent, "" );
 			delete sc.parent._get;
-			sc.parent._newslot = function( k, v )
+			sc.parent._newslot = function( k, v ) : (s_fnSynchronous)
 			{
 				if ( k == "event_data" )
 				{
-					try
-					{
-						OnEventFired(v);
-					}
-					catch( err )
-					{
-						print(format( "\nAN ERROR HAS OCCURED [%s]\n", err ));
-					}
+					//try
+					//{
+						s_fnSynchronous(v);
+					//}
+					//catch( err )
+					//{
+					//	print(format( "\nAN ERROR HAS OCCURED [%s]\n", err ));
+					//}
 				}
 				else
 				{
 					rawset( k, v );
 				}
 			}
-		*/
-
+		}
 		// asynchronous callbacks
-
+		else
+		{
 			// naming it with the event name and UID makes debugging easier
 			local name = sc.__vname;
 			local i = name.find("_");
@@ -463,6 +466,7 @@ VS.Events.PostSpawn <- function( pEntities ) : (AddEvent)
 				"OnEventFired "+name+",CallScriptFunction,OnEventFired",
 				0.0, null, ent );
 			sc.OnEventFired <- null;
+		}
 	}
 }.bindenv( VS.Events );
 
@@ -478,25 +482,9 @@ VS.Events.OnPostSpawn <- function() : (__RemovePooledString)
 
 		VS.StopListeningToAllGameEvents( "VS::Events" );
 
-		VS.ListenToGameEvent( "player_connect", function(ev)
-		{
-			if ( player_connect(ev) )
-			{
-				foreach( fn in m_pListeners.player_connect )
-					if ( typeof fn == "function" )
-						fn(ev);
-			}
-		}.bindenv( VS.Events ), "VS::Events" );
+		VS.ListenToGameEvent( "player_connect", VS.Events.player_connect, "VS::Events" );
 
-
-		VS.ListenToGameEvent( "player_spawn", function(ev)
-		{
-			player_spawn(ev);
-			foreach( fn in m_pListeners.player_spawn )
-				if ( typeof fn == "function" )
-					fn(ev);
-		}.bindenv( VS.Events ), "VS::Events" );
-
+		VS.ListenToGameEvent( "player_spawn", VS.Events.player_spawn, "VS::Events" );
 
 		// NOTE: this will sometimes fire extra validation events before auto validation.
 		// It is harmless.
@@ -504,7 +492,6 @@ VS.Events.OnPostSpawn <- function() : (__RemovePooledString)
 		{
 			return ValidateUseridAll();
 		}.bindenv(VS), "VS::Events" );
-
 
 		VS.ListenToGameEvent( "player_disconnect", function(ev)
 		{
@@ -539,19 +526,28 @@ VS.ListenToGameEvent <- function( szEventname, fnCallback, pContext )
 	if ( !(pContext in pListener) )
 		pListener[pContext] <- null;
 
-	// to ensure library functions are run before user functions, use a single entity for these events
-	if ( (szEventname == "player_connect" || szEventname == "player_spawn") && (pContext != "VS::Events") )
-	{
-		pListener[pContext] = fnCallback;
-		return;
-	};
-
 	local p = pListener[pContext];
 	if ( !p )
 	{
+		// library functions are synchronous
+		if ( (pContext == "VS::Events") && (szEventname == "player_connect" || szEventname == "player_spawn") )
+		{
+			s_fnSynchronous = fnCallback;
+		}
+		else
+		{
+			s_fnSynchronous = null;
+		};
+
 		if ( !(p = SpawnEntity( szEventname )) )
 			return Msg("VS::ListenToGameEvent: ERROR!!! NULL ent!\n");
 		pListener[pContext] = p.weakref();
+
+		if ( s_fnSynchronous )
+		{
+			s_fnSynchronous = null;
+			return;
+		};
 	};
 
 	local sc = p.GetScriptScope();

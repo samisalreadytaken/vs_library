@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2021-08-16 [v2.41.1]
+- Fixed player data sometimes not auto validating on some maps
+
 2021-08-09 [v2.41.0]
 - Added rudimentary version control on load
 - Completely automated userid validation, requiring no manual input
