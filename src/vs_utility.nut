@@ -15,6 +15,425 @@
 	return Fmt( "Vector(%.6g, %.6g, %.6g)", v.x, v.y, v.z );
 }
 
+
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+
+
+if ( !("{F71A8D}" in ROOT) )
+{
+	// unique entity pools
+	ROOT["{F71A8D}"] <- [];
+	ROOT["{E3D627}"] <- [];
+	ROOT["{5E457F}"] <- [];
+	ROOT["{D9154C}"] <- [];
+};;
+
+local g_Players = ROOT["{F71A8D}"];
+local g_Eyes = ROOT["{E3D627}"];
+local g_GameUIs = ROOT["{5E457F}"];
+local g_ViewEnts = ROOT["{D9154C}"]; // usually contains only 1 entity
+
+
+local DoSetFOV = function( iFOV, flSpeed )
+{
+	SetFov( iFOV, flSpeed );
+	SetOwner( null );
+}
+
+//
+// FIXME: calling multiple times in a frame on different players
+//
+VS.SetPlayerFOV <- function( hPlayer, iFOV, flSpeed = 0.0 ) : (g_ViewEnts, AddEvent, DoSetFOV, Entities)
+{
+	if ( !hPlayer || !hPlayer.IsValid() || hPlayer.GetClassname() != "player" )
+		return;
+
+	local hView;
+
+	for ( local i = g_ViewEnts.len(); i--; )
+	{
+		local v = g_ViewEnts[i];
+		if ( !v )
+		{
+			g_ViewEnts.remove(i);
+			continue;
+		};
+
+		local owner = v.GetOwner();
+		if ( owner == hPlayer )
+		{
+			// called multiple times in a frame - still active on player
+			DoSetFOV.call( v, iFOV, flSpeed );
+			return v;
+		};
+
+		if ( !owner )
+		{
+			hView = v;
+			// continue searching to see if owner == hPlayer
+		};
+	}
+
+	if ( !hView )
+	{
+		hView = Entities.CreateByClassname( "point_viewcontrol" );
+		MakePersistent( hView );
+		// SF 0 makes the transition smooth; 7 overrides existing view owner, if exists
+		hView.__KeyValueFromInt( "spawnflags", (1<<0)|(1<<7) );
+		hView.__KeyValueFromInt( "effects", (1<<5) );
+		hView.__KeyValueFromInt( "movetype", 8 );
+		hView.__KeyValueFromInt( "renderamt", 0 );
+		hView.__KeyValueFromInt( "rendermode", 2 );
+		g_ViewEnts.insert( 0, hView.weakref() );
+	};
+
+	// This script takes advantage of how hViewEntity->m_hPlayer is not
+	// nullified on disabling, and how ScriptSetFov() only calls pPlayer->SetFOV()
+	hView.SetOwner( hPlayer );
+	AddEvent( hView, "Enable", "", 0.0, hPlayer, null );
+	AddEvent( hView, "Disable", "", 0.0, null, null );
+	EventQueue.AddEvent( DoSetFOV, 0.0, [ hView, iFOV, flSpeed ] );
+	return hView;
+
+}.bindenv(::VS);
+
+
+
+// used for async name setting
+local SetNameSafe = function( ent, name )
+{
+	if ( ent && ent.IsValid() )
+	{
+		ent.__KeyValueFromString( "targetname", name );
+	}
+}
+
+local NullSort = function( a, b )
+{
+	local oa = a && a.ref();
+	local ob = b && b.ref();
+
+	if ( oa && !ob )
+		return 1;
+	if ( !oa && ob )
+		return -1;
+	return 0;
+}
+
+local OwnerSort = function( a, b )
+{
+	local oa = a && a.ref() && a.ref().GetOwner();
+	local ob = b && b.ref() && b.ref().GetOwner();
+
+	if ( oa && !ob )
+		return 1;
+	if ( !oa && ob )
+		return -1;
+	return 0;
+}
+
+VS.ToExtendedPlayer <- function( hPlayer )
+	: ( g_Players, g_Eyes, g_GameUIs, NullSort, OwnerSort, AddEvent, SetNameSafe, Entities, FrameTime )
+{
+	foreach( ply in g_Players )
+		if ( ply.self == hPlayer || ply == hPlayer )
+			return ply;
+
+	if ( (typeof hPlayer != "instance") || !(hPlayer instanceof CBaseMultiplayerPlayer) || !hPlayer.IsValid() )
+		return Msg("ToExtendedPlayer: invalid player input\n");
+
+	// duplicated iteration to keep post-init calls as cheap as possible
+	for ( local i = g_Players.len(); i--; )
+	{
+		if ( !g_Players[i].IsValid() )
+			g_Players.remove(i);
+	}
+
+	hPlayer.ValidateScriptScope();
+	local sc = hPlayer.GetScriptScope();
+
+	if ( !("userid" in sc) )
+		sc.userid <- -1;
+	if ( !("networkid" in sc) )
+		sc.networkid <- "";
+	if ( !("name" in sc) )
+		sc.name <- "";
+
+
+	local eye;
+	g_Eyes.sort( NullSort );
+	g_Eyes.sort( OwnerSort );
+
+	for ( local i = g_Eyes.len(); i--; )
+	{
+		local v = g_Eyes[i];
+		if ( !v )
+		{
+			g_Eyes.remove(i);
+			continue;
+		};
+
+		local owner = v.GetOwner();
+		if ( !owner || owner == hPlayer )
+		{
+			eye = v;
+			break;
+		};
+	}
+
+	if ( !eye )
+	{
+		eye = Entities.CreateByClassname( "logic_measure_movement" );
+		MakePersistent( eye );
+		eye.__KeyValueFromInt( "measuretype", 1 );
+		eye.__KeyValueFromString( "measurereference", "" );
+		eye.__KeyValueFromString( "measureretarget", "" );
+		eye.__KeyValueFromFloat( "targetscale", 1.0 );
+		local name_eye = "vs.ref_" + UniqueString();
+		eye.__KeyValueFromString( "targetname", name_eye );
+		eye.__KeyValueFromString( "targetreference", name_eye );
+		eye.__KeyValueFromString( "target", name_eye );
+		AddEvent( eye, "SetMeasureReference", name_eye, 0.0, null, null );
+
+		// Need to keep ent name because
+		// CLogicMeasureMovement::InputSetMeasureTarget updates the references from targetname
+		// EventQueue.AddEvent( SetNameSafe, FrameTime()+0.001, [ null, eye, "" ] );
+
+		// always think
+		AddEvent( eye, "Enable", "" , 0.0, null, null );
+
+		g_Eyes.insert( 0, eye.weakref() );
+	};
+
+	{
+		local name_old = hPlayer.GetName();
+		local name_new = hPlayer.GetScriptScope().__vname;
+		hPlayer.__KeyValueFromString( "targetname", name_new );
+		AddEvent( eye, "SetMeasureTarget", name_new, 0.0, null, null );
+		EventQueue.AddEvent( SetNameSafe, FrameTime()+0.001, [ null, hPlayer, name_old ] );
+	}
+
+	eye.SetOwner( hPlayer );
+
+	local bot = ( sc.networkid == "BOT" ) ? true : false;
+
+	class __player //extends CBaseMultiplayerPlayer
+	{
+		self = hPlayer.weakref();
+		m_EntityIndex = hPlayer.entindex(); // m_EdictIndex
+		m_ScriptScope = sc.weakref();
+		// __vname = sc.__vname; // m_iszScriptId
+		userid = sc.userid; // m_UserID
+		networkid = sc.networkid;
+		name = sc.name; // m_szNetname
+		bot = bot; // m_bFakePlayer
+
+		IsBot = bot ? function() { return true; } : function() { return false; };
+		function GetUserID() { return userid; }
+		function GetNetworkIDString() { return networkid; }
+		function GetPlayerName() { return name; }
+
+		EyeAngles = CBaseEntity.GetAngles.bindenv(eye);
+		EyeForward = CBaseEntity.GetForwardVector.bindenv(eye);
+		EyeRight = CBaseEntity.GetLeftVector.bindenv(eye);
+		EyeUp = CBaseEntity.GetUpVector.bindenv(eye);
+
+		//function CalcEntityToWorldTransform()
+		//{
+		//	local m = matrix3x4_t();
+		//	VS.AngleMatrix( GetAngles(), GetOrigin(), m );
+		//	return m;
+		//}
+
+		function SetName( sz )
+		{
+			self.__KeyValueFromString( "targetname", sz );
+		}
+
+		function SetEffects( n )
+		{
+			self.__KeyValueFromInt( "effects", n );
+		}
+
+		function SetMoveType( n )
+		{
+			self.__KeyValueFromInt( "movetype", n );
+		}
+
+		function SetFOV( nFov, flRate )
+		{
+			return ::SetPlayerFOV( self, nFov, flRate );
+		}
+
+		function SetParent( hParent, szAttachment ) : (AddEvent)
+		{
+			AddEvent( self, "SetParent", "!activator", 0.0, hParent, null );
+			if ( szAttachment != "" )
+				AddEvent( self, "SetParentAttachment", szAttachment, 0.0, null, null );
+		}
+
+		_ui = null;
+
+		function SetInputCallback( szInput, fn, env ) : (AddEvent, g_GameUIs, NullSort, OwnerSort)
+		{
+			if ( !_ui || !_ui.IsValid() )
+			{
+				g_GameUIs.sort( NullSort );
+				g_GameUIs.sort( OwnerSort );
+				for ( local i = g_GameUIs.len(); i--; )
+				{
+					local v = g_GameUIs[i];
+					if ( !v )
+					{
+						g_GameUIs.remove(i);
+						continue;
+					};
+
+					local owner = v.GetOwner();
+					if ( !owner || owner == hPlayer )
+					{
+						v.SetTeam(0); // reset
+						_ui = v;
+						break;
+					};
+				}
+
+				if ( !_ui )
+				{
+					_ui = Entities.CreateByClassname( "game_ui" );
+					VS.MakePersistent( _ui );
+					_ui.__KeyValueFromInt( "spawnflags", 1<<7 );
+					_ui.__KeyValueFromFloat( "fieldofview", -1.0 );
+					_ui.__KeyValueFromString( "targetname", "" );
+					g_GameUIs.insert( 0, _ui.weakref() );
+				};
+
+				_ui.SetOwner( hPlayer );
+			};
+
+			_ui.ValidateScriptScope();
+			local sc = _ui.GetScriptScope();
+
+			// turn off
+			if ( !szInput )
+			{
+				if ( _ui.GetTeam() && _ui.GetOwner() )
+				{
+					AddEvent( _ui, "Deactivate", "", 0.0, self, null );
+				};
+
+				_ui.SetTeam(0);
+				foreach( k,v in sc )
+				{
+					if ( typeof v == "function" )
+					{
+						sc[k] = null;
+						_ui.DisconnectOutput( k, k );
+					}
+				}
+				return;
+			};
+
+			switch ( szInput )
+			{
+				case "+use":		szInput = "PressedUse"; break;
+				case "+attack":		szInput = "PressedAttack"; break;
+				case "-attack":		szInput = "UnpressedAttack"; break;
+				case "+attack2":	szInput = "PressedAttack2"; break;
+				case "-attack2":	szInput = "UnpressedAttack2"; break;
+				case "+forward":	szInput = "PressedForward"; break;
+				case "-forward":	szInput = "UnpressedForward"; break;
+				case "+back":		szInput = "PressedBack"; break;
+				case "-back":		szInput = "UnpressedBack"; break;
+				case "+moveleft":	szInput = "PressedMoveLeft"; break;
+				case "-moveleft":	szInput = "UnpressedMoveLeft"; break;
+				case "+moveright":	szInput = "PressedMoveRight"; break;
+				case "-moveright":	szInput = "UnpressedMoveRight"; break;
+				default: throw "invalid input";
+			}
+
+			// disable input
+			if ( !fn )
+			{
+				if ( szInput == "PressedUse" )
+				{
+					sc.PlayerOff <- function() : (_ui, AddEvent)
+					{
+						return AddEvent( _ui, "Activate", "", 0.0, self, null );
+					}.bindenv(this);
+					return;
+				};
+
+				if ( !(szInput in sc) )
+					return;
+
+				sc[szInput] = null;
+				_ui.DisconnectOutput( szInput, szInput );
+				return;
+			};
+
+			// TODO: multiple callbacks
+			// if ( typeof env == "string" )
+
+			fn = fn.bindenv(env);
+
+			if ( szInput != "PressedUse" )
+			{
+				sc[szInput] <- function() : (fn)
+				{
+					return fn(this);
+				}.bindenv(this);
+				_ui.ConnectOutput( szInput, szInput );
+			}
+			else
+			{
+				sc.PlayerOff <- function() : (fn, _ui, AddEvent)
+				{
+					fn(this);
+					return AddEvent( _ui, "Activate", "", 0.0, self, null );
+				}.bindenv(this);
+				_ui.ConnectOutput( "PlayerOff", "PlayerOff" );
+			};
+
+			if ( !_ui.GetTeam() )
+			{
+				_ui.SetTeam(1);
+				AddEvent( _ui, "Activate", "", 0.0, self, null );
+
+				if ( szInput != "PressedUse" )
+				{
+					sc.PlayerOff <- function() : (_ui, AddEvent)
+					{
+						return AddEvent( _ui, "Activate", "", 0.0, self, null );
+					}.bindenv(this);
+					_ui.ConnectOutput( "PlayerOff", "PlayerOff" );
+				};
+			};
+		}
+
+		_tostring = hPlayer.tostring.bindenv( hPlayer );
+		getclass = hPlayer.getclass.bindenv( hPlayer );
+	}
+
+	// Set native funcs after custom funcs to keep forward compatibility
+	foreach( k,v in hPlayer.getclass() ) // CBaseMultiplayerPlayer
+		__player[k] <- v.bindenv( hPlayer );
+
+	local p = __player();
+	g_Players.append(p);
+	return p;
+
+}.bindenv(::VS);
+
+
+::SetPlayerFOV <- VS.SetPlayerFOV.weakref();
+::ToExtendedPlayer <- VS.ToExtendedPlayer.weakref();
+
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+
+
 //-----------------------------------------------------------------------
 // Ray tracing
 //-----------------------------------------------------------------------
@@ -226,7 +645,7 @@ function VS::UniqueString():(DoUniqueString)
 function VS::DumpScope( input, bPrintAll = false, bDeepPrint = true, bPrintGuides = true, nDepth = 0 )
 {
 	// non-native variables
-	local _skip = ["Assert","Document","Documentation","PrintHelp","RetrieveNativeSignature","UniqueString","IncludeScript","Entities","CSimpleCallChainer","CCallChainer","LateBinder","__ReplaceClosures","__DumpScope","printl","VSquirrel_OnCreateScope","VSquirrel_OnReleaseScope","PrecacheCallChain","OnPostSpawnCallChain","DispatchOnPostSpawn","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn","EntFireByHandle","EntFire","RAND_MAX","_version_","_intsize_","PI","_charsize_","_floatsize_","self","__vname","__vrefs","{847D4B}","VS","Chat","ChatTeam","txt","PrecacheModel","PrecacheScriptSound","delay","OnGameEvent_player_spawn","OnGameEvent_player_connect","VecToString","HPlayer","Ent","Entc","Quaternion","matrix3x4_t","VMatrix","Ray_t","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
+	local _skip = ["Assert","Document","Documentation","PrintHelp","RetrieveNativeSignature","RegisterFunctionDocumentation","UniqueString","IncludeScript","Entities","CSimpleCallChainer","CCallChainer","LateBinder","__ReplaceClosures","__DumpScope","printl","VSquirrel_OnCreateScope","VSquirrel_OnReleaseScope","PrecacheCallChain","OnPostSpawnCallChain","DispatchOnPostSpawn","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn","EntFireByHandle","EntFire","RAND_MAX","_version_","_intsize_","PI","_charsize_","_floatsize_","self","__vname","__vrefs","{847D4B}","{F71A8D}","{E3D627}","{5E457F}","{D9154C}","ToExtendedPlayer","SetPlayerFOV","VS","Chat","ChatTeam","TextColor","PrecacheModel","PrecacheScriptSound","delay","VecToString","HPlayer","Ent","Entc","Quaternion","matrix3x4_t","VMatrix","Ray_t","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
 	local indent = function(c) for( local i = c; i--; ) print("   ");
 	local SWorld = Entities.First().GetScriptScope();
 	if ( bPrintGuides ) print(" ------------------------------\n");
@@ -839,25 +1258,45 @@ if (!PORTAL2){
 ::Alert     <- ScriptPrintMessageCenterAll;
 ::AlertTeam <- ScriptPrintMessageCenterTeam;
 
-::txt <-
+enum TextColor
 {
-	white      = "\x01",
-	red        = "\x02",
-	purple     = "\x03",
-	green      = "\x04",
-	lightgreen = "\x05",
-	limegreen  = "\x06",
-	lightred   = "\x07",
-	grey       = "\x08",
-	yellow     = "\x09",
-	lightblue  = "\x0a",
-	blue       = "\x0b",
-	darkblue   = "\x0c",
-	darkgrey   = "\x0d",
-	pink       = "\x0e",
-	orangered  = "\x0f",
-	orange     = "\x10"
+	// NORMAL			= 1,
+	Normal			= "\x1",	// white
+	// USEOLDCOLORS	= 2,
+	// RED				= 2,
+	Red				= "\x2",	// red
+	// PLAYERNAME		= 3,
+	// PURPLE			= 3,
+	Purple			= "\x3",	// purple
+	// LOCATION		= 4,
+	Location		= "\x4",	// dark green
+	// ACHIEVEMENT		= 5,
+	Achievement		= "\x5",	// light green
+	// AWARD			= 6,
+	Award			= "\x6",	// green
+	// PENALTY			= 7,
+	Penalty			= "\x7",	// light red
+	// SILVER			= 8,
+	Silver			= "\x8",	// grey
+	// GOLD			= 9,
+	Gold			= "\x9",	// yellow
+	// COMMON			= 10,
+	Common			= "\xA",	// grey blue
+	// UNCOMMON		= 11,
+	Uncommon		= "\xB",	// light blue
+	// RARE			= 12,
+	Rare			= "\xC",	// dark blue
+	// MYTHICAL		= 13,
+	Mythical		= "\xD",	// dark grey
+	// LEGENDARY		= 14,
+	Legendary		= "\xE",	// pink
+	// ANCIENT			= 15,
+	Ancient			= "\xF",	// orange red
+	// IMMORTAL		= 16
+	Immortal		= "\x10"	// orange
 }
+
+::TextColor <- CONST.TextColor;
 
 };; // !PORTAL2
 

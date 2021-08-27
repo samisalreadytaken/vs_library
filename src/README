@@ -7,4 +7,3 @@ vs_library source files
 	vs_log.nut
 
 	glow.nut (glow_src.nut)
-	fov.nut (fov_src.nut)

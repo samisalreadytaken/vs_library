@@ -3,6 +3,15 @@
 
 --------------------------------
 
+2021-08-27 [v2.42.0]
+- Added ::ToExtendedPlayer
+- Added ::SetPlayerFOV
+- Added enum TextColor
+- Removed enum txt
+- Removed fov.nut
+- Deprecated VS.CreateMeasure
+- Deprecated VS.SetMeasure
+
 2021-08-16 [v2.41.1]
 - Fixed player data sometimes not auto validating on some maps
 

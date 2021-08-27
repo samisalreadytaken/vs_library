@@ -50,9 +50,8 @@ ________________________________
 ### Variables used in examples
 | Variable       | Creation                          | Description                                           |
 | -------------- | --------------------------------- | ----------------------------------------------------- |
-| `HPlayer`      | `VS.GetLocalPlayer()`             | Local player in the server                            |
-| `HPlayerEye`   | `VS.CreateMeasure(HPlayer.GetName())`      | Buffer to get player eye angles                       |
-| `hHudHint`     | `VS.CreateEntity("env_hudhint")`  | Hud hint, show messages to the player                 |
+| `HPlayer`      | `ToExtendedPlayer(VS.GetPlayerByIndex(1))`             | Local player in the server                            |
+| `m_hHudHint`   | `VS.CreateEntity("env_hudhint")`  | Hud hint, show messages to the player                 |
 | `Think()`      | `VS.Timer(0, 0.0, Think)`         | A function that is executed every frame               |
 
 
@@ -71,6 +70,7 @@ ________________________________
 | `RAND_MAX`         | `0x7FFF`                         |
 | `MAX_COORD_FLOAT`  | `16384.0` (`1<<14`)              |
 | `MAX_TRACE_LENGTH` | `56755.840862417`                |
+| `TextColor`        |                                  |
 
 NOTE: To use these constants in your scripts, the library needs to have been compiled before your script. To ensure this happens, you may load your scripts using a buffer script which loads the library first, then loads your custom script.
 
@@ -273,9 +273,9 @@ IncludeScript("myscript")
 [`ChatTeam()`](#f_ChatTeam)  
 [`Alert()`](#f_Alert)  
 [`AlertTeam()`](#f_AlertTeam)  
-[`txt`](#f_txt)  
+[`TextColor`](#f_TextColor)  
 [`VecToString()`](#f_VecToString)  
-[`VS.IsDedicatedServer()`](#f_IsDedicatedServer)  
+[`ToExtendedPlayer()`](#f_ToExtendedPlayer)  
 [`VS.TraceLine`](#f_TraceLine)  
 [`VS.TraceLine.DidHit()`](#f_DidHit)  
 [`VS.TraceLine.GetEnt()`](#f_GetEnt)  
@@ -454,28 +454,28 @@ bool VS::IsLookingAt(Vector source, Vector target, Vector direction, float toler
 function Think()
 {
 	local bLooking
-	local eye = HPlayer.EyePosition()
+	local eyePos = HPlayer.EyePosition()
 	local target = Vector()
 
 	DebugDrawLine( HPlayer.GetOrigin(), target, 255,0,0,true, -1 )
 
 	// only check if there is direct LOS with the target
-	if ( !VS.TraceLine( eye, target ).DidHit() )
+	if ( !VS.TraceLine( eyePos, target ).DidHit() )
 	{
-		bLooking = VS.IsLookingAt( eye, target, HPlayerEye.GetForwardVector(), VIEW_FIELD_NARROW )
+		bLooking = VS.IsLookingAt( eyePos, target, HPlayer.EyeForward(), VIEW_FIELD_NARROW )
 	}
 
 	if ( bLooking )
 	{
 		m_hHudHint.__KeyValueFromString( "message", "LOOKING" );
-		EntFireByHandle( hHudHint, "ShowHudHint", "", HPlayer );
+		EntFireByHandle( m_hHudHint, "ShowHudHint", "", 0.0, HPlayer.self );
 
 		DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 0,255,0,255, -1 )
 	}
 	else
 	{
 		m_hHudHint.__KeyValueFromString( "message", "NOT looking" );
-		EntFireByHandle( hHudHint, "ShowHudHint", "", HPlayer );
+		EntFireByHandle( m_hHudHint, "ShowHudHint", "", 0.0, HPlayer.self );
 
 		DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 255,0,0,255, -1 )
 	}
@@ -617,7 +617,7 @@ Snaps the input (normalised direction) vector to the closest axis
 function Think()
 {
 	local eye = HPlayer.EyePosition()
-	local dir = HPlayerEye.GetForwardVector()
+	local dir = HPlayer.EyeForward()
 
 	// draw normal direction
 	DebugDrawLine( eye, eye+dir*128, 255, 255, 255, false, -1 )
@@ -1476,13 +1476,13 @@ Vector VS::ScreenToWorld( float x, float y, Vector origin, Vector forward, Vecto
 {
 	local x = 0.35
 	local y = 0.65
-	local eyeAng = playerEye.GetAngles()
+	local eyeAng = player.EyeAngles()
 	local eyePos = player.EyePosition()
 	local worldPos = VS.ScreenToWorld( x, y,
 		eyePos,
-		playerEye.GetForwardVector(),
-		playerEye.GetLeftVector(),
-		playerEye.GetUpVector(),
+		player.EyeForward(),
+		player.EyeRight(),
+		player.EyeUp(),
 		90.0, 16.0/9.0, 16.0 )
 
 	local maxs = vec3_t( 0.0, 0.5, 0.5 );
@@ -1983,10 +1983,10 @@ Wrapper function for `ScriptPrintMessageChatAll`, but allows text colour to be t
 
 ```
 // colour will not work
-ScriptPrintMessageChatAll(txt.red + "lorem ipsum")
+ScriptPrintMessageChatAll(TextColor.Red + "lorem ipsum")
 
 // will be coloured
-Chat(txt.red + "lorem ipsum")
+Chat(TextColor.Red + "lorem ipsum")
 ```
 ________________________________
 
@@ -2011,29 +2011,29 @@ void AlertTeam(int team, string s)
 Shorter name for `ScriptPrintMessageCenterTeam`
 ________________________________
 
-<a name="f_txt"></a>
+<a name="f_TextColor"></a>
 ```cpp
-txt
+TextColor
 {
-	white
-	red
-	purple
-	green
-	lightgreen
-	limegreen
-	lightred
-	grey
-	yellow
-	lightblue
-	blue
-	darkblue
-	darkgrey
-	pink
-	orangered
-	orange
+	Normal = 1,   // white
+	Red,          // red
+	Purple,       // purple
+	Location,     // lime green
+	Achievement,  // light green
+	Award,        // green
+	Penalty,      // light red
+	Silver,       // grey
+	Gold,         // yellow
+	Common,       // grey blue
+	Uncommon,     // light blue
+	Rare,         // dark blue
+	Mythical,     // dark grey
+	Legendary,    // pink
+	Ancient,      // orange red
+	Immortal      // orange
 }
 ```
-`Chat(txt.red + "RED" + txt.yellow + " YELLOW" + txt.white + " WHITE")`
+`Chat( TextColor.Red + "RED" + TextColor.Gold + " YELLOW" + TextColor.Normal + " WHITE" )`
 ________________________________
 
 <a name="f_VecToString"></a>
@@ -2043,13 +2043,106 @@ string VecToString(Vector vec)
 return `"Vector(0, 1, 2)"`
 ________________________________
 
-<a name="f_IsDedicatedServer"></a>
+<a name="f_ToExtendedPlayer"></a>
 ```cpp
-bool VS::IsDedicatedServer()
-```
-The initialisation of this function is asynchronous. It takes 6 seconds to finalise on map spawn auto-load, and 1-5 frames on manual execution on post map spawn. `VS.flCanCheckForDedicatedAfterSec` can be used for delayed initialisation needs.
+class CExtendedPlayer
+{
+	CBaseMultiplayerPlayer self;
+	int m_EntityIndex;
+	table m_ScriptScope;
+	int userid;
+	string networkid;
+	string name;
+	bool bot;
 
-`VS.EventQueue.AddEvent( Init, VS.flCanCheckForDedicatedAfterSec, this )`
+	bool IsBot();
+	int GetUserid();
+	string GetNetworkIDString();
+	string GetPlayerName();
+
+	QAngle EyeAngles();
+	Vector EyeForward();
+	Vector EyeRight();
+	Vector EyeUp();
+
+	void SetName( string targetname );
+	void SetEffects( int n );
+	void SetMoveType( int n );
+	void SetFOV( int fov, float rate );
+	void SetParent( CBaseEntity parent, string attachment );
+
+	void SetInputCallback( string szInput, closure callback, table env );
+}
+
+CExtendedPlayer ToExtendedPlayer( CBaseMultiplayerPlayer player )
+```
+
+There is no performance penalty for using `CExtendedPlayer` exclusively.
+
+One aspect to pay attention to is passing players to native functions such as `EntFireByHandle` or `CEntities::Next`. Use `CExtendedPlayer::self` for passing player parameters to native functions.
+
+```cs
+local ply = ToExtendedPlayer( VS.GetPlayerByIndex(1) );
+
+EntFireByHandle( ply.self, "SetHealth", 1 );
+```
+
+The following members and their corresponding functions require event listener setup: `userid`, `networkid`, `name`, `bot`.
+
+Player is passed as parameter to the `SetInputCallback` callback function. `szInput == null` turns off the input listener. `callback == null` removes the callback.
+
+List of available inputs:
+```
++use
++attack
+-attack
++attack2
+-attack2
++forward
+-forward
++back
+-back
++moveleft
+-moveleft
++moveright
+-moveright
+```
+
+```cs
+VS.ListenToGameEvent( "player_spawn", function(ev)
+{
+	local ply = VS.GetPlayerByUserid( ev.userid );
+	if (!ply)
+		return;
+	ply = ToExtendedPlayer( ply );
+
+	if ( !ply.IsBot() )
+	{
+		ply.SetInputCallback( "+forward",  function(ply) { printl("+forward " + ply.GetPlayerName()) }, this );
+		ply.SetInputCallback( "-forward",  function(ply) { printl("-forward " + ply.GetPlayerName()) }, this );
+	};
+
+	ply.SetInputCallback( "+attack", OnAttack, this );
+}.bindenv(this), "" );
+
+function OnAttack( ply )
+{
+	printl("+attack " + ply.GetPlayerName());
+
+	local eyePos = ply.EyePosition();
+	local org = ply.GetOrigin();
+	org.z += 16.0;
+	VS.DrawCapsule( org, org + Vector(0,0,48), 16.0, 0, 255, 255, false, 5.0 );
+
+	VS.DrawViewFrustum( eyePos, ply.EyeForward(), ply.EyeRight(), ply.EyeUp(),
+		90.0, 1.7778, 2.0, 16.0, 255, 0, 0, false, 5.0 );
+
+	DebugDrawBoxAngles( eyePos, Vector(2,-1,-1), Vector(32,1,1), ply.EyeAngles(), 0, 255, 0, 16, 5.0 );
+}
+```
+
+When a player disconnects, `CExtendedPlayer::IsValid()` returns false, `CExtendedPlayer::self` returns null.
+
 ________________________________
 
 <a name="f_TraceLine"></a>
@@ -2141,7 +2234,7 @@ Draw the normal of a surface the player is looking at
 ```cs
 function Think()
 {
-	local tr = VS.TraceDir( HPlayer.EyePosition(), HPlayerEye.GetForwardVector() )
+	local tr = VS.TraceDir( HPlayer.EyePosition(), HPlayer.EyeForward() )
 	tr.GetNormal()
 
 	DebugDrawLine( tr.hitpos, tr.normal * 16 + tr.hitpos, 255, 0, 255, false, 0.1 )
@@ -2165,7 +2258,7 @@ Example draw a cube at player aim (GOTV spectator like)
 function Think()
 {
 	local eye = HPlayer.EyePosition()
-	local pos = VS.TraceDir(eye, HPlayerEye.GetForwardVector()).GetPos()
+	local pos = VS.TraceDir( eye, HPlayer.EyeForward() ).GetPos()
 
 	DebugDrawLine(eye, pos, 255, 255, 255, false, -1)
 	DebugDrawBox(pos, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 125, -1)
@@ -2406,102 +2499,14 @@ ________________________________
 ```cpp
 handle VS::CreateMeasure(string targetTargetname, string refTargetname = null, bool bMakePersistent = false, bool measureEye = true, float scale = 1.0)
 ```
-Create and return an eye angle measuring entity
-
-```lua
-player_eye_reference <- VS.CreateMeasure("player_targetname")
-```
-
-If `measureEye` is false then measure `targetTargetname` and set `refTargetname` as reference (entity to move)
-
-Starting to measure is asynchronous, you cannot measure the angles in the same frame as creating or setting the measure entity.
-
-<details><summary>Example</summary>
-
-Example get player eye angles:
-```lua
-function InitEntities()
-{
-	if ( "hPlayerEye" in this && hPlayerEye )
-		return
-
-	hPlayer <- VS.GetLocalPlayer().weakref()
-	hPlayerEye <- VS.CreateMeasure( hPlayer.GetName() ).weakref()
-}
-
-function PrintEyeAngles()
-{
-	printl( "Player eye angles: " + VecToString( hPlayerEye.GetAngles() ) )
-}
-```
-
-Init now, and print in the next frame
-```cs
-InitEntities()
-VS.EventQueue.AddEvent( PrintEyeAngles, 0, this )
-```
-
-Example check to prevent spawning if the entities are already spawned
-```lua
-if( !Ent("refname") )
-{
-	hPlayerEye <- VS.CreateMeasure( "playername", "refname", true )
-}
-```
-
-Or saving the handle in an unchanged container, e.g. the root table
-```lua
-if( !("hPlayerEye" in getroottable()) )
-{
-	::hPlayerEye <- VS.CreateMeasure( "playername", "refname", true )
-}
-```
-
-You can disable the reference entity to stop the measure. The reference will keep the last measured values.
-
-```lua
-EntFireByHandle( hPlayerEye, "Disable" )
-```
-
-</details>
-
-<details><summary>Details</summary>
-
-This function creates an entity to measure player eye angles `logic_measure_movement : vs.ref_*`.
-
-`"refname"` in the example above refers to the reference entity's targetname.
-
-The `bMakePersistent` paramater ensures the entity is not released on round end. However, while using it, make sure to include a check to prevent spawning over and over again. Shown in the example above.
-
-</details>
-
+Deprecated. Use `ToExtendedPlayer`.
 ________________________________
 
 <a name="f_SetMeasure"></a>
 ```cpp
 void VS::SetMeasure(handle logic_measure_movement, string targetTargetname)
 ```
-Start measuring new target
-
-<details><summary>Example</summary>
-
-```cs
-hPlayer1 <- VS.GetLocalPlayer()
-hPlayer2 <- GetSomeOtherPlayer()
-
-// start measuring hPlayer1
-hPlayerEye <- VS.CreateMeasure(hPlayer1.GetName())
-
-printl("Player1 eye angles: " + VecToString(hPlayerEye.GetAngles()))
-
-// start measuring hPlayer2
-VS.SetMeasure( hPlayerEye, hPlayer2.GetName() )
-
-printl("Player2 eye angles: " + VecToString(hPlayerEye.GetAngles()))
-```
-
-</details>
-
+Deprecated. Use `ToExtendedPlayer`.
 ________________________________
 
 <a name="f_CreateTimer"></a>

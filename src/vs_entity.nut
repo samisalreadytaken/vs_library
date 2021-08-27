@@ -67,6 +67,8 @@ function VS::SetParent( hChild, hParent ):(AddEvent)
 }
 
 //-----------------------------------------------------------------------
+// Deprecated. Use `ToExtendedPlayer`.
+//
 // Create logic_measure_movement, measure eye angles
 //
 // Input  : string [ target targetname ] (e.g. player targetname)
@@ -100,6 +102,8 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 ):(AddEven
 }
 
 //-----------------------------------------------------------------------
+// Deprecated. Use `ToExtendedPlayer`.
+//
 // Start measuring new target
 //
 // Input  : handle [ logic_measure_movement ]
@@ -539,6 +543,10 @@ function VS::GetEntityByIndex( entindex, classname = "*" ) : (Entities)
 		if ( e.entindex() == entindex )
 			return e;
 }
+
+// ::EntIndexToHScript <- VS.GetEntityByIndex.weakref();
+// ::PlayerInstanceFromIndex <- VS.GetPlayerByIndex.weakref();
+
 
 function VS::IsPointSized( h )
 {
