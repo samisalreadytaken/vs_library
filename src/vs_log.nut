@@ -16,8 +16,8 @@ local Log =
 	m_data      = [],   // internal data
 	_data       = null, // data to print
 	_cb         = null,
-	_env        = null
-	// _file       = null
+	_env        = null,
+	_file       = null
 }
 
 VS.Log <- Log;
@@ -48,14 +48,14 @@ VS.Log.Clear <- function()
 
 
 
-VS.Log.Run <- function( data = null, callback = null )
+VS.Log.Run <- function( data = null, callback = null, env = null )
 {
 	if ( !enabled )
 		return;
 
 	_data = data ? data.weakref() : m_data.weakref();
 	_cb = typeof callback == "function" ? callback : null;
-	_env = _cb ? VS.GetCaller() : null;
+	_env = env ? env : VS.GetCaller();
 
 	return _Start();
 }.bindenv(VS.Log);
@@ -249,7 +249,7 @@ function VS::Log::_Start() : ( ClientCommand, developer, Fmt, TICK_INTERVAL )
 
 	if ( export )
 	{
-		local file = file_prefix[0] == ':' ? file_prefix.slice(1) : Fmt( "%s_%s", file_prefix, VS.UniqueString() );
+		local file = _file = file_prefix[0] == ':' ? file_prefix.slice(1) : Fmt( "%s_%s", file_prefix, VS.UniqueString() );
 		_d <- developer();
 		ClientCommand(Fmt( "developer 0;con_filter_enable 1;con_filter_text_out\"%s\";con_filter_text\"\";con_logfile\"%s.log\";script VS.EventQueue.AddEvent(VS.Log._Write,%g,VS.Log)", filter, file, TICK_INTERVAL * 4.0 ));
 		return file;
@@ -277,8 +277,9 @@ function VS::Log::_Dispatch()
 {
 	if (_cb)
 	{
-		_cb.pcall(_env);
-		_cb = null;
-		_env = null;
+		_cb.call(_env, _file);
+		_cb =
+		_env =
+		_file = null;
 	}
 }

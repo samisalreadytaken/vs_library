@@ -75,7 +75,7 @@ VS.GetPlayerByUserid <- function( userid ) : (Entities)
 // was never created or correctly set up). It's a just-in-case check.
 //
 // When the limit is reached, the oldest 32 entries are deleted.
-VS.Events.player_connect <- function( event ) : ( gEventData, ROOT )
+VS.Events.player_connect <- function( event ) : ( gEventData, ROOT, SendToConsole )
 {
 	if ( event.networkid != "" )
 	{
@@ -153,10 +153,43 @@ VS.Events.player_connect <- function( event ) : ( gEventData, ROOT )
 		if ( !("networkid" in sc) )
 			sc.networkid <- "";
 
+		// 'banid' is not whitelisted. SendToConsoleServer always checks the whitelist,
+		// point_servercommand checks it when the server is not listen server.
+		// Try ClientCommand to see if it's a listen server, then fetch the networkid.
+		// ban for 3 seconds, no kick. min duration is 0.01
+		SendToConsole( "banid 0.05 " + event.userid );
+
 		// finished the queue
 		if ( !(0 in m_SV) )
 			m_SV = null;
 	}
+
+}.bindenv( VS.Events );
+
+VS.Events.server_addban <- function( event )
+{
+	// not playing
+	if ( !event.userid )
+		return;
+
+	// don't bother
+	if ( event.kicked )
+		return;
+
+	local ply = GetPlayerByUserid( event.userid );
+	if ( !ply )
+		return Msg("VS::Events: validation failed to find player! ["+event.userid+"]\n");
+
+	local sc = ply.GetScriptScope();
+
+	//if ( sc.name != "" )
+	//	Msg(format( "VS::Events: validation: [%d] overwriting name '%s' -> '%s'\n", event.userid, sc.name, event.name ));
+
+	//if ( sc.networkid != "" )
+	//	Msg(format( "VS::Events: validation: [%d] overwriting networkid '%s' -> '%s'\n", event.userid, sc.networkid, event.networkid ));
+
+	sc.name = event.name;
+	sc.networkid = event.networkid;
 
 }.bindenv( VS.Events );
 
@@ -439,17 +472,14 @@ VS.Events.PostSpawn <- function( pEntities ) : (AddEvent)
 				{
 					//try
 					//{
-						s_fnSynchronous(v);
+						return s_fnSynchronous(v);
 					//}
 					//catch( err )
 					//{
 					//	print(format( "\nAN ERROR HAS OCCURED [%s]\n", err ));
 					//}
-				}
-				else
-				{
-					rawset( k, v );
-				}
+				};
+				return rawset( k, v );
 			}
 		}
 		// asynchronous callbacks
@@ -483,11 +513,9 @@ VS.Events.OnPostSpawn <- function() : (__RemovePooledString)
 		VS.StopListeningToAllGameEvents( "VS::Events" );
 
 		VS.ListenToGameEvent( "player_connect", VS.Events.player_connect, "VS::Events" );
-
 		VS.ListenToGameEvent( "player_spawn", VS.Events.player_spawn, "VS::Events" );
+		VS.ListenToGameEvent( "server_addban", VS.Events.server_addban, "VS::Events" );
 
-		// NOTE: this will sometimes fire extra validation events before auto validation.
-		// It is harmless.
 		VS.ListenToGameEvent( "player_activate", function(ev)
 		{
 			return ValidateUseridAll();
@@ -516,6 +544,9 @@ VS.ListenToGameEvent <- function( szEventname, fnCallback, pContext )
 	if ( typeof pContext != "string" )
 		throw "invalid context param";
 
+	if ( typeof szEventname != "string" )
+		throw "invalid eventname param";
+
 	if ( !m_pListeners )
 		m_pListeners = {};
 
@@ -530,7 +561,7 @@ VS.ListenToGameEvent <- function( szEventname, fnCallback, pContext )
 	if ( !p )
 	{
 		// library functions are synchronous
-		if ( (pContext == "VS::Events") && (szEventname == "player_connect" || szEventname == "player_spawn") )
+		if ( pContext == "VS::Events" )
 		{
 			s_fnSynchronous = fnCallback;
 		}
@@ -567,7 +598,7 @@ VS.StopListeningToAllGameEvents <- function( context ) : (__RemovePooledString)
 			if ( context in listener )
 			{
 				local p = listener[context];
-				if ( p && typeof p == "instance" )
+				if ( p && (typeof p == "instance") && p.IsValid() )
 				{
 					__RemovePooledString( "OnEventFired "+p.GetName()+",CallScriptFunction,OnEventFired" );
 					p.Destroy();

@@ -50,7 +50,7 @@ ________________________________
 ### Variables used in examples
 | Variable       | Creation                          | Description                                           |
 | -------------- | --------------------------------- | ----------------------------------------------------- |
-| `HPlayer`      | `ToExtendedPlayer(VS.GetPlayerByIndex(1))`             | Local player in the server                            |
+| `player`       | `ToExtendedPlayer(VS.GetPlayerByIndex(1))`             | Local player in the server                            |
 | `m_hHudHint`   | `VS.CreateEntity("env_hudhint")`  | Hud hint, show messages to the player                 |
 | `Think()`      | `VS.Timer(0, 0.0, Think)`         | A function that is executed every frame               |
 
@@ -103,6 +103,7 @@ IncludeScript("myscript")
 [`VS.AnglesAreEqual()`](#f_AnglesAreEqual)  
 [`VS.CloseEnough()`](#f_CloseEnough)  
 [`VS.Approach()`](#f_Approach)  
+[`VS.ApproachVector()`](#f_ApproachVector)  
 [`VS.ApproachAngle()`](#f_ApproachAngle)  
 [`VS.AngleDiff()`](#f_AngleDiff)  
 [`VS.AngleNormalize()`](#f_AngleNormalize)  
@@ -207,6 +208,7 @@ IncludeScript("myscript")
 [`VS.GetBoxVertices()`](#f_GetBoxVertices)  
 [`VS.MatrixBuildPerspective()`](#f_MatrixBuildPerspective)  
 [`VS.ComputeViewMatrix()`](#f_ComputeViewMatrix)  
+[`VS.ScreenToWorldMatrix()`](#f_ScreenToWorldMatrix)  
 [`VS.ScreenToWorld()`](#f_ScreenToWorld)  
 [`VS.ComputeCameraVariables()`](#f_ComputeCameraVariables)  
 [`VS.CalcFovY()`](#f_CalcFovY)  
@@ -214,7 +216,6 @@ IncludeScript("myscript")
 [`VS.DrawFrustum()`](#f_DrawFrustum)  
 [`VS.DrawViewFrustum()`](#f_DrawViewFrustum)  
 [`VS.DrawBoxAngles()`](#f_DrawBoxAngles)  
-[`VS.DrawEntityBounds()`](#f_DrawEntityBounds)  
 [`VS.DrawSphere()`](#f_DrawSphere)  
 [`VS.DrawCapsule()`](#f_DrawCapsule)  
 [`enum INTERPOLATE`](#f_INTERPOLATE)  
@@ -454,28 +455,28 @@ bool VS::IsLookingAt(Vector source, Vector target, Vector direction, float toler
 function Think()
 {
 	local bLooking
-	local eyePos = HPlayer.EyePosition()
+	local eyePos = player.EyePosition()
 	local target = Vector()
 
-	DebugDrawLine( HPlayer.GetOrigin(), target, 255,0,0,true, -1 )
+	DebugDrawLine( player.GetOrigin(), target, 255,0,0,true, -1 )
 
 	// only check if there is direct LOS with the target
-	if ( !VS.TraceLine( eyePos, target ).DidHit() )
+	if ( !VS.TraceLine( eyePos, target, player.self ).DidHit() )
 	{
-		bLooking = VS.IsLookingAt( eyePos, target, HPlayer.EyeForward(), VIEW_FIELD_NARROW )
+		bLooking = VS.IsLookingAt( eyePos, target, player.EyeForward(), VIEW_FIELD_NARROW )
 	}
 
 	if ( bLooking )
 	{
 		m_hHudHint.__KeyValueFromString( "message", "LOOKING" );
-		EntFireByHandle( m_hHudHint, "ShowHudHint", "", 0.0, HPlayer.self );
+		EntFireByHandle( m_hHudHint, "ShowHudHint", "", 0.0, player.self );
 
 		DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 0,255,0,255, -1 )
 	}
 	else
 	{
 		m_hHudHint.__KeyValueFromString( "message", "NOT looking" );
-		EntFireByHandle( m_hHudHint, "ShowHudHint", "", 0.0, HPlayer.self );
+		EntFireByHandle( m_hHudHint, "ShowHudHint", "", 0.0, player.self );
 
 		DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 255,0,0,255, -1 )
 	}
@@ -577,6 +578,13 @@ float VS::Approach(float target, float value, float speed)
 
 ________________________________
 
+<a name="f_ApproachVector"></a>
+```cpp
+Vector VS::ApproachVector(Vector target, Vector value, float speed)
+```
+
+________________________________
+
 <a name="f_ApproachAngle"></a>
 ```cpp
 float VS::ApproachAngle(float target, float value, float speed)
@@ -616,8 +624,8 @@ Snaps the input (normalised direction) vector to the closest axis
 ```cs
 function Think()
 {
-	local eye = HPlayer.EyePosition()
-	local dir = HPlayer.EyeForward()
+	local eye = player.EyePosition()
+	local dir = player.EyeForward()
 
 	// draw normal direction
 	DebugDrawLine( eye, eye+dir*128, 255, 255, 255, false, -1 )
@@ -1468,9 +1476,16 @@ void VS::ComputeViewMatrix( VMatrix &pWorldToView, Vector origin, Vector forward
 
 ________________________________
 
+<a name="f_ScreenToWorldMatrix"></a>
+```cpp
+void VS::ScreenToWorldMatrix( VMatrix& pOut, Vector origin, Vector forward, Vector right, Vector up, float fov, float flAspect, float zNear, float zFar )
+```
+
+________________________________
+
 <a name="f_ScreenToWorld"></a>
 ```cpp
-Vector VS::ScreenToWorld( float x, float y, Vector origin, Vector forward, Vector right, Vector up, float fov, float flAspect, float zFar )
+Vector VS::ScreenToWorld( float x, float y, VMatrix screenToWorld, Vector &pOut = _VEC )
 ```
 ```cs
 {
@@ -1478,12 +1493,19 @@ Vector VS::ScreenToWorld( float x, float y, Vector origin, Vector forward, Vecto
 	local y = 0.65
 	local eyeAng = player.EyeAngles()
 	local eyePos = player.EyePosition()
-	local worldPos = VS.ScreenToWorld( x, y,
+	local mat = VMatrix();
+	VS.ScreenToWorldMatrix(
+		mat,
 		eyePos,
 		player.EyeForward(),
 		player.EyeRight(),
 		player.EyeUp(),
-		90.0, 16.0/9.0, 16.0 )
+		90.0,
+		16.0/9.0,
+		1.0,
+		16.0 );
+
+	local worldPos = VS.ScreenToWorld( x, y, mat );
 
 	local maxs = vec3_t( 0.0, 0.5, 0.5 );
 	DrawBoxAnglesFilled( worldPos, -maxs, maxs, eyeAng, 0, 255, 255, 64, 5.0 );
@@ -1516,27 +1538,24 @@ ________________________________
 
 <a name="f_DrawFrustum"></a>
 ```cpp
-void VS::DrawFrustum( matWorldToView, r, g, b, z, time )
+void VS::DrawFrustum( VMatrix matWorldToView, int r, int g, int b, bool z, float time )
 ```
 ________________________________
 
 <a name="f_DrawViewFrustum"></a>
 ```cpp
-void VS::DrawViewFrustum( vecOrigin, vecForward, vecRight, vecUp,
-		flFovX, flAspect, zNear, zFar, r, g, b, z, time )
+void VS::DrawViewFrustum( Vector vecOrigin, Vector vecForward, Vector vecRight, Vector vecUp,
+		float flFovX, float flAspect, float zNear, float zFar, int r, int g, int b, bool z, float time )
 ```
 ________________________________
 
 <a name="f_DrawBoxAngles"></a>
 ```cpp
-void VS::DrawBoxAngles( origin, mins, maxs, angles, r, g, b, z, time )
+void VS::DrawBoxAngles( Vector origin, Vector mins, Vector maxs, QAngle angles, int r, int g, int b, bool z, float time )
 ```
-________________________________
+Draws an oriented box at the origin. Specify mins and maxs in local space.
 
-<a name="f_DrawEntityBounds"></a>
-```cpp
-void VS::DrawEntityBounds( ent, r, g, b, z, time )
-```
+The newly added `DebugDrawBoxAngles` can have filled textures, but its lines are always Z tested. This function can be used to draw oriented box lines behind walls.
 ________________________________
 
 <a name="f_DrawSphere"></a>
@@ -1547,7 +1566,7 @@ ________________________________
 
 <a name="f_DrawCapsule"></a>
 ```cpp
-void VS::DrawCapsule( start, end, radius, r, g, b, z, time )
+void VS::DrawCapsule( Vector start, Vector end, float radius, int r, int g, int b, bool z, float time )
 ```
 ________________________________
 
@@ -2047,13 +2066,13 @@ ________________________________
 ```cpp
 class CExtendedPlayer
 {
-	CBaseMultiplayerPlayer self;
-	int m_EntityIndex;
-	table m_ScriptScope;
-	int userid;
-	string networkid;
-	string name;
-	bool bot;
+	const CBaseMultiplayerPlayer self;
+	const int m_EntityIndex;
+	const table m_ScriptScope;
+	const int userid;
+	const string networkid;
+	const string name;
+	const bool bot;
 
 	bool IsBot();
 	int GetUserid();
@@ -2141,7 +2160,7 @@ function OnAttack( ply )
 }
 ```
 
-When a player disconnects, `CExtendedPlayer::IsValid()` returns false, `CExtendedPlayer::self` returns null.
+When a player disconnects, `CExtendedPlayer::IsValid()` returns false.
 
 ________________________________
 
@@ -2220,9 +2239,9 @@ ________________________________
 
 <a name="f_GetNormal"></a>
 ```cpp
-Vector VS::TraceLine::GetNormal( r = 0.5 )
+Vector VS::TraceLine::GetNormal()
 ```
-Get surface normal. Specify parameter for range. Use larger values to take the average of a larger surface normal.
+Get surface normal.
 
 This computes 2 extra traces.
 
@@ -2234,11 +2253,12 @@ Draw the normal of a surface the player is looking at
 ```cs
 function Think()
 {
-	local tr = VS.TraceDir( HPlayer.EyePosition(), HPlayer.EyeForward() )
-	tr.GetNormal()
+	local tr = VS.TraceDir( player.EyePosition(), player.EyeForward() );
+	tr.GetNormal();
+	tr.GetPos();
 
-	DebugDrawLine( tr.hitpos, tr.normal * 16 + tr.hitpos, 255, 0, 255, false, 0.1 )
-	DebugDrawBoxAngles( tr.hitpos, Vector(0,-1,-1), Vector(16,1,1), VS.VectorAngles(tr.normal), 0,0,255,255, 0.1 )
+	DebugDrawLine( tr.hitpos, tr.normal * 16 + tr.hitpos, 255, 0, 255, false, 0.1 );
+	DebugDrawBoxAngles( tr.hitpos, Vector(0,-1,-1), Vector(16,1,1), VS.VectorAngles(tr.normal), 0,0,255,255, 0.1 );
 }
 ```
 
@@ -2257,8 +2277,8 @@ Example draw a cube at player aim (GOTV spectator like)
 ```lua
 function Think()
 {
-	local eye = HPlayer.EyePosition()
-	local pos = VS.TraceDir( eye, HPlayer.EyeForward() ).GetPos()
+	local eye = player.EyePosition()
+	local pos = VS.TraceDir( eye, player.EyeForward() ).GetPos()
 
 	DebugDrawLine(eye, pos, 255, 255, 255, false, -1)
 	DebugDrawBox(pos, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 125, -1)
@@ -2624,8 +2644,6 @@ CreateByClassname, set keyvalues, return handle
 
 <details><summary><code>point_worldtext</code></summary>
 
-If changing the text from script, create in script (and make persistent); else if text is static, doesn't matter
-
 ```cs
 	VS.CreateEntity("point_worldtext", 
 	{
@@ -2885,9 +2903,9 @@ ________________________________
 
 <a name="f_LogRun"></a>
 ```cpp
-string VS::Log::Run( data = null, function callback = null )
+string VS::Log::Run( data = null, function callback = null, table env = null )
 ```
-If `data` is null, the internal log is used. `callback` is called after logging is complete.
+If `data` is null, the internal log is used. `callback` is called after logging is complete. Exported file name is passed to the callback function.
 
 If VS.Log.export is true, then export the log file to the game directory. Returns exported file name.
 

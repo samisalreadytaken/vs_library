@@ -3,6 +3,16 @@
 
 --------------------------------
 
+2021-09-03 [v2.43.0]
+- Added consistent player info (name, networkid) acquisition on listen servers
+- Made CExtendedPlayer members const
+- Added VS.ApproachVector
+- Added VS.ScreenToWorldMatrix
+- Changed VS.ScreenToWorld parameters (signature change!)
+- Changed VS.DrawFrustum matrix parameter to inverse view matrix (inverse of previous)
+- Removed VS.DrawEntityBounds
+- Log export file name is now passed to the callback function
+
 2021-08-27 [v2.42.0]
 - Added ::ToExtendedPlayer
 - Added ::SetPlayerFOV

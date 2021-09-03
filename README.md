@@ -1,18 +1,18 @@
 # VScript Library
 [![ver][]](CHANGELOG.txt)
 
-High-performance vscript libraries; written mainly for CSGO, compatible with Portal 2.
+High-performance vscript libraries; written mainly for CS:GO, compatible with Portal 2.
 
 See the [**hlvr**](https://github.com/samisalreadytaken/vs_library/tree/hlvr) branch for usage in Half-Life Alyx.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.42.0-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.43.0-informational
 
 
 ## Documentation
 See [Documentation.md](Documentation.md)
 
 ## Installation
-Decide which library you are going to use, download the file and place it in your vscripts directory `/csgo/scripts/vscripts/`
+Decide on which library you are going to use, download the file and place it in your vscripts directory `/csgo/scripts/vscripts/`
 - [`vs_math.nut`][vs_math]: Standalone math library. Game independent.
 - [`vs_events.nut`][vs_events]: Standalone game events library. CSGO only.
 - [`vs_library.nut`][vs_library]: All libraries. Includes unique utility functions.
@@ -36,6 +36,8 @@ Use `ToExtendedPlayer()` to access some of the missing player functions in CSGO.
 ```cs
 local player = ToExtendedPlayer( VS.GetPlayerByIndex(1) );
 
+print(format( "Draw view frustum of [%s] %s\n", player.GetNetworkIDString(), player.GetPlayerName() ));
+
 VS.DrawViewFrustum( player.EyePosition(), player.EyeForward(), player.EyeRight(), player.EyeUp(),
 	90.0, 1.7778, 2.0, 16.0, 255, 0, 0, false, 5.0 );
 
@@ -58,18 +60,18 @@ point_template:
 
 `vs_eventlistener.nut` file contents should read:
 ```cpp
-IncludeScript("vs_events")
-VS.Events.InitTemplate(this)
+IncludeScript("vs_events");
+VS.Events.InitTemplate(this);
 ```
 
 Get the player handle from their userid, and access player data from their script scope.
 ```cs
-local player = VS.GetPlayerByUserid( userid )
-local scope = player.GetScriptScope()
+local player = VS.GetPlayerByUserid( userid );
+local scope = player.GetScriptScope();
 
-printl( scope.userid )
-printl( scope.networkid )
-printl( scope.name )
+printl( scope.userid );
+printl( scope.networkid );
+printl( scope.name );
 ```
 
 Use `VS.ListenToGameEvent` to register, `VS.StopListeningToAllGameEvents` to unregister any events dynamically from script.
@@ -85,7 +87,9 @@ VS.ListenToGameEvent( "bullet_impact", function( event )
 ```
 
 #### Use on dedicated servers
-The player_connect event is fired only once when a player connects to the server. For this reason, it is not possible to get the Steam name and SteamIDs of human players that were connected to the server prior to a map change. This data will only be available for players that connect to the server while your map is running.
+It is not possible to get the Steam name and SteamIDs of human players that were connected to a server prior to a map change because the player_connect event is fired only once when a player connects to the server. This data will only be available for players that connect to the server while your map is running.
+
+This issue is fixed in listen servers.
 
 ## Changelog
 See [CHANGELOG.txt](CHANGELOG.txt)

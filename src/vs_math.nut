@@ -187,6 +187,8 @@ function Quaternion::_unm() :(Quaternion) { return Quaternion( -x,-y,-z,-w ) }
 
 class ::matrix3x4_t
 {
+	m = null;
+
 	constructor(
 		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
 		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
@@ -259,13 +261,13 @@ class ::matrix3x4_t
 		}
 		return rawget(i);
 	}
-
-	m = null;
 }
 
 
 class ::VMatrix extends matrix3x4_t
 {
+	m = null;
+
 	constructor(
 		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
 		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
@@ -637,7 +639,6 @@ function VS::Approach( target, value, speed )
 	return target;
 }
 
-/*
 // Vector, Vector, float
 function VS::ApproachVector( target, value, speed )
 {
@@ -650,7 +651,6 @@ function VS::ApproachVector( target, value, speed )
 		return value - dv * speed;
 	return target;
 }
-*/
 
 function VS::ApproachAngle( target, value, speed )
 {
@@ -3706,12 +3706,11 @@ function VS::ComputeCameraVariables( vecOrigin, pVecForward, pVecRight, pVecUp, 
 }
 
 
-function VS::ScreenToWorld( x, y, origin, forward, right, up, fov, flAspect, zFar ) : (Vector, VMatrix)
+function VS::ScreenToWorldMatrix( pOut, origin, forward, right, up, fov, flAspect, zNear, zFar )
+	: (VMatrix)
 {
-	local vecScreen = Vector( x, 1.0 - y, 1.0 );
-
 	local viewToProj = VMatrix();
-	MatrixBuildPerspective( viewToProj, fov, flAspect, 1.0, zFar );
+	MatrixBuildPerspective( viewToProj, fov, flAspect, zNear, zFar );
 
 	local worldToView = VMatrix();
 	ComputeCameraVariables(
@@ -3727,10 +3726,37 @@ function VS::ScreenToWorld( x, y, origin, forward, right, up, fov, flAspect, zFa
 	local screenToWorld = worldToView; // VMatrix();
 	MatrixInverseGeneral( worldToProj, screenToWorld );
 
-	local worldPos = Vector();
-	Vector3DMultiplyPositionProjective( screenToWorld, vecScreen, worldPos );
+	pOut = pOut.m;
+	screenToWorld = screenToWorld.m;
 
-	return worldPos;
+	pOut[0][0] = screenToWorld[0][0];
+	pOut[0][1] = screenToWorld[0][1];
+	pOut[0][2] = screenToWorld[0][2];
+	pOut[0][3] = screenToWorld[0][3];
+
+	pOut[1][0] = screenToWorld[1][0];
+	pOut[1][1] = screenToWorld[1][1];
+	pOut[1][2] = screenToWorld[1][2];
+	pOut[1][3] = screenToWorld[1][3];
+
+	pOut[2][0] = screenToWorld[2][0];
+	pOut[2][1] = screenToWorld[2][1];
+	pOut[2][2] = screenToWorld[2][2];
+	pOut[2][3] = screenToWorld[2][3];
+
+	pOut[3][0] = screenToWorld[3][0];
+	pOut[3][1] = screenToWorld[3][1];
+	pOut[3][2] = screenToWorld[3][2];
+	pOut[3][3] = screenToWorld[3][3];
+}
+
+local Vector3DMultiplyPositionProjective = VS.Vector3DMultiplyPositionProjective;
+
+function VS::ScreenToWorld( x, y, screenToWorld, pOut = _VEC ) : (Vector, Vector3DMultiplyPositionProjective)
+{
+	local vecScreen = Vector( x, 1.0 - y, 1.0 );
+	Vector3DMultiplyPositionProjective( screenToWorld, vecScreen, pOut );
+	return pOut;
 }
 
 
@@ -3754,8 +3780,6 @@ local initFrustumDraw = function()
 {
 	local Line = DebugDrawLine;
 	local Vector3DMultiplyPositionProjective = VS.Vector3DMultiplyPositionProjective;
-	local MatrixInverseGeneral = VS.MatrixInverseGeneral;
-	local MatrixBuildPerspective = VS.MatrixBuildPerspective;
 
 	local startWorldSpace = Vector(), endWorldSpace = Vector();
 
@@ -3792,12 +3816,8 @@ local initFrustumDraw = function()
 		v010, v110
 	];
 
-	local matViewToWorld = VMatrix();
-
-	function VS::DrawFrustum( matWorldToView, r, g, b, z, t ) : ( MatrixInverseGeneral, draw, frustum, matViewToWorld )
+	function VS::DrawFrustum( matViewToWorld, r, g, b, z, t ) : ( draw, frustum )
 	{
-		MatrixInverseGeneral( matWorldToView, matViewToWorld );
-
 		draw( frustum[0], frustum[1], matViewToWorld, r, g, b, z, t );
 		draw( frustum[2], frustum[3], matViewToWorld, r, g, b, z, t );
 		draw( frustum[4], frustum[5], matViewToWorld, r, g, b, z, t );
@@ -3813,19 +3833,14 @@ local initFrustumDraw = function()
 	}
 
 	local DrawFrustum = VS.DrawFrustum;
+	local ScreenToWorldMatrix = VS.ScreenToWorldMatrix;
 
 	function VS::DrawViewFrustum( vecOrigin, vecForward, vecRight, vecUp,
 		flFovX, flAspect, zNear, zFar, r, g, b, z, time ) :
-			( VMatrix, MatrixBuildPerspective, ComputeCameraVariables, MatrixMultiply, DrawFrustum )
+			( VMatrix, ScreenToWorldMatrix, DrawFrustum )
 	{
 		local mat = VMatrix();
-		MatrixBuildPerspective( mat, flFovX, flAspect, zNear, zFar ); // matPerspective
-
-		local matInvCam = VMatrix();
-		ComputeCameraVariables( vecOrigin, vecForward, vecRight, vecUp, matInvCam );
-
-		MatrixMultiply( mat, matInvCam, mat ); // matWorldToView
-
+		ScreenToWorldMatrix( mat, vecOrigin, vecForward, vecRight, vecUp, flFovX, flAspect, zNear, zFar );
 		return DrawFrustum( mat, r, g, b, z, time );
 	}
 }
@@ -3846,7 +3861,6 @@ function VS::DrawViewFrustum( vecOrigin, vecForward, vecRight, vecUp,
 
 local initBoxDraw = function()
 {
-	local Box = DebugDrawBox;
 	local Line = DebugDrawLine;
 	local GetBoxVertices = VS.GetBoxVertices;
 	local verts = [ Vector(), Vector(), Vector(), Vector(),
@@ -3877,38 +3891,12 @@ local initBoxDraw = function()
 		Line( v4, v6, r, g, b, z, time );
 		Line( v7, v6, r, g, b, z, time );
 	}
-
-	//-----------------------------------------------------------------------
-	// Draw bounds of an entity
-	//-----------------------------------------------------------------------
-	function VS::DrawEntityBounds( ent, r, g, b, z, time ) : ( Box )
-	{
-		local origin = ent.GetOrigin();
-		local angles = ent.GetAngles();
-		local mins = ent.GetBoundingMins();
-		local maxs = ent.GetBoundingMaxs();
-
-		if ( !angles.x && !angles.y && !angles.z )
-		{
-			Box( origin, mins, maxs, r, g, b, 0, time );
-		}
-		else
-		{
-			DrawBoxAngles( origin, mins, maxs, angles, r, g, b, z, time );
-		}
-	}
 }
 
 function VS::DrawBoxAngles( origin, mins, maxs, angles, r, g, b, z, time ) : ( initBoxDraw )
 {
 	initBoxDraw();
 	return DrawBoxAngles( origin, mins, maxs, angles, r, g, b, z, time );
-}
-
-function VS::DrawEntityBounds( ent, r, g, b, z, time ) : ( initBoxDraw )
-{
-	initBoxDraw();
-	return DrawEntityBounds( ent, r, g, b, z, time );
 }
 
 local Line = DebugDrawLine;

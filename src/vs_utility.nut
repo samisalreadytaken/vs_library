@@ -217,22 +217,27 @@ VS.ToExtendedPlayer <- function( hPlayer )
 	eye.SetOwner( hPlayer );
 
 	local bot = ( sc.networkid == "BOT" ) ? true : false;
+	local uid = sc.userid;
+	local nid = sc.networkid;
+	local pnm = sc.name;
 
+	// CExtendedPlayer
 	class __player //extends CBaseMultiplayerPlayer
 	{
-		self = hPlayer.weakref();
-		m_EntityIndex = hPlayer.entindex(); // m_EdictIndex
-		m_ScriptScope = sc.weakref();
-		// __vname = sc.__vname; // m_iszScriptId
-		userid = sc.userid; // m_UserID
-		networkid = sc.networkid;
-		name = sc.name; // m_szNetname
-		bot = bot; // m_bFakePlayer
+		// static means const
+		static self = hPlayer;
+		static m_EntityIndex = hPlayer.entindex(); // m_EdictIndex
+		static m_ScriptScope = sc;
+		// static __vname = sc.__vname; // m_iszScriptId
+		static userid = sc.userid; // m_UserID
+		static networkid = sc.networkid; // m_szNetworkId
+		static name = sc.name; // m_szNetname
+		static bot = bot; // m_bFakePlayer
 
 		IsBot = bot ? function() { return true; } : function() { return false; };
-		function GetUserID() { return userid; }
-		function GetNetworkIDString() { return networkid; }
-		function GetPlayerName() { return name; }
+		function GetUserID() : (uid) { return uid; }
+		function GetNetworkIDString() : (nid) { return nid; }
+		function GetPlayerName() : (pnm) { return pnm; }
 
 		EyeAngles = CBaseEntity.GetAngles.bindenv(eye);
 		EyeForward = CBaseEntity.GetForwardVector.bindenv(eye);
@@ -248,17 +253,17 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 		function SetName( sz )
 		{
-			self.__KeyValueFromString( "targetname", sz );
+			return self.__KeyValueFromString( "targetname", sz );
 		}
 
 		function SetEffects( n )
 		{
-			self.__KeyValueFromInt( "effects", n );
+			return self.__KeyValueFromInt( "effects", n );
 		}
 
 		function SetMoveType( n )
 		{
-			self.__KeyValueFromInt( "movetype", n );
+			return self.__KeyValueFromInt( "movetype", n );
 		}
 
 		function SetFOV( nFov, flRate )
@@ -291,7 +296,7 @@ VS.ToExtendedPlayer <- function( hPlayer )
 					};
 
 					local owner = v.GetOwner();
-					if ( !owner || owner == hPlayer )
+					if ( !owner || owner == self )
 					{
 						v.SetTeam(0); // reset
 						_ui = v;
@@ -309,7 +314,7 @@ VS.ToExtendedPlayer <- function( hPlayer )
 					g_GameUIs.insert( 0, _ui.weakref() );
 				};
 
-				_ui.SetOwner( hPlayer );
+				_ui.SetOwner( self );
 			};
 
 			_ui.ValidateScriptScope();
