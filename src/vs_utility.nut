@@ -208,7 +208,7 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 	{
 		local name_old = hPlayer.GetName();
-		local name_new = hPlayer.GetScriptScope().__vname;
+		local name_new = sc.__vname;
 		hPlayer.__KeyValueFromString( "targetname", name_new );
 		AddEvent( eye, "SetMeasureTarget", name_new, 0.0, null, null );
 		EventQueue.AddEvent( SetNameSafe, FrameTime()+0.001, [ null, hPlayer, name_old ] );
@@ -307,18 +307,20 @@ VS.ToExtendedPlayer <- function( hPlayer )
 				if ( !_ui )
 				{
 					_ui = Entities.CreateByClassname( "game_ui" );
+					_ui.__KeyValueFromInt( "spawnflags", 128 );
+					_ui.__KeyValueFromFloat( "fieldofview", -1 );
 					VS.MakePersistent( _ui );
-					_ui.__KeyValueFromInt( "spawnflags", 1<<7 );
-					_ui.__KeyValueFromFloat( "fieldofview", -1.0 );
 					_ui.__KeyValueFromString( "targetname", "" );
 					g_GameUIs.insert( 0, _ui.weakref() );
+					_ui.ValidateScriptScope();
 				};
 
 				_ui.SetOwner( self );
 			};
 
-			_ui.ValidateScriptScope();
 			local sc = _ui.GetScriptScope();
+			if ( !("m_pCallbacks" in sc) )
+				sc.m_pCallbacks <- {};
 
 			// turn off
 			if ( !szInput )
@@ -329,20 +331,23 @@ VS.ToExtendedPlayer <- function( hPlayer )
 				};
 
 				_ui.SetTeam(0);
-				foreach( k,v in sc )
+
+				foreach( input, cb in sc.m_pCallbacks )
 				{
-					if ( typeof v == "function" )
-					{
-						sc[k] = null;
-						_ui.DisconnectOutput( k, k );
-					}
+					foreach( context, callback in cb )
+						cb[context] = null;
+
+					if ( input in sc )
+						delete sc[input];
+
+					_ui.DisconnectOutput( input, input );
 				}
 				return;
 			};
 
 			switch ( szInput )
 			{
-				case "+use":		szInput = "PressedUse"; break;
+				case "+use":		szInput = "PlayerOff"; break;
 				case "+attack":		szInput = "PressedAttack"; break;
 				case "-attack":		szInput = "UnpressedAttack"; break;
 				case "+attack2":	szInput = "PressedAttack2"; break;
@@ -358,45 +363,81 @@ VS.ToExtendedPlayer <- function( hPlayer )
 				default: throw "invalid input";
 			}
 
+			local context;
+
+			switch ( typeof env )
+			{
+				case "table":
+				case "class":
+				case "instance":
+					context = 0;
+					break;
+				case "string":
+					context = env;
+					env = null;
+					break;
+				default:
+					throw "invalid context param";
+			}
+
+			if ( !(szInput in sc.m_pCallbacks) )
+				sc.m_pCallbacks[szInput] <- {};
+
+			local cb = sc.m_pCallbacks[szInput];
+
 			// disable input
 			if ( !fn )
 			{
-				if ( szInput == "PressedUse" )
+				if ( context in cb )
 				{
-					sc.PlayerOff <- function() : (_ui, AddEvent)
+					delete cb[context];
+
+					if ( !cb.len() )
 					{
-						return AddEvent( _ui, "Activate", "", 0.0, self, null );
-					}.bindenv(this);
-					return;
+						delete sc.m_pCallbacks[szInput];
+
+						if ( szInput != "PlayerOff" )
+						{
+							if ( szInput in sc )
+								sc[szInput] = null;
+							_ui.DisconnectOutput( szInput, szInput );
+						};
+					};
 				};
 
-				if ( !(szInput in sc) )
-					return;
-
-				sc[szInput] = null;
-				_ui.DisconnectOutput( szInput, szInput );
 				return;
 			};
 
-			// TODO: multiple callbacks
-			// if ( typeof env == "string" )
-
-			fn = fn.bindenv(env);
-
-			if ( szInput != "PressedUse" )
+			if ( env )
 			{
-				sc[szInput] <- function() : (fn)
-				{
-					return fn(this);
-				}.bindenv(this);
-				_ui.ConnectOutput( szInput, szInput );
+				cb[context] <- fn.bindenv(env);
 			}
 			else
 			{
-				sc.PlayerOff <- function() : (fn, _ui, AddEvent)
+				cb[context] <- fn;
+			};
+
+			if ( (szInput != "PlayerOff") && ( !(szInput in sc) || !sc[szInput] ) )
+			{
+				sc[szInput] <- function() : (cb)
 				{
-					fn(this);
-					return AddEvent( _ui, "Activate", "", 0.0, self, null );
+					foreach( fn in cb )
+						fn(this);
+				}.bindenv(this);
+				_ui.ConnectOutput( szInput, szInput );
+			};
+
+			if ( !("PlayerOff" in sc) || !sc.PlayerOff )
+			{
+				if ( !("PlayerOff" in sc.m_pCallbacks) )
+					sc.m_pCallbacks.PlayerOff <- {};
+
+				local cb = sc.m_pCallbacks.PlayerOff;
+				sc.PlayerOff <- function() : (cb, _ui, AddEvent)
+				{
+					AddEvent( _ui, "Activate", "", 0.0, self, null );
+					foreach( fn in cb )
+						fn(this);
 				}.bindenv(this);
 				_ui.ConnectOutput( "PlayerOff", "PlayerOff" );
 			};
@@ -405,15 +446,6 @@ VS.ToExtendedPlayer <- function( hPlayer )
 			{
 				_ui.SetTeam(1);
 				AddEvent( _ui, "Activate", "", 0.0, self, null );
-
-				if ( szInput != "PressedUse" )
-				{
-					sc.PlayerOff <- function() : (_ui, AddEvent)
-					{
-						return AddEvent( _ui, "Activate", "", 0.0, self, null );
-					}.bindenv(this);
-					_ui.ConnectOutput( "PlayerOff", "PlayerOff" );
-				};
 			};
 		}
 
@@ -447,9 +479,6 @@ local DoTrace2 = TraceLinePlayersIncluded;
 
 const MASK_NPCWORLDSTATIC = 0x2000b;;
 const MASK_SOLID = 0x200400b;;
-
-delete CONST.MASK_NPCWORLDSTATIC;
-delete CONST.MASK_SOLID;
 
 class VS.TraceLine
 {

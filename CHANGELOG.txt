@@ -3,6 +3,11 @@
 
 --------------------------------
 
+2021-09-04 [v2.43.1]
+- Added backwards compatible string contexts in CExtendedPlayer::SetInputCallback
+for setting any amount of callbacks on one player.
+- Added constants MASK_NPCWORLDSTATIC, MASK_SOLID
+
 2021-09-03 [v2.43.0]
 - Added consistent player info (name, networkid) acquisition on listen servers
 - Made CExtendedPlayer members const
