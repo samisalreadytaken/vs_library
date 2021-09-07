@@ -263,6 +263,8 @@ IncludeScript("myscript")
 [`VS.IsBoxIntersectingRay2()`](#f_IsBoxIntersectingRay2)  
 [`VS.IntersectRayWithRay()`](#f_IntersectRayWithRay)  
 [`VS.IntersectRayWithPlane()`](#f_IntersectRayWithPlane)  
+[`VS.IntersectRayWithBox()`](#f_IntersectRayWithBox)  
+[`VS.IntersectRayWithOBB()`](#f_IntersectRayWithOBB)  
 [`VS.IsRayIntersectingOBB()`](#f_IsRayIntersectingOBB)  
 
 
@@ -1947,6 +1949,22 @@ ________________________________
 float VS::IntersectRayWithPlane( Vector start, Vector dir, Vector normal, float dist )
 ```
 returns distance along ray
+________________________________
+
+<a name="f_IntersectRayWithBox"></a>
+```cpp
+bool VS::IntersectRayWithBox( Vector vecRayStart, Vector vecRayDelta,
+	Vector boxMins, Vector boxMaxs, float flTolerance, float[2] pTrace )
+```
+Intersects a ray against a box, returns t1 and t2
+________________________________
+
+<a name="f_IntersectRayWithOBB"></a>
+```cpp
+bool VS::IntersectRayWithOBB( Vector vecRayStart, Vector vecRayDelta, matrix3x4_t matOBBToWorld,
+	Vector vecOBBMins, Vector vecOBBMaxs, float flTolerance, float[2] pTrace )
+```
+Intersects a ray against an OBB, returns t1 and t2
 ________________________________
 
 <a name="f_IsRayIntersectingOBB"></a>

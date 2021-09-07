@@ -10,6 +10,7 @@ local Events = delegate ::VS :
 	m_bFixedUp = false,
 	m_SV = null, // validatee queue
 	m_Players = null,
+	m_ppCache = null,
 	m_pSpawner = null,
 	m_pListeners = null,
 	s_szEventName = null,
@@ -157,6 +158,7 @@ VS.Events.player_connect <- function( event ) : ( gEventData, ROOT, SendToConsol
 		// point_servercommand checks it when the server is not listen server.
 		// Try ClientCommand to see if it's a listen server, then fetch the networkid.
 		// ban for 3 seconds, no kick. min duration is 0.01
+		// Command is invalid in sv_lan 1 servers.
 		SendToConsole( "banid 0.05 " + event.userid );
 
 		// finished the queue
@@ -182,11 +184,11 @@ VS.Events.server_addban <- function( event )
 
 	local sc = ply.GetScriptScope();
 
-	//if ( sc.name != "" )
-	//	Msg(format( "VS::Events: validation: [%d] overwriting name '%s' -> '%s'\n", event.userid, sc.name, event.name ));
+	if ( sc.name != "" && sc.name != event.name )
+		Msg(format( "VS::Events: validation: [%d] overwriting name '%s' -> '%s'\n", event.userid, sc.name, event.name ));
 
-	//if ( sc.networkid != "" )
-	//	Msg(format( "VS::Events: validation: [%d] overwriting networkid '%s' -> '%s'\n", event.userid, sc.networkid, event.networkid ));
+	if ( sc.networkid != "" && sc.networkid != event.networkid )
+		Msg(format( "VS::Events: validation: [%d] overwriting networkid '%s' -> '%s'\n", event.userid, sc.networkid, event.networkid ));
 
 	sc.name = event.name;
 	sc.networkid = event.networkid;
@@ -359,6 +361,10 @@ function VS::FixupEventListener( ent )
 	// sc.rawset( "event_cache", cache );
 	sc.rawdelete("event_data");
 
+	if ( !m_ppCache )
+		m_ppCache = [];
+	m_ppCache.append( cache.weakref() );
+
 	// Table looks for parent's metamethods.
 	// They are called in child's environment.
 	delegate ( delegate ( delegate sc.parent :
@@ -461,9 +467,26 @@ VS.Events.PostSpawn <- function( pEntities ) : (AddEvent)
 		MakePersistent(ent);
 		local sc = ent.GetScriptScope();
 
-		// synchronous callbacks, not possible to dump call stack when exception is thrown
-		if ( s_fnSynchronous )
+		// asynchronous callbacks
+		if ( !s_fnSynchronous )
 		{
+			// naming it with the event name and UID makes debugging easier
+			local name = sc.__vname;
+			local i = name.find("_");
+			name = s_szEventName + "_" + name.slice( 0, i );
+			SetName( ent, name );
+			AddEvent(
+				ent,
+				"AddOutput",
+				"OnEventFired "+name+",CallScriptFunction,OnEventFired",
+				0.0, null, ent );
+			sc.OnEventFired <- null;
+		}
+		// synchronous callbacks, not possible to dump call stack when exception is thrown
+		else
+		{
+			m_ppCache.pop();
+
 			SetName( ent, "" );
 			delete sc.parent._get;
 			sc.parent._newslot = function( k, v ) : (s_fnSynchronous)
@@ -481,21 +504,6 @@ VS.Events.PostSpawn <- function( pEntities ) : (AddEvent)
 				};
 				return rawset( k, v );
 			}
-		}
-		// asynchronous callbacks
-		else
-		{
-			// naming it with the event name and UID makes debugging easier
-			local name = sc.__vname;
-			local i = name.find("_");
-			name = s_szEventName + "_" + name.slice( 0, i );
-			SetName( ent, name );
-			AddEvent(
-				ent,
-				"AddOutput",
-				"OnEventFired "+name+",CallScriptFunction,OnEventFired",
-				0.0, null, ent );
-			sc.OnEventFired <- null;
 		}
 	}
 }.bindenv( VS.Events );
@@ -582,10 +590,19 @@ VS.ListenToGameEvent <- function( szEventname, fnCallback, pContext )
 	};
 
 	local sc = p.GetScriptScope();
-	sc.OnEventFired <- function() : (fnCallback)
-	{
-		return fnCallback( event_data );
-	}
+
+	//local paramCount = fnCallback.getinfos().parameters.len();
+	//if ( paramCount == 1 )
+	//{
+	//	sc.OnEventFired <- fnCallback;
+	//}
+	//else
+	//{
+		sc.OnEventFired <- function() : (fnCallback)
+		{
+			return fnCallback( event_data );
+		}
+	//};
 }.bindenv( VS.Events );
 
 
@@ -632,4 +649,31 @@ function VS::Events::InitTemplate( scope )
 	scope.PreSpawnInstance <- 1;
 	scope.PostSpawn <- PostSpawn;
 	scope.OnPostSpawn <- OnPostSpawn.bindenv(scope);
+
+	// Clear game events that were not fired due to the
+	// event queue being cleared on round start.
+	// MapEntity_ParseAllEntities is called right after g_EventQueue.Clear()
+	if ( m_ppCache )
+	{
+		for ( local i = m_ppCache.len(); i--; )
+		{
+			local v = m_ppCache[i];
+			if ( v )
+			{
+				v.clear();
+			}
+			else
+			{
+				m_ppCache.remove(i);
+			}
+		}
+	};
+
+	if ( "EventQueue" in VS )
+	{
+		// NOTE: SetNameSafe calls from ToExtendedPlayer can also be removed if
+		// they were called in an event that was cancelled.
+		// This only results in temporary garbage targetnames on bots not being cleared. It's not harmful.
+		VS.EventQueue.Clear();
+	};
 }

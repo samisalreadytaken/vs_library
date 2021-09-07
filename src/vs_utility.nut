@@ -141,7 +141,7 @@ VS.ToExtendedPlayer <- function( hPlayer )
 			return ply;
 
 	if ( (typeof hPlayer != "instance") || !(hPlayer instanceof CBaseMultiplayerPlayer) || !hPlayer.IsValid() )
-		return Msg("ToExtendedPlayer: invalid player input\n");
+		return;
 
 	// duplicated iteration to keep post-init calls as cheap as possible
 	for ( local i = g_Players.len(); i--; )
@@ -228,7 +228,7 @@ VS.ToExtendedPlayer <- function( hPlayer )
 		static self = hPlayer;
 		static m_EntityIndex = hPlayer.entindex(); // m_EdictIndex
 		static m_ScriptScope = sc;
-		// static __vname = sc.__vname; // m_iszScriptId
+		// static m_iszScriptId = sc.__vname;
 		static userid = sc.userid; // m_UserID
 		static networkid = sc.networkid; // m_szNetworkId
 		static name = sc.name; // m_szNetname

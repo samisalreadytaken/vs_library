@@ -5482,6 +5482,207 @@ function VS::IntersectRayWithPlane( org, dir, normal, dist )
 }
 
 //-----------------------------------------------------------------------------
+// Intersects a ray against a box
+//-----------------------------------------------------------------------------
+function VS::IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, flTolerance, pTrace )
+{
+	local f, d1, d2;
+
+	local t1 = -1.0;
+	local t2 = 1.0;
+	// local hitside = -1;
+
+	local startsolid = true;
+
+	for ( local i = 0; i < 6; ++i )
+	{
+		// HACKHACK:
+		switch (i)
+		{
+		case 0:
+			d1 = boxMins.x - vecRayStart.x;
+			d2 = d1 - vecRayDelta.x;
+			break;
+		case 1:
+			d1 = boxMins.y - vecRayStart.y;
+			d2 = d1 - vecRayDelta.y;
+			break;
+		case 2:
+			d1 = boxMins.z - vecRayStart.z;
+			d2 = d1 - vecRayDelta.z;
+			break;
+		case 3:
+			d1 = vecRayStart.x - boxMaxs.x;
+			d2 = d1 + vecRayDelta.x;
+			break;
+		case 4:
+			d1 = vecRayStart.y - boxMaxs.y;
+			d2 = d1 + vecRayDelta.y;
+			break;
+		case 5:
+			d1 = vecRayStart.z - boxMaxs.z;
+			d2 = d1 + vecRayDelta.z;
+			break;
+		}
+
+		// if completely in front of face, no intersection
+		if (d1 > 0.0 && d2 > 0.0)
+		{
+			// UNDONE: Have to revert this in case it's still set
+			// UNDONE: Refactor to have only 2 return points (true/false) from this function
+			// startsolid = false;
+			return false;
+		};
+
+		// completely inside, check next face
+		if (d1 <= 0.0 && d2 <= 0.0)
+			continue;
+
+		if (d1 > 0.0)
+			startsolid = false;
+
+		// crosses face
+		if (d1 > d2)
+		{
+			f = d1 - flTolerance;
+			if ( f < 0.0 )
+				f = 0.0;
+			f /= (d1-d2);
+			if (f > t1)
+			{
+				t1 = f;
+				// hitside = i;
+			};
+		}
+		else
+		{
+			// leave
+			f = (d1 + flTolerance) / (d1-d2);
+			if (f < t2)
+			{
+				t2 = f;
+			};
+		};
+	}
+
+	pTrace[0] = t1;
+	pTrace[1] = t2;
+
+	return startsolid || (t1 < t2 && t1 >= 0.0);
+}
+
+//-----------------------------------------------------------------------------
+// Intersects a ray against an OBB, returns t1 and t2
+//-----------------------------------------------------------------------------
+function VS::IntersectRayWithOBB( vecRayStart, vecRayDelta, matOBBToWorld,
+	vecOBBMins, vecOBBMaxs, flTolerance, pTrace ) : (Vector, VectorITransform, VectorIRotate)
+{
+	local start = Vector(), delta = Vector();
+	VectorITransform( vecRayStart, matOBBToWorld, start );
+	VectorIRotate( vecRayDelta, matOBBToWorld, delta );
+
+	return IntersectRayWithBox( start, delta, vecOBBMins, vecOBBMaxs, flTolerance, pTrace );
+}
+/*
+{
+	// Collision_ClearTrace( vecRayStart, vecRayDelta, pTrace );
+
+	// FIXME: Make it work with tolerance
+	// Assert( flTolerance == 0.0 );
+
+	// OPTIMIZE: Store this in the box instead of computing it here
+	// compute center in local space
+	local vecBoxExtents = (vecOBBMins + vecOBBMaxs) * 0.5;
+	local vecBoxCenter = Vector();
+
+	// transform to world space
+	VectorTransform( vecBoxExtents, matOBBToWorld, vecBoxCenter );
+
+	// calc extents from local center
+	vecBoxExtents = vecOBBMaxs - vecBoxExtents;
+
+	// OPTIMIZE: This is optimized for world space.  If the transform is fast enough, it may make more
+	// sense to just xform and call UTIL_ClipToBox() instead.  MEASURE THIS.
+
+	// save the extents of the ray along
+	local extent = Vector(), uextent = Vector();
+	local segmentCenter = vecRayStart + vecRayDelta - vecBoxCenter;
+
+	// check box axes for separation
+	extent.x = vecRayDelta.x * matOBBToWorld[0][0] + vecRayDelta.y * matOBBToWorld[1][0] +	vecRayDelta.z * matOBBToWorld[2][0];
+	uextent.x = fabs(extent.x);
+	local coord = segmentCenter.x * matOBBToWorld[0][0] + segmentCenter.y * matOBBToWorld[1][0] +	segmentCenter.z * matOBBToWorld[2][0];
+
+	if ( fabs(coord) > (vecBoxExtents.x + uextent.x) )
+		return false;
+
+	extent.y = vecRayDelta.x * matOBBToWorld[0][1] + vecRayDelta.y * matOBBToWorld[1][1] +	vecRayDelta.z * matOBBToWorld[2][1];
+	uextent.y = fabs(extent.y);
+	local coord = segmentCenter.x * matOBBToWorld[0][1] + segmentCenter.y * matOBBToWorld[1][1] +	segmentCenter.z * matOBBToWorld[2][1];
+
+	if ( fabs(coord) > (vecBoxExtents.y + uextent.y) )
+		return false;
+
+	extent.z = vecRayDelta.x * matOBBToWorld[0][2] + vecRayDelta.y * matOBBToWorld[1][2] +	vecRayDelta.z * matOBBToWorld[2][2];
+	uextent.z = fabs(extent.z);
+	local coord = segmentCenter.x * matOBBToWorld[0][2] + segmentCenter.y * matOBBToWorld[1][2] +	segmentCenter.z * matOBBToWorld[2][2];
+
+	if ( fabs(coord) > (vecBoxExtents.z + uextent.z) )
+		return false;
+
+	// now check cross axes for separation
+	local tmp, cextent;
+	Vector cross = vecRayDelta.Cross( segmentCenter );
+	cextent = cross.x * matOBBToWorld[0][0] + cross.y * matOBBToWorld[1][0] + cross.z * matOBBToWorld[2][0];
+	tmp = vecBoxExtents.y*uextent.z + vecBoxExtents.z*uextent.y;
+	if ( fabs(cextent) > tmp )
+		return false;
+
+	cextent = cross.x * matOBBToWorld[0][1] + cross.y * matOBBToWorld[1][1] + cross.z * matOBBToWorld[2][1];
+	tmp = vecBoxExtents.x*uextent.z + vecBoxExtents.z*uextent.x;
+	if ( fabs(cextent) > tmp )
+		return false;
+
+	cextent = cross.x * matOBBToWorld[0][2] + cross.y * matOBBToWorld[1][2] + cross.z * matOBBToWorld[2][2];
+	tmp = vecBoxExtents.x*uextent.y + vecBoxExtents.y*uextent.x;
+	if ( fabs(cextent) > tmp )
+		return false;
+
+	// !!! We hit this box !!! compute intersection point and return
+	// Compute ray start in bone space
+	local start = Vector();
+	VectorITransform( vecRayStart, matOBBToWorld, start );
+
+	// extent is ray.m_Delta in bone space, recompute delta in bone space
+	extent *= 2.0;
+
+	// delta was prescaled by the current t, so no need to see if this intersection
+	// is closer
+	if ( !IntersectRayWithBox( start, extent, vecOBBMins, vecOBBMaxs, flTolerance, pTrace ) )
+		return false;
+
+	// Fix up the start/end pos and fraction
+	local vecTemp = start;
+	VectorTransform( pTrace.endpos, matOBBToWorld, vecTemp );
+	pTrace.endpos = vecTemp;
+
+	pTrace.startpos = vecRayStart;
+	pTrace.fraction *= 2.0;
+
+	// Fix up the plane information
+	local flSign = pTrace.plane.normal[ pTrace.plane.type ];
+	pTrace.plane.normal.x = flSign * matOBBToWorld[0][pTrace.plane.type];
+	pTrace.plane.normal.y = flSign * matOBBToWorld[1][pTrace.plane.type];
+	pTrace.plane.normal.z = flSign * matOBBToWorld[2][pTrace.plane.type];
+	pTrace.plane.dist = pTrace.endpos.Dot( pTrace.plane.normal );
+	pTrace.plane.type = 3;
+
+	return true;
+}
+*/
+
+
+//-----------------------------------------------------------------------------
 // Swept OBB test
 // Input  : localMins, localMaxs
 //-----------------------------------------------------------------------------

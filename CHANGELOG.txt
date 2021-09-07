@@ -3,6 +3,13 @@
 
 --------------------------------
 
+2021-09-07 [v2.43.2]
+- Fixed event callbacks in condition where they were fired in the frame before round start (e.g. player_spawn)
+- Added VS.IntersectRayWithBox
+- Added VS.IntersectRayWithOBB
+- Removed con print in ToExtendedPlayer
+- Fixed typo in the minified library file
+
 2021-09-04 [v2.43.1]
 - Added backwards compatible string contexts in CExtendedPlayer::SetInputCallback
 for setting any amount of callbacks on one player.
