@@ -272,10 +272,6 @@ IncludeScript("myscript")
 [`Ent()`](#f_Ent)  
 [`Entc()`](#f_Entc)  
 [`delay()`](#f_delay)  
-[`Chat()`](#f_Chat)  
-[`ChatTeam()`](#f_ChatTeam)  
-[`Alert()`](#f_Alert)  
-[`AlertTeam()`](#f_AlertTeam)  
 [`TextColor`](#f_TextColor)  
 [`VecToString()`](#f_VecToString)  
 [`ToExtendedPlayer()`](#f_ToExtendedPlayer)  
@@ -302,8 +298,6 @@ IncludeScript("myscript")
 [`VS.PrintStack()`](#f_PrintStack)  
 [`VS.GetCallerFunc()`](#f_GetCallerFunc)  
 [`VS.GetCaller()`](#f_GetCaller)  
-[`VS.GetTableDir()`](#f_GetTableDir)  
-[`VS.FindVarByName()`](#f_FindVarByName)  
 [`VS.GetVarName()`](#f_GetVarName)  
 
 
@@ -313,8 +307,6 @@ IncludeScript("myscript")
 [`PrecacheScriptSound()`](#f_PrecacheScriptSound)  
 [`VS.MakePersistent()`](#f_MakePersistent)  
 [`VS.SetParent()`](#f_SetParent)  
-[`VS.CreateMeasure()`](#f_CreateMeasure)  
-[`VS.SetMeasure()`](#f_SetMeasure)  
 [`VS.CreateTimer()`](#f_CreateTimer)  
 [`VS.Timer()`](#f_Timer)  
 [`VS.OnTimer()`](#f_OnTimer)  
@@ -337,8 +329,6 @@ IncludeScript("myscript")
 [`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)  
 [`VS.ListenToGameEvent()`](#f_ListenToGameEvent)  
 [`VS.StopListeningToAllGameEvents()`](#f_StopListeningToAllGameEvents)  
-[`VS.ForceValidateUserid()`](#f_ForceValidateUserid)  
-[`VS.ValidateUseridAll()`](#f_ValidateUseridAll)  
 [`VS.FixupEventListener()`](#f_FixupEventListener)  
 [`VS.Events.InitTemplate()`](#f_InitTemplate)  
 
@@ -2386,14 +2376,14 @@ ________________________________
 ```cpp
 void VS::DumpScope(table table, bool printall = false, bool deepprint = true, bool guides = true, int depth = 0)
 ```
-Usage: `VS.DumpScope(table)`
+(debug) Usage: `VS.DumpScope(table)`
 ________________________________
 
 <a name="f_DumpEnt"></a>
 ```cpp
 void VS::DumpEnt(TYPE input = null)
 ```
-Dump all entities whose script scopes are already created.
+(debug) Dump all entities whose script scopes are already created.
 
 Input an entity handle or string to dump its scope.
 
@@ -2404,7 +2394,7 @@ ________________________________
 ```cpp
 void VS::DumpPlayers(bool dumpscope = false)
 ```
-DumpEnt only players and bots
+(debug) DumpEnt only players and bots
 
 If bots have targetnames, they 'become' humans. If the event listeners are not set up, named bots will be shown as players.
 ________________________________
@@ -2435,35 +2425,6 @@ ________________________________
 table VS::GetCaller()
 ```
 Get caller table
-________________________________
-
-<a name="f_GetTableDir"></a>
-```cpp
-string[] VS::GetTableDir(table input)
-```
-Does a linear search through the root table.
-
-```cpp
-::t1.t2.t3.t4 <- {}
-VS.GetTableDir( t1.t2.t3.t4 )
-VS.GetTableDir( VS.FindVarByName( "t4" ) )
--> both return ["roottable","t1","t2","t3","t4"]
-
-You can quickly print the array with VS.DumpScope(output) for debug purposes
-```
-________________________________
-
-<a name="f_FindVarByName"></a>
-```cpp
-TYPE VS::FindVarByName(string str)
-```
-Does a linear search through the root table.
-
-```cpp
-::t1.t2.t3.t4 <- {}
-VS.FindVarByName( "t4" )
--> returns table <t1.t2.t3.t4>
-```
 ________________________________
 
 <a name="f_GetVarName"></a>
@@ -2797,14 +2758,14 @@ ________________________________
 ```cpp
 void VS::ForceValidateUserid(handle player)
 ```
-if something has gone wrong with automatic validation, force add userid. Not needed when event listener setup is done.
+Deprecated. Manual calls to this are not necessary.
 ________________________________
 
 <a name="f_ValidateUseridAll"></a>
 ```cpp
 void VS::ValidateUseridAll()
 ```
-Make sure all player userids are validated. Asynchronous. Not needed when event listener setup is done.
+Deprecated. Manual calls to this are not necessary.
 ________________________________
 
 <a name="f_FixupEventListener"></a>

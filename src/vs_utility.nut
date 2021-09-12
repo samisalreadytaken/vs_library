@@ -912,81 +912,6 @@ function VS::GetCallerFunc() : (getstackinfos)
 }
 
 //-----------------------------------------------------------------------
-// Input  : table
-// Output : array containing the input's directory
-//-----------------------------------------------------------------------
-function VS::GetTableDir(input)
-{
-	if ( typeof input != "table" )
-		throw "Invalid input type '" + typeof input + "' ; expected: 'table'";
-
-	local a = [];
-	local r = _10F07AD9(a,input);
-
-	if (r)
-	{
-		r.insert( r.len(), "roottable" );
-		r.reverse();
-	}
-	else
-	{
-		r = a;
-		r.clear();
-		r.resize(1);
-		r[0] = "roottable";
-	};
-
-	return r;
-}
-
-// exclusive recursion function
-function VS::_10F07AD9(bF, t, l = ROOT)
-{
-	foreach(v, u in l)
-		if (typeof u == "table" && v != "VS" && v != "Documentation")
-				if (u == t)
-				{
-					bF.append(v);
-					return bF;
-				}
-				else
-				{
-					local r = _10F07AD9(bF, t, u);
-					if (r)
-					{
-						bF.append(v);
-						return r;
-					};
-				};;;
-}
-
-//-----------------------------------------------------------------------
-// Input  : string [variable]
-// Output : variable
-//-----------------------------------------------------------------------
-function VS::FindVarByName(S)
-{
-	if (typeof S != "string")
-		throw "Invalid input type '" + typeof S + "' ; expected: 'string'";
-
-	return _2E42074F(S);
-}
-
-// exclusive recursion function
-function VS::_2E42074F(t, l = ROOT)
-{
-	if (t in l)
-		return l[t];
-	else
-		foreach(v, u in l)
-			if (typeof u == "table" && v != "VS" && v != "Documentation")
-				{
-					local r = _2E42074F(t, u);
-					if (r) return r;
-				};;;
-}
-
-//-----------------------------------------------------------------------
 // Doesn't work with primitive variables if
 // there are multiple variables with the same value.
 // But it can work if the value is unique, like a unique string.
@@ -998,7 +923,13 @@ function VS::GetVarName(v)
 	if ( t == "function" || t == "native function" )
 		return v.getinfos().name;
 
-	return _8B78B6AE(t, v);
+	local r = _8B78B6AE(t, v);
+	if ( r )
+		return r;
+
+	foreach( k, w in getstackinfos(2).locals )
+		if ( w == v )
+			return k;
 }
 
 // exclusive recursion function
@@ -1212,14 +1143,14 @@ VS.EventQueue.AddEventInternal <- function( event, flDelay ) :
 local AddEventInternal = VS.EventQueue.AddEventInternal;
 
 VS.EventQueue.AddEvent <- function( hFunc, flDelay, argv = null, activator = null, caller = null ) :
-	( AddEventInternal, ROOT )
+	( AddEventInternal )
 {
 	local event = CreateEvent( hFunc, argv , activator , caller );
 	return AddEventInternal( event, flDelay );
 
 }.bindenv(VS.EventQueue);
 
-VS.EventQueue.CreateEvent <- function( hFunc, argv = null, activator = null, caller = null ) : ( ROOT )
+VS.EventQueue.CreateEvent <- function( hFunc, argv = null, activator = null, caller = null )
 {
 	local event = [null,null,null,null,null,null,null,null];
 	event[ m_hFunc ] = hFunc;
@@ -1228,16 +1159,14 @@ VS.EventQueue.CreateEvent <- function( hFunc, argv = null, activator = null, cal
 
 	switch ( typeof argv )
 	{
-		case "table":
-		case "class":
-		case "instance":
-			event[ m_Env ] = argv;
-			break;
 		case "array":
 			event[ m_argv ] = argv;
 			break;
-		default:
-			event[ m_Env ] = ROOT;
+		case "table":
+		case "instance":
+		case "class":
+			event[ m_Env ] = argv;
+			break;
 	}
 
 	return event;
@@ -1291,6 +1220,12 @@ if (!PORTAL2){
 ::ChatTeam  <- function(i,s) : (ScriptPrintMessageChatTeam) return ScriptPrintMessageChatTeam(i," "+s);
 ::Alert     <- ScriptPrintMessageCenterAll;
 ::AlertTeam <- ScriptPrintMessageCenterTeam;
+/*
+::CenterPrintAll <- function( s ) : (ScriptPrintMessageCenterAllWithParams)
+{
+	return ScriptPrintMessageCenterAllWithParams( "#SFUI_ContractKillStart", "</font>" + s + "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ", "", "" );
+}
+*/
 
 enum TextColor
 {
@@ -1359,71 +1294,7 @@ enum TextColor
 */
 
 /*
-// Template asynchronous loops for expensive functions.
-// Place your logic inside the for loop.
-// Special variables should not be moved.
-// Expects increments ( nStartIndex < nTargetLimit )
-
-function StartAsyncLoop( nStartIndex, nTargetLimit, nAsyncIncr )
-{
-	if ( bLoopInProgress )
-		return;
-	bLoopInProgress = true;
-
-	if ( nStartIndex < nTargetLimit )
-		throw "error";
-
-
-	// times a loop is synchronously executed.
-	// expected to be lower than target limit
-	_AINCR = nAsyncIncr;
-
-	// total loop count (async)
-	_TGLIM = nTargetLimit;
-
-	// internal asynchronous counters
-	_ASIDX = nStartIndex; // cur idx
-	_ASLIM = min( _AINCR, _TGLIM ); // cur lim
-
-
-	// print how long it took
-	flAsyncLoopStartTime <- Time();
-
-	// start
-	MyAsyncFunc();
-}
-
-function MyAsyncFunc()
-{
-	for ( local i = _ASIDX; i < _ASLIM; i += 1 ) // increment amount at user's discretion
-	{
-		// do
-	}
-
-	_ASIDX += _AINCR;
-	_ASLIM = min( _ASLIM + _AINCR, _TGLIM );
-
-	// complete
-	if ( _ASIDX >= _ASLIM )
-	{
-		OnFinished();
-		return;
-	}
-	return VS.EventQueue.AddEvent( MyAsyncFunc, 0.01, this );
-}
-
-function OnFinished()
-{
-	bLoopInProgress = false;
-
-	local dt = Time() - flAsyncLoopStartTime
-	print(format( "Async loop finished in %g seconds!\n", dt ))
-}
-
-// While this can be used for automating loop completion,
-// threads or generators can be used for pausing on conditions when
-// a loop is expected to run for long or to run an expensive function.
-
+// Using threads/generators for expensive executions.
 // If the functions called inside the loop are expected to suspend the loop
 // instead of the main loop itself, use threads.
 // To use threads, replace `yield` with `suspend()`, `resume` with `thread.wakeup()`

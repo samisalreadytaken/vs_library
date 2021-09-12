@@ -66,16 +66,9 @@ VS.GetPlayerByUserid <- function( userid ) : (Entities)
 	}
 }.bindenv( VS.Events );
 
+//
 // OnEvent player_connect
 //
-// If events are correctly set up, add the userid, networkid (steamID32) and name to the player scope
-// Bot networkid is "BOT"
-//
-// Only allows 64 unprocessed entries to be held
-// This limit realistically will never be reached (unless the player_spawn listener
-// was never created or correctly set up). It's a just-in-case check.
-//
-// When the limit is reached, the oldest 32 entries are deleted.
 VS.Events.player_connect <- function( event ) : ( gEventData, ROOT, SendToConsole )
 {
 	if ( event.networkid != "" )
@@ -261,7 +254,7 @@ VS.Events.player_spawn <- function( event ) : ( gEventData, Fmt, ROOT )
 }.bindenv( VS.Events );
 
 //
-// if something has gone wrong with automatic validation, force add userid
+// Deprecated. Manual calls to this are not necessary.
 //
 VS.ForceValidateUserid <- function( ent ) : ( AddEvent, Fmt )
 {
@@ -294,6 +287,9 @@ VS.ForceValidateUserid <- function( ent ) : ( AddEvent, Fmt )
 	return AddEvent( m_hProxy, "GenerateGameEvent", "", 0, ent, null );
 }.bindenv( VS.Events );
 
+//
+// Deprecated. Manual calls to this are not necessary.
+//
 function VS::ValidateUseridAll()
 {
 	if ( Events.m_bFixedUp )
@@ -671,7 +667,7 @@ function VS::Events::InitTemplate( scope )
 
 	if ( "EventQueue" in VS )
 	{
-		// NOTE: SetNameSafe calls from ToExtendedPlayer can also be removed if
+		// NOTE: SetNameSafe calls from ToExtendedPlayer might also be removed if
 		// they were called in an event that was cancelled.
 		// This only results in temporary garbage targetnames on bots not being cleared. It's not harmful.
 		VS.EventQueue.Clear();

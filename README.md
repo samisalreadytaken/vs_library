@@ -5,7 +5,7 @@ High-performance vscript libraries; written mainly for CS:GO, compatible with Po
 
 See the [**hlvr**](https://github.com/samisalreadytaken/vs_library/tree/hlvr) branch for usage in Half-Life Alyx.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.43.2-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.43.3-informational
 
 
 ## Documentation
@@ -30,8 +30,8 @@ Done!
 
 It only needs to be included once in the lifetime of the map running in the server. Including it more than once does not affect the performance.
 
-### Player eye angles
-Use `ToExtendedPlayer()` to access some of the missing player functions in CSGO. See the [documentation](/Documentation.md#f_ToExtendedPlayer) for details.
+### Extended player
+Use `ToExtendedPlayer()` to access some of the missing player functions in CSGO such as `EyeAngles` and `GetPlayerName`. See the [documentation](/Documentation.md#f_ToExtendedPlayer) for details.
 
 ```cs
 local player = ToExtendedPlayer( VS.GetPlayerByIndex(1) );
@@ -44,7 +44,7 @@ VS.DrawViewFrustum( player.EyePosition(), player.EyeForward(), player.EyeRight()
 DebugDrawBoxAngles( player.EyePosition(), Vector(2,-1,-1), Vector(32,1,1), player.EyeAngles(), 0, 255, 0, 16, 5.0 );
 ```
 
-### Event listener setup
+### Automatic player info acquisition
 [![](https://img.shields.io/badge/video-red?logo=youtube)](https://www.youtube.com/watch?v=JGnBQ1lwzzg)
 
 Setting up these 2 entities will automatically acquire player userid, SteamID and Steam names; and also expose event listener registration from script with `VS.ListenToGameEvent`.

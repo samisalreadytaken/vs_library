@@ -3,6 +3,11 @@
 
 --------------------------------
 
+2021-09-12 [v2.43.3]
+- Minor optimisation in VS.EventQueue.CreateEvent
+- Removed debug function VS.GetTableDir
+- Removed debug function VS.FindVarByName
+
 2021-09-07 [v2.43.2]
 - Fixed event callbacks in condition where they were fired in the frame before round start (e.g. player_spawn)
 - Added VS.IntersectRayWithBox
