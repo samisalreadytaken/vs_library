@@ -34,15 +34,10 @@
 	return DoEntFire( ""+target, ""+action, ""+value, delay, activator, caller );
 }
 
-::PrecacheModel <- function(s) : (World)
-{
-	World.PrecacheModel(s);
-}
+::PrecacheModel <- CBaseEntity.PrecacheModel.bindenv( World );
 
-::PrecacheScriptSound <- function(s) : (World)
-{
-	World.PrecacheSoundScript(s); // identical to PrecacheScriptSound on server
-}
+// identical to PrecacheScriptSound on server
+::PrecacheScriptSound <- CBaseEntity.PrecacheSoundScript.bindenv( World );
 
 //-----------------------------------------------------------------------
 // Prevent the entity from being reset every round
@@ -80,6 +75,8 @@ function VS::SetParent( hChild, hParent ):(AddEvent)
 //-----------------------------------------------------------------------
 function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 ):(AddEvent)
 {
+	Msg("Warning: VS::CreateMeasure is deprecated!\n");
+
 	local r = e ? n ? n+"" : "vs.ref_"+UniqueString() : n ? n+"" : null;
 
 	if ( !r || !r.len() )
@@ -112,6 +109,7 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 ):(AddEven
 //-----------------------------------------------------------------------
 function VS::SetMeasure(h,s):(AddEvent)
 {
+	Msg("Warning: VS::SetMeasure is deprecated!\n");
 	return AddEvent( h, "SetMeasureTarget", s, 0.0, null, null );
 }
 
@@ -610,34 +608,21 @@ function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, szClass
 // Not perfect, but it works to some extent
 function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, szClassname, flRadius ):(Entities)
 {
-	local flMaxDistSqr, best_ent, ent;
+	local best_ent, ent;
 
-	if ( flRadius )
-	{
-		flMaxDistSqr = flRadius * flRadius;
-	}
-	else
-	{
-		flMaxDistSqr = 3.22122e+09; // MAX_TRACE_LENGTH * MAX_TRACE_LENGTH
-	};
+	if ( !flRadius )
+		flRadius = MAX_TRACE_LENGTH;
 
 	while ( ent = Entities.FindByClassname(ent,szClassname) )
 	{
 		local to_ent = ent.GetOrigin() - vOrigin;
-
-		to_ent.Norm();
-
+		local flDist = to_ent.Norm();
 		local dot = vFacing.Dot(to_ent);
 
-		if ( dot > fThreshold )
+		if ( dot > fThreshold && flRadius > flDist )
 		{
-			local flDistSqr = (ent.GetOrigin() - vOrigin).LengthSqr();
-
-			if ( flMaxDistSqr > flDistSqr )
-			{
-				best_ent = ent;
-				flMaxDistSqr = flDistSqr;
-			};
+			best_ent = ent;
+			flRadius = flDist;
 		};
 	}
 

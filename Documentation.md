@@ -117,6 +117,8 @@ IncludeScript("myscript")
 [`VS.VectorAdd()`](#f_VectorAdd)  
 [`VS.VectorSubtract()`](#f_VectorSubtract)  
 [`VS.VectorScale()`](#f_VectorScale)  
+[`VS.VectorMultiply()`](#f_VectorMultiply)  
+[`VS.VectorDivide()`](#f_VectorDivide)  
 [`VS.VectorMA()`](#f_VectorMA)  
 [`VS.ComputeVolume()`](#f_ComputeVolume)  
 [`VS.RandomVector()`](#f_RandomVector)  
@@ -196,8 +198,8 @@ IncludeScript("myscript")
 [`VS.VectorTransform()`](#f_VectorTransform)  
 [`VS.VectorITransform()`](#f_VectorITransform)  
 [`VS.VectorRotate()`](#f_VectorRotate)  
-[`VS.VectorRotate2()`](#f_VectorRotate2)  
-[`VS.VectorRotate3()`](#f_VectorRotate3)  
+[`VS.VectorRotateByAngle()`](#f_VectorRotateByAngle)  
+[`VS.VectorRotateByQuaternion()`](#f_VectorRotateByQuaternion)  
 [`VS.VectorIRotate()`](#f_VectorIRotate)  
 [`VS.Vector3DMultiplyProjective()`](#f_Vector3DMultiplyProjective)  
 [`VS.Vector3DMultiplyPositionProjective()`](#f_Vector3DMultiplyPositionProjective)  
@@ -251,6 +253,8 @@ IncludeScript("myscript")
 [`VS.CalcClosestPointOnAABB()`](#f_CalcClosestPointOnAABB)  
 [`Ray_t`](#f_Ray_t)  
 [`VS.ComputeBoxOffset()`](#f_ComputeBoxOffset)  
+[`VS.IntersectRayWithTriangle()`](#f_IntersectRayWithTriangle)  
+[`VS.ComputeIntersectionBarycentricCoordinates()`](#f_ComputeIntersectionBarycentricCoordinates)  
 [`VS.IsPointInBox()`](#f_IsPointInBox)  
 [`VS.IsBoxIntersectingBox()`](#f_IsBoxIntersectingBox)  
 [`VS.IsPointInCone()`](#f_IsPointInCone)  
@@ -272,6 +276,7 @@ IncludeScript("myscript")
 [`Ent()`](#f_Ent)  
 [`Entc()`](#f_Entc)  
 [`delay()`](#f_delay)  
+[`CenterPrintAll`](#f_CenterPrintAll)  
 [`TextColor`](#f_TextColor)  
 [`VecToString()`](#f_VecToString)  
 [`ToExtendedPlayer()`](#f_ToExtendedPlayer)  
@@ -694,6 +699,20 @@ ________________________________
 Vector VS::VectorScale(Vector a, float b, Vector& out )
 ```
 Vector a * b
+________________________________
+
+<a name="f_VectorMultiply"></a>
+```cpp
+void VS::VectorMultiply( Vector a, Vector b, Vector& out )
+```
+Vector a * Vector b
+________________________________
+
+<a name="f_VectorDivide"></a>
+```cpp
+void VS::VectorDivide( Vector a, Vector b, Vector& out )
+```
+Vector a / Vector b
 ________________________________
 
 <a name="f_VectorMA"></a>
@@ -1362,16 +1381,16 @@ Vector VS::VectorRotate(Vector in1, matrix3x4_t in2, Vector& out = _VEC)
 assume in2 is a rotation and rotate the input vector
 ________________________________
 
-<a name="f_VectorRotate2"></a>
+<a name="f_VectorRotateByAngle"></a>
 ```cpp
-Vector VS::VectorRotate2(Vector in1, QAngle in2, Vector& out = _VEC)
+Vector VS::VectorRotateByAngle(Vector in1, QAngle in2, Vector& out = _VEC)
 ```
 assume in2 is a rotation and rotate the input vector
 ________________________________
 
-<a name="f_VectorRotate3"></a>
+<a name="f_VectorRotateByQuaternion"></a>
 ```cpp
-Vector VS::VectorRotate3(Vector in1, Quaternion in2, Vector& out = _VEC)
+Vector VS::VectorRotateByQuaternion(Vector in1, Quaternion in2, Vector& out = _VEC)
 ```
 assume in2 is a rotation and rotate the input vector
 ________________________________
@@ -1848,6 +1867,32 @@ float VS::ComputeBoxOffset(Ray_t ray)
 Compute the offset in t along the ray that we'll use for the collision
 ________________________________
 
+<a name="f_IntersectRayWithTriangle"></a>
+```cpp
+float VS::IntersectRayWithTriangle( Ray_t ray, Vector v1, Vector v2, Vector v3, bool oneSided )
+```
+Intersects a swept box against a triangle.
+
+t will be less than zero if no intersection occurred.
+
+oneSided will cull collisions which approach the triangle from the back side, assuming the vertices are specified in counter-clockwise order.
+
+The vertices need not be specified in that order if oneSided is not used
+________________________________
+
+<a name="f_ComputeIntersectionBarycentricCoordinates"></a>
+```cpp
+bool VS::ComputeIntersectionBarycentricCoordinates( Ray_t ray, Vector v1, Vector v2, Vector v3, float[3] uvt )
+```
+Figures out the barycentric coordinates (u,v) where a ray hits a triangle.
+
+Note that this will ignore the ray extents, and it also ignores the ray length.
+
+Note that the edge from v1->v2 represents u (v2: u = 1), and the edge from v1->v3 represents v (v3: v = 1).
+
+It returns false if the ray is parallel to the triangle (or when t is specified if t is less than zero).
+________________________________
+
 <a name="f_IsPointInBox"></a>
 ```cpp
 bool VS::IsPointInBox(Vector vec, Vector boxmin, Vector boxmax)
@@ -2036,6 +2081,17 @@ ________________________________
 void AlertTeam(int team, string s)
 ```
 Shorter name for `ScriptPrintMessageCenterTeam`
+________________________________
+
+<a name="f_CenterPrintAll"></a>
+```cpp
+void CenterPrintAll(string s)
+```
+```cpp
+local v = VS.RandomVector();
+
+CenterPrintAll(format( "\n<font color='#ff0000'>%.2f</font>\n<font color='#00ff00'>%.2f</font>\n<font color='#0000ff'>%.2f</font>", v.x, v.y, v.z ));
+```
 ________________________________
 
 <a name="f_TextColor"></a>

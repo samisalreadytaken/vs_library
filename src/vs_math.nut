@@ -506,7 +506,7 @@ function VS::AngleVectors( angle, forward = _VEC, right = null, up = null ) : (s
 //-----------------------------------------------------------------------
 // Forward direction vector -> Euler QAngle
 //-----------------------------------------------------------------------
-function VS::VectorAngles( forward, vOut = _VEC ) : ( Vector, atan2 )
+function VS::VectorAngles( forward, vOut = _VEC ) : ( atan2 )
 {
 	local yaw, pitch;
 
@@ -535,7 +535,30 @@ function VS::VectorAngles( forward, vOut = _VEC ) : ( Vector, atan2 )
 
 	return vOut;
 }
-
+/*
+//-----------------------------------------------------------------------
+// Takes a forward and up vector.
+//-----------------------------------------------------------------------
+function VS::VectorsToAngles( forward, up, out = _VEC ) : (atan2)
+{
+	local right = forward.Cross(up);
+	right.Norm();
+	local xyDist = forward.Length2D();
+	if ( xyDist > 0.001 )
+	{
+		out.y = RAD2DEG * atan2( forward.y, forward.x );
+		out.x = RAD2DEG * atan2( -forward.z, xyDist );
+		out.z = RAD2DEG * atan2( -right.z, right.x * forward.y - right.y * forward.x );
+	}
+	else
+	{
+		out.y = RAD2DEG * atan2( right.x, -right.y );
+		out.x = RAD2DEG * atan2( -forward.z, xyDist );
+		out.z = 0.0;
+	};
+	return out;
+}
+*/
 //-----------------------------------------------------------------------
 // Rotate a vector around the Z axis (YAW)
 //-----------------------------------------------------------------------
@@ -838,15 +861,13 @@ function VS::VectorScale( a, b, o )
 
 	return o;
 }
-/*
+
 // Vector a * Vector b
 function VS::VectorMultiply( a, b, o )
 {
 	o.x = a.x*b.x;
 	o.y = a.y*b.y;
 	o.z = a.z*b.z;
-
-	return o;
 }
 
 // Vector a / Vector b
@@ -855,10 +876,7 @@ function VS::VectorDivide( a, b, o )
 	o.x = a.x/b.x;
 	o.y = a.y/b.y;
 	o.z = a.z/b.z;
-
-	return o;
 }
-*/
 
 function VS::VectorMA( start, scale, direction, dest = _VEC )
 {
@@ -1240,7 +1258,7 @@ function VS::VectorRotate( in1, in2, out = _VEC )
 local VectorRotate = VS.VectorRotate;
 
 // assume in2 is a rotation (QAngle) and rotate the input vector
-function VS::VectorRotate2( in1, in2, out = _VEC ) : (matrix3x4_t, VectorRotate)
+function VS::VectorRotateByAngle( in1, in2, out = _VEC ) : (matrix3x4_t, VectorRotate)
 {
 	local matRotate = matrix3x4_t();
 	AngleMatrix( in2, null, matRotate );
@@ -1248,7 +1266,7 @@ function VS::VectorRotate2( in1, in2, out = _VEC ) : (matrix3x4_t, VectorRotate)
 }
 
 // assume in2 is a rotation (Quaternion) and rotate the input vector
-function VS::VectorRotate3( in1, in2, out = _VEC )
+function VS::VectorRotateByQuaternion( in1, in2, out = _VEC )
 {
 //	local matRotate = matrix3x4_t();
 //	QuaternionMatrix( in2, matRotate );
@@ -4977,7 +4995,7 @@ function VS::CalcSqrDistanceToAABB( mins, maxs, point )
 	return flDelta * flDelta;
 }
 
-function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut = _VEC )
+function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut )
 {
 	closestOut.x = (point.x < mins.x) ? mins.x : (maxs.x < point.x) ? maxs.x : point.x;
 	closestOut.y = (point.y < mins.y) ? mins.y : (maxs.y < point.y) ? maxs.y : point.y;
@@ -5010,9 +5028,8 @@ class ::Ray_t
 		{
 			m_Extents = (maxs - mins) * 0.5;
 			m_IsRay = ( m_Extents.LengthSqr() < 1.e-6 );
-			m_StartOffset = (mins + maxs) * 0.5;
-			m_Start = start + m_StartOffset;
-			m_StartOffset *= -1.0;
+			m_StartOffset = (mins + maxs) * -0.5;
+			m_Start = start - m_StartOffset;
 		};
 	}
 }
@@ -5052,6 +5069,158 @@ function VS::ComputeBoxOffset( ray ) : (fabs)
 	// 1e-3 is an epsilon
 	return offset + 1.e-3;
 }
+
+local ComputeBoxOffset = VS.ComputeBoxOffset;
+
+//-----------------------------------------------------------------------------
+// Intersects a swept box against a triangle.
+//
+// t will be less than zero if no intersection occurred
+// oneSided will cull collisions which approach the triangle from the back
+// side, assuming the vertices are specified in counter-clockwise order
+// The vertices need not be specified in that order if oneSided is not used
+//-----------------------------------------------------------------------------
+function VS::IntersectRayWithTriangle( ray, v1, v2, v3, oneSided ) : (ComputeBoxOffset)
+{
+	// This is cute: Use barycentric coordinates to represent the triangle
+	// Vo(1-u-v) + V1u + V2v and intersect that with a line Po + Dt
+	// This gives us 3 equations + 3 unknowns, which we can solve with
+	// Cramer's rule...
+	//		E1x u + E2x v - Dx t = Pox - Vox
+	// There's a couple of other optimizations, Cramer's rule involves
+	// computing the determinant of a matrix which has been constructed
+	// by three vectors. It turns out that
+	// det | A B C | = -( A x C ) dot B or -(C x B) dot A
+	// which we'll use below..
+
+	local edge1 = v2 - v1;
+	local edge2 = v3 - v1;
+
+	// Cull out one-sided stuff
+	if (oneSided)
+	{
+		local normal = edge1.Cross( edge2 );
+		if ( normal.Dot( ray.m_Delta ) >= 0.0 )
+			return 0xFFFFFFFF;
+	};
+
+	// FIXME: This is inaccurate, but fast for boxes
+	// We want to do a fast separating axis implementation here
+	// with a swept triangle along the reverse direction of the ray.
+
+	// Compute some intermediary terms
+	local dirCrossEdge2 = ray.m_Delta.Cross( edge2 );
+
+	// Compute the denominator of Cramer's rule:
+	//		| -Dx E1x E2x |
+	// det	| -Dy E1y E2y | = (D x E2) dot E1
+	//		| -Dz E1z E2z |
+	local denom = dirCrossEdge2.Dot( edge1 );
+	if ( denom < 1.e-6 && denom > -1.e-6 )
+		return 0xFFFFFFFF;
+	denom = 1.0 / denom;
+
+	// Compute u. It's gotta lie in the range of 0 to 1.
+	//				   | -Dx orgx E2x |
+	// u = denom * det | -Dy orgy E2y | = (D x E2) dot org
+	//				   | -Dz orgz E2z |
+	local org = ray.m_Start - v1;
+	local u = dirCrossEdge2.Dot( org ) * denom;
+	if ( (u < 0.0) || (u > 1.0) )
+		return 0xFFFFFFFF;
+
+	// Compute t and v the same way...
+	// In barycentric coords, u + v < 1
+	local orgCrossEdge1 = org.Cross( edge1 );
+	local v = orgCrossEdge1.Dot( ray.m_Delta ) * denom;
+	if ( (v < 0.0) || (v + u > 1.0) )
+		return 0xFFFFFFFF;
+
+	// Compute the distance along the ray direction that we need to fudge
+	// when using swept boxes
+	local boxt;
+	if ( ray.m_IsRay ) boxt = 1.e-3;
+	else boxt = ComputeBoxOffset( ray );
+	local t = orgCrossEdge1.Dot( edge2 ) * denom;
+	if ( ( -boxt > t ) || ( t > 1.0 + boxt ) )
+		return 0xFFFFFFFF;
+
+	if ( t < 0.0 )
+		return 0.0;
+	if ( t > 1.0 )
+		return 1.0;
+	return t;
+}
+
+//-----------------------------------------------------------------------------
+// Computes the barycentric coordinates of an intersection
+//
+// Figures out the barycentric coordinates (u,v) where a ray hits a
+// triangle. Note that this will ignore the ray extents, and it also ignores
+// the ray length. Note that the edge from v1->v2 represents u (v2: u = 1),
+// and the edge from v1->v3 represents v (v3: v = 1). It returns false
+// if the ray is parallel to the triangle (or when t is specified if t is less
+// than zero).
+//-----------------------------------------------------------------------------
+function VS::ComputeIntersectionBarycentricCoordinates( ray, v1, v2, v3, uvt ) : (ComputeBoxOffset)
+{
+	local edge1 = v2 - v1;
+	local edge2 = v3 - v1;
+
+	// Compute some intermediary terms
+	local dirCrossEdge2 = ray.m_Delta.Cross( edge2 );
+
+	// Compute the denominator of Cramer's rule:
+	//		| -Dx E1x E2x |
+	// det	| -Dy E1y E2y | = (D x E2) dot E1
+	//		| -Dz E1z E2z |
+	local denom = dirCrossEdge2.Dot( edge1 );
+	if ( denom < 1.e-6 && denom > -1.e-6 )
+		return false;
+	denom = 1.0 / denom;
+
+	// Compute u. It's gotta lie in the range of 0 to 1.
+	//				   | -Dx orgx E2x |
+	// u = denom * det | -Dy orgy E2y | = (D x E2) dot org
+	//				   | -Dz orgz E2z |
+	local org = ray.m_Start - v1;
+	uvt[0] = dirCrossEdge2.Dot( org ) * denom;
+
+	// Compute t and v the same way...
+	// In barycentric coords, u + v < 1
+	local orgCrossEdge1 = org.Cross( edge1 );
+	uvt[1] = orgCrossEdge1.Dot( ray.m_Delta ) * denom;
+
+	// if ( 2 in uvt )
+	{
+		// Compute the distance along the ray direction that we need to fudge
+		// when using swept boxes
+		local boxt;
+		if ( ray.m_IsRay ) boxt = 1.e-3;
+		else boxt = ComputeBoxOffset( ray );
+		local t = uvt[2] = orgCrossEdge1.Dot( edge2 ) * denom;
+		if ( ( -boxt > t ) || ( t > 1.0 + boxt ) )
+			return false;
+	};
+
+	return true;
+}
+/*
+//-----------------------------------------------------------------------------
+// Compute point from barycentric specification
+// Edge u goes from v0 to v1, edge v goes from v0 to v2
+//-----------------------------------------------------------------------------
+function VS::ComputePointFromBarycentric( v0, v1, v2, u, v, pt )
+{
+	local edgeU = v1 - v0;
+	local edgeV = v2 - v0;
+	local p = v0 + edgeU * u + edgeV * v;
+	pt.x = p.x;
+	pt.y = p.y;
+	pt.z = p.z;
+}
+*/
+// function VS::IsBoxIntersectingTriangle()
 
 // VectorWithinAABox
 function VS::IsPointInBox( vec, boxmin, boxmax )

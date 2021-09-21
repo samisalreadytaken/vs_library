@@ -67,7 +67,7 @@ VS.GetPlayerByUserid <- function( userid ) : (Entities)
 }.bindenv( VS.Events );
 
 //
-// OnEvent player_connect
+// OnPlayerConnect
 //
 VS.Events.player_connect <- function( event ) : ( gEventData, ROOT, SendToConsole )
 {
@@ -161,6 +161,9 @@ VS.Events.player_connect <- function( event ) : ( gEventData, ROOT, SendToConsol
 
 }.bindenv( VS.Events );
 
+//
+// OnPlayerBan
+//
 VS.Events.server_addban <- function( event )
 {
 	// not playing
@@ -188,7 +191,9 @@ VS.Events.server_addban <- function( event )
 
 }.bindenv( VS.Events );
 
-// OnEvent player_spawn
+//
+// OnPlayerSpawn
+//
 VS.Events.player_spawn <- function( event ) : ( gEventData, Fmt, ROOT )
 {
 	foreach( i, data in gEventData )
@@ -256,8 +261,11 @@ VS.Events.player_spawn <- function( event ) : ( gEventData, Fmt, ROOT )
 //
 // Deprecated. Manual calls to this are not necessary.
 //
-VS.ForceValidateUserid <- function( ent ) : ( AddEvent, Fmt )
+VS.ForceValidateUserid <- function( ent, internal = 0 ) : ( AddEvent, Fmt )
 {
+	if ( !internal )
+		Msg("Warning: VS::ForceValidateUserid is deprecated!\n");
+
 	if ( !ent || !ent.IsValid() || (ent.GetClassname() != "player") || !ent.ValidateScriptScope() )
 		return Msg(Fmt( "VS::ForceValidateUserid: invalid input: %s\n", ""+ent ));
 
@@ -292,6 +300,8 @@ VS.ForceValidateUserid <- function( ent ) : ( AddEvent, Fmt )
 //
 function VS::ValidateUseridAll()
 {
+	Msg("Warning: VS::ValidateUseridAll is deprecated!\n");
+
 	if ( Events.m_bFixedUp )
 	{
 		foreach( i, v in GetAllPlayers() )
@@ -522,7 +532,9 @@ VS.Events.OnPostSpawn <- function() : (__RemovePooledString)
 
 		VS.ListenToGameEvent( "player_activate", function(ev)
 		{
-			return ValidateUseridAll();
+			foreach( i, v in GetAllPlayers() )
+				if ( !("userid" in v.GetScriptScope()) )
+					ForceValidateUserid( v, 1 );
 		}.bindenv(VS), "VS::Events" );
 
 		VS.ListenToGameEvent( "player_disconnect", function(ev)

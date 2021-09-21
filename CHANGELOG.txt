@@ -3,6 +3,17 @@
 
 --------------------------------
 
+2021-09-20 [v2.43.4]
+- Added VS.IntersectRayWithTriangle
+- Added VS.ComputeIntersectionBarycentricCoordinates
+- Added VS.VectorMultiply, VS.VectorDivide
+- Added HTML colourable CenterPrintAll (CS_UM_TextMsg)
+- Added warning messages on calls to deprecated functions.
+- Fixed Portal 2 compatibility of CExtendedPlayer
+- Minor optimisation in Ray_t::InitBox
+- Renamed VS.VectorRotate2 to VS.VectorRotateByAngle
+- Renamed VS.VectorRotate3 to VS.VectorRotateByQuaternion
+
 2021-09-12 [v2.43.3]
 - Minor optimisation in VS.EventQueue.CreateEvent
 - Removed debug function VS.GetTableDir

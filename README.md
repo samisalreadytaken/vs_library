@@ -5,7 +5,7 @@ High-performance vscript libraries; written mainly for CS:GO, compatible with Po
 
 See the [**hlvr**](https://github.com/samisalreadytaken/vs_library/tree/hlvr) branch for usage in Half-Life Alyx.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.43.3-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.43.4-informational
 
 
 ## Documentation
@@ -58,7 +58,8 @@ point_template:
 	Template01: vs.eventlistener
 ```
 
-`vs_eventlistener.nut` file contents should read:
+`vs_eventlistener.nut` file contents should execute:  
+(library file inclusion is either 'vs_events' or 'vs_library')
 ```cpp
 IncludeScript("vs_events");
 VS.Events.InitTemplate(this);

@@ -140,7 +140,7 @@ VS.ToExtendedPlayer <- function( hPlayer )
 		if ( ply.self == hPlayer || ply == hPlayer )
 			return ply;
 
-	if ( (typeof hPlayer != "instance") || !(hPlayer instanceof CBaseMultiplayerPlayer) || !hPlayer.IsValid() )
+	if ( (typeof hPlayer != "instance") || !(hPlayer instanceof CBasePlayer) || !hPlayer.IsValid() )
 		return;
 
 	// duplicated iteration to keep post-init calls as cheap as possible
@@ -216,13 +216,12 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 	eye.SetOwner( hPlayer );
 
-	local bot = ( sc.networkid == "BOT" ) ? true : false;
+	local bot = ( sc.networkid == "BOT" );
 	local uid = sc.userid;
 	local nid = sc.networkid;
 	local pnm = sc.name;
 
-	// CExtendedPlayer
-	class __player //extends CBaseMultiplayerPlayer
+	class CExtendedPlayer__ //extends CBaseMultiplayerPlayer
 	{
 		// static means const
 		static self = hPlayer;
@@ -367,14 +366,14 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 			switch ( typeof env )
 			{
-				case "table":
-				case "class":
-				case "instance":
-					context = 0;
-					break;
 				case "string":
 					context = env;
 					env = null;
+					break;
+				case "table":
+				case "instance":
+				case "class":
+					context = 0;
 					break;
 				default:
 					throw "invalid context param";
@@ -455,9 +454,9 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 	// Set native funcs after custom funcs to keep forward compatibility
 	foreach( k,v in hPlayer.getclass() ) // CBaseMultiplayerPlayer
-		__player[k] <- v.bindenv( hPlayer );
+		CExtendedPlayer__[k] <- v.bindenv( hPlayer );
 
-	local p = __player();
+	local p = CExtendedPlayer__();
 	g_Players.append(p);
 	return p;
 
@@ -1220,12 +1219,12 @@ if (!PORTAL2){
 ::ChatTeam  <- function(i,s) : (ScriptPrintMessageChatTeam) return ScriptPrintMessageChatTeam(i," "+s);
 ::Alert     <- ScriptPrintMessageCenterAll;
 ::AlertTeam <- ScriptPrintMessageCenterTeam;
-/*
+
 ::CenterPrintAll <- function( s ) : (ScriptPrintMessageCenterAllWithParams)
 {
 	return ScriptPrintMessageCenterAllWithParams( "#SFUI_ContractKillStart", "</font>" + s + "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ", "", "" );
 }
-*/
+
 
 enum TextColor
 {
