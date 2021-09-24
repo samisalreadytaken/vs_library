@@ -220,6 +220,8 @@ IncludeScript("myscript")
 [`VS.DrawBoxAngles()`](#f_DrawBoxAngles)  
 [`VS.DrawSphere()`](#f_DrawSphere)  
 [`VS.DrawCapsule()`](#f_DrawCapsule)  
+[`VS.DrawHorzArrow()`](#f_DrawHorzArrow)  
+[`VS.DrawVertArrow()`](#f_DrawVertArrow)  
 [`enum INTERPOLATE`](#f_INTERPOLATE)  
 [`VS.Interpolator_GetKochanekBartelsParams()`](#f_Interpolator_GetKochanekBartelsParams)  
 [`VS.Interpolator_CurveInterpolate()`](#f_Interpolator_CurveInterpolate)  
@@ -1119,9 +1121,9 @@ ________________________________
 
 <a name="f_RotationDeltaAxisAngle"></a>
 ```cpp
-void VS::RotationDeltaAxisAngle( QAngle srcAngles, QAngle destAngles, Vector &deltaAxis, float deltaAngle )
+float VS::RotationDeltaAxisAngle( QAngle srcAngles, QAngle destAngles, Vector &deltaAxis )
 ```
-
+returns deltaAngle
 ________________________________
 
 <a name="f_RotationDelta"></a>
@@ -1578,6 +1580,18 @@ ________________________________
 <a name="f_DrawCapsule"></a>
 ```cpp
 void VS::DrawCapsule( Vector start, Vector end, float radius, int r, int g, int b, bool z, float time )
+```
+________________________________
+
+<a name="f_DrawHorzArrow"></a>
+```cpp
+void VS::DrawHorzArrow( Vector startPos, Vector endPos, float width, int r, int g, int b, bool noDepthTest, float flDuration )
+```
+________________________________
+
+<a name="f_DrawVertArrow"></a>
+```cpp
+void VS::DrawVertArrow( Vector startPos, Vector endPos, float width, int r, int g, int b, bool noDepthTest, float flDuration )
 ```
 ________________________________
 

@@ -34,7 +34,9 @@
 	return DoEntFire( ""+target, ""+action, ""+value, delay, activator, caller );
 }
 
-::PrecacheModel <- CBaseEntity.PrecacheModel.bindenv( World );
+// no PrecacheModel in Portal2
+if ( "PrecacheModel" in CBaseEntity )
+::PrecacheModel <- CBaseEntity.PrecacheModel.bindenv( World );;
 
 // identical to PrecacheScriptSound on server
 ::PrecacheScriptSound <- CBaseEntity.PrecacheSoundScript.bindenv( World );

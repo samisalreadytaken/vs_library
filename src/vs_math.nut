@@ -537,18 +537,16 @@ function VS::VectorAngles( forward, vOut = _VEC ) : ( atan2 )
 }
 /*
 //-----------------------------------------------------------------------
-// Takes a forward and up vector.
+//
 //-----------------------------------------------------------------------
-function VS::VectorsToAngles( forward, up, out = _VEC ) : (atan2)
+function VS::BasisToAngles( forward, right, up, out = _VEC ) : (atan2)
 {
-	local right = forward.Cross(up);
-	right.Norm();
 	local xyDist = forward.Length2D();
 	if ( xyDist > 0.001 )
 	{
 		out.y = RAD2DEG * atan2( forward.y, forward.x );
 		out.x = RAD2DEG * atan2( -forward.z, xyDist );
-		out.z = RAD2DEG * atan2( -right.z, right.x * forward.y - right.y * forward.x );
+		out.z = RAD2DEG * atan2( -right.z, up.z );
 	}
 	else
 	{
@@ -2095,7 +2093,7 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, out ) : (Quaternion, Quaternion
 		// TP = XMVectorMultiply(TP, Two);
 		T = (T - T * T) * 2.0;
 
-		QuaternionSlerpNoAlign( Q03, Q12, T, out );
+		return QuaternionSlerpNoAlign( Q03, Q12, T, out );
 }
 
 
@@ -2128,7 +2126,7 @@ function VS::QuaternionAverageExponential( q, nCount, pStack ) : (Quaternion)
 		sum.w += tmp.w * weight;
 	}
 
-	QuaternionExp( sum, q );
+	return QuaternionExp( sum, q );
 }
 
 //-----------------------------------------------------------------------------
@@ -2216,8 +2214,8 @@ function VS::QuaternionScale( p, t, q ) : ( Vector, sqrt, sin, asin )
 		q.w = r;
 }
 
-// QAngle , QAngle , Vector, float
-function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis, deltaAngle ) : (Quaternion)
+// QAngle , QAngle , Vector, return float
+function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis ) : (Quaternion)
 {
 	local srcQuat = Quaternion(),
 		destQuat = Quaternion(),
@@ -2229,10 +2227,10 @@ function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis, deltaAngl
 	QuaternionMult( destQuat, srcQuatInv, out );
 
 	QuaternionNormalize( out );
-	QuaternionAxisAngle( out, deltaAxis, deltaAngle );
+	return QuaternionAxisAngle( out, deltaAxis );
 }
 
-// QAngle , QAngle , Vector, float
+// QAngle , QAngle, QAngle
 function VS::RotationDelta( srcAngles, destAngles, out ) : ( matrix3x4_t )
 {
 	local src = matrix3x4_t(),
@@ -3847,7 +3845,7 @@ local initFrustumDraw = function()
 		draw( frustum[16], frustum[17], matViewToWorld, r, g, b, z, t );
 		draw( frustum[18], frustum[19], matViewToWorld, r, g, b, z, t );
 		draw( frustum[20], frustum[21], matViewToWorld, r, g, b, z, t );
-		draw( frustum[22], frustum[23], matViewToWorld, r, g, b, z, t );
+		return draw( frustum[22], frustum[23], matViewToWorld, r, g, b, z, t );
 	}
 
 	local DrawFrustum = VS.DrawFrustum;
@@ -3907,7 +3905,7 @@ local initBoxDraw = function()
 		Line( v5, v7, r, g, b, z, time );
 		Line( v5, v4, r, g, b, z, time );
 		Line( v4, v6, r, g, b, z, time );
-		Line( v7, v6, r, g, b, z, time );
+		return Line( v7, v6, r, g, b, z, time );
 	}
 }
 
@@ -4058,6 +4056,64 @@ function VS::DrawCapsule( start, end, radius, r, g, b, z, time ) : ( initCapsule
 {
 	initCapsule();
 	return DrawCapsule( start, end, radius, r, g, b, z, time );
+}
+
+function VS::DrawHorzArrow( startPos, endPos, width, r, g, b, noDepthTest, flDuration ) : (Line, Vector)
+{
+	local lineDir = endPos - startPos;
+	lineDir.Norm();
+	local upVec = Vector( 0, 0, 1 );
+	local sideDir = lineDir.Cross( upVec );
+	local radius = width * 0.5;
+
+	local sr = sideDir * radius;
+	local sw = sideDir * width;
+	local ep = endPos - lineDir * width;
+
+	local p1 = startPos - sr;
+	local p2 = ep - sr;
+	local p3 = ep - sw;
+	local p4 = endPos;
+	local p5 = ep + sw;
+	local p6 = ep + sr;
+	local p7 = startPos + sr;
+
+	Line( p1, p2, r,g,b,noDepthTest,flDuration );
+	Line( p2, p3, r,g,b,noDepthTest,flDuration );
+	Line( p3, p4, r,g,b,noDepthTest,flDuration );
+	Line( p4, p5, r,g,b,noDepthTest,flDuration );
+	Line( p5, p6, r,g,b,noDepthTest,flDuration );
+	return Line( p6, p7, r,g,b,noDepthTest,flDuration );
+}
+
+function VS::DrawVertArrow( startPos, endPos, width, r, g, b, noDepthTest, flDuration ) : (Line, Vector)
+{
+	local lineDir = endPos - startPos;
+	lineDir.Norm();
+	local upVec = Vector();
+	local sideDir = Vector();
+	local radius = width * 0.5;
+
+	VectorVectors( lineDir, sideDir, upVec );
+
+	local ur = upVec * radius;
+	local uw = upVec * width;
+	local ep = endPos - lineDir * width;
+
+	local p1 = startPos - ur;
+	local p2 = ep - ur;
+	local p3 = ep - uw;
+	local p4 = endPos;
+	local p5 = ep + uw;
+	local p6 = ep + ur;
+	local p7 = startPos + ur;
+
+	Line( p1, p2, r,g,b,noDepthTest,flDuration );
+	Line( p2, p3, r,g,b,noDepthTest,flDuration );
+	Line( p3, p4, r,g,b,noDepthTest,flDuration );
+	Line( p4, p5, r,g,b,noDepthTest,flDuration );
+	Line( p5, p6, r,g,b,noDepthTest,flDuration );
+	return Line( p6, p7, r,g,b,noDepthTest,flDuration );
 }
 
 

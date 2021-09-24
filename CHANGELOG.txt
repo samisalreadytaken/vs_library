@@ -3,6 +3,13 @@
 
 --------------------------------
 
+2021-09-24 [v2.43.5]
+- Fixed early event listener registration
+- Fixed VS.RotationDeltaAxisAngle return value
+- Added VS.DrawHorzArrow
+- Added VS.DrawVertArrow
+- Fixed Portal 2 compilation
+
 2021-09-20 [v2.43.4]
 - Added VS.IntersectRayWithTriangle
 - Added VS.ComputeIntersectionBarycentricCoordinates

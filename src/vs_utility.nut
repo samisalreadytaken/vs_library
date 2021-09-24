@@ -474,7 +474,9 @@ VS.ToExtendedPlayer <- function( hPlayer )
 // Ray tracing
 //-----------------------------------------------------------------------
 local DoTrace1 = TraceLine;
-local DoTrace2 = TraceLinePlayersIncluded;
+local DoTrace2;
+if ( !PORTAL2 )
+	DoTrace2 = TraceLinePlayersIncluded;;
 
 const MASK_NPCWORLDSTATIC = 0x2000b;;
 const MASK_SOLID = 0x200400b;;

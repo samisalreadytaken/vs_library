@@ -19,6 +19,8 @@ local Events = delegate ::VS :
 	__rem = null,
 	__tmp = null,
 
+	m_DeferredReg = null,
+
 	Msg = Msg
 }
 
@@ -544,6 +546,13 @@ VS.Events.OnPostSpawn <- function() : (__RemovePooledString)
 				delete m_Players[ev.userid];
 			}
 		}.bindenv( VS.Events ), "VS::Events" );
+
+		if ( VS.Events.m_DeferredReg )
+		{
+			foreach ( p in VS.Events.m_DeferredReg )
+				VS.ListenToGameEvent.pacall(p);
+			VS.Events.m_DeferredReg = null;
+		};
 	};
 
 	if ( VS.Events.__tmp )
@@ -551,17 +560,24 @@ VS.Events.OnPostSpawn <- function() : (__RemovePooledString)
 	VS.Events.__tmp = __vname;
 }
 
-
 VS.ListenToGameEvent <- function( szEventname, fnCallback, pContext )
 {
+	local err;
+
 	if ( (typeof fnCallback != "function") && (typeof fnCallback != "native function") )
-		throw "invalid callback param";
+		err = "invalid callback param";
 
 	if ( typeof pContext != "string" )
-		throw "invalid context param";
+		err = "invalid context param";
 
 	if ( typeof szEventname != "string" )
-		throw "invalid eventname param";
+		err = "invalid eventname param";
+
+	if ( err )
+	{
+		Msg(format( "\nAN ERROR HAS OCCURED [%s]\n", err ));
+		return PrintStack();
+	};
 
 	if ( !m_pListeners )
 		m_pListeners = {};
@@ -572,6 +588,17 @@ VS.ListenToGameEvent <- function( szEventname, fnCallback, pContext )
 	local pListener = m_pListeners[szEventname];
 	if ( !(pContext in pListener) )
 		pListener[pContext] <- null;
+
+	if ( !m_bFixedUp )
+	{
+		// Defer registration to fix the events not registering on initial server launch.
+
+		if ( !m_DeferredReg )
+			m_DeferredReg = [];
+		m_DeferredReg.append( [this, szEventname, fnCallback, pContext] );
+
+		return; //Msg("VS::ListenToGameEvent: defer {'"+pContext+"'}\n");
+	};
 
 	local p = pListener[pContext];
 	if ( !p )
