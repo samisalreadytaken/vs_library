@@ -4116,6 +4116,20 @@ function VS::DrawVertArrow( startPos, endPos, width, r, g, b, noDepthTest, flDur
 	return Line( p6, p7, r,g,b,noDepthTest,flDuration );
 }
 
+//-----------------------------------------------------------------------
+// Draws orthogonal landmarks at given position.
+//-----------------------------------------------------------------------
+function VS::DrawAxis( pos, size, noDepthTest, flDuration ) : (Line, Vector)
+{
+	size /= 2;
+	local xVec = Vector(size, 0, 0);
+	local yVec = Vector(0, size, 0);
+	local zVec = Vector(0, 0, size);
+
+	Line(pos - xVec, pos + xVec, 255, 0, 0, noDepthTest, flDuration);
+	Line(pos - yVec, pos + yVec, 0, 255, 0, noDepthTest, flDuration);
+	Line(pos - zVec, pos + zVec, 0, 0, 255, noDepthTest, flDuration);
+}
 
 /*
 class ::cplane_t
