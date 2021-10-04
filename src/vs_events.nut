@@ -466,7 +466,7 @@ function VS::Events::__FinishSpawn()
 	__EntityMakerResult = null;
 }
 
-VS.Events.PostSpawn <- function( pEntities ) : (AddEvent)
+VS.Events.PostSpawn <- function( pEntities )
 {
 	foreach( ent in pEntities )
 	{
@@ -483,11 +483,7 @@ VS.Events.PostSpawn <- function( pEntities ) : (AddEvent)
 			local i = name.find("_");
 			name = s_szEventName + "_" + name.slice( 0, i );
 			SetName( ent, name );
-			AddEvent(
-				ent,
-				"AddOutput",
-				"OnEventFired "+name+",CallScriptFunction,OnEventFired",
-				0.0, null, ent );
+			ent.__KeyValueFromString( "OnEventFired", name+",CallScriptFunction,OnEventFired,0,-1" );
 			sc.OnEventFired <- null;
 		}
 		// synchronous callbacks, not possible to dump call stack when exception is thrown
@@ -652,7 +648,6 @@ VS.StopListeningToAllGameEvents <- function( context ) : (__RemovePooledString)
 				local p = listener[context];
 				if ( p && (typeof p == "instance") && p.IsValid() )
 				{
-					__RemovePooledString( "OnEventFired "+p.GetName()+",CallScriptFunction,OnEventFired" );
 					p.Destroy();
 				};
 				delete listener[context];

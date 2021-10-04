@@ -153,14 +153,6 @@ VS.ToExtendedPlayer <- function( hPlayer )
 	hPlayer.ValidateScriptScope();
 	local sc = hPlayer.GetScriptScope();
 
-	if ( !("userid" in sc) )
-		sc.userid <- -1;
-	if ( !("networkid" in sc) )
-		sc.networkid <- "";
-	if ( !("name" in sc) )
-		sc.name <- "";
-
-
 	local eye;
 	g_Eyes.sort( NullSort );
 	g_Eyes.sort( OwnerSort );
@@ -216,10 +208,37 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 	eye.SetOwner( hPlayer );
 
-	local bot = ( sc.networkid == "BOT" );
-	local uid = sc.userid;
-	local nid = sc.networkid;
-	local pnm = sc.name;
+	local bot, uid, nid, pnm;
+
+	if ( !("userid" in sc) )
+		sc.userid <- -1;
+	if ( !("networkid" in sc) )
+		sc.networkid <- "";
+	if ( !("name" in sc) )
+		sc.name <- "";
+
+	// To keep the member variables forward compatible, get the data from native funcs first if possible.
+	// Should empty strings return null instead?
+
+	if ( "GetUserID" in hPlayer )
+		sc.userid = hPlayer.GetUserID();
+	else if ( "GetPlayerUserId" in hPlayer )
+		sc.userid = hPlayer.GetPlayerUserId();;
+
+	if ( "GetNetworkIDString" in hPlayer )
+		sc.networkid = hPlayer.GetNetworkIDString();
+
+	if ( "GetPlayerName" in hPlayer )
+		sc.name = hPlayer.GetPlayerName();
+
+	if ( "IsBot" in hPlayer )
+		bot = hPlayer.IsBot();
+	else
+		bot = ( sc.networkid == "BOT" );
+
+	uid = sc.userid;;
+	nid = sc.networkid;
+	pnm = sc.name;
 
 	class CExtendedPlayer__ //extends CBaseMultiplayerPlayer
 	{
@@ -228,10 +247,10 @@ VS.ToExtendedPlayer <- function( hPlayer )
 		static m_EntityIndex = hPlayer.entindex(); // m_EdictIndex
 		static m_ScriptScope = sc;
 		// static m_iszScriptId = sc.__vname;
-		static userid = sc.userid; // m_UserID
-		static networkid = sc.networkid; // m_szNetworkId
-		static name = sc.name; // m_szNetname
-		static bot = bot; // m_bFakePlayer
+		static userid = uid; // m_UserID
+		static networkid = nid; // m_szNetworkID
+		static name = pnm; // m_szNetname
+		static fakeplayer = bot; // m_bFakePlayer
 
 		IsBot = bot ? function() { return true; } : function() { return false; };
 		function GetUserID() : (uid) { return uid; }

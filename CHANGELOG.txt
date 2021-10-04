@@ -3,6 +3,16 @@
 
 --------------------------------
 
+2021-10-03 [v2.43.6]
+- Fixed VS.MatrixBuildRotationAboutAxis bug in the minified files
+- Fixed in==out conditions in VS.ConcatRotations
+- Optimisations in VS.ConcatRotations, VS.ConcatTransforms, VS.MatrixMultiply (decreased instr, increased stack size)
+- Renamed VS.ExponentialDecay2 to VS.ExponentialDecayHalf
+- Optimisation in vs_events
+- CExtendedPlayer member variables are now forward compatible
+- Renamed CExtendedPlayer::bot to CExtendedPlayer::fakeplayer
+- VS.Log internal data is now initialised with VS.Log.Clear
+
 2021-09-24 [v2.43.5]
 - Fixed early event listener registration
 - Fixed VS.RotationDeltaAxisAngle return value

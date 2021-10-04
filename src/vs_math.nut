@@ -935,7 +935,7 @@ function VS::ExponentialDecay( decayTo, decayTime, dt ) : (log, exp)
 }
 
 // halflife is time for value to reach 50%
-function VS::ExponentialDecay2( halflife, dt ) : (exp)
+function VS::ExponentialDecayHalf( halflife, dt ) : (exp)
 {
 	// log(0.5) == -0.69314718055994530941723212145818
 	return exp( -0.6931471806 / halflife * dt );
@@ -2932,24 +2932,47 @@ function VS::ComputeAbsMatrix( in1, out ) : (fabs)
 
 function VS::ConcatRotations( in1, in2, out )
 {
-	// Assert( in1 != out );
-	// Assert( in2 != out );
-
 	in1 = in1.m;
 	in2 = in2.m;
 	out = out.m;
 
-	out[0][0] = in1[0][0] * in2[0][0] + in1[0][1] * in2[1][0] + in1[0][2] * in2[2][0];
-	out[0][1] = in1[0][0] * in2[0][1] + in1[0][1] * in2[1][1] + in1[0][2] * in2[2][1];
-	out[0][2] = in1[0][0] * in2[0][2] + in1[0][1] * in2[1][2] + in1[0][2] * in2[2][2];
+	local
+		i2m00 = in2[0][0],
+		i2m01 = in2[0][1],
+		i2m02 = in2[0][2],
 
-	out[1][0] = in1[1][0] * in2[0][0] + in1[1][1] * in2[1][0] + in1[1][2] * in2[2][0];
-	out[1][1] = in1[1][0] * in2[0][1] + in1[1][1] * in2[1][1] + in1[1][2] * in2[2][1];
-	out[1][2] = in1[1][0] * in2[0][2] + in1[1][1] * in2[1][2] + in1[1][2] * in2[2][2];
+		i2m10 = in2[1][0],
+		i2m11 = in2[1][1],
+		i2m12 = in2[1][2],
 
-	out[2][0] = in1[2][0] * in2[0][0] + in1[2][1] * in2[1][0] + in1[2][2] * in2[2][0];
-	out[2][1] = in1[2][0] * in2[0][1] + in1[2][1] * in2[1][1] + in1[2][2] * in2[2][1];
-	out[2][2] = in1[2][0] * in2[0][2] + in1[2][1] * in2[1][2] + in1[2][2] * in2[2][2];
+		i2m20 = in2[2][0],
+		i2m21 = in2[2][1],
+		i2m22 = in2[2][2];
+
+	local
+		m0 = in1[0][0] * i2m00 + in1[0][1] * i2m10 + in1[0][2] * i2m20,
+		m1 = in1[0][0] * i2m01 + in1[0][1] * i2m11 + in1[0][2] * i2m21,
+		m2 = in1[0][0] * i2m02 + in1[0][1] * i2m12 + in1[0][2] * i2m22;
+
+	out[0][0] = m0;
+	out[0][1] = m1;
+	out[0][2] = m2;
+
+	m0 = in1[1][0] * i2m00 + in1[1][1] * i2m10 + in1[1][2] * i2m20;
+	m1 = in1[1][0] * i2m01 + in1[1][1] * i2m11 + in1[1][2] * i2m21;
+	m2 = in1[1][0] * i2m02 + in1[1][1] * i2m12 + in1[1][2] * i2m22;
+
+	out[1][0] = m0;
+	out[1][1] = m1;
+	out[1][2] = m2;
+
+	m0 = in1[2][0] * i2m00 + in1[2][1] * i2m10 + in1[2][2] * i2m20;
+	m1 = in1[2][0] * i2m01 + in1[2][1] * i2m11 + in1[2][2] * i2m21;
+	m2 = in1[2][0] * i2m02 + in1[2][1] * i2m12 + in1[2][2] * i2m22;
+
+	out[2][0] = m0;
+	out[2][1] = m1;
+	out[2][2] = m2;
 }
 
 // matrix3x4_t multiply
@@ -2959,35 +2982,52 @@ function VS::ConcatTransforms( in1, in2, out )
 	in2 = in2.m;
 	out = out.m;
 
-	local m00 = in1[0][0] * in2[0][0] + in1[0][1] * in2[1][0] + in1[0][2] * in2[2][0];
-	local m01 = in1[0][0] * in2[0][1] + in1[0][1] * in2[1][1] + in1[0][2] * in2[2][1];
-	local m02 = in1[0][0] * in2[0][2] + in1[0][1] * in2[1][2] + in1[0][2] * in2[2][2];
-	local m03 = in1[0][0] * in2[0][3] + in1[0][1] * in2[1][3] + in1[0][2] * in2[2][3];
+	local
+		i2m00 = in2[0][0],
+		i2m01 = in2[0][1],
+		i2m02 = in2[0][2],
+		i2m03 = in2[0][3],
 
-	local m10 = in1[1][0] * in2[0][0] + in1[1][1] * in2[1][0] + in1[1][2] * in2[2][0];
-	local m11 = in1[1][0] * in2[0][1] + in1[1][1] * in2[1][1] + in1[1][2] * in2[2][1];
-	local m12 = in1[1][0] * in2[0][2] + in1[1][1] * in2[1][2] + in1[1][2] * in2[2][2];
-	local m13 = in1[1][0] * in2[0][3] + in1[1][1] * in2[1][3] + in1[1][2] * in2[2][3];
+		i2m10 = in2[1][0],
+		i2m11 = in2[1][1],
+		i2m12 = in2[1][2],
+		i2m13 = in2[1][3],
 
-	local m20 = in1[2][0] * in2[0][0] + in1[2][1] * in2[1][0] + in1[2][2] * in2[2][0];
-	local m21 = in1[2][0] * in2[0][1] + in1[2][1] * in2[1][1] + in1[2][2] * in2[2][1];
-	local m22 = in1[2][0] * in2[0][2] + in1[2][1] * in2[1][2] + in1[2][2] * in2[2][2];
-	local m23 = in1[2][0] * in2[0][3] + in1[2][1] * in2[1][3] + in1[2][2] * in2[2][3];
+		i2m20 = in2[2][0],
+		i2m21 = in2[2][1],
+		i2m22 = in2[2][2],
+		i2m23 = in2[2][3];
 
-	out[0][0] = m00;
-	out[0][1] = m01;
-	out[0][2] = m02;
-	out[0][3] = m03;
+	local
+		m0 = in1[0][0] * i2m00 + in1[0][1] * i2m10 + in1[0][2] * i2m20,
+		m1 = in1[0][0] * i2m01 + in1[0][1] * i2m11 + in1[0][2] * i2m21,
+		m2 = in1[0][0] * i2m02 + in1[0][1] * i2m12 + in1[0][2] * i2m22,
+		m3 = in1[0][0] * i2m03 + in1[0][1] * i2m13 + in1[0][2] * i2m23;
 
-	out[1][0] = m10;
-	out[1][1] = m11;
-	out[1][2] = m12;
-	out[1][3] = m13;
+	out[0][0] = m0;
+	out[0][1] = m1;
+	out[0][2] = m2;
+	out[0][3] = m3;
 
-	out[2][0] = m20;
-	out[2][1] = m21;
-	out[2][2] = m22;
-	out[2][3] = m23;
+	m0 = in1[1][0] * i2m00 + in1[1][1] * i2m10 + in1[1][2] * i2m20;
+	m1 = in1[1][0] * i2m01 + in1[1][1] * i2m11 + in1[1][2] * i2m21;
+	m2 = in1[1][0] * i2m02 + in1[1][1] * i2m12 + in1[1][2] * i2m22;
+	m3 = in1[1][0] * i2m03 + in1[1][1] * i2m13 + in1[1][2] * i2m23;
+
+	out[1][0] = m0;
+	out[1][1] = m1;
+	out[1][2] = m2;
+	out[1][3] = m3;
+
+	m0 = in1[2][0] * i2m00 + in1[2][1] * i2m10 + in1[2][2] * i2m20;
+	m1 = in1[2][0] * i2m01 + in1[2][1] * i2m11 + in1[2][2] * i2m21;
+	m2 = in1[2][0] * i2m02 + in1[2][1] * i2m12 + in1[2][2] * i2m22;
+	m3 = in1[2][0] * i2m03 + in1[2][1] * i2m13 + in1[2][2] * i2m23;
+
+	out[2][0] = m0;
+	out[2][1] = m1;
+	out[2][2] = m2;
+	out[2][3] = m3;
 }
 
 // VMatrix multiply
@@ -2997,25 +3037,39 @@ function VS::MatrixMultiply( in1, in2, out )
 	in2 = in2.m;
 	out = out.m;
 
-	local m00 = in1[0][0] * in2[0][0] + in1[0][1] * in2[1][0] + in1[0][2] * in2[2][0] + in1[0][3] * in2[3][0];
-	local m01 = in1[0][0] * in2[0][1] + in1[0][1] * in2[1][1] + in1[0][2] * in2[2][1] + in1[0][3] * in2[3][1];
-	local m02 = in1[0][0] * in2[0][2] + in1[0][1] * in2[1][2] + in1[0][2] * in2[2][2] + in1[0][3] * in2[3][2];
-	local m03 = in1[0][0] * in2[0][3] + in1[0][1] * in2[1][3] + in1[0][2] * in2[2][3] + in1[0][3] * in2[3][3];
+	local
+		i2m0 = in2[0],
+		i2m1 = in2[1],
+		i2m2 = in2[2],
+		i2m3 = in2[3];
 
-	local m10 = in1[1][0] * in2[0][0] + in1[1][1] * in2[1][0] + in1[1][2] * in2[2][0] + in1[1][3] * in2[3][0];
-	local m11 = in1[1][0] * in2[0][1] + in1[1][1] * in2[1][1] + in1[1][2] * in2[2][1] + in1[1][3] * in2[3][1];
-	local m12 = in1[1][0] * in2[0][2] + in1[1][1] * in2[1][2] + in1[1][2] * in2[2][2] + in1[1][3] * in2[3][2];
-	local m13 = in1[1][0] * in2[0][3] + in1[1][1] * in2[1][3] + in1[1][2] * in2[2][3] + in1[1][3] * in2[3][3];
+	local i1m = in1[0];
+	local
+		m00 = i1m[0] * i2m0[0] + i1m[1] * i2m1[0] + i1m[2] * i2m2[0] + i1m[3] * i2m3[0],
+		m01 = i1m[0] * i2m0[1] + i1m[1] * i2m1[1] + i1m[2] * i2m2[1] + i1m[3] * i2m3[1],
+		m02 = i1m[0] * i2m0[2] + i1m[1] * i2m1[2] + i1m[2] * i2m2[2] + i1m[3] * i2m3[2],
+		m03 = i1m[0] * i2m0[3] + i1m[1] * i2m1[3] + i1m[2] * i2m2[3] + i1m[3] * i2m3[3];
 
-	local m20 = in1[2][0] * in2[0][0] + in1[2][1] * in2[1][0] + in1[2][2] * in2[2][0] + in1[2][3] * in2[3][0];
-	local m21 = in1[2][0] * in2[0][1] + in1[2][1] * in2[1][1] + in1[2][2] * in2[2][1] + in1[2][3] * in2[3][1];
-	local m22 = in1[2][0] * in2[0][2] + in1[2][1] * in2[1][2] + in1[2][2] * in2[2][2] + in1[2][3] * in2[3][2];
-	local m23 = in1[2][0] * in2[0][3] + in1[2][1] * in2[1][3] + in1[2][2] * in2[2][3] + in1[2][3] * in2[3][3];
+	i1m = in1[1];
+	local
+		m10 = i1m[0] * i2m0[0] + i1m[1] * i2m1[0] + i1m[2] * i2m2[0] + i1m[3] * i2m3[0],
+		m11 = i1m[0] * i2m0[1] + i1m[1] * i2m1[1] + i1m[2] * i2m2[1] + i1m[3] * i2m3[1],
+		m12 = i1m[0] * i2m0[2] + i1m[1] * i2m1[2] + i1m[2] * i2m2[2] + i1m[3] * i2m3[2],
+		m13 = i1m[0] * i2m0[3] + i1m[1] * i2m1[3] + i1m[2] * i2m2[3] + i1m[3] * i2m3[3];
 
-	local m30 = in1[3][0] * in2[0][0] + in1[3][1] * in2[1][0] + in1[3][2] * in2[2][0] + in1[3][3] * in2[3][0];
-	local m31 = in1[3][0] * in2[0][1] + in1[3][1] * in2[1][1] + in1[3][2] * in2[2][1] + in1[3][3] * in2[3][1];
-	local m32 = in1[3][0] * in2[0][2] + in1[3][1] * in2[1][2] + in1[3][2] * in2[2][2] + in1[3][3] * in2[3][2];
-	local m33 = in1[3][0] * in2[0][3] + in1[3][1] * in2[1][3] + in1[3][2] * in2[2][3] + in1[3][3] * in2[3][3];
+	i1m = in1[2];
+	local
+		m20 = i1m[0] * i2m0[0] + i1m[1] * i2m1[0] + i1m[2] * i2m2[0] + i1m[3] * i2m3[0],
+		m21 = i1m[0] * i2m0[1] + i1m[1] * i2m1[1] + i1m[2] * i2m2[1] + i1m[3] * i2m3[1],
+		m22 = i1m[0] * i2m0[2] + i1m[1] * i2m1[2] + i1m[2] * i2m2[2] + i1m[3] * i2m3[2],
+		m23 = i1m[0] * i2m0[3] + i1m[1] * i2m1[3] + i1m[2] * i2m2[3] + i1m[3] * i2m3[3];
+
+	i1m = in1[3];
+	local
+		m30 = i1m[0] * i2m0[0] + i1m[1] * i2m1[0] + i1m[2] * i2m2[0] + i1m[3] * i2m3[0],
+		m31 = i1m[0] * i2m0[1] + i1m[1] * i2m1[1] + i1m[2] * i2m2[1] + i1m[3] * i2m3[1],
+		m32 = i1m[0] * i2m0[2] + i1m[1] * i2m1[2] + i1m[2] * i2m2[2] + i1m[3] * i2m3[2],
+		m33 = i1m[0] * i2m0[3] + i1m[1] * i2m1[3] + i1m[2] * i2m2[3] + i1m[3] * i2m3[3];
 
 	out[0][0] = m00;
 	out[0][1] = m01;
@@ -3113,7 +3167,8 @@ local MatrixBuildRotationAboutAxis = VS.MatrixBuildRotationAboutAxis;
 //          Vector
 //          Vector
 //-----------------------------------------------------------------------------
-function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Vector, fabs, acos, MatrixBuildRotationAboutAxis )
+function VS::MatrixBuildRotation( dst, initialDirection, finalDirection )
+	: ( Vector, fabs, acos, MatrixBuildRotationAboutAxis )
 {
 	local angle = initialDirection.Dot( finalDirection );
 	// Assert( IsFinite(angle) );
@@ -3122,11 +3177,10 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Ve
 
 	// No rotation required
 	if ( angle > 0.999 )
-	{
 		// parallel case
 		return SetIdentityMatrix(dst);
-	}
-	else if ( -0.999 > angle )
+
+	if ( -0.999 > angle )
 	{
 		// antiparallel case, pick any axis in the plane
 		// perpendicular to the final direction. Choose the direction (x,y,z)
@@ -3134,19 +3188,19 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Ve
 		// as an initial guess, then subtract out the component which is
 		// parallel to the final direction
 		local idx = "x";
-		if( fabs(finalDirection.y) < fabs(finalDirection[idx]) )
+		if ( fabs(finalDirection.y) < fabs(finalDirection[idx]) )
 			idx = "y";
-		if( fabs(finalDirection.z) < fabs(finalDirection[idx]) )
+		if ( fabs(finalDirection.z) < fabs(finalDirection[idx]) )
 			idx = "z";
 
 		axis = Vector();
 		axis[idx] = 1.0;
 
 		// VectorMA( axis, -axis.Dot( finalDirection ), finalDirection, axis );
-		local t = -axis.Dot( finalDirection );
-		axis.x += finalDirection.x * t;
-		axis.y += finalDirection.y * t;
-		axis.z += finalDirection.z * t;
+		local t = axis.Dot( finalDirection );
+		axis.x -= finalDirection.x * t;
+		axis.y -= finalDirection.y * t;
+		axis.z -= finalDirection.z * t;
 		axis.Norm();
 		angle = 180.0;
 	}
@@ -3155,17 +3209,14 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection ) : ( Ve
 		axis = initialDirection.Cross( finalDirection );
 		axis.Norm();
 		angle = acos(angle) * RAD2DEG;
-	};;
+	};
 
 	return MatrixBuildRotationAboutAxis( axis, angle, dst );
-
 /*
-#ifdef _DEBUG
 	local test = Vector();
 	VectorRotate( initialDirection, dst, test );
-	test -= finalDirection;
-	Assert( test.LengthSqr() < 1e-3 );
-#endif
+	local d = (test - finalDirection).LengthSqr();
+	Assert( d < 1.e-3, "MatrixBuildRotation" );
 */
 }
 

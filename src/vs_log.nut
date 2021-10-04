@@ -13,7 +13,7 @@ local Log =
 	export      = false,
 	file_prefix = "vs.log",
 	filter      = "L ",
-	m_data      = [],   // internal data
+	m_data      = null, // internal data
 	_data       = null, // data to print
 	_cb         = null,
 	_env        = null,
@@ -21,8 +21,6 @@ local Log =
 }
 
 VS.Log <- Log;
-
-VS.Log._data = VS.Log.m_data.weakref();
 
 
 VS.Log.Add <- function(s)
@@ -33,19 +31,23 @@ VS.Log.Add <- function(s)
 }.bindenv(VS.Log);
 
 
-
 VS.Log.Pop <- function()
 {
 	return _data.pop();
 }.bindenv(VS.Log);
 
 
-
 VS.Log.Clear <- function()
 {
-	_data.clear();
-}.bindenv(VS.Log);
+	if ( !m_data )
+		m_data = [];
 
+	if ( !_data )
+		_data = m_data.weakref();
+
+	_data.clear();
+
+}.bindenv(VS.Log);
 
 
 VS.Log.Run <- function( data = null, callback = null, env = null )

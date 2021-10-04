@@ -125,7 +125,7 @@ IncludeScript("myscript")
 [`VS.RandomVectorInUnitSphere()`](#f_RandomVectorInUnitSphere)  
 [`VS.RandomVectorOnUnitSphere()`](#f_RandomVectorOnUnitSphere)  
 [`VS.ExponentialDecay()`](#f_ExponentialDecay)  
-[`VS.ExponentialDecay2()`](#f_ExponentialDecay2)  
+[`VS.ExponentialDecayHalf()`](#f_ExponentialDecayHalf)  
 [`VS.ExponentialDecayIntegral()`](#f_ExponentialDecayIntegral)  
 [`VS.SimpleSpline()`](#f_SimpleSpline)  
 [`VS.SimpleSplineRemapVal()`](#f_SimpleSplineRemapVal)  
@@ -759,9 +759,9 @@ float VS::ExponentialDecay(float decayTo, float decayTime, float dt)
 decayTo is factor the value should decay to in decayTime
 ________________________________
 
-<a name="f_ExponentialDecay2"></a>
+<a name="f_ExponentialDecayHalf"></a>
 ```cpp
-float VS::ExponentialDecay2(float halflife, float dt)
+float VS::ExponentialDecayHalf(float halflife, float dt)
 ```
 halflife is time for value to reach 50%
 ________________________________
@@ -2144,23 +2144,24 @@ ________________________________
 ```cpp
 class CExtendedPlayer
 {
-	const CBaseMultiplayerPlayer self;
+	const CBasePlayer self;
 	const int m_EntityIndex;
 	const table m_ScriptScope;
+
 	const int userid;
 	const string networkid;
 	const string name;
-	const bool bot;
+	const bool fakeplayer;
 
 	bool IsBot();
-	int GetUserid();
+	int GetUserID();
 	string GetNetworkIDString();
 	string GetPlayerName();
 
-	QAngle EyeAngles();
-	Vector EyeForward();
-	Vector EyeRight();
-	Vector EyeUp();
+	QAngle EyeAngles();		// view angles
+	Vector EyeForward();	// view forward vector
+	Vector EyeRight();		// view right vector
+	Vector EyeUp();			// view up vector
 
 	void SetName( string targetname );
 	void SetEffects( int n );
@@ -2168,10 +2169,10 @@ class CExtendedPlayer
 	void SetFOV( int fov, float rate );
 	void SetParent( CBaseEntity parent, string attachment );
 
-	void SetInputCallback( string szInput, closure callback, table env );
+	void SetInputCallback( string szInput, closure callback, string context );
 }
 
-CExtendedPlayer ToExtendedPlayer( CBaseMultiplayerPlayer player )
+CExtendedPlayer ToExtendedPlayer( CBasePlayer player )
 ```
 
 There is no performance penalty for using `CExtendedPlayer` exclusively.
@@ -2182,11 +2183,15 @@ One aspect to pay attention to is passing players to native functions such as `E
 local ply = ToExtendedPlayer( VS.GetPlayerByIndex(1) );
 
 EntFireByHandle( ply.self, "SetHealth", 1 );
+
+local tr = TraceLine( v1, v2, ply.self );
 ```
 
-The following members and their corresponding functions require event listener setup: `userid`, `networkid`, `name`, `bot`.
+The following functions require event listener setup and do not work in Portal 2: `IsBot`, `GetUserID`, `GetNetworkIDString`, `GetPlayerName`.
 
-Player is passed as parameter to the `SetInputCallback` callback function. `szInput == null` turns off the input listener. `callback == null` removes the callback.
+When a player disconnects, `CExtendedPlayer::IsValid()` returns false.
+
+Player (as CExtendedPlayer) is passed as parameter to the `SetInputCallback` callback function. `szInput == null` turns off the input listener. `callback == null` removes the callback.
 
 List of available inputs:
 ```
@@ -2208,10 +2213,9 @@ List of available inputs:
 ```cs
 VS.ListenToGameEvent( "player_spawn", function(ev)
 {
-	local ply = VS.GetPlayerByUserid( ev.userid );
-	if (!ply)
+	local ply = ToExtendedPlayer( VS.GetPlayerByUserid( ev.userid ) );
+	if ( !ply )
 		return;
-	ply = ToExtendedPlayer( ply );
 
 	if ( !ply.IsBot() )
 	{
@@ -2237,8 +2241,6 @@ function OnAttack( ply )
 	DebugDrawBoxAngles( eyePos, Vector(2,-1,-1), Vector(32,1,1), ply.EyeAngles(), 0, 255, 0, 16, 5.0 );
 }
 ```
-
-When a player disconnects, `CExtendedPlayer::IsValid()` returns false.
 
 ________________________________
 
