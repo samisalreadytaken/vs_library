@@ -15,6 +15,57 @@ if ( "VectorRotate" in VS )
 	return;
 
 
+// External dependencies
+/*
+if ( !("DebugDrawLine" in getroottable()) )
+	::DebugDrawLine <- dummy;
+
+if ( !("RandomFloat" in getroottable()) )
+	::RandomFloat <- function( a, b ) : (rand)
+	{
+		return (rand().tofloat() / RAND_MAX) * (b - a) + a;
+	}
+
+if ( !("Vector" in getroottable()) )
+	::Vector <- class
+	{
+		x = 0.0; y = 0.0; z = 0.0;
+		constructor( _x = 0.0, _y = 0.0, _z = 0.0 )
+		{
+			x = _x; y = _y; z = _z;
+		}
+		function Cross(v)
+		{
+			return Vector( y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x );
+		}
+		function Dot(v)
+		{
+			return x*v.x + y*v.y + z*v.z;
+		}
+		function LengthSqr()
+		{
+			return x*x + y*y + z*z;
+		}
+		function Length() : (sqrt)
+		{
+			return sqrt( x*x + y*y + z*z );
+		}
+		function Length2DSqr()
+		{
+			return x*x + y*y;
+		}
+		function Length2D() : (sqrt)
+		{
+			return sqrt( x*x + y*y );
+		}
+		function _tostring() : (format)
+		{
+			return format( "%f %f %f", x, y, z );
+		}
+	}
+*/
+
+
 const FLT_EPSILON		= 1.192092896e-7;;
 const FLT_MAX			= 3.402823466e+38;;
 const FLT_MIN			= 1.175494351e-38;;
@@ -185,20 +236,61 @@ function Quaternion::_div(d):(Quaternion) { local f = 1.0/d; return Quaternion( 
 function Quaternion::_unm() :(Quaternion) { return Quaternion( -x,-y,-z,-w ) }
 
 
+//
+// Array access operator helper for changing a
+// 2D array implementation into a 1D array ( simulating C arrays
+// where { *(*p + 6) == p[0][6] == p[1][2] } equality is true for { byte p[4][4] } ),
+// while keeping backwards compatibility.
+//
+// Downsides:
+//   Reduced readability
+//   Increased mem usage and instr count for unchanged old code (.m[row][column])
+//   No forward compatibility of a syntax change [0][M_23]
+//
+// Upsides:
+//   Faster initialisation (creating and using 1 SQArray instead of 4)
+//   Halved _OP_GET instr count for each element access ([0] instead of .m; [M_21] instead of [2][1])
+//
+//
+// Batch conversion:
+//		\[([0-3])\]\[([0-3])\]
+//		\[M_\1\2\]
+//
+local CArrayOpMan = class
+{
+	static CArrayOpManSub = class
+	{
+		[0x7E] = 0;
+		[0x7F] = null;
+		constructor(p) { this[0x7F] = p.weakref(); }
+		function _get(i) { return this[0x7F][this[0x7E]+i]; }
+		function _set(i,v) { this[0x7F][this[0x7E]+i] = v; }
+	};
+	[0x7F] = null;
+	constructor(p) { this[0x7F] = CArrayOpManSub(p); }
+	function _get(i) { local _ = this[0x7F]; _[0x7E] = 4*i; return _; } // column count : 4
+}
+
+const M_00 = 0;;  const M_01 = 1;;  const M_02 = 2;;  const M_03 = 3;;
+const M_10 = 4;;  const M_11 = 5;;  const M_12 = 6;;  const M_13 = 7;;
+const M_20 = 8;;  const M_21 = 9;;  const M_22 = 10;; const M_23 = 11;;
+const M_30 = 12;; const M_31 = 13;; const M_32 = 14;; const M_33 = 15;;
+
 class ::matrix3x4_t
 {
-	m = null;
+	[0] = null;
 
 	constructor(
 		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
 		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
 		m20 = 0.0, m21 = 0.0, m22 = 0.0, m23 = 0.0 )
 	{
-		m =	[
-				[ m00, m01, m02, m03 ],
-				[ m10, m11, m12, m13 ],
-				[ m20, m21, m22, m23 ]
-			];
+		this[0] =
+		[
+			m00, m01, m02, m03,
+			m10, m11, m12, m13,
+			m20, m21, m22, m23
+		];
 	}
 
 	function Init(
@@ -206,44 +298,59 @@ class ::matrix3x4_t
 		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
 		m20 = 0.0, m21 = 0.0, m22 = 0.0, m23 = 0.0 )
 	{
-		local m0 = m[0];
-		local m1 = m[1];
-		local m2 = m[2];
+		local m = this[0];
 
-		m0[0] = m00;
-		m0[1] = m01;
-		m0[2] = m02;
-		m0[3] = m03;
+		m[M_00] = m00;
+		m[M_01] = m01;
+		m[M_02] = m02;
+		m[M_03] = m03;
 
-		m1[0] = m10;
-		m1[1] = m11;
-		m1[2] = m12;
-		m1[3] = m13;
+		m[M_10] = m10;
+		m[M_11] = m11;
+		m[M_12] = m12;
+		m[M_13] = m13;
 
-		m2[0] = m20;
-		m2[1] = m21;
-		m2[2] = m22;
-		m2[3] = m23;
+		m[M_20] = m20;
+		m[M_21] = m21;
+		m[M_22] = m22;
+		m[M_23] = m23;
+	}
+
+	// FLU
+	function InitXYZ( vX, vY, vZ, vT )
+	{
+		local m = this[0];
+
+		m[M_00] = vX.x;
+		m[M_10] = vX.y;
+		m[M_20] = vX.z;
+
+		m[M_01] = vY.x;
+		m[M_11] = vY.y;
+		m[M_21] = vY.z;
+
+		m[M_02] = vZ.x;
+		m[M_12] = vZ.y;
+		m[M_22] = vZ.z;
+
+		m[M_03] = vT.x;
+		m[M_13] = vT.y;
+		m[M_23] = vT.z;
 	}
 
 	function _cloned( src )
 	{
-		src = src.m;
-		constructor(
-			src[0][0], src[0][1], src[0][2], src[0][3],
-			src[1][0], src[1][1], src[1][2], src[1][3],
-			src[2][0], src[2][1], src[2][2], src[2][3]
-		);
+		this[0] = clone src[0];
 	}
 
 	function _tostring() : (Fmt)
 	{
-		local m = m;
+		local m = this[0];
 		return Fmt( "[ (%.6g, %.6g, %.6g), (%.6g, %.6g, %.6g), (%.6g, %.6g, %.6g), (%.6g, %.6g, %.6g) ]",
-			m[0][0], m[0][1], m[0][2],
-			m[1][0], m[1][1], m[1][2],
-			m[2][0], m[2][1], m[2][2],
-			m[0][3], m[1][3], m[2][3] );
+			m[M_00], m[M_01], m[M_02],
+			m[M_10], m[M_11], m[M_12],
+			m[M_20], m[M_21], m[M_22],
+			m[M_03], m[M_13], m[M_23] );
 	}
 
 	function _typeof()
@@ -251,22 +358,25 @@ class ::matrix3x4_t
 		return "matrix3x4_t";
 	}
 
-	function _get(i)
+	_man = null;
+
+	function _get(i) : (CArrayOpMan)
 	{
-		switch (i)
-		{
-			case 0: return m[0];
-			case 1: return m[1];
-			case 2: return m[2];
-		}
-		return rawget(i);
+		if ( !_man )
+			_man = CArrayOpMan( this[0] );
+
+		if ( i == "m" )
+			return _man;
+
+		return _man[i];
 	}
 }
 
 
+
 class ::VMatrix extends matrix3x4_t
 {
-	m = null;
+	[0] = null;
 
 	constructor(
 		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
@@ -274,62 +384,69 @@ class ::VMatrix extends matrix3x4_t
 		m20 = 0.0, m21 = 0.0, m22 = 0.0, m23 = 0.0,
 		m30 = 0.0, m31 = 0.0, m32 = 0.0, m33 = 1.0 )
 	{
-		m =	[
-				[ m00, m01, m02, m03 ],
-				[ m10, m11, m12, m13 ],
-				[ m20, m21, m22, m23 ],
-				[ m30, m31, m32, m33 ]
-			];
+		this[0] =
+		[
+			m00, m01, m02, m03,
+			m10, m11, m12, m13,
+			m20, m21, m22, m23,
+			m30, m31, m32, m33
+		];
+	}
+
+	function Init(
+		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
+		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
+		m20 = 0.0, m21 = 0.0, m22 = 0.0, m23 = 0.0,
+		m30 = 0.0, m31 = 0.0, m32 = 0.0, m33 = 1.0 )
+	{
+		local m = this[0];
+
+		m[M_00] = m00;
+		m[M_01] = m01;
+		m[M_02] = m02;
+		m[M_03] = m03;
+
+		m[M_10] = m10;
+		m[M_11] = m11;
+		m[M_12] = m12;
+		m[M_13] = m13;
+
+		m[M_20] = m20;
+		m[M_21] = m21;
+		m[M_22] = m22;
+		m[M_23] = m23;
+
+		m[M_30] = m30;
+		m[M_31] = m31;
+		m[M_32] = m32;
+		m[M_33] = m33;
 	}
 
 	function Identity()
 	{
-		local m = m;
+		local m = this[0];
 
-		m[0][0] = m[1][1] = m[2][2] = m[3][3] = 1.0;
+		m[M_00] = m[M_11] = m[M_22] = m[M_33] = 1.0;
 
-		m[0][1] = m[0][2] = m[0][3] =
-		m[1][0] = m[1][2] = m[1][3] =
-		m[2][0] = m[2][1] = m[2][3] =
-		m[3][0] = m[3][1] = m[3][2] = 0.0;
-	}
-
-	function _cloned( src )
-	{
-		src = src.m;
-		constructor(
-			src[0][0], src[0][1], src[0][2], src[0][3],
-			src[1][0], src[1][1], src[1][2], src[1][3],
-			src[2][0], src[2][1], src[2][2], src[2][3],
-			src[3][0], src[3][1], src[3][2], src[3][3]
-		);
+		m[M_01] = m[M_02] = m[M_03] =
+		m[M_10] = m[M_12] = m[M_13] =
+		m[M_20] = m[M_21] = m[M_23] =
+		m[M_30] = m[M_31] = m[M_32] = 0.0;
 	}
 
 	function _tostring() : (Fmt)
 	{
-		local m = m;
+		local m = this[0];
 		return Fmt( "[ (%.6g, %.6g, %.6g, %.6g), (%.6g, %.6g, %.6g, %.6g), (%.6g, %.6g, %.6g, %.6g), (%.6g, %.6g, %.6g, %.6g) ]",
-			m[0][0], m[0][1], m[0][2], m[0][3],
-			m[1][0], m[1][1], m[1][2], m[1][3],
-			m[2][0], m[2][1], m[2][2], m[2][3],
-			m[3][0], m[3][1], m[3][2], m[3][3] );
+			m[M_00], m[M_01], m[M_02], m[M_03],
+			m[M_10], m[M_11], m[M_12], m[M_13],
+			m[M_20], m[M_21], m[M_22], m[M_23],
+			m[M_30], m[M_31], m[M_32], m[M_33] );
 	}
 
 	function _typeof()
 	{
 		return "VMatrix";
-	}
-
-	function _get(i)
-	{
-		switch (i)
-		{
-			case 0: return m[0];
-			case 1: return m[1];
-			case 2: return m[2];
-			case 3: return m[3];
-		}
-		return rawget(i);
 	}
 }
 
@@ -415,8 +532,8 @@ function VS::IsLookingAt( vSrc, vTarget, vDir, cosTolerance )
 function VS::GetAngle( vFrom, vTo ) : ( atan2 )
 {
 	local dt = vTo - vFrom;
-	local pitch = RAD2DEG * atan2( -dt.z, dt.Length2D() );
-	local yaw = RAD2DEG * atan2( dt.y, dt.x );
+	local pitch = atan2( -dt.z, dt.Length2D() ) * RAD2DEG;
+	local yaw = atan2( dt.y, dt.x ) * RAD2DEG;
 
 	dt.x = pitch;
 	dt.y = yaw;
@@ -433,7 +550,7 @@ function VS::VectorVectors( forward, right, up ) : (Vector)
 	if ( !forward.x && !forward.y )
 	{
 		// pitch 90 degrees up/down from identity
-		right.y = -1.0;
+		right.y = 0xFFFFFFFF;
 		up.x = -forward.z;
 		right.x = right.z = up.y = up.z = 0.0;
 	}
@@ -520,11 +637,11 @@ function VS::VectorAngles( forward, vOut = _VEC ) : ( atan2 )
 	}
 	else
 	{
-		yaw = RAD2DEG * atan2( forward.y, forward.x );
+		yaw = atan2( forward.y, forward.x ) * RAD2DEG;
 		if ( yaw < 0.0 )
 			yaw += 360.0;
 
-		pitch = RAD2DEG * atan2( -forward.z, forward.Length2D() );
+		pitch = atan2( -forward.z, forward.Length2D() ) * RAD2DEG;
 		if ( pitch < 0.0 )
 			pitch += 360.0;
 	};
@@ -544,14 +661,14 @@ function VS::BasisToAngles( forward, right, up, out = _VEC ) : (atan2)
 	local xyDist = forward.Length2D();
 	if ( xyDist > 0.001 )
 	{
-		out.y = RAD2DEG * atan2( forward.y, forward.x );
-		out.x = RAD2DEG * atan2( -forward.z, xyDist );
-		out.z = RAD2DEG * atan2( -right.z, up.z );
+		out.y = atan2( forward.y, forward.x ) * RAD2DEG;
+		out.x = atan2( -forward.z, xyDist ) * RAD2DEG;
+		out.z = atan2( -right.z, up.z ) * RAD2DEG;
 	}
 	else
 	{
-		out.y = RAD2DEG * atan2( right.x, -right.y );
-		out.x = RAD2DEG * atan2( -forward.z, xyDist );
+		out.y = atan2( right.x, -right.y ) * RAD2DEG;
+		out.x = atan2( -forward.z, xyDist ) * RAD2DEG;
 		out.z = 0.0;
 	};
 	return out;
@@ -562,9 +679,9 @@ function VS::BasisToAngles( forward, right, up, out = _VEC ) : (atan2)
 //-----------------------------------------------------------------------
 function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC ) : (sin, cos)
 {
-	local rad = DEG2RAD * fYaw;
-	local sy  = sin(rad);
-	local cy  = cos(rad);
+	fYaw = DEG2RAD * fYaw;
+	local sy  = sin(fYaw);
+	local cy  = cos(fYaw);
 
 	vOut.x = vIn.x * cy - vIn.y * sy;
 	vOut.y = vIn.x * sy + vIn.y * cy;
@@ -575,8 +692,8 @@ function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC ) : (sin, cos)
 
 function VS::YawToVector( yaw ) : (Vector, sin, cos)
 {
-	local ang = DEG2RAD * yaw;
-	return Vector( cos(ang), sin(ang), 0.0 );
+	yaw = DEG2RAD * yaw;
+	return Vector( cos(yaw), sin(yaw), 0.0 );
 }
 
 function VS::VecToYaw( vec ) : (atan2)
@@ -584,9 +701,7 @@ function VS::VecToYaw( vec ) : (atan2)
 	if ( !vec.y && !vec.x )
 		return 0.0;
 
-	local yaw = RAD2DEG * atan2( vec.y, vec.x );
-
-	return yaw;
+	return atan2( vec.y, vec.x ) * RAD2DEG;
 }
 
 function VS::VecToPitch( vec ) : (atan2)
@@ -598,7 +713,7 @@ function VS::VecToPitch( vec ) : (atan2)
 		return -180.0;
 	};
 
-	return RAD2DEG * atan2( -vec.z, vec.Length2D() );
+	return atan2( -vec.z, vec.Length2D() ) * RAD2DEG;
 }
 
 function VS::VectorIsZero(v)
@@ -612,12 +727,11 @@ function VS::VectorIsZero(v)
 function VS::VectorsAreEqual( a, b, tolerance = 0.0 )
 {
 	local x = a.x - b.x;
-	if (0.0 > x) x = -x;
-
 	local y = a.y - b.y;
-	if (0.0 > y) y = -y;
-
 	local z = a.z - b.z;
+
+	if (0.0 > x) x = -x;
+	if (0.0 > y) y = -y;
 	if (0.0 > z) z = -z;
 
 	return ( x <= tolerance &&
@@ -630,11 +744,11 @@ function VS::VectorsAreEqual( a, b, tolerance = 0.0 )
 //-----------------------------------------------------------------------
 function VS::AnglesAreEqual( a, b, tolerance = 0.0 )
 {
-	local d = AngleDiff(a, b)
-	if (0.0 > d)
-		d = -d;
+	a = AngleDiff(a, b)
+	if (0.0 > a)
+		a = -a;
 
-	return d <= tolerance;
+	return a <= tolerance;
 }
 
 //-----------------------------------------------------------------------
@@ -642,11 +756,11 @@ function VS::AnglesAreEqual( a, b, tolerance = 0.0 )
 //-----------------------------------------------------------------------
 function VS::CloseEnough( a, b, e = 1.e-3 )
 {
-	local d = a - b;
-	if (0.0 > d)
-		d = -d;
+	a = a - b;
+	if (0.0 > a)
+		a = -a;
 
-	return d <= e;
+	return a <= e;
 }
 
 function VS::Approach( target, value, speed )
@@ -675,10 +789,26 @@ function VS::ApproachVector( target, value, speed )
 
 function VS::ApproachAngle( target, value, speed )
 {
-	target = AngleNormalize( target );
-	value = AngleNormalize( value );
+	// target = AngleNormalize( target );
+	target %= 360.0;
+	if ( target > 180.0 )
+		target -= 360.0;
+	else if ( -180.0 > target )
+		target += 360.0;;
 
-	local delta = AngleDiff( target, value );
+	// value = AngleNormalize( value );
+	value %= 360.0;
+	if ( value > 180.0 )
+		value -= 360.0;
+	else if ( -180.0 > value )
+		value += 360.0;;
+
+	// local delta = AngleDiff( target, value );
+	local delta = ( target - value ) % 360.0;
+	if ( delta > 180.0 )
+		delta -= 360.0;
+	else if ( -180.0 > delta )
+		delta += 360.0;;
 
 	if (speed < 0.0)
 		speed = -speed;
@@ -708,12 +838,31 @@ function VS::AngleNormalize( angle )
 	return angle;
 }
 
-// input vector pointer
+// QAngle
 function VS::QAngleNormalize( vAng )
 {
-	vAng.x = AngleNormalize( vAng.x );
-	vAng.y = AngleNormalize( vAng.y );
-	vAng.z = AngleNormalize( vAng.z );
+	// vAng.x = AngleNormalize( vAng.x );
+	// vAng.y = AngleNormalize( vAng.y );
+	// vAng.z = AngleNormalize( vAng.z );
+
+	vAng.x %= 360.0;
+	if ( vAng.x > 180.0 )
+		vAng.x -= 360.0;
+	else if ( -180.0 > vAng.x )
+		vAng.x += 360.0;;
+
+	vAng.y %= 360.0;
+	if ( vAng.y > 180.0 )
+		vAng.y -= 360.0;
+	else if ( -180.0 > vAng.y )
+		vAng.y += 360.0;;
+
+	vAng.z %= 360.0;
+	if ( vAng.z > 180.0 )
+		vAng.z -= 360.0;
+	else if ( -180.0 > vAng.z )
+		vAng.z += 360.0;;
+
 	return vAng;
 }
 
@@ -888,11 +1037,6 @@ function VS::VectorMA( start, scale, direction, dest = _VEC )
 local VectorAdd = VS.VectorAdd;
 local VectorSubtract = VS.VectorSubtract;
 
-function VS::ComputeVolume( vecMins, vecMaxs )
-{
-	return (vecMaxs - vecMins).LengthSqr();
-}
-
 //-----------------------------------------------------------------------------
 // Get a random vector
 //-----------------------------------------------------------------------------
@@ -985,12 +1129,17 @@ function VS::SimpleSplineRemapValClamped( val, A, B, C, D )
 			return D;
 		return C;
 	};
+
 	local cVal = (val - A) / (B - A);
-	if ( cVal < 0.0 )
-		cVal = 0.0;
-	else if ( cVal > 1.0 )
-		cVal = 1.0;;
+
+	if ( cVal <= 0.0 )
+		return C;
+
+	if ( cVal >= 1.0 )
+		return D;
+
 	local sqr = cVal * cVal;
+
 	return C + (D - C) * ( 3.0 * sqr - 2.0 * sqr * cVal );
 }
 
@@ -1014,11 +1163,15 @@ function VS::RemapValClamped( val, A, B, C, D )
 			return D;
 		return C;
 	};
+
 	local cVal = (val - A) / (B - A);
-	if ( cVal < 0.0 )
-		cVal = 0.0;
-	else if ( cVal > 1.0 )
-		cVal = 1.0;;
+
+	if ( cVal <= 0.0 )
+		return C;
+
+	if ( cVal >= 1.0 )
+		return D;
+
 	return C + (D - C) * cVal;
 }
 
@@ -1101,8 +1254,8 @@ local Bias = VS.Bias;
 function VS::Gain( x, biasAmt ) : (Bias)
 {
 	if ( x < 0.5 )
-		return 0.5 * Bias( 2.0*x, 1.0-biasAmt );
-	return 1.0 - 0.5 * Bias( 2.0 - 2.0*x, 1.0-biasAmt );
+		return Bias( 2.0*x, 1.0-biasAmt ) * 0.5;
+	return 1.0 - Bias( 2.0 - 2.0*x, 1.0-biasAmt ) * 0.5;
 }
 
 //
@@ -1202,16 +1355,16 @@ local DotProductAbs = VS.DotProductAbs;
 // transform in1 by the matrix in2
 function VS::VectorTransform( in1, in2, out = _VEC )
 {
-	in2 = in2.m;
+	in2 = in2[0];
 
-	// out[0] = DotProductV(in1, in2[0]) + in2[0][3];
-	local x = in1.x*in2[0][0] + in1.y*in2[0][1] + in1.z*in2[0][2] + in2[0][3];
-	local y = in1.x*in2[1][0] + in1.y*in2[1][1] + in1.z*in2[1][2] + in2[1][3];
-	local z = in1.x*in2[2][0] + in1.y*in2[2][1] + in1.z*in2[2][2] + in2[2][3];
+	// out[0] = DotProduct( in1, in2[0] ) + in2[0][3];
+	local x = in1.x;
+	local y = in1.y;
+	local z = in1.z;
 
-	out.x = x;
-	out.y = y;
-	out.z = z;
+	out.x = x*in2[M_00] + y*in2[M_01] + z*in2[M_02] + in2[M_03];
+	out.y = x*in2[M_10] + y*in2[M_11] + z*in2[M_12] + in2[M_13];
+	out.z = x*in2[M_20] + y*in2[M_21] + z*in2[M_22] + in2[M_23];
 
 	return out;
 }
@@ -1219,15 +1372,15 @@ function VS::VectorTransform( in1, in2, out = _VEC )
 // assuming the matrix is orthonormal, transform in1 by the transpose (also the inverse in this case) of in2.
 function VS::VectorITransform( in1, in2, out = _VEC )
 {
-	in2 = in2.m;
+	in2 = in2[0];
 
-	local in1t0 = in1.x - in2[0][3];
-	local in1t1 = in1.y - in2[1][3];
-	local in1t2 = in1.z - in2[2][3];
+	local in1t0 = in1.x - in2[M_03];
+	local in1t1 = in1.y - in2[M_13];
+	local in1t2 = in1.z - in2[M_23];
 
-	local x = in1t0 * in2[0][0] + in1t1 * in2[1][0] + in1t2 * in2[2][0];
-	local y = in1t0 * in2[0][1] + in1t1 * in2[1][1] + in1t2 * in2[2][1];
-	local z = in1t0 * in2[0][2] + in1t1 * in2[1][2] + in1t2 * in2[2][2];
+	local x = in1t0 * in2[M_00] + in1t1 * in2[M_10] + in1t2 * in2[M_20];
+	local y = in1t0 * in2[M_01] + in1t1 * in2[M_11] + in1t2 * in2[M_21];
+	local z = in1t0 * in2[M_02] + in1t1 * in2[M_12] + in1t2 * in2[M_22];
 
 	out.x = x;
 	out.y = y;
@@ -1239,16 +1392,16 @@ function VS::VectorITransform( in1, in2, out = _VEC )
 // assume in2 is a rotation (matrix3x4_t) and rotate the input vector
 function VS::VectorRotate( in1, in2, out = _VEC )
 {
-	in2 = in2.m;
+	in2 = in2[0];
 
-	// out.x = DotProductV( in1, in2[0] );
-	local x = in1.x*in2[0][0] + in1.y*in2[0][1] + in1.z*in2[0][2];
-	local y = in1.x*in2[1][0] + in1.y*in2[1][1] + in1.z*in2[1][2];
-	local z = in1.x*in2[2][0] + in1.y*in2[2][1] + in1.z*in2[2][2];
+	// out.x = DotProduct( in1, in2[0] );
+	local x = in1.x;
+	local y = in1.y;
+	local z = in1.z;
 
-	out.x = x;
-	out.y = y;
-	out.z = z;
+	out.x = x*in2[M_00] + y*in2[M_01] + z*in2[M_02];
+	out.y = x*in2[M_10] + y*in2[M_11] + z*in2[M_12];
+	out.z = x*in2[M_20] + y*in2[M_21] + z*in2[M_22];
 
 	return out;
 }
@@ -1294,15 +1447,15 @@ function VS::VectorRotateByQuaternion( in1, in2, out = _VEC )
 // rotate by the inverse of the matrix
 function VS::VectorIRotate( in1, in2, out = _VEC )
 {
-	in2 = in2.m;
+	in2 = in2[0];
 
-	local x = in1.x*in2[0][0] + in1.y*in2[1][0] + in1.z*in2[2][0];
-	local y = in1.x*in2[0][1] + in1.y*in2[1][1] + in1.z*in2[2][1];
-	local z = in1.x*in2[0][2] + in1.y*in2[1][2] + in1.z*in2[2][2];
+	local x = in1.x;
+	local y = in1.y;
+	local z = in1.z;
 
-	out.x = x;
-	out.y = y;
-	out.z = z;
+	out.x = x*in2[M_00] + y*in2[M_10] + z*in2[M_20];
+	out.y = x*in2[M_01] + y*in2[M_11] + z*in2[M_21];
+	out.z = x*in2[M_02] + y*in2[M_12] + z*in2[M_22];
 
 	return out;
 }
@@ -1317,43 +1470,43 @@ function VS::VectorMatrix( forward, matrix ) : ( Vector, VectorVectors )
 	local right = Vector(), up = Vector();
 	VectorVectors( forward, right, up );
 
-	matrix = matrix.m;
+	matrix = matrix[0];
 
 	// MatrixSetColumn( forward, 0, matrix );
-	matrix[0][0] = forward.x;
-	matrix[1][0] = forward.y;
-	matrix[2][0] = forward.z;
+	matrix[M_00] = forward.x;
+	matrix[M_10] = forward.y;
+	matrix[M_20] = forward.z;
 
 	// MatrixSetColumn( -right, 1, matrix );
-	matrix[0][1] = -right.x;
-	matrix[1][1] = -right.y;
-	matrix[2][1] = -right.z;
+	matrix[M_01] = -right.x;
+	matrix[M_11] = -right.y;
+	matrix[M_21] = -right.z;
 
 	// MatrixSetColumn( up, 2, matrix );
-	matrix[0][2] = up.x;
-	matrix[1][2] = up.y;
-	matrix[2][2] = up.z;
+	matrix[M_02] = up.x;
+	matrix[M_12] = up.y;
+	matrix[M_22] = up.z;
 }
 
 // Matrix is right-handed x=forward, y=left, z=up.  Valve uses left-handed convention for vectors in the game code (forward, right, up)
 function VS::MatrixVectors( matrix, pForward, pRight, pUp )
 {
-	matrix = matrix.m;
+	matrix = matrix[0];
 
 	// MatrixGetColumn( matrix, 0, pForward );
-	pForward.x = matrix[0][0];
-	pForward.y = matrix[1][0];
-	pForward.z = matrix[2][0];
+	pForward.x = matrix[M_00];
+	pForward.y = matrix[M_10];
+	pForward.z = matrix[M_20];
 
 	// MatrixGetColumn( matrix, 1, pRight );
-	pRight.x = -matrix[0][1];
-	pRight.y = -matrix[1][1];
-	pRight.z = -matrix[2][1];
+	pRight.x = -matrix[M_01];
+	pRight.y = -matrix[M_11];
+	pRight.z = -matrix[M_21];
 
 	// MatrixGetColumn( matrix, 2, pUp );
-	pUp.x = matrix[0][2];
-	pUp.y = matrix[1][2];
-	pUp.z = matrix[2][2];
+	pUp.x = matrix[M_02];
+	pUp.y = matrix[M_12];
+	pUp.z = matrix[M_22];
 }
 
 //-----------------------------------------------------------------------------
@@ -1365,51 +1518,39 @@ function VS::MatrixVectors( matrix, pForward, pRight, pUp )
 //-----------------------------------------------------------------------------
 function VS::MatrixAngles( matrix, angles = _VEC, position = null ) : (sqrt,atan2)
 {
-	matrix = matrix.m;
+	matrix = matrix[0];
 
 	if ( position )
 	{
 		// MatrixGetColumn( matrix, 3, position );
-		position.x = matrix[0][3];
-		position.y = matrix[1][3];
-		position.z = matrix[2][3];
+		position.x = matrix[M_03];
+		position.y = matrix[M_13];
+		position.z = matrix[M_23];
 	};
 
-	//
-	// Extract the basis vectors from the matrix. Since we only need the Z
-	// component of the up vector, we don't get X and Y.
-	//
-	local forward0 = matrix[0][0];
-	local forward1 = matrix[1][0];
-	local forward2 = matrix[2][0];
-
-	local left0 = matrix[0][1];
-	local left1 = matrix[1][1];
-	local left2 = matrix[2][1];
-
-	local up2 = matrix[2][2];
-
+	local forward0 = matrix[M_00];
+	local forward1 = matrix[M_10];
 	local xyDist = sqrt( forward0 * forward0 + forward1 * forward1 );
 
 	// enough here to get angles?
 	if( xyDist > 0.001 )
 	{
 		// (yaw)	y = ATAN( forward[1], forward[0] );		-- in our space, forward is the X axis
-		angles.y = RAD2DEG*atan2( forward1, forward0 );
+		angles.y = atan2( forward1, forward0 ) * RAD2DEG;
 
 		// (pitch)	x = ATAN( -forward[2], sqrt(forward[0]*forward[0]+forward[1]*forward[1]) );
-		angles.x = RAD2DEG*atan2( -forward2, xyDist );
+		angles.x = atan2( -matrix[M_20], xyDist ) * RAD2DEG;
 
 		// (roll)	z = ATAN( left[2], up[2] );
-		angles.z = RAD2DEG*atan2( left2, up2 );
+		angles.z = atan2( matrix[M_21], matrix[M_22] ) * RAD2DEG;
 	}
 	else	// forward is mostly Z, gimbal lock-
 	{
 		// (yaw)	y = ATAN( -left[0], left[1] );			-- forward is mostly z, so use right for yaw
-		angles.y = RAD2DEG*atan2( -left0, left1 );
+		angles.y = atan2( -matrix[M_01], matrix[M_11] ) * RAD2DEG;
 
 		// (pitch)	x = ATAN( -forward[2], sqrt(forward[0]*forward[0]+forward[1]*forward[1]) );
-		angles.x = RAD2DEG*atan2( -forward2, xyDist );
+		angles.x = atan2( -matrix[M_20], xyDist ) * RAD2DEG;
 
 		// Assume no roll in this case as one degree of freedom has been lost (i.e. yaw == roll)
 		angles.z = 0.0;
@@ -1442,35 +1583,35 @@ function VS::AngleMatrix( angles, position, matrix ):(sin,cos)
 		sr = sin(az),
 		cr = cos(az);
 
-	matrix = matrix.m;
+	matrix = matrix[0];
 	// matrix = (YAW * PITCH) * ROLL
-	matrix[0][0] = cp*cy;
-	matrix[1][0] = cp*sy;
-	matrix[2][0] = -sp;
+	matrix[M_00] = cp*cy;
+	matrix[M_10] = cp*sy;
+	matrix[M_20] = -sp;
 
 	local crcy = cr*cy,
 		crsy = cr*sy,
 		srcy = sr*cy,
 		srsy = sr*sy;
 
-	matrix[0][1] = sp*srcy-crsy;
-	matrix[1][1] = sp*srsy+crcy;
-	matrix[2][1] = sr*cp;
+	matrix[M_01] = sp*srcy-crsy;
+	matrix[M_11] = sp*srsy+crcy;
+	matrix[M_21] = sr*cp;
 
-	matrix[0][2] = sp*crcy+srsy;
-	matrix[1][2] = sp*crsy-srcy;
-	matrix[2][2] = cr*cp;
+	matrix[M_02] = sp*crcy+srsy;
+	matrix[M_12] = sp*crsy-srcy;
+	matrix[M_22] = cr*cp;
 
 	if ( position )
 	{
 		// MatrixSetColumn( position, 3, matrix );
-		matrix[0][3] = position.x;
-		matrix[1][3] = position.y;
-		matrix[2][3] = position.z;
+		matrix[M_03] = position.x;
+		matrix[M_13] = position.y;
+		matrix[M_23] = position.z;
 	}
 	else
 	{
-		matrix[0][3] = matrix[1][3] = matrix[2][3] = 0.0;
+		matrix[M_03] = matrix[M_13] = matrix[M_23] = 0.0;
 	};
 }
 
@@ -1489,33 +1630,34 @@ function VS::AngleIMatrix( angles, position, matrix ) : (sin, cos, VectorRotate)
 		sr = sin(az),
 		cr = cos(az);
 
-	local m = matrix.m;
+	local m = matrix[0];
+
 	// matrix = (YAW * PITCH) * ROLL
-	m[0][0] = cp*cy;
-	m[0][1] = cp*sy;
-	m[0][2] = -sp;
+	m[M_00] = cp*cy;
+	m[M_01] = cp*sy;
+	m[M_02] = -sp;
 
 	local srsp = sr*sp, crsp = cr*sp;
 
-	m[1][0] = srsp*cy-cr*sy;
-	m[1][1] = srsp*sy+cr*cy;
-	m[1][2] = sr*cp;
+	m[M_10] = srsp*cy-cr*sy;
+	m[M_11] = srsp*sy+cr*cy;
+	m[M_12] = sr*cp;
 
-	m[2][0] = crsp*cy+sr*sy;
-	m[2][1] = crsp*sy-sr*cy;
-	m[2][2] = cr*cp;
+	m[M_20] = crsp*cy+sr*sy;
+	m[M_21] = crsp*sy-sr*cy;
+	m[M_22] = cr*cp;
 
 	if ( position )
 	{
 		local vecTranslation = VectorRotate( position, matrix );
 		// MatrixSetColumn( vecTranslation * -1, 3, matrix );
-		m[0][3] = -vecTranslation.x;
-		m[1][3] = -vecTranslation.y;
-		m[2][3] = -vecTranslation.z;
+		m[M_03] = -vecTranslation.x;
+		m[M_13] = -vecTranslation.y;
+		m[M_23] = -vecTranslation.z;
 	}
 	else
 	{
-		m[0][3] = m[1][3] = m[2][3] = 0.0;
+		m[M_03] = m[M_13] = m[M_23] = 0.0;
 	};
 }
 
@@ -1527,15 +1669,13 @@ local AngleIMatrix = VS.AngleIMatrix;
 function VS::QuaternionsAreEqual( a, b, tolerance = 0.0 )
 {
 	local x = a.x - b.x;
-	if (0.0 > x) x = -x;
-
 	local y = a.y - b.y;
-	if (0.0 > y) y = -y;
-
 	local z = a.z - b.z;
-	if (0.0 > z) z = -z;
-
 	local w = a.w - b.w;
+
+	if (0.0 > x) x = -x;
+	if (0.0 > y) y = -y;
+	if (0.0 > z) z = -z;
 	if (0.0 > w) w = -w;
 
 	return ( x <= tolerance &&
@@ -1549,17 +1689,18 @@ function VS::QuaternionsAreEqual( a, b, tolerance = 0.0 )
 //-----------------------------------------------------------------------------
 function VS::QuaternionNormalize(q) : (sqrt)
 {
-	local radius = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
+	local r = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
 
-	if ( radius ) // > FLT_EPSILON && ((radius < 1.0 - 4*FLT_EPSILON) || (radius > 1.0 + 4*FLT_EPSILON))
+	if ( r ) // > FLT_EPSILON && ((radius < 1.0 - 4*FLT_EPSILON) || (radius > 1.0 + 4*FLT_EPSILON))
 	{
-		local ir = 1.0 / sqrt(radius);
+		local ir = 1.0 / sqrt(r);
 		q.w *= ir;
 		q.z *= ir;
 		q.y *= ir;
 		q.x *= ir;
 	};
-	return radius;
+
+	return r;
 }
 
 //-----------------------------------------------------------------------------
@@ -1613,8 +1754,7 @@ function VS::QuaternionMult( p, q, qt = _QUAT ) : (QuaternionAlign, Quaternion)
 {
 	if ( p == qt )
 	{
-		local p2 = Quaternion( p.x, p.y, p.z, p.w );
-		return QuaternionMult( p2, q, qt );
+		return QuaternionMult( Quaternion( p.x, p.y, p.z, p.w ), q, qt );
 	};
 
 	// decide if one of the quaternions is backwards
@@ -1665,7 +1805,7 @@ function VS::QuaternionMA( p, s, q, qt = _QUAT ) : ( Quaternion, QuaternionNorma
 	return qt;
 }
 
-function VS::QuaternionAdd( p, q, qt = _QUAT ) : ( Quaternion, QuaternionAlign )
+function VS::QuaternionAdd( p, q, qt = _QUAT ) : ( QuaternionAlign )
 {
 	local q2 = QuaternionAlign( p, q );
 
@@ -1688,19 +1828,15 @@ function VS::QuaternionDotProduct( p, q )
 //-----------------------------------------------------------------------------
 function VS::QuaternionInvert( p, q )
 {
-	// QuaternionDotProduct
-	local magnitudeSqr = p.x*p.x + p.y*p.y + p.z*p.z + p.w*p.w;
-
-	if ( magnitudeSqr )
+	local r = p.x*p.x + p.y*p.y + p.z*p.z + p.w*p.w;
+	if ( r )
 	{
-		local inv = 1.0 / magnitudeSqr;
+		local inv = 1.0 / r;
 		q.x = -p.x * inv;
 		q.y = -p.y * inv;
 		q.z = -p.z * inv;
 		q.w = p.w * inv;
 	};
-
-	// Assert( magnitudeSqr );
 }
 
 //-----------------------------------------------------------------------------
@@ -1726,9 +1862,7 @@ local QuaternionBlendNoAlign = VS.QuaternionBlendNoAlign;
 
 function VS::QuaternionBlend( p, q, t, qt = _QUAT ) : (QuaternionAlign, QuaternionBlendNoAlign)
 {
-	// decide if one of the quaternions is backwards
-	local q2 = QuaternionAlign( p, q );
-	return QuaternionBlendNoAlign( p, q2, t, qt );
+	return QuaternionBlendNoAlign( p, QuaternionAlign( p, q ), t, qt );
 }
 
 function VS::QuaternionIdentityBlend( p, t, qt = _QUAT ) : (QuaternionNormalize)
@@ -1808,9 +1942,7 @@ local QuaternionSlerpNoAlign = VS.QuaternionSlerpNoAlign;
 
 function VS::QuaternionSlerp( p, q, t, qt = _QUAT ) : (QuaternionAlign, QuaternionSlerpNoAlign)
 {
-	// decide if one of the quaternions is backwards
-	local q2 = QuaternionAlign( p, q );
-	return QuaternionSlerpNoAlign( p, q2, t, qt );
+	return QuaternionSlerpNoAlign( p, QuaternionAlign( p, q ), t, qt );
 }
 
 //-------------------------------------------------
@@ -1830,10 +1962,8 @@ function VS::QuaternionExp( p, q ) : (sqrt, sin, cos)
 	if ( Theta > FLT_EPSILON )
 	{
 		// XMVectorSinCos(&SinTheta, &CosTheta, Theta);
-		local SinTheta = sin(Theta);
-
 		// S = XMVectorDivide(SinTheta, Theta);
-		local S = SinTheta / Theta;
+		local S = sin(Theta) / Theta;
 
 		// Result = XMVectorMultiply(Q, S);
 		// Result = XMVectorSelect(Result, Q, Control);
@@ -2074,18 +2204,18 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, out ) : (Quaternion, Quaternion
 		local pC = SQ2;
 
 	// XMQuaternionSquad(Q0, Q1, Q2, Q3, T, out)
-		local Q0 = Q1;
-		local Q1 = pA;
-		local Q2 = pB;
-		local Q3 = pC;
+		local _Q0 = Q1;
+		local _Q1 = pA;
+		local _Q2 = pB;
+		local _Q3 = pC;
 
 		// XMQuaternionSlerpV
 		local Q03 = Quaternion();
-		QuaternionSlerpNoAlign( Q0, Q3, T, Q03 );
+		QuaternionSlerpNoAlign( _Q0, _Q3, T, Q03 );
 
 		// XMQuaternionSlerpV
 		local Q12 = Quaternion();
-		QuaternionSlerpNoAlign( Q1, Q2, T, Q12 );
+		QuaternionSlerpNoAlign( _Q1, _Q2, T, Q12 );
 
 		// TP = XMVectorReplicate(T);
 		// const Two = XMVectorSplatConstant(2, 0);
@@ -2250,43 +2380,43 @@ function VS::RotationDelta( srcAngles, destAngles, out ) : ( matrix3x4_t )
 
 function VS::MatrixQuaternionFast( matrix, q ) : (sqrt)
 {
-	matrix = matrix.m;
+	matrix = matrix[0];
 	local trace;
-	if ( matrix[2][2] < 0.0 )
+	if ( matrix[M_22] < 0.0 )
 	{
-		if ( matrix[0][0] > matrix[1][1] )
+		if ( matrix[M_00] > matrix[M_11] )
 		{
-			trace = 1.0 + matrix[0][0] - matrix[1][1] - matrix[2][2];
+			trace = 1.0 + matrix[M_00] - matrix[M_11] - matrix[M_22];
 			q.x = trace;
-			q.y = matrix[0][1] + matrix[1][0];
-			q.z = matrix[0][2] + matrix[2][0];
-			q.w = matrix[2][1] - matrix[1][2];
+			q.y = matrix[M_01] + matrix[M_10];
+			q.z = matrix[M_02] + matrix[M_20];
+			q.w = matrix[M_21] - matrix[M_12];
 		}
 		else
 		{
-			trace = 1.0 - matrix[0][0] + matrix[1][1] - matrix[2][2];
-			q.x = matrix[0][1] + matrix[1][0];
+			trace = 1.0 - matrix[M_00] + matrix[M_11] - matrix[M_22];
+			q.x = matrix[M_01] + matrix[M_10];
 			q.y = trace;
-			q.z = matrix[2][1] + matrix[1][2];
-			q.w = matrix[0][2] - matrix[2][0];
+			q.z = matrix[M_21] + matrix[M_12];
+			q.w = matrix[M_02] - matrix[M_20];
 		}
 	}
 	else
 	{
-		if ( -matrix[1][1] > matrix[0][0] )
+		if ( -matrix[M_11] > matrix[M_00] )
 		{
-			trace = 1.0 - matrix[0][0] - matrix[1][1] + matrix[2][2];
-			q.x = matrix[0][2] + matrix[2][0];
-			q.y = matrix[2][1] + matrix[1][2];
+			trace = 1.0 - matrix[M_00] - matrix[M_11] + matrix[M_22];
+			q.x = matrix[M_02] + matrix[M_20];
+			q.y = matrix[M_21] + matrix[M_12];
 			q.z = trace;
-			q.w = matrix[1][0] - matrix[0][1]
+			q.w = matrix[M_10] - matrix[M_01]
 		}
 		else
 		{
-			trace = 1.0 + matrix[0][0] + matrix[1][1] + matrix[2][2];
-			q.x = matrix[2][1] - matrix[1][2];
-			q.y = matrix[0][2] - matrix[2][0];
-			q.z = matrix[1][0] - matrix[0][1];
+			trace = 1.0 + matrix[M_00] + matrix[M_11] + matrix[M_22];
+			q.x = matrix[M_21] - matrix[M_12];
+			q.y = matrix[M_02] - matrix[M_20];
+			q.z = matrix[M_10] - matrix[M_01];
 			q.w = trace;
 		}
 	};
@@ -2302,7 +2432,7 @@ local MatrixQuaternionFast = VS.MatrixQuaternionFast;
 
 function VS::QuaternionMatrix( q, pos, matrix )
 {
-	matrix = matrix.m;
+	matrix = matrix[0];
 /*
 #if 1
 	matrix[0][0] = 1.0 - 2.0 * q.y * q.y - 2.0 * q.z * q.z;
@@ -2336,27 +2466,27 @@ function VS::QuaternionMatrix( q, pos, matrix )
 		wy = w * y2,
 		wz = w * z2;
 
-	matrix[0][0] = 1.0 - (yy + zz);
-	matrix[1][0] = xy + wz;
-	matrix[2][0] = xz - wy;
+	matrix[M_00] = 1.0 - (yy + zz);
+	matrix[M_10] = xy + wz;
+	matrix[M_20] = xz - wy;
 
-	matrix[0][1] = xy - wz;
-	matrix[1][1] = 1.0 - (xx + zz);
-	matrix[2][1] = yz + wx;
+	matrix[M_01] = xy - wz;
+	matrix[M_11] = 1.0 - (xx + zz);
+	matrix[M_21] = yz + wx;
 
-	matrix[0][2] = xz + wy;
-	matrix[1][2] = yz - wx;
-	matrix[2][2] = 1.0 - (xx + yy);
+	matrix[M_02] = xz + wy;
+	matrix[M_12] = yz - wx;
+	matrix[M_22] = 1.0 - (xx + yy);
 
 	if (pos)
 	{
-		matrix[0][3] = pos.x;
-		matrix[1][3] = pos.y;
-		matrix[2][3] = pos.z;
+		matrix[M_03] = pos.x;
+		matrix[M_13] = pos.y;
+		matrix[M_23] = pos.z;
 	}
 	else
 	{
-		matrix[0][3] = matrix[1][3] = matrix[2][3] = 0.0;
+		matrix[M_03] = matrix[M_13] = matrix[M_23] = 0.0;
 	};
 }
 
@@ -2367,14 +2497,6 @@ function VS::QuaternionMatrix( q, pos, matrix )
 //-----------------------------------------------------------------------------
 function VS::QuaternionAngles2( q, angles = _VEC ):(asin,atan2)
 {
-/*
-#if 1
-	// FIXME: doing it this way calculates too much data, needs to do an optimized version...
-	local matrix = matrix3x4_t();
-	QuaternionMatrix( q, matrix );
-	MatrixAngles( matrix, angles );
-#else
-*/
 	local m11 = ( 2.0 * q.w * q.w ) + ( 2.0 * q.x * q.x ) - 1.0,
 	      m12 = ( 2.0 * q.x * q.y ) + ( 2.0 * q.w * q.z ),
 	      m13 = ( 2.0 * q.x * q.z ) - ( 2.0 * q.w * q.y ),
@@ -2447,24 +2569,26 @@ function VS::AngleQuaternion( angles, outQuat = _QUAT ):(sin,cos)
 {
 	local ay = angles.y * DEG2RADDIV2,
 		ax = angles.x * DEG2RADDIV2,
-		az = angles.z * DEG2RADDIV2;
+		az = angles.z * DEG2RADDIV2,
 
-	local sy = sin(ay),
+		sy = sin(ay),
 		cy = cos(ay),
 
 		sp = sin(ax),
 		cp = cos(ax),
 
 		sr = sin(az),
-		cr = cos(az);
+		cr = cos(az),
 
-	local srXcp = sr * cp, crXsp = cr * sp;
-	outQuat.x = srXcp*cy-crXsp*sy;
-	outQuat.y = crXsp*cy+srXcp*sy;
+		srcp = sr * cp,
+		crsp = cr * sp,
+		crcp = cr * cp,
+		srsp = sr * sp;
 
-	local crXcp = cr * cp, srXsp = sr * sp;
-	outQuat.z = crXcp*sy-srXsp*cy;
-	outQuat.w = crXcp*cy+srXsp*sy;
+	outQuat.x = srcp * cy - crsp * sy;
+	outQuat.y = crsp * cy + srcp * sy;
+	outQuat.z = crcp * sy - srsp * cy;
+	outQuat.w = crcp * cy + srsp * sy;
 
 	return outQuat;
 }
@@ -2473,8 +2597,7 @@ local AngleQuaternion = VS.AngleQuaternion;
 
 function VS::MatrixQuaternion( mat, q = _QUAT ) : (AngleQuaternion, MatrixAngles)
 {
-	local angles = MatrixAngles( mat );
-	return AngleQuaternion( angles, q );
+	return AngleQuaternion( MatrixAngles( mat ), q );
 }
 
 //-----------------------------------------------------------------------------
@@ -2555,87 +2678,84 @@ function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT ) : ( mat
 
 function VS::MatricesAreEqual( src1, src2, flTolerance )
 {
-	src1 = src1.m;
-	src2 = src2.m;
+	src2 = src2[0];
 
-	for ( local i = 3; i--; )
-		for ( local j = 4; j--; )
-		{
-			local f = src1[i][j] - src2[i][j];
-			if ( 0.0 > f ) f = -f;
-			if ( f > flTolerance )
-				return false;
-		}
-
+	foreach( i, v in src1[0] )
+	{
+		local f = v - src2[i];
+		if ( 0.0 > f ) f = -f;
+		if ( f > flTolerance )
+			return false;
+	}
 	return true;
 }
 
 function VS::MatrixCopy( src, dst )
 {
-	src = src.m;
-	dst = dst.m;
+	src = src[0];
+	dst = dst[0];
 
-	dst[0][0] = src[0][0];
-	dst[0][1] = src[0][1];
-	dst[0][2] = src[0][2];
-	dst[0][3] = src[0][3];
+	dst[M_00] = src[M_00];
+	dst[M_01] = src[M_01];
+	dst[M_02] = src[M_02];
+	dst[M_03] = src[M_03];
 
-	dst[1][0] = src[1][0];
-	dst[1][1] = src[1][1];
-	dst[1][2] = src[1][2];
-	dst[1][3] = src[1][3];
+	dst[M_10] = src[M_10];
+	dst[M_11] = src[M_11];
+	dst[M_12] = src[M_12];
+	dst[M_13] = src[M_13];
 
-	dst[2][0] = src[2][0];
-	dst[2][1] = src[2][1];
-	dst[2][2] = src[2][2];
-	dst[2][3] = src[2][3];
+	dst[M_20] = src[M_20];
+	dst[M_21] = src[M_21];
+	dst[M_22] = src[M_22];
+	dst[M_23] = src[M_23];
 }
 
 // NOTE: This is just the transpose not a general inverse
 function VS::MatrixInvert( in1, out )
 {
-	in1 = in1.m;
-	out = out.m;
+	in1 = in1[0];
+	out = out[0];
 
 	if ( in1 == out )
 	{
-		local t = out[0][1];
-		out[0][1] = out[1][0];
-		out[1][0] = t;
+		local t = out[M_01];
+		out[M_01] = out[M_10];
+		out[M_10] = t;
 
-		t = out[0][2];
-		out[0][2] = out[2][0];
-		out[2][0] = t;
+		t = out[M_02];
+		out[M_02] = out[M_20];
+		out[M_20] = t;
 
-		t = out[1][2];
-		out[1][2] = out[2][1];
-		out[2][1] = t;
+		t = out[M_12];
+		out[M_12] = out[M_21];
+		out[M_21] = t;
 	}
 	else
 	{
 		// transpose the matrix
-		out[0][0] = in1[0][0];
-		out[0][1] = in1[1][0];
-		out[0][2] = in1[2][0];
+		out[M_00] = in1[M_00];
+		out[M_01] = in1[M_10];
+		out[M_02] = in1[M_20];
 
-		out[1][0] = in1[0][1];
-		out[1][1] = in1[1][1];
-		out[1][2] = in1[2][1];
+		out[M_10] = in1[M_01];
+		out[M_11] = in1[M_11];
+		out[M_12] = in1[M_21];
 
-		out[2][0] = in1[0][2];
-		out[2][1] = in1[1][2];
-		out[2][2] = in1[2][2];
+		out[M_20] = in1[M_02];
+		out[M_21] = in1[M_12];
+		out[M_22] = in1[M_22];
 	};
 
 	// now fix up the translation to be in the other space
-	local tmp0 = in1[0][3];
-	local tmp1 = in1[1][3];
-	local tmp2 = in1[2][3];
+	local tmp0 = in1[M_03];
+	local tmp1 = in1[M_13];
+	local tmp2 = in1[M_23];
 
 	// -DotProduct( tmp, out[0] );
-	out[0][3] = -(tmp0*out[0][0] + tmp1*out[0][1] + tmp2*out[0][2]);
-	out[1][3] = -(tmp0*out[1][0] + tmp1*out[1][1] + tmp2*out[1][2]);
-	out[2][3] = -(tmp0*out[2][0] + tmp1*out[2][1] + tmp2*out[2][2]);
+	out[M_03] = -(tmp0*out[M_00] + tmp1*out[M_01] + tmp2*out[M_02]);
+	out[M_13] = -(tmp0*out[M_10] + tmp1*out[M_11] + tmp2*out[M_12]);
+	out[M_23] = -(tmp0*out[M_20] + tmp1*out[M_21] + tmp2*out[M_22]);
 }
 
 //-----------------------------------------------------------------------------
@@ -2643,11 +2763,10 @@ function VS::MatrixInvert( in1, out )
 //-----------------------------------------------------------------------------
 function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 {
-	local mat = array( 4 );
-	for ( local i = 4; i--; )
-		mat[i] = array( 8, 0.0 );
+	// [4][8]
+	local mat = [ array(8, 0.0), array(8, 0.0), array(8, 0.0), array(8, 0.0) ];
 
-	local rowMap = array( 4, 0 );
+	local rowMap = [0, 1, 2, 3];
 
 	// How it's done.
 	// AX = I
@@ -2655,25 +2774,26 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 	// X = the matrix we're looking for
 	// I = identity
 
-	src = src.m;
+	src = src[0];
 
 	// Setup AI
 	for ( local i = 0; i < 4; ++i )
 	{
-		local pIn = src[i];
+		local base = 4*i;
+		// local pIn = src[i];
 		local pOut = mat[i];
 
-		pOut[0] = pIn[0];
-		pOut[1] = pIn[1];
-		pOut[2] = pIn[2];
-		pOut[3] = pIn[3];
-		pOut[4] = 0.0;
-		pOut[5] = 0.0;
-		pOut[6] = 0.0;
+		pOut[0] = src[base    ];
+		pOut[1] = src[base + 1];
+		pOut[2] = src[base + 2];
+		pOut[3] = src[base + 3];
+		pOut[4] =
+		pOut[5] =
+		pOut[6] =
 		pOut[7] = 0.0;
 		pOut[i+4] = 1.0;
 
-		rowMap[i] = i;
+		// rowMap[i] = i;
 	}
 
 	// Use row operations to get to reduced row-echelon form using these rules:
@@ -2681,10 +2801,10 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 	// 2. Add a multiple of one row to another.
 	// 3. Interchange two rows.
 
-	for ( local iRow = 0; iRow < 4; ++iRow )
+	for ( local mul,iRow = 0; iRow < 4; ++iRow )
 	{
 		// Find the row with the largest element in this column.
-		local fLargest = 0.00001;
+		local fLargest = 1.e-6;
 		local iLargest = 0xFFFFFFFF;
 		for ( local iTest = iRow; iTest < 4; ++iTest )
 		{
@@ -2708,7 +2828,7 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 		local pRow = mat[rowMap[iRow]];
 
 		// Divide this row by the element.
-		local mul = 1.0 / pRow[iRow];
+		mul = 1.0 / pRow[iRow];
 			pRow[0] *= mul;
 			pRow[1] *= mul;
 			pRow[2] *= mul;
@@ -2728,7 +2848,7 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 			local pScaleRow = mat[rowMap[i]];
 
 			// Multiply this row by -(iRow*the element).
-			local mul = pScaleRow[iRow];
+			mul = pScaleRow[iRow];
 				pScaleRow[0] -= pRow[0] * mul;
 				pScaleRow[1] -= pRow[1] * mul;
 				pScaleRow[2] -= pRow[2] * mul;
@@ -2741,17 +2861,18 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 		}
 	}
 
-	dst = dst.m;
+	dst = dst[0];
 
 	// The inverse is on the right side of AX now (the identity is on the left).
 	for ( local i = 0; i < 4; ++i )
 	{
 		local pIn = mat[rowMap[i]];
-		local pOut = dst[i];
-			pOut[0] = pIn[0 + 4];
-			pOut[1] = pIn[1 + 4];
-			pOut[2] = pIn[2 + 4];
-			pOut[3] = pIn[3 + 4];
+		local base = 4*i;
+		// local pOut = dst[i];
+			dst[base    ] = pIn[4];
+			dst[base + 1] = pIn[5];
+			dst[base + 2] = pIn[6];
+			dst[base + 3] = pIn[7];
 	}
 
 	return true;
@@ -2762,24 +2883,24 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 //-----------------------------------------------------------------------------
 function VS::MatrixInverseTR( src, dst )
 {
-	src = src.m;
-	dst = dst.m;
+	src = src[0];
+	dst = dst[0];
 
 	// Transpose the upper 3x3.
-	dst[0][0] = src[0][0];  dst[0][1] = src[1][0]; dst[0][2] = src[2][0];
-	dst[1][0] = src[0][1];  dst[1][1] = src[1][1]; dst[1][2] = src[2][1];
-	dst[2][0] = src[0][2];  dst[2][1] = src[1][2]; dst[2][2] = src[2][2];
+	dst[M_00] = src[M_00];  dst[M_01] = src[M_10]; dst[M_02] = src[M_20];
+	dst[M_10] = src[M_01];  dst[M_11] = src[M_11]; dst[M_12] = src[M_21];
+	dst[M_20] = src[M_02];  dst[M_21] = src[M_12]; dst[M_22] = src[M_22];
 
 	// Transform the translation.
 	// Vector vTrans( -src.m[0][3], -src.m[1][3], -src.m[2][3] );
 	// Vector3DMultiply( dst, vTrans, vNewTrans );
 	// MatrixSetColumn( dst, 3, vNewTrans );
-	dst[0][3] = dst[0][0] * -src[0][3] - dst[0][1] * src[1][3] - dst[0][2] * src[2][3];
-	dst[1][3] = dst[1][0] * -src[0][3] - dst[1][1] * src[1][3] - dst[1][2] * src[2][3];
-	dst[2][3] = dst[2][0] * -src[0][3] - dst[2][1] * src[1][3] - dst[2][2] * src[2][3];
+	dst[M_03] = -( dst[M_00] * src[M_03] + dst[M_01] * src[M_13] + dst[M_02] * src[M_23] );
+	dst[M_13] = -( dst[M_10] * src[M_03] + dst[M_11] * src[M_13] + dst[M_12] * src[M_23] );
+	dst[M_23] = -( dst[M_20] * src[M_03] + dst[M_21] * src[M_13] + dst[M_22] * src[M_23] );
 
-	dst[3][0] = dst[3][1] = dst[3][2] = 0.0;
-	dst[3][3] = 1.0;
+	dst[M_30] = dst[M_31] = dst[M_32] = 0.0;
+	dst[M_33] = 1.0;
 }
 
 /*
@@ -2799,65 +2920,69 @@ function VS::MatrixColumnDotProduct( in1, col, in2 )
 
 function VS::MatrixGetColumn( in1, column, out = _VEC )
 {
-	in1 = in1.m;
+	in1 = in1[0];
 
-	out.x = in1[0][column];
-	out.y = in1[1][column];
-	out.z = in1[2][column];
+	out.x = in1[    column];
+	out.y = in1[4 + column];
+	out.z = in1[8 + column];
 
 	return out;
 }
 
 function VS::MatrixSetColumn( in1, column, out )
 {
-	out = out.m;
+	out = out[0];
 
-	out[0][column] = in1.x;
-	out[1][column] = in1.y;
-	out[2][column] = in1.z;
+	out[    column] = in1.x;
+	out[4 + column] = in1.y;
+	out[8 + column] = in1.z;
 }
 
 function VS::MatrixScaleBy( flScale, out )
 {
-	out = out.m;
+	out = out[0];
 
-	out[0][0] *= flScale;
-	out[1][0] *= flScale;
-	out[2][0] *= flScale;
-	out[0][1] *= flScale;
-	out[1][1] *= flScale;
-	out[2][1] *= flScale;
-	out[0][2] *= flScale;
-	out[1][2] *= flScale;
-	out[2][2] *= flScale;
+	out[M_00] *= flScale;
+	out[M_10] *= flScale;
+	out[M_20] *= flScale;
+
+	out[M_01] *= flScale;
+	out[M_11] *= flScale;
+	out[M_21] *= flScale;
+
+	out[M_02] *= flScale;
+	out[M_12] *= flScale;
+	out[M_22] *= flScale;
 }
 
 function VS::MatrixScaleByZero( out )
 {
-	out = out.m;
+	out = out[0];
 
-	out[0][0] =
-	out[1][0] =
-	out[2][0] =
-	out[0][1] =
-	out[1][1] =
-	out[2][1] =
-	out[0][2] =
-	out[1][2] =
-	out[2][2] = 0.0;
+	out[M_00] =
+	out[M_10] =
+	out[M_20] =
+
+	out[M_01] =
+	out[M_11] =
+	out[M_21] =
+
+	out[M_02] =
+	out[M_12] =
+	out[M_22] = 0.0;
 }
 
 function VS::SetIdentityMatrix( matrix )
 {
 	// SetScaleMatrix( 1.0, 1.0, 1.0, matrix );
 
-	matrix = matrix.m;
+	matrix = matrix[0];
 
-	matrix[0][0] = matrix[1][1] = matrix[2][2] = 1.0;
+	matrix[M_00] = matrix[M_11] = matrix[M_22] = 1.0;
 
-	matrix[0][1] = matrix[0][2] = matrix[0][3] =
-	matrix[1][0] = matrix[1][2] = matrix[1][3] =
-	matrix[2][0] = matrix[2][1] = matrix[2][3] = 0.0;
+	matrix[M_01] = matrix[M_02] = matrix[M_03] =
+	matrix[M_10] = matrix[M_12] = matrix[M_13] =
+	matrix[M_20] = matrix[M_21] = matrix[M_23] = 0.0;
 }
 
 //-----------------------------------------------------------------------------
@@ -2865,15 +2990,15 @@ function VS::SetIdentityMatrix( matrix )
 //-----------------------------------------------------------------------------
 function VS::SetScaleMatrix( x, y, z, dst )
 {
-	dst = dst.m;
+	dst = dst[0];
 
-	dst[0][0] = x;
-	dst[1][1] = y;
-	dst[2][2] = z;
+	dst[M_00] = x;
+	dst[M_11] = y;
+	dst[M_22] = z;
 
-	dst[0][1] = dst[0][2] = dst[0][3] =
-	dst[1][0] = dst[1][2] = dst[1][3] =
-	dst[2][0] = dst[2][1] = dst[2][3] = 0.0;
+	dst[M_01] = dst[M_02] = dst[M_03] =
+	dst[M_10] = dst[M_12] = dst[M_13] =
+	dst[M_20] = dst[M_21] = dst[M_23] = 0.0;
 }
 
 //-----------------------------------------------------------------------------
@@ -2888,10 +3013,10 @@ function VS::ComputeCenterMatrix( origin, angles, mins, maxs, matrix ) : (Vector
 	local worldCentroid = VectorRotate( centroid, matrix ) + origin;
 
 	// MatrixSetColumn( worldCentroid, 3, matrix );
-	matrix = matrix.m;
-	matrix[0][3] = worldCentroid.x;
-	matrix[1][3] = worldCentroid.y;
-	matrix[2][3] = worldCentroid.z;
+	matrix = matrix[0];
+	matrix[M_03] = worldCentroid.x;
+	matrix[M_13] = worldCentroid.y;
+	matrix[M_23] = worldCentroid.z;
 }
 
 function VS::ComputeCenterIMatrix( origin, angles, mins, maxs, matrix ) : (VectorRotate, AngleIMatrix)
@@ -2905,10 +3030,10 @@ function VS::ComputeCenterIMatrix( origin, angles, mins, maxs, matrix ) : (Vecto
 	local centroid = (mins + maxs)*-0.5 - localOrigin;
 
 	// MatrixSetColumn( centroid, 3, matrix );
-	matrix = matrix.m;
-	matrix[0][3] = centroid.x;
-	matrix[1][3] = centroid.y;
-	matrix[2][3] = centroid.z;
+	matrix = matrix[0];
+	matrix[M_03] = centroid.x;
+	matrix[M_13] = centroid.y;
+	matrix[M_23] = centroid.z;
 }
 
 //-----------------------------------------------------------------------------
@@ -2916,180 +3041,190 @@ function VS::ComputeCenterIMatrix( origin, angles, mins, maxs, matrix ) : (Vecto
 //-----------------------------------------------------------------------------
 function VS::ComputeAbsMatrix( in1, out ) : (fabs)
 {
-	in1 = in1.m;
-	out = out.m;
+	in1 = in1[0];
+	out = out[0];
 
-	out[0][0] = fabs(in1[0][0]);
-	out[0][1] = fabs(in1[0][1]);
-	out[0][2] = fabs(in1[0][2]);
-	out[1][0] = fabs(in1[1][0]);
-	out[1][1] = fabs(in1[1][1]);
-	out[1][2] = fabs(in1[1][2]);
-	out[2][0] = fabs(in1[2][0]);
-	out[2][1] = fabs(in1[2][1]);
-	out[2][2] = fabs(in1[2][2]);
+	out[M_00] = fabs( in1[M_00] );
+	out[M_01] = fabs( in1[M_01] );
+	out[M_02] = fabs( in1[M_02] );
+
+	out[M_10] = fabs( in1[M_10] );
+	out[M_11] = fabs( in1[M_11] );
+	out[M_12] = fabs( in1[M_12] );
+
+	out[M_20] = fabs( in1[M_20] );
+	out[M_21] = fabs( in1[M_21] );
+	out[M_22] = fabs( in1[M_22] );
 }
 
 function VS::ConcatRotations( in1, in2, out )
 {
-	in1 = in1.m;
-	in2 = in2.m;
-	out = out.m;
+	in1 = in1[0];
+	in2 = in2[0];
+	out = out[0];
 
 	local
-		i2m00 = in2[0][0],
-		i2m01 = in2[0][1],
-		i2m02 = in2[0][2],
+		i2m00 = in2[M_00],
+		i2m01 = in2[M_01],
+		i2m02 = in2[M_02],
 
-		i2m10 = in2[1][0],
-		i2m11 = in2[1][1],
-		i2m12 = in2[1][2],
+		i2m10 = in2[M_10],
+		i2m11 = in2[M_11],
+		i2m12 = in2[M_12],
 
-		i2m20 = in2[2][0],
-		i2m21 = in2[2][1],
-		i2m22 = in2[2][2];
+		i2m20 = in2[M_20],
+		i2m21 = in2[M_21],
+		i2m22 = in2[M_22];
 
 	local
-		m0 = in1[0][0] * i2m00 + in1[0][1] * i2m10 + in1[0][2] * i2m20,
-		m1 = in1[0][0] * i2m01 + in1[0][1] * i2m11 + in1[0][2] * i2m21,
-		m2 = in1[0][0] * i2m02 + in1[0][1] * i2m12 + in1[0][2] * i2m22;
+		m0 = in1[M_00] * i2m00 + in1[M_01] * i2m10 + in1[M_02] * i2m20,
+		m1 = in1[M_00] * i2m01 + in1[M_01] * i2m11 + in1[M_02] * i2m21,
+		m2 = in1[M_00] * i2m02 + in1[M_01] * i2m12 + in1[M_02] * i2m22;
 
-	out[0][0] = m0;
-	out[0][1] = m1;
-	out[0][2] = m2;
+	out[M_00] = m0;
+	out[M_01] = m1;
+	out[M_02] = m2;
 
-	m0 = in1[1][0] * i2m00 + in1[1][1] * i2m10 + in1[1][2] * i2m20;
-	m1 = in1[1][0] * i2m01 + in1[1][1] * i2m11 + in1[1][2] * i2m21;
-	m2 = in1[1][0] * i2m02 + in1[1][1] * i2m12 + in1[1][2] * i2m22;
+		m0 = in1[M_10] * i2m00 + in1[M_11] * i2m10 + in1[M_12] * i2m20;
+		m1 = in1[M_10] * i2m01 + in1[M_11] * i2m11 + in1[M_12] * i2m21;
+		m2 = in1[M_10] * i2m02 + in1[M_11] * i2m12 + in1[M_12] * i2m22;
 
-	out[1][0] = m0;
-	out[1][1] = m1;
-	out[1][2] = m2;
+	out[M_10] = m0;
+	out[M_11] = m1;
+	out[M_12] = m2;
 
-	m0 = in1[2][0] * i2m00 + in1[2][1] * i2m10 + in1[2][2] * i2m20;
-	m1 = in1[2][0] * i2m01 + in1[2][1] * i2m11 + in1[2][2] * i2m21;
-	m2 = in1[2][0] * i2m02 + in1[2][1] * i2m12 + in1[2][2] * i2m22;
+		m0 = in1[M_20] * i2m00 + in1[M_21] * i2m10 + in1[M_22] * i2m20;
+		m1 = in1[M_20] * i2m01 + in1[M_21] * i2m11 + in1[M_22] * i2m21;
+		m2 = in1[M_20] * i2m02 + in1[M_21] * i2m12 + in1[M_22] * i2m22;
 
-	out[2][0] = m0;
-	out[2][1] = m1;
-	out[2][2] = m2;
+	out[M_20] = m0;
+	out[M_21] = m1;
+	out[M_22] = m2;
 }
 
 // matrix3x4_t multiply
 function VS::ConcatTransforms( in1, in2, out )
 {
-	in1 = in1.m;
-	in2 = in2.m;
-	out = out.m;
+	in1 = in1[0];
+	in2 = in2[0];
+	out = out[0];
 
 	local
-		i2m00 = in2[0][0],
-		i2m01 = in2[0][1],
-		i2m02 = in2[0][2],
-		i2m03 = in2[0][3],
+		i2m00 = in2[M_00],
+		i2m01 = in2[M_01],
+		i2m02 = in2[M_02],
+		i2m03 = in2[M_03],
 
-		i2m10 = in2[1][0],
-		i2m11 = in2[1][1],
-		i2m12 = in2[1][2],
-		i2m13 = in2[1][3],
+		i2m10 = in2[M_10],
+		i2m11 = in2[M_11],
+		i2m12 = in2[M_12],
+		i2m13 = in2[M_13],
 
-		i2m20 = in2[2][0],
-		i2m21 = in2[2][1],
-		i2m22 = in2[2][2],
-		i2m23 = in2[2][3];
+		i2m20 = in2[M_20],
+		i2m21 = in2[M_21],
+		i2m22 = in2[M_22],
+		i2m23 = in2[M_23];
 
 	local
-		m0 = in1[0][0] * i2m00 + in1[0][1] * i2m10 + in1[0][2] * i2m20,
-		m1 = in1[0][0] * i2m01 + in1[0][1] * i2m11 + in1[0][2] * i2m21,
-		m2 = in1[0][0] * i2m02 + in1[0][1] * i2m12 + in1[0][2] * i2m22,
-		m3 = in1[0][0] * i2m03 + in1[0][1] * i2m13 + in1[0][2] * i2m23;
+		m0 = in1[M_00] * i2m00 + in1[M_01] * i2m10 + in1[M_02] * i2m20,
+		m1 = in1[M_00] * i2m01 + in1[M_01] * i2m11 + in1[M_02] * i2m21,
+		m2 = in1[M_00] * i2m02 + in1[M_01] * i2m12 + in1[M_02] * i2m22,
+		m3 = in1[M_00] * i2m03 + in1[M_01] * i2m13 + in1[M_02] * i2m23;
 
-	out[0][0] = m0;
-	out[0][1] = m1;
-	out[0][2] = m2;
-	out[0][3] = m3;
+	out[M_00] = m0;
+	out[M_01] = m1;
+	out[M_02] = m2;
+	out[M_03] = m3;
 
-	m0 = in1[1][0] * i2m00 + in1[1][1] * i2m10 + in1[1][2] * i2m20;
-	m1 = in1[1][0] * i2m01 + in1[1][1] * i2m11 + in1[1][2] * i2m21;
-	m2 = in1[1][0] * i2m02 + in1[1][1] * i2m12 + in1[1][2] * i2m22;
-	m3 = in1[1][0] * i2m03 + in1[1][1] * i2m13 + in1[1][2] * i2m23;
+		m0 = in1[M_10] * i2m00 + in1[M_11] * i2m10 + in1[M_12] * i2m20;
+		m1 = in1[M_10] * i2m01 + in1[M_11] * i2m11 + in1[M_12] * i2m21;
+		m2 = in1[M_10] * i2m02 + in1[M_11] * i2m12 + in1[M_12] * i2m22;
+		m3 = in1[M_10] * i2m03 + in1[M_11] * i2m13 + in1[M_12] * i2m23;
 
-	out[1][0] = m0;
-	out[1][1] = m1;
-	out[1][2] = m2;
-	out[1][3] = m3;
+	out[M_10] = m0;
+	out[M_11] = m1;
+	out[M_12] = m2;
+	out[M_13] = m3;
 
-	m0 = in1[2][0] * i2m00 + in1[2][1] * i2m10 + in1[2][2] * i2m20;
-	m1 = in1[2][0] * i2m01 + in1[2][1] * i2m11 + in1[2][2] * i2m21;
-	m2 = in1[2][0] * i2m02 + in1[2][1] * i2m12 + in1[2][2] * i2m22;
-	m3 = in1[2][0] * i2m03 + in1[2][1] * i2m13 + in1[2][2] * i2m23;
+		m0 = in1[M_20] * i2m00 + in1[M_21] * i2m10 + in1[M_22] * i2m20;
+		m1 = in1[M_20] * i2m01 + in1[M_21] * i2m11 + in1[M_22] * i2m21;
+		m2 = in1[M_20] * i2m02 + in1[M_21] * i2m12 + in1[M_22] * i2m22;
+		m3 = in1[M_20] * i2m03 + in1[M_21] * i2m13 + in1[M_22] * i2m23;
 
-	out[2][0] = m0;
-	out[2][1] = m1;
-	out[2][2] = m2;
-	out[2][3] = m3;
+	out[M_20] = m0;
+	out[M_21] = m1;
+	out[M_22] = m2;
+	out[M_23] = m3;
 }
 
 // VMatrix multiply
 function VS::MatrixMultiply( in1, in2, out )
 {
-	in1 = in1.m;
-	in2 = in2.m;
-	out = out.m;
+	in1 = in1[0];
+	in2 = in2[0];
+	out = out[0];
 
 	local
-		i2m0 = in2[0],
-		i2m1 = in2[1],
-		i2m2 = in2[2],
-		i2m3 = in2[3];
+		i2m00 = in2[M_00],
+		i2m01 = in2[M_01],
+		i2m02 = in2[M_02],
+		i2m03 = in2[M_03],
 
-	local i1m = in1[0];
+		i2m10 = in2[M_10],
+		i2m11 = in2[M_11],
+		i2m12 = in2[M_12],
+		i2m13 = in2[M_13],
+
+		i2m20 = in2[M_20],
+		i2m21 = in2[M_21],
+		i2m22 = in2[M_22],
+		i2m23 = in2[M_23],
+
+		i2m30 = in2[M_30],
+		i2m31 = in2[M_31],
+		i2m32 = in2[M_32],
+		i2m33 = in2[M_33];
+
 	local
-		m00 = i1m[0] * i2m0[0] + i1m[1] * i2m1[0] + i1m[2] * i2m2[0] + i1m[3] * i2m3[0],
-		m01 = i1m[0] * i2m0[1] + i1m[1] * i2m1[1] + i1m[2] * i2m2[1] + i1m[3] * i2m3[1],
-		m02 = i1m[0] * i2m0[2] + i1m[1] * i2m1[2] + i1m[2] * i2m2[2] + i1m[3] * i2m3[2],
-		m03 = i1m[0] * i2m0[3] + i1m[1] * i2m1[3] + i1m[2] * i2m2[3] + i1m[3] * i2m3[3];
+		m0 = in1[M_00] * i2m00 + in1[M_01] * i2m10 + in1[M_02] * i2m20 + in1[M_03] * i2m30,
+		m1 = in1[M_00] * i2m01 + in1[M_01] * i2m11 + in1[M_02] * i2m21 + in1[M_03] * i2m31,
+		m2 = in1[M_00] * i2m02 + in1[M_01] * i2m12 + in1[M_02] * i2m22 + in1[M_03] * i2m32,
+		m3 = in1[M_00] * i2m03 + in1[M_01] * i2m13 + in1[M_02] * i2m23 + in1[M_03] * i2m33;
 
-	i1m = in1[1];
-	local
-		m10 = i1m[0] * i2m0[0] + i1m[1] * i2m1[0] + i1m[2] * i2m2[0] + i1m[3] * i2m3[0],
-		m11 = i1m[0] * i2m0[1] + i1m[1] * i2m1[1] + i1m[2] * i2m2[1] + i1m[3] * i2m3[1],
-		m12 = i1m[0] * i2m0[2] + i1m[1] * i2m1[2] + i1m[2] * i2m2[2] + i1m[3] * i2m3[2],
-		m13 = i1m[0] * i2m0[3] + i1m[1] * i2m1[3] + i1m[2] * i2m2[3] + i1m[3] * i2m3[3];
+	out[M_00] = m0;
+	out[M_01] = m1;
+	out[M_02] = m2;
+	out[M_03] = m3;
 
-	i1m = in1[2];
-	local
-		m20 = i1m[0] * i2m0[0] + i1m[1] * i2m1[0] + i1m[2] * i2m2[0] + i1m[3] * i2m3[0],
-		m21 = i1m[0] * i2m0[1] + i1m[1] * i2m1[1] + i1m[2] * i2m2[1] + i1m[3] * i2m3[1],
-		m22 = i1m[0] * i2m0[2] + i1m[1] * i2m1[2] + i1m[2] * i2m2[2] + i1m[3] * i2m3[2],
-		m23 = i1m[0] * i2m0[3] + i1m[1] * i2m1[3] + i1m[2] * i2m2[3] + i1m[3] * i2m3[3];
+		m0 = in1[M_10] * i2m00 + in1[M_11] * i2m10 + in1[M_12] * i2m20 + in1[M_13] * i2m30;
+		m1 = in1[M_10] * i2m01 + in1[M_11] * i2m11 + in1[M_12] * i2m21 + in1[M_13] * i2m31;
+		m2 = in1[M_10] * i2m02 + in1[M_11] * i2m12 + in1[M_12] * i2m22 + in1[M_13] * i2m32;
+		m3 = in1[M_10] * i2m03 + in1[M_11] * i2m13 + in1[M_12] * i2m23 + in1[M_13] * i2m33;
 
-	i1m = in1[3];
-	local
-		m30 = i1m[0] * i2m0[0] + i1m[1] * i2m1[0] + i1m[2] * i2m2[0] + i1m[3] * i2m3[0],
-		m31 = i1m[0] * i2m0[1] + i1m[1] * i2m1[1] + i1m[2] * i2m2[1] + i1m[3] * i2m3[1],
-		m32 = i1m[0] * i2m0[2] + i1m[1] * i2m1[2] + i1m[2] * i2m2[2] + i1m[3] * i2m3[2],
-		m33 = i1m[0] * i2m0[3] + i1m[1] * i2m1[3] + i1m[2] * i2m2[3] + i1m[3] * i2m3[3];
+	out[M_10] = m0;
+	out[M_11] = m1;
+	out[M_12] = m2;
+	out[M_13] = m3;
 
-	out[0][0] = m00;
-	out[0][1] = m01;
-	out[0][2] = m02;
-	out[0][3] = m03;
+		m0 = in1[M_20] * i2m00 + in1[M_21] * i2m10 + in1[M_22] * i2m20 + in1[M_23] * i2m30;
+		m1 = in1[M_20] * i2m01 + in1[M_21] * i2m11 + in1[M_22] * i2m21 + in1[M_23] * i2m31;
+		m2 = in1[M_20] * i2m02 + in1[M_21] * i2m12 + in1[M_22] * i2m22 + in1[M_23] * i2m32;
+		m3 = in1[M_20] * i2m03 + in1[M_21] * i2m13 + in1[M_22] * i2m23 + in1[M_23] * i2m33;
 
-	out[1][0] = m10;
-	out[1][1] = m11;
-	out[1][2] = m12;
-	out[1][3] = m13;
+	out[M_20] = m0;
+	out[M_21] = m1;
+	out[M_22] = m2;
+	out[M_23] = m3;
 
-	out[2][0] = m20;
-	out[2][1] = m21;
-	out[2][2] = m22;
-	out[2][3] = m23;
+		m0 = in1[M_30] * i2m00 + in1[M_31] * i2m10 + in1[M_32] * i2m20 + in1[M_33] * i2m30;
+		m1 = in1[M_30] * i2m01 + in1[M_31] * i2m11 + in1[M_32] * i2m21 + in1[M_33] * i2m31;
+		m2 = in1[M_30] * i2m02 + in1[M_31] * i2m12 + in1[M_32] * i2m22 + in1[M_33] * i2m32;
+		m3 = in1[M_30] * i2m03 + in1[M_31] * i2m13 + in1[M_32] * i2m23 + in1[M_33] * i2m33;
 
-	out[3][0] = m30;
-	out[3][1] = m31;
-	out[3][2] = m32;
-	out[3][3] = m33;
+	out[M_30] = m0;
+	out[M_31] = m1;
+	out[M_32] = m2;
+	out[M_33] = m3;
 }
 
 /*
@@ -3122,19 +3257,19 @@ function VS::MatrixTranslate( dst, vecTranslation )
 //-----------------------------------------------------------------------------
 function VS::MatrixBuildRotationAboutAxis( vAxisOfRot, angleDegrees, dst ) : ( sin, cos )
 {
-	local radians = angleDegrees * DEG2RAD;
-	local fSin = sin( radians );
-	local fCos = cos( radians );
+	angleDegrees = angleDegrees * DEG2RAD;
+	local fSin = sin( angleDegrees );
+	local fCos = cos( angleDegrees );
 
 	local xx = vAxisOfRot.x * vAxisOfRot.x;
 	local yy = vAxisOfRot.y * vAxisOfRot.y;
 	local zz = vAxisOfRot.z * vAxisOfRot.z;
 
-	dst = dst.m;
+	dst = dst[0];
 
-	dst[0][0] = xx + (1.0 - xx) * fCos;
-	dst[1][1] = yy + (1.0 - yy) * fCos;
-	dst[2][2] = zz + (1.0 - zz) * fCos;
+	dst[M_00] = xx + (1.0 - xx) * fCos;
+	dst[M_11] = yy + (1.0 - yy) * fCos;
+	dst[M_22] = zz + (1.0 - zz) * fCos;
 
 	fCos = 1.0 - fCos;
 
@@ -3146,16 +3281,16 @@ function VS::MatrixBuildRotationAboutAxis( vAxisOfRot, angleDegrees, dst ) : ( s
 	local ys = vAxisOfRot.y * fSin;
 	local zs = vAxisOfRot.z * fSin;
 
-	dst[1][0] = xyc + zs;
-	dst[2][0] = xzc - ys;
+	dst[M_10] = xyc + zs;
+	dst[M_20] = xzc - ys;
 
-	dst[0][1] = xyc - zs;
-	dst[2][1] = yzc + xs;
+	dst[M_01] = xyc - zs;
+	dst[M_21] = yzc + xs;
 
-	dst[0][2] = xzc + ys;
-	dst[1][2] = yzc - xs;
+	dst[M_02] = xzc + ys;
+	dst[M_12] = yzc - xs;
 
-	dst[0][3] = dst[1][3] = dst[2][3] = 0.0;
+	dst[M_03] = dst[M_13] = dst[M_23] = 0.0;
 }
 
 local MatrixBuildRotationAboutAxis = VS.MatrixBuildRotationAboutAxis;
@@ -3232,13 +3367,13 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection )
 function VS::Vector3DMultiply( src1, src2, dst )
 {
 	src1 = src1.m;
-	local x = src1[0][0] * src2.x + src1[0][1] * src2.y + src1[0][2] * src2.z;
-	local y = src1[1][0] * src2.x + src1[1][1] * src2.y + src1[1][2] * src2.z;
-	local z = src1[2][0] * src2.x + src1[2][1] * src2.y + src1[2][2] * src2.z;
+	local x = src2.x;
+	local y = src2.y;
+	local z = src2.z;
 
-	dst.x = x;
-	dst.y = y;
-	dst.z = z;
+	dst.x = src1[0][0] * x + src1[0][1] * y + src1[0][2] * z;
+	dst.y = src1[1][0] * x + src1[1][1] * y + src1[1][2] * z;
+	dst.z = src1[2][0] * x + src1[2][1] * y + src1[2][2] * z;
 }
 
 //-----------------------------------------------------------------------------
@@ -3252,13 +3387,13 @@ function VS::Vector3DMultiply( src1, src2, dst )
 function VS::Vector3DMultiplyPosition( src1, src2, dst )
 {
 	src1 = src1.m;
-	local x = src1[0][0] * src2.x + src1[0][1] * src2.y + src1[0][2] * src2.z + src1[0][3];
-	local y = src1[1][0] * src2.x + src1[1][1] * src2.y + src1[1][2] * src2.z + src1[1][3];
-	local z = src1[2][0] * src2.x + src1[2][1] * src2.y + src1[2][2] * src2.z + src1[2][3];
+	local x = src2.x;
+	local y = src2.y;
+	local z = src2.z;
 
-	dst.x = x;
-	dst.y = y;
-	dst.z = z;
+	dst.x = src1[0][0] * x + src1[0][1] * y + src1[0][2] * z + src1[0][3];
+	dst.y = src1[1][0] * x + src1[1][1] * y + src1[1][2] * z + src1[1][3];
+	dst.z = src1[2][0] * x + src1[2][1] * y + src1[2][2] * z + src1[2][3];
 }
 */
 //-----------------------------------------------------------------------------
@@ -3271,15 +3406,15 @@ function VS::Vector3DMultiplyPosition( src1, src2, dst )
 //-----------------------------------------------------------------------------
 function VS::Vector3DMultiplyProjective( src1, src2, dst )
 {
-	src1 = src1.m;
-	local invw = 1.0  / ( src1[3][0] * src2.x + src1[3][1] * src2.y + src1[3][2] * src2.z );
-	local x    = invw * ( src1[0][0] * src2.x + src1[0][1] * src2.y + src1[0][2] * src2.z );
-	local y    = invw * ( src1[1][0] * src2.x + src1[1][1] * src2.y + src1[1][2] * src2.z );
-	local z    = invw * ( src1[2][0] * src2.x + src1[2][1] * src2.y + src1[2][2] * src2.z );
+	src1 = src1[0];
+	local x = src2.x;
+	local y = src2.y;
+	local z = src2.z;
 
-	dst.x = x;
-	dst.y = y;
-	dst.z = z;
+	local invw = 1.0 / ( src1[M_30] * x + src1[M_31] * y + src1[M_32] * z );
+	dst.x = invw * ( src1[M_00] * x + src1[M_01] * y + src1[M_02] * z );
+	dst.y = invw * ( src1[M_10] * x + src1[M_11] * y + src1[M_12] * z );
+	dst.z = invw * ( src1[M_20] * x + src1[M_21] * y + src1[M_22] * z );
 }
 
 //-----------------------------------------------------------------------------
@@ -3292,15 +3427,15 @@ function VS::Vector3DMultiplyProjective( src1, src2, dst )
 //-----------------------------------------------------------------------------
 function VS::Vector3DMultiplyPositionProjective( src1, src2, dst )
 {
-	src1 = src1.m;
-	local invw = 1.0  / ( src1[3][0] * src2.x + src1[3][1] * src2.y + src1[3][2] * src2.z + src1[3][3] );
-	local x    = invw * ( src1[0][0] * src2.x + src1[0][1] * src2.y + src1[0][2] * src2.z + src1[0][3] );
-	local y    = invw * ( src1[1][0] * src2.x + src1[1][1] * src2.y + src1[1][2] * src2.z + src1[1][3] );
-	local z    = invw * ( src1[2][0] * src2.x + src1[2][1] * src2.y + src1[2][2] * src2.z + src1[2][3] );
+	src1 = src1[0];
+	local x = src2.x;
+	local y = src2.y;
+	local z = src2.z;
 
-	dst.x = x;
-	dst.y = y;
-	dst.z = z;
+	local invw = 1.0 / ( src1[M_30] * x + src1[M_31] * y + src1[M_32] * z + src1[M_33] );
+	dst.x = invw * ( src1[M_00] * x + src1[M_01] * y + src1[M_02] * z + src1[M_03] );
+	dst.y = invw * ( src1[M_10] * x + src1[M_11] * y + src1[M_12] * z + src1[M_13] );
+	dst.z = invw * ( src1[M_20] * x + src1[M_21] * y + src1[M_22] * z + src1[M_23] );
 }
 
 //-----------------------------------------------------------------------------
@@ -3310,25 +3445,23 @@ function VS::TransformAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxs
 	: ( Vector, fabs, VectorAdd, VectorSubtract, VectorTransform )
 {
 	local localCenter = (vecMinsIn + vecMaxsIn) * 0.5;
-
 	local localExtents = vecMaxsIn - localCenter;
-
 	local worldCenter = VectorTransform( localCenter, transform );
 
-	transform = transform.m;
+	transform = transform[0];
 
 	local worldExtents = Vector(
-		fabs( localExtents.x * transform[0][0] ) +
-		fabs( localExtents.y * transform[0][1] ) +
-		fabs( localExtents.z * transform[0][2] ),
+		fabs( localExtents.x * transform[M_00] ) +
+		fabs( localExtents.y * transform[M_01] ) +
+		fabs( localExtents.z * transform[M_02] ),
 
-		fabs( localExtents.x * transform[1][0] ) +
-		fabs( localExtents.y * transform[1][1] ) +
-		fabs( localExtents.z * transform[1][2] ),
+		fabs( localExtents.x * transform[M_10] ) +
+		fabs( localExtents.y * transform[M_11] ) +
+		fabs( localExtents.z * transform[M_12] ),
 
-		fabs( localExtents.x * transform[2][0] ) +
-		fabs( localExtents.y * transform[2][1] ) +
-		fabs( localExtents.z * transform[2][2] ) );
+		fabs( localExtents.x * transform[M_20] ) +
+		fabs( localExtents.y * transform[M_21] ) +
+		fabs( localExtents.z * transform[M_22] ) );
 
 	VectorSubtract( worldCenter, worldExtents, vecMinsOut );
 	VectorAdd( worldCenter, worldExtents, vecMaxsOut );
@@ -3341,25 +3474,23 @@ function VS::ITransformAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMax
 	: ( Vector, fabs, VectorAdd, VectorSubtract, VectorITransform )
 {
 	local worldCenter = (vecMinsIn + vecMaxsIn) * 0.5;
-
 	local worldExtents = vecMaxsIn - worldCenter;
-
 	local localCenter = VectorITransform( worldCenter, transform );
 
-	transform = transform.m;
+	transform = transform[0];
 
 	local localExtents = Vector(
-		fabs( worldExtents.x * transform[0][0] ) +
-		fabs( worldExtents.y * transform[1][0] ) +
-		fabs( worldExtents.z * transform[2][0] ),
+		fabs( worldExtents.x * transform[M_00] ) +
+		fabs( worldExtents.y * transform[M_10] ) +
+		fabs( worldExtents.z * transform[M_20] ),
 
-		fabs( worldExtents.x * transform[0][1] ) +
-		fabs( worldExtents.y * transform[1][1] ) +
-		fabs( worldExtents.z * transform[2][1] ),
+		fabs( worldExtents.x * transform[M_01] ) +
+		fabs( worldExtents.y * transform[M_11] ) +
+		fabs( worldExtents.z * transform[M_21] ),
 
-		fabs( worldExtents.x * transform[0][2] ) +
-		fabs( worldExtents.y * transform[1][2] ) +
-		fabs( worldExtents.z * transform[2][2] ) );
+		fabs( worldExtents.x * transform[M_02] ) +
+		fabs( worldExtents.y * transform[M_12] ) +
+		fabs( worldExtents.z * transform[M_22] ) );
 
 	VectorSubtract( localCenter, localExtents, vecMinsOut );
 	VectorAdd( localCenter, localExtents, vecMaxsOut );
@@ -3373,25 +3504,23 @@ function VS::RotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOut
 	: ( Vector, fabs, VectorAdd, VectorSubtract, VectorRotate )
 {
 	local localCenter = (vecMinsIn + vecMaxsIn) * 0.5;
-
 	local localExtents = vecMaxsIn - localCenter;
-
 	local newCenter = VectorRotate( localCenter, transform );
 
-	transform = transform.m;
+	transform = transform[0];
 
 	local newExtents = Vector(
-		fabs( localExtents.x * transform[0][0] ) +
-		fabs( localExtents.y * transform[0][1] ) +
-		fabs( localExtents.z * transform[0][2] ),
+		fabs( localExtents.x * transform[M_00] ) +
+		fabs( localExtents.y * transform[M_01] ) +
+		fabs( localExtents.z * transform[M_02] ),
 
-		fabs( localExtents.x * transform[1][0] ) +
-		fabs( localExtents.y * transform[1][1] ) +
-		fabs( localExtents.z * transform[1][2] ),
+		fabs( localExtents.x * transform[M_10] ) +
+		fabs( localExtents.y * transform[M_11] ) +
+		fabs( localExtents.z * transform[M_12] ),
 
-		fabs( localExtents.x * transform[2][0] ) +
-		fabs( localExtents.y * transform[2][1] ) +
-		fabs( localExtents.z * transform[2][2] ) );
+		fabs( localExtents.x * transform[M_20] ) +
+		fabs( localExtents.y * transform[M_21] ) +
+		fabs( localExtents.z * transform[M_22] ) );
 
 	VectorSubtract( newCenter, newExtents, vecMinsOut );
 	VectorAdd( newCenter, newExtents, vecMaxsOut );
@@ -3404,25 +3533,23 @@ function VS::IRotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOu
 	: ( Vector, fabs, VectorAdd, VectorSubtract, VectorIRotate )
 {
 	local oldCenter = (vecMinsIn + vecMaxsIn) * 0.5;
-
 	local oldExtents = vecMaxsIn - oldCenter;
-
 	local newCenter = VectorIRotate( oldCenter, transform );
 
-	transform = transform.m;
+	transform = transform[0];
 
 	local newExtents = Vector(
-		fabs( oldExtents.x * transform[0][0] ) +
-		fabs( oldExtents.y * transform[1][0] ) +
-		fabs( oldExtents.z * transform[2][0] ),
+		fabs( oldExtents.x * transform[M_00] ) +
+		fabs( oldExtents.y * transform[M_10] ) +
+		fabs( oldExtents.z * transform[M_20] ),
 
-		fabs( oldExtents.x * transform[0][1] ) +
-		fabs( oldExtents.y * transform[1][1] ) +
-		fabs( oldExtents.z * transform[2][1] ),
+		fabs( oldExtents.x * transform[M_01] ) +
+		fabs( oldExtents.y * transform[M_11] ) +
+		fabs( oldExtents.z * transform[M_21] ),
 
-		fabs( oldExtents.x * transform[0][2] ) +
-		fabs( oldExtents.y * transform[1][2] ) +
-		fabs( oldExtents.z * transform[2][2] ) );
+		fabs( oldExtents.x * transform[M_02] ) +
+		fabs( oldExtents.y * transform[M_12] ) +
+		fabs( oldExtents.z * transform[M_22] ) );
 
 	VectorSubtract( newCenter, newExtents, vecMinsOut );
 	VectorAdd( newCenter, newExtents, vecMaxsOut );
@@ -3523,23 +3650,23 @@ function VS::GetBoxVertices( origin, angles, mins, maxs, pVerts )
 //-----------------------------------------------------------------------------
 function VS::MatrixBuildPerspective( dst, fovX, flAspect, zNear, zFar ) : ( tan )
 {
-	dst = dst.m;
+	dst = dst[0];
 	// memset( dst.Base(), 0, sizeof( dst ) );
-	            dst[0][1] =             dst[0][3] =
-	dst[1][0] =                         dst[1][3] =
-	dst[2][0] = dst[2][1] =
-	dst[3][0] = dst[3][1] =             dst[3][3] = 0.0;
+	            dst[M_01] =             dst[M_03] =
+	dst[M_10] =                         dst[M_13] =
+	dst[M_20] = dst[M_21] =
+	dst[M_30] = dst[M_31] =             dst[M_33] = 0.0;
 
 	local invW = -0.5 / tan( fovX * DEG2RADDIV2 );
 	local range = zFar / ( zNear - zFar );
 
 	// create the final matrix directly
-	dst[0][0] = invW;
-	dst[1][1] = invW * flAspect;
-	dst[0][2] = dst[1][2] = 0.5;
-	dst[2][2] = -range;
-	dst[3][2] = 1.0;
-	dst[2][3] = zNear * range;
+	dst[M_00] = invW;
+	dst[M_11] = invW * flAspect;
+	dst[M_02] = dst[M_12] = 0.5;
+	dst[M_22] = -range;
+	dst[M_32] = 1.0;
+	dst[M_23] = zNear * range;
 
 /*
 	local width  = tan( fovX * DEG2RAD * 0.5 );
@@ -3751,25 +3878,25 @@ function VS::ViewMatrixRH( vEye, vForward, vUp, mOut )
 // NOTE: inverted!
 function VS::ComputeCameraVariables( vecOrigin, pVecForward, pVecRight, pVecUp, pMatCamInverse )
 {
-	pMatCamInverse = pMatCamInverse.m;
+	pMatCamInverse = pMatCamInverse[0];
 
-	pMatCamInverse[0][0] = -pVecRight.x;
-	pMatCamInverse[0][1] = -pVecRight.y;
-	pMatCamInverse[0][2] = -pVecRight.z;
-	pMatCamInverse[0][3] = pVecRight.Dot( vecOrigin );
+	pMatCamInverse[M_00] = -pVecRight.x;
+	pMatCamInverse[M_01] = -pVecRight.y;
+	pMatCamInverse[M_02] = -pVecRight.z;
+	pMatCamInverse[M_03] = pVecRight.Dot( vecOrigin );
 
-	pMatCamInverse[1][0] = -pVecUp.x;
-	pMatCamInverse[1][1] = -pVecUp.y;
-	pMatCamInverse[1][2] = -pVecUp.z;
-	pMatCamInverse[1][3] = pVecUp.Dot( vecOrigin );
+	pMatCamInverse[M_10] = -pVecUp.x;
+	pMatCamInverse[M_11] = -pVecUp.y;
+	pMatCamInverse[M_12] = -pVecUp.z;
+	pMatCamInverse[M_13] = pVecUp.Dot( vecOrigin );
 
-	pMatCamInverse[2][0] = pVecForward.x;
-	pMatCamInverse[2][1] = pVecForward.y;
-	pMatCamInverse[2][2] = pVecForward.z;
-	pMatCamInverse[2][3] = -pVecForward.Dot( vecOrigin );
+	pMatCamInverse[M_20] = pVecForward.x;
+	pMatCamInverse[M_21] = pVecForward.y;
+	pMatCamInverse[M_22] = pVecForward.z;
+	pMatCamInverse[M_23] = -pVecForward.Dot( vecOrigin );
 
-	pMatCamInverse[3][0] = pMatCamInverse[3][1] = pMatCamInverse[3][2] = 0.0;
-	pMatCamInverse[3][3] = 1.0;
+	pMatCamInverse[M_30] = pMatCamInverse[M_31] = pMatCamInverse[M_32] = 0.0;
+	pMatCamInverse[M_33] = 1.0;
 }
 
 
@@ -3793,28 +3920,28 @@ function VS::ScreenToWorldMatrix( pOut, origin, forward, right, up, fov, flAspec
 	local screenToWorld = worldToView; // VMatrix();
 	MatrixInverseGeneral( worldToProj, screenToWorld );
 
-	pOut = pOut.m;
-	screenToWorld = screenToWorld.m;
+	pOut = pOut[0];
+	screenToWorld = screenToWorld[0];
 
-	pOut[0][0] = screenToWorld[0][0];
-	pOut[0][1] = screenToWorld[0][1];
-	pOut[0][2] = screenToWorld[0][2];
-	pOut[0][3] = screenToWorld[0][3];
+	pOut[M_00] = screenToWorld[M_00];
+	pOut[M_01] = screenToWorld[M_01];
+	pOut[M_02] = screenToWorld[M_02];
+	pOut[M_03] = screenToWorld[M_03];
 
-	pOut[1][0] = screenToWorld[1][0];
-	pOut[1][1] = screenToWorld[1][1];
-	pOut[1][2] = screenToWorld[1][2];
-	pOut[1][3] = screenToWorld[1][3];
+	pOut[M_10] = screenToWorld[M_10];
+	pOut[M_11] = screenToWorld[M_11];
+	pOut[M_12] = screenToWorld[M_12];
+	pOut[M_13] = screenToWorld[M_13];
 
-	pOut[2][0] = screenToWorld[2][0];
-	pOut[2][1] = screenToWorld[2][1];
-	pOut[2][2] = screenToWorld[2][2];
-	pOut[2][3] = screenToWorld[2][3];
+	pOut[M_20] = screenToWorld[M_20];
+	pOut[M_21] = screenToWorld[M_21];
+	pOut[M_22] = screenToWorld[M_22];
+	pOut[M_23] = screenToWorld[M_23];
 
-	pOut[3][0] = screenToWorld[3][0];
-	pOut[3][1] = screenToWorld[3][1];
-	pOut[3][2] = screenToWorld[3][2];
-	pOut[3][3] = screenToWorld[3][3];
+	pOut[M_30] = screenToWorld[M_30];
+	pOut[M_31] = screenToWorld[M_31];
+	pOut[M_32] = screenToWorld[M_32];
+	pOut[M_33] = screenToWorld[M_33];
 }
 
 local Vector3DMultiplyPositionProjective = VS.Vector3DMultiplyPositionProjective;
@@ -3835,12 +3962,12 @@ function VS::CalcFovY( flFovX, flAspect ) : ( tan, atan )
 	if ( flFovX < 1.0 || flFovX > 179.0)
 		flFovX = 90.0;
 
-	return RAD2DEG2 * atan( tan( DEG2RADDIV2 * flFovX ) / flAspect );
+	return atan( tan( DEG2RADDIV2 * flFovX ) / flAspect ) * RAD2DEG2;
 }
 
 function VS::CalcFovX( flFovY, flAspect ) : ( tan, atan )
 {
-	return RAD2DEG2 * atan( tan( DEG2RADDIV2 * flFovY ) * flAspect );
+	return atan( tan( DEG2RADDIV2 * flFovY ) * flAspect ) * RAD2DEG2;
 }
 
 local initFrustumDraw = function()
@@ -3862,7 +3989,6 @@ local initFrustumDraw = function()
 	local v000 = Vector();
 	local v001 = Vector( 0.0, 0.0, 1.0 );
 	local v011 = Vector( 0.0, 1.0, 1.0 );
-	local v010 = Vector( 0.0, 1.0, 0.0 );
 	local v010 = Vector( 0.0, 1.0, 0.0 );
 	local v100 = Vector( 1.0, 0.0, 0.0 );
 	local v101 = Vector( 1.0, 0.0, 1.0 );
@@ -4448,8 +4574,8 @@ function VS::Interpolator_CurveInterpolate( interpolationType, vPre, vStart, vEn
 				local dt = vEnd.x - vStart.x;
 				if ( dt > 0.0 )
 				{
-					local val = 1.0 - ExponentialDecay( 0.001, dt, f * dt );
-					vOut.y = vStart.y + val * ( vEnd.y - vStart.y );
+					f = 1.0 - ExponentialDecay( 0.001, dt, f * dt );
+					vOut.y = vStart.y + f * ( vEnd.y - vStart.y );
 				}
 				else
 				{
@@ -4553,8 +4679,8 @@ function VS::Interpolator_CurveInterpolate_NonNormalized( interpolationType, vPr
 				local dt = vEnd.x - vStart.x;
 				if( dt > 0.0 )
 				{
-					local val = 1.0 - ExponentialDecay( 0.001, dt, f * dt );
-					vOut.y = vStart.y + val * ( vEnd.y - vStart.y );
+					f = 1.0 - ExponentialDecay( 0.001, dt, f * dt );
+					vOut.y = vStart.y + f * ( vEnd.y - vStart.y );
 				}
 				else
 				{
@@ -5377,8 +5503,8 @@ function VS::IsPointInCone( pt, origin, axis, cosAngle, length )
 //-----------------------------------------------------------------------------
 function VS::IsSphereIntersectingSphere( center1, radius1, center2, radius2 )
 {
-	local radiusSum = radius1 + radius2;
-	return ((center2 - center1).LengthSqr() <= (radiusSum * radiusSum));
+	radius2 = radius1 + radius2;
+	return ((center2 - center1).LengthSqr() <= (radius2 * radius2));
 }
 
 //-----------------------------------------------------------------------------
@@ -5558,7 +5684,7 @@ function VS::IntersectRayWithSphere( vecRayOrigin, vecRayDelta, vecSphereCenter,
 // Intersects a ray with a AABB, return true if they intersect
 // Input  : worldMins, worldMaxs
 //-----------------------------------------------------------------------------
-function VS::IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance = 0.0 ):(fabs)
+function VS::IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance = 0.0 )
 {
 	// Assert( boxMin.x <= boxMax.x );
 	// Assert( boxMin.y <= boxMax.y );
@@ -5568,7 +5694,7 @@ function VS::IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance
 	local tmin = FLT_MIN, tmax = FLT_MAX;
 
 	// Parallel case...
-	if ( fabs(vecDelta.x) < 1.e-8 )
+	if ( vecDelta.x < 1.e-8 && vecDelta.x > -1.e-8 )
 	{
 		// Check that origin is in the box
 		// if not, then it doesn't intersect..
@@ -5606,7 +5732,7 @@ function VS::IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance
 	};
 
 	// other points:
-	if ( fabs(vecDelta.y) < 1.e-8 )
+	if ( vecDelta.y < 1.e-8 && vecDelta.y > -1.e-8 )
 	{
 		if ( (origin.y < boxMin.y - flTolerance) || (origin.y > boxMax.y + flTolerance) )
 			return false;
@@ -5634,7 +5760,7 @@ function VS::IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance
 			return false;
 	};
 
-	if ( fabs(vecDelta.z) < 1.e-8 )
+	if ( vecDelta.z < 1.e-8 && vecDelta.z > -1.e-8 )
 	{
 		if ( (origin.z < boxMin.z - flTolerance) || (origin.z > boxMax.z + flTolerance) )
 			return false;
@@ -6033,11 +6159,11 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs )
 	// Make abs versions of the ray in world space + ray in box2 space
 	VectorAbs( vecAbsRayDirBox2 );
 
-	box2ToWorld = box2ToWorld.m;
+	box2ToWorld = box2ToWorld[0];
 	// Need a vector between ray center vs box center measured in the space of the ray (world)
-	local vecCenterDelta = Vector( box2ToWorld[0][3] - ray.m_Start.x,
-									box2ToWorld[1][3] - ray.m_Start.y,
-									box2ToWorld[2][3] - ray.m_Start.z );
+	local vecCenterDelta = Vector( box2ToWorld[M_03] - ray.m_Start.x,
+									box2ToWorld[M_13] - ray.m_Start.y,
+									box2ToWorld[M_23] - ray.m_Start.z );
 
 	// Now do the work for the planes which are perpendicular to the edges of the AABB
 	// and the sweep direction edges...
@@ -6063,7 +6189,7 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs )
 	local vecPlaneNormal, flBoxProjectionSum, flCenterDeltaProjection;
 
 	// box x x ray delta
-	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[0][0], box2ToWorld[1][0], box2ToWorld[2][0] ) );
+	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[M_00], box2ToWorld[M_10], box2ToWorld[M_20] ) );
 	flCenterDeltaProjection = vecPlaneNormal.Dot(vecCenterDelta);
 	if ( 0.0 > flCenterDeltaProjection )
 		flCenterDeltaProjection = -flCenterDeltaProjection;
@@ -6074,7 +6200,7 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs )
 		return false;
 
 	// box y x ray delta
-	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[0][1], box2ToWorld[1][1], box2ToWorld[2][1] ) );
+	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[M_01], box2ToWorld[M_11], box2ToWorld[M_21] ) );
 	flCenterDeltaProjection = vecPlaneNormal.Dot(vecCenterDelta);
 	if ( 0.0 > flCenterDeltaProjection )
 		flCenterDeltaProjection = -flCenterDeltaProjection;
@@ -6085,7 +6211,7 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs )
 		return false;
 
 	// box z x ray delta
-	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[0][2], box2ToWorld[1][2], box2ToWorld[2][2] ) );
+	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[M_02], box2ToWorld[M_12], box2ToWorld[M_22] ) );
 	flCenterDeltaProjection = vecPlaneNormal.Dot(vecCenterDelta);
 	if ( 0.0 > flCenterDeltaProjection )
 		flCenterDeltaProjection = -flCenterDeltaProjection;

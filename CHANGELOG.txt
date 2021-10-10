@@ -3,6 +3,17 @@
 
 --------------------------------
 
+2021-10-10 [v2.43.7]
+vs_math:
+- Changed method of internal matrix storage for improved performance and memory usage on initialisation and member access.
+This especially matters for places with high amount of transforms and multiplications.
+For instance: VectorTransform is 30%, MatrixMultiply is 37% faster.
+However 2D member access is now slower than previously.
+- Bytecode optimisations mostly favouring less instruction count in exchange for larger stack size.
+- Bytecode optimisations to reduce stack size in exchange for lesser readability.
+- Added matrix3x4_t::InitXYZ, VMatrix::InitXYZ (FLU)
+- Removed VS.ComputeVolume
+
 2021-10-03 [v2.43.6]
 - Fixed VS.MatrixBuildRotationAboutAxis bug in the minified files
 - Fixed in==out conditions in VS.ConcatRotations

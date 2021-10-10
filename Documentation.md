@@ -120,7 +120,6 @@ IncludeScript("myscript")
 [`VS.VectorMultiply()`](#f_VectorMultiply)  
 [`VS.VectorDivide()`](#f_VectorDivide)  
 [`VS.VectorMA()`](#f_VectorMA)  
-[`VS.ComputeVolume()`](#f_ComputeVolume)  
 [`VS.RandomVector()`](#f_RandomVector)  
 [`VS.RandomVectorInUnitSphere()`](#f_RandomVectorInUnitSphere)  
 [`VS.RandomVectorOnUnitSphere()`](#f_RandomVectorOnUnitSphere)  
@@ -388,6 +387,9 @@ class matrix3x4_t
 		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
 		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
 		m20 = 0.0, m21 = 0.0, m22 = 0.0, m23 = 0.0 );
+
+	// FLU
+	void InitXYZ( Vector xAxis, Vector yAxis, Vector zAxis, Vector vOrigin );
 }
 ```
 ________________________________
@@ -722,13 +724,6 @@ ________________________________
 Vector VS::VectorMA(Vector start, float scale, Vector direction, Vector& dest = _VEC)
 ```
 start + scale * direction
-________________________________
-
-<a name="f_ComputeVolume"></a>
-```cpp
-float VS::ComputeVolume(Vector vecMins, Vector vecMaxs)
-```
-
 ________________________________
 
 <a name="f_RandomVector"></a>
