@@ -3,6 +3,11 @@
 
 --------------------------------
 
+2021-10-17 [v2.43.8]
+- Added alternative parameters on VS.AddOutput (output, target, input, parameter, delay, timesToFire)
+- More minor bytecode optimisations in math lib
+- Fixed vs_events.nut compilation error
+
 2021-10-10 [v2.43.7]
 vs_math:
 - Changed method of internal matrix storage for improved performance and memory usage on initialisation and member access.

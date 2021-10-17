@@ -137,10 +137,6 @@ VS.Events.player_connect <- function( event ) : ( gEventData, ROOT, SendToConsol
 		//	if ( m_Players[event.userid] != sc.self )
 		//		Msg("VS::ForceValidateUserid: ERROR!!! conflict! ["+ sc.self +", "+ m_Players[event.userid] +"]\n");
 		//}
-		//else
-		//{
-		//	m_Players[event.userid] <- sc.self.weakref();
-		//};
 
 		sc.userid <- event.userid;
 
@@ -243,8 +239,6 @@ VS.Events.player_spawn <- function( event ) : ( gEventData, Fmt, ROOT )
 			// default sort puts null before instances, reverse it
 			gEventData.reverse();
 
-			//m_Players[scope.userid] <- player.weakref();
-
 			break;
 		};
 	}
@@ -263,7 +257,7 @@ VS.Events.player_spawn <- function( event ) : ( gEventData, Fmt, ROOT )
 //
 // Deprecated. Manual calls to this are not necessary.
 //
-VS.ForceValidateUserid <- function( ent, internal = 0 ) : ( AddEvent, Fmt )
+VS.ForceValidateUserid <- function( ent, internal = 0 ) : ( AddEvent, Fmt, Entities )
 {
 	if ( !internal )
 		Msg("Warning: VS::ForceValidateUserid is deprecated!\n");
@@ -290,8 +284,10 @@ VS.ForceValidateUserid <- function( ent, internal = 0 ) : ( AddEvent, Fmt )
 
 	if ( !m_hProxy )
 	{
-		m_hProxy =
-			CreateEntity("info_game_event_proxy", { event_name = "player_connect" }, true).weakref();
+		local p = Entities.CreateByClassname( "info_game_event_proxy" );
+		p.__KeyValueFromString( "event_name", "player_connect" );
+		MakePersistent( p );
+		m_hProxy = p.weakref();
 	};
 
 	return AddEvent( m_hProxy, "GenerateGameEvent", "", 0, ent, null );
@@ -391,8 +387,6 @@ function VS::FixupEventListener( ent )
 				// that would not be compatible with the current method of using outputs, and
 				// be generally pointless as CSGO does not have an addon system where independent scripts
 				// are likely to be run in parallel. The lack of an error handler is also an important problem.
-				// Events can only be listened by spawning a map-created event listener, and
-				// event listeners are guaranteed to be only used by mappers.
 				cache.insert( 0, v );
 			}
 			else
@@ -420,12 +414,14 @@ local __RemovePooledString = function(sz)
 	__rem = null;
 }.bindenv( VS.Events );
 
-function VS::Events::SpawnEntity( eventname )
+function VS::Events::SpawnEntity( eventname ) : (Entities)
 {
 	if ( !m_pSpawner )
 	{
-		m_pSpawner =
-			CreateEntity( "env_entity_maker", { EntityTemplate = "vs.eventlistener" }, true ).weakref();
+		local p = Entities.CreateByClassname( "env_entity_maker" );
+		p.__KeyValueFromString( "EntityTemplate", "vs.eventlistener" );
+		MakePersistent( p );
+		m_pSpawner = p.weakref();
 	};
 	s_szEventName = eventname;
 	m_pSpawner.SpawnEntity();
@@ -483,7 +479,7 @@ VS.Events.PostSpawn <- function( pEntities )
 			local i = name.find("_");
 			name = s_szEventName + "_" + name.slice( 0, i );
 			SetName( ent, name );
-			ent.__KeyValueFromString( "OnEventFired", name+",CallScriptFunction,OnEventFired,0,-1" );
+			ent.__KeyValueFromString( "OnEventFired", name+",CallScriptFunction,OnEventFired" );
 			sc.OnEventFired <- null;
 		}
 		// synchronous callbacks, not possible to dump call stack when exception is thrown
@@ -636,7 +632,6 @@ VS.ListenToGameEvent <- function( szEventname, fnCallback, pContext )
 	//};
 }.bindenv( VS.Events );
 
-
 VS.StopListeningToAllGameEvents <- function( context ) : (__RemovePooledString)
 {
 	if ( m_pListeners )
@@ -658,10 +653,12 @@ VS.StopListeningToAllGameEvents <- function( context ) : (__RemovePooledString)
 }.bindenv( VS.Events );
 
 
+// Bind internal functions to the initialiser
 local __ExecutePreSpawn = delete VS.Events.__ExecutePreSpawn;
 local __FinishSpawn = delete VS.Events.__FinishSpawn;
 local PostSpawn = delete VS.Events.PostSpawn;
 local OnPostSpawn = delete VS.Events.OnPostSpawn;
+
 
 function VS::Events::InitTemplate( scope )
 	: (__ExecutePreSpawn, __FinishSpawn, PostSpawn, OnPostSpawn)

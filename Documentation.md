@@ -32,7 +32,8 @@ ________________________________
 | `table`               | `{}`                                                                                |
 | `array`               | `[]`, `array()`                                                                     |
 | `closure`, `function` | function                                                                            |
-| `handle`,`CBaseEntity`| Entity script handle                                                                |
+| `handle`,`CBaseEntity`| Generic entity script handle                                                        |
+| `CBasePlayer`         | Player entity script handle                                                         |
 | `Vector`, `vec3_t`    | `Vector(0,1,2)`                                                                     |
 | `QAngle`              | `Vector(0,1,2)`, `(pitch, yaw, roll)` Euler angle. Vector, **not a different type** |
 | `Quaternion`          | `Quaternion(0,1,2,3)`                                                               |
@@ -70,6 +71,8 @@ ________________________________
 | `RAND_MAX`         | `0x7FFF`                         |
 | `MAX_COORD_FLOAT`  | `16384.0` (`1<<14`)              |
 | `MAX_TRACE_LENGTH` | `56755.840862417`                |
+| `MASK_SOLID`       | `0x200400b`                      |
+| `MASK_NPCWORLDSTATIC` | `0x2000b`                     |
 | `TextColor`        |                                  |
 
 NOTE: To use these constants in your scripts, the library needs to have been compiled before your script. To ensure this happens, you may load your scripts using a buffer script which loads the library first, then loads your custom script.
@@ -322,7 +325,6 @@ IncludeScript("myscript")
 [`VS.SetName()`](#f_SetName)  
 [`VS.GetPlayersAndBots()`](#f_GetPlayersAndBots)  
 [`VS.GetAllPlayers()`](#f_GetAllPlayers)  
-[`VS.GetLocalPlayer()`](#f_GetLocalPlayer)  
 [`VS.GetPlayerByIndex()`](#f_GetPlayerByIndex)  
 [`VS.GetEntityByIndex()`](#f_GetEntityByIndex)  
 [`VS.IsPointSized()`](#f_IsPointSized)  
@@ -443,7 +445,9 @@ ________________________________
 ```cpp
 bool VS::IsInteger(float input)
 ```
-Check if float is an integer
+`IsIntegralValue`
+
+Check if float is an integer.
 ________________________________
 
 <a name="f_IsLookingAt"></a>
@@ -462,7 +466,7 @@ function Think()
 	DebugDrawLine( player.GetOrigin(), target, 255,0,0,true, -1 )
 
 	// only check if there is direct LOS with the target
-	if ( !VS.TraceLine( eyePos, target, player.self ).DidHit() )
+	if ( !VS.TraceLine( eyePos, target, player.self, MASK_SOLID ).DidHit() )
 	{
 		bLooking = VS.IsLookingAt( eyePos, target, player.EyeForward(), VIEW_FIELD_NARROW )
 	}
@@ -737,7 +741,7 @@ ________________________________
 ```cpp
 float VS::RandomVectorInUnitSphere(Vector &out)
 ```
-Guarantee uniform random distribution within a sphere
+Guarantee uniform random distribution within a sphere. Returns the radius.
 ________________________________
 
 <a name="f_RandomVectorOnUnitSphere"></a>
@@ -937,9 +941,9 @@ ________________________________
 
 <a name="f_Lerp"></a>
 ```cpp
-float VS::Lerp(float A, float B, float f)
+float VS::Lerp(float A, float B, float t)
 ```
-
+NOTE: The signature of this function differs from its Source Engine mathlib definition where it is (t, A, B)
 ________________________________
 
 <a name="f_FLerp"></a>
@@ -2100,6 +2104,12 @@ void CenterPrintAll(string s)
 local v = VS.RandomVector();
 
 CenterPrintAll(format( "\n<font color='#ff0000'>%.2f</font>\n<font color='#00ff00'>%.2f</font>\n<font color='#0000ff'>%.2f</font>", v.x, v.y, v.z ));
+
+
+function HintColor( msg, r, g, b )
+{
+	return CenterPrintAll(format( "<font color='#%02x%02x%02x'>%s</font>", r&0xFF, g&0xFF, b&0xFF, msg ));
+}
 ```
 ________________________________
 
@@ -2126,6 +2136,8 @@ TextColor
 }
 ```
 `Chat( TextColor.Red + "RED" + TextColor.Gold + " YELLOW" + TextColor.Normal + " WHITE" )`
+
+The `TextColor` enum is strings for concatenation. For formatting, use their integer values with "%c".
 ________________________________
 
 <a name="f_VecToString"></a>
@@ -2179,7 +2191,7 @@ local ply = ToExtendedPlayer( VS.GetPlayerByIndex(1) );
 
 EntFireByHandle( ply.self, "SetHealth", 1 );
 
-local tr = TraceLine( v1, v2, ply.self );
+local tr = TraceLine( v1, v2, ply.self, MASK_SOLID );
 ```
 
 The following functions require event listener setup and do not work in Portal 2: `IsBot`, `GetUserID`, `GetNetworkIDString`, `GetPlayerName`.
@@ -2206,6 +2218,8 @@ List of available inputs:
 ```
 
 ```cs
+const PLAYER_INPUT_CONTEXT = "";
+
 VS.ListenToGameEvent( "player_spawn", function(ev)
 {
 	local ply = ToExtendedPlayer( VS.GetPlayerByUserid( ev.userid ) );
@@ -2214,11 +2228,11 @@ VS.ListenToGameEvent( "player_spawn", function(ev)
 
 	if ( !ply.IsBot() )
 	{
-		ply.SetInputCallback( "+forward",  function(ply) { printl("+forward " + ply.GetPlayerName()) }, this );
-		ply.SetInputCallback( "-forward",  function(ply) { printl("-forward " + ply.GetPlayerName()) }, this );
+		ply.SetInputCallback( "+forward",  OnForwardPressed, PLAYER_INPUT_CONTEXT );
+		ply.SetInputCallback( "-forward",  OnForwardReleased, PLAYER_INPUT_CONTEXT );
 	};
 
-	ply.SetInputCallback( "+attack", OnAttack, this );
+	ply.SetInputCallback( "+attack", OnAttack, PLAYER_INPUT_CONTEXT );
 }.bindenv(this), "" );
 
 function OnAttack( ply )
@@ -2234,6 +2248,16 @@ function OnAttack( ply )
 		90.0, 1.7778, 2.0, 16.0, 255, 0, 0, false, 5.0 );
 
 	DebugDrawBoxAngles( eyePos, Vector(2,-1,-1), Vector(32,1,1), ply.EyeAngles(), 0, 255, 0, 16, 5.0 );
+}
+
+function OnForwardPressed( ply )
+{
+	printl("-forward " + ply.GetPlayerName())
+}
+
+function OnForwardReleased( ply )
+{
+	printl("-forward " + ply.GetPlayerName())
 }
 ```
 
@@ -2309,7 +2333,7 @@ ________________________________
 ```cpp
 float VS::TraceLine::GetDistSqr()
 ```
-Get distance squared. Useful for comparisons
+Get distance squared
 ________________________________
 
 <a name="f_GetNormal"></a>
@@ -2328,12 +2352,12 @@ Draw the normal of a surface the player is looking at
 ```cs
 function Think()
 {
-	local tr = VS.TraceDir( player.EyePosition(), player.EyeForward() );
-	tr.GetNormal();
-	tr.GetPos();
+	local tr = VS.TraceDir( player.EyePosition(), player.EyeForward(), player.self, MASK_SOLID );
+	local normal = tr.GetNormal();
+	local hitpos = tr.GetPos();
 
-	DebugDrawLine( tr.hitpos, tr.normal * 16 + tr.hitpos, 255, 0, 255, false, 0.1 );
-	DebugDrawBoxAngles( tr.hitpos, Vector(0,-1,-1), Vector(16,1,1), VS.VectorAngles(tr.normal), 0,0,255,255, 0.1 );
+	DebugDrawLine( hitpos, normal * 16 + hitpos, 255, 0, 255, false, 0.1 );
+	DebugDrawBoxAngles( hitpos, Vector(0,-1,-1), Vector(16,1,1), VS.VectorAngles(normal), 0,0,255,255, 0.1 );
 }
 ```
 
@@ -2348,7 +2372,7 @@ trace_t VS::TraceDir(Vector start, Vector direction, float maxdist = MAX_TRACE_L
 
 <details><summary>Example</summary>
 
-Example draw a cube at player aim (GOTV spectator like)
+Example draw a cube at player aim
 ```lua
 function Think()
 {
@@ -2563,32 +2587,53 @@ ________________________________
 
 <a name="f_CreateMeasure"></a>
 ```cpp
-handle VS::CreateMeasure(string targetTargetname, string refTargetname = null, bool bMakePersistent = false, bool measureEye = true, float scale = 1.0)
+handle VS::CreateMeasure(string, string, bool, bool, float)
 ```
 Deprecated. Use `ToExtendedPlayer`.
 ________________________________
 
 <a name="f_SetMeasure"></a>
 ```cpp
-void VS::SetMeasure(handle logic_measure_movement, string targetTargetname)
+void VS::SetMeasure(handle, string)
 ```
 Deprecated. Use `ToExtendedPlayer`.
 ________________________________
 
 <a name="f_CreateTimer"></a>
 ```cpp
-handle VS::CreateTimer(bool bDisabled, float flInterval, float flLower = null, float flUpper = null, bool bOscillator = false, bool bMakePersistent = false)
+CTimerEntity VS::CreateTimer(bool bDisabled, float flInterval, float flLower = null, float flUpper = null, bool bOscillator = false, bool bMakePersistent = false)
 ```
 Create and return a logic_timer entity
 
 if refire is `0` OR `null`, random time use `lower` AND `upper`
+
+Identical to:
+```cs
+local hEnt = Entities.CreateByClassname( "logic_timer" );
+hEnt.__KeyValueFromFloat( "refiretime", flInterval );
+// hEnt.__KeyValueFromInt( "UseRandomTime", 1 );
+// hEnt.__KeyValueFromFloat( "LowerRandomBound", flLower );
+// hEnt.__KeyValueFromFloat( "UpperRandomBound", flUpper );
+// hEnt.__KeyValueFromInt( "spawnflags", bOscillator.tointeger() );
+
+// VS.MakePersistent( hEnt, bMakePersistent );
+
+// EntFireByHandle( hEnt, "Enable" );
+```
+
 ________________________________
 
 <a name="f_Timer"></a>
 ```cpp
-handle VS::Timer(bool bDisabled, float flInterval, TYPE func = null, table scope = null, bool bExecInEnt = false, bool bMakePersistent = false)
+CTimerEntity VS::Timer(bool bDisabled, float flInterval, TYPE func = null, table scope = null, bool bExecInEnt = false, bool bMakePersistent = false)
 ```
 Create and return a timer that executes func
+
+Identical to:
+```cs
+local hTimer = VS.CreateTimer( bDisabled, flInterval )
+VS.AddOutput( hTimer, "OnTimer", func, scope )
+```
 
 `TYPE`: `string|function|null`
 
@@ -2599,61 +2644,33 @@ ________________________________
 
 <a name="f_OnTimer"></a>
 ```cpp
-table VS::OnTimer(handle ent, TYPE func, table scope = null, bool bExecInEnt = false)
+void VS::OnTimer(CTimerEntity ent, string|function func, table scope = null, bool bExecInEnt = false)
 ```
-Add OnTimer output to the timer entity to execute the input function
+Add OnTimer output to the timer entity to execute the input function.
 
-`TYPE`: `string|function`
+Identical to: `VS.AddOutput( ent, "OnTimer", func, scope )`
 
-```cs
-VS.OnTimer(hTimer, MyFunc)
-
-VS.OnTimer(hTimer, function()
-{
-	// do
-})
-```
 ________________________________
 
 <a name="f_AddOutput"></a>
 ```cpp
-table VS::AddOutput(handle ent, string output, TYPE func, table scope = null, bool bExecInEnt = false)
+void VS::AddOutput( CBaseEntity hEnt, string szOutput, string|closure szTarget, string|table szInput = "", string szParameter = "", float flDelay = 0.0, int nTimes = -1 )
 ```
-Add output in the chosen entity. Execute the given function in the given scope. Accepts function parameters.
-
-Return entity scope
-
-`TYPE`: `string|function`
+Add output in the chosen entity. Passing a function parameter will add the action `!self > CallScriptFunction > OutputName`
 
 <details><summary>Example</summary>
 
-`VS.AddOutput( hButton, "OnPressed", MyFunction )`  
-`VS.AddOutput( hButton, "OnPressed", "MyFunction" )`  
-`VS.AddOutput( hButton, "OnPressed", "MyFunction(1)" )`
-
-`bExecInEnt`: execute the function that is in `scope`, in the scope of `ent`
-
-Example:
-**Input:**
-```lua
-function MyFunction()
+```cs
+function MyFunction( param = null )
 {
-	print(self.GetName())
+	printl("MyFunction( "+param+" )")
 }
 
-VS.AddOutput( hButton, "OnPressed", MyFunction, null, true )
-```
-**Output:**
-```
-<hButton.GetName()>
-```
-**Input:**
-```lua
 VS.AddOutput( hButton, "OnPressed", MyFunction )
-```
-**Output:**
-```
-<this.self.GetName()>
+VS.AddOutput( hButton, "OnPressed", "MyFunction(1)" )
+VS.AddOutput( hButton, "OnPressed", "player", "RunScriptCode", "printl(\"output 1\")" )
+VS.AddOutput( hButton, "OnPressed", "player", "RunScriptCode", "printl(\"output 2\")", 1.0 )
+VS.AddOutput( hButton, "OnPressed", "player", "RunScriptCode", "printl(\"output 3\")", 1.0, 1 )
 ```
 
 </details>
@@ -2710,7 +2727,7 @@ ________________________________
 ```cpp
 bool VS::SetKeyValue(handle ent, string key, TYPE val)
 ```
-`KeyValueFrom`
+`CBaseEntity::KeyValue`
 
 Useful for when the value type is unknown
 ________________________________
@@ -2724,7 +2741,7 @@ ________________________________
 
 <a name="f_GetPlayersAndBots"></a>
 ```cpp
-handle[2][] VS::GetPlayersAndBots()
+CBasePlayer[2][] VS::GetPlayersAndBots()
 ```
 Return an array of player and bot arrays.
 
@@ -2735,24 +2752,21 @@ ________________________________
 
 <a name="f_GetAllPlayers"></a>
 ```cpp
-handle[] VS::GetAllPlayers()
+CBasePlayer[] VS::GetAllPlayers()
 ```
 Get every player and bot in a single array
 ________________________________
 
 <a name="f_GetLocalPlayer"></a>
 ```cpp
-handle VS::GetLocalPlayer(bool)
+CBasePlayer VS::GetLocalPlayer(bool)
 ```
-return the only / the first connected player in the server
-
-if param is true, add to root:
-`handle HPlayer`: player handle
+Deprecated. Use `VS.GetPlayerByIndex(1)` in multiplayer, `::player` or `::GetPlayer()` in singleplayer.
 ________________________________
 
 <a name="f_GetPlayerByIndex"></a>
 ```cpp
-handle VS::GetPlayerByIndex(int entindex)
+CBasePlayer VS::GetPlayerByIndex(int entindex)
 ```
 `PlayerInstanceFromIndex`
 
@@ -2761,14 +2775,14 @@ ________________________________
 
 <a name="f_GetEntityByIndex"></a>
 ```cpp
-handle VS::GetEntityByIndex(int entindex, string classname = null)
+CBaseEntity VS::GetEntityByIndex(int entindex, string classname = null)
 ```
 `EntIndexToHScript`
 ________________________________
 
 <a name="f_IsPointSized"></a>
 ```cpp
-bool VS::IsPointSized(handle ent)
+bool VS::IsPointSized(CBaseEntity ent)
 ```
 
 ________________________________
@@ -2800,7 +2814,7 @@ ________________________________
 
 <a name="f_GetPlayerByUserid"></a>
 ```cpp
-handle VS::GetPlayerByUserid(int userid)
+CBasePlayer VS::GetPlayerByUserid(int userid)
 ```
 If event listener setup is done, get the player handle from their userid.
 
@@ -2823,7 +2837,7 @@ ________________________________
 
 <a name="f_ForceValidateUserid"></a>
 ```cpp
-void VS::ForceValidateUserid(handle player)
+void VS::ForceValidateUserid(handle)
 ```
 Deprecated. Manual calls to this are not necessary.
 ________________________________
@@ -2837,7 +2851,7 @@ ________________________________
 
 <a name="f_FixupEventListener"></a>
 ```cpp
-void VS::FixupEventListener( handle eventlistener )
+void VS::FixupEventListener(handle)
 ```
 Not needed when event listeners are registered using `VS.ListenToGameEvent`.
 

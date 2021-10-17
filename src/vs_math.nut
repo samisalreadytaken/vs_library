@@ -42,6 +42,15 @@ if ( !("Vector" in getroottable()) )
 		{
 			return x*v.x + y*v.y + z*v.z;
 		}
+		function Norm() : (sqrt)
+		{
+			local l = sqrt( x*x + y*y + z*z );
+			local f = 1.0 / l;
+			x *= f;
+			y *= f;
+			z *= f;
+			return l;
+		}
 		function LengthSqr()
 		{
 			return x*x + y*y + z*z;
@@ -495,6 +504,7 @@ local fabs = VS.fabs;
 	// (v < min) ? min : (max < v) ? max : v
 }
 
+// IsIntegralValue
 function VS::IsInteger(f)
 {
 	return ( f.tointeger() == f );
@@ -503,7 +513,7 @@ function VS::IsInteger(f)
 /*
 function VS::IsFinite(f)
 {
-	return ( f > -FLT_MAX && f < FLT_MAX );
+	return ( f > FLT_MAX_N && f < FLT_MAX );
 }
 */
 
@@ -519,9 +529,9 @@ function VS::IsFinite(f)
 //-----------------------------------------------------------------------
 function VS::IsLookingAt( vSrc, vTarget, vDir, cosTolerance )
 {
-	local to = vTarget - vSrc;
-	to.Norm();
-	return to.Dot( vDir ) >= cosTolerance;
+	vTarget = vTarget - vSrc;
+	vTarget.Norm();
+	return vTarget.Dot( vDir ) >= cosTolerance;
 }
 
 //-----------------------------------------------------------------------
@@ -531,15 +541,15 @@ function VS::IsLookingAt( vSrc, vTarget, vDir, cosTolerance )
 //-----------------------------------------------------------------------
 function VS::GetAngle( vFrom, vTo ) : ( atan2 )
 {
-	local dt = vTo - vFrom;
-	local pitch = atan2( -dt.z, dt.Length2D() ) * RAD2DEG;
-	local yaw = atan2( dt.y, dt.x ) * RAD2DEG;
+	vTo = vTo - vFrom;
+	local pitch = atan2( -vTo.z, vTo.Length2D() ) * RAD2DEG;
+	local yaw = atan2( vTo.y, vTo.x ) * RAD2DEG;
 
-	dt.x = pitch;
-	dt.y = yaw;
-	dt.z = 0.0;
+	vTo.x = pitch;
+	vTo.y = yaw;
+	vTo.z = 0.0;
 
-	return dt;
+	return vTo;
 }
 
 //-----------------------------------------------------------------------
@@ -789,26 +799,28 @@ function VS::ApproachVector( target, value, speed )
 
 function VS::ApproachAngle( target, value, speed )
 {
+	local _360 = 360.0, _180 = 180.0;
+
 	// target = AngleNormalize( target );
-	target %= 360.0;
-	if ( target > 180.0 )
-		target -= 360.0;
-	else if ( -180.0 > target )
-		target += 360.0;;
+	target %= _360;
+	if ( target > _180 )
+		target -= _360;
+	else if ( -_180 > target )
+		target += _360;;
 
 	// value = AngleNormalize( value );
-	value %= 360.0;
-	if ( value > 180.0 )
-		value -= 360.0;
-	else if ( -180.0 > value )
-		value += 360.0;;
+	value %= _360;
+	if ( value > _180 )
+		value -= _360;
+	else if ( -_180 > value )
+		value += _360;;
 
 	// local delta = AngleDiff( target, value );
-	local delta = ( target - value ) % 360.0;
-	if ( delta > 180.0 )
-		delta -= 360.0;
-	else if ( -180.0 > delta )
-		delta += 360.0;;
+	local delta = ( target - value ) % _360;
+	if ( delta > _180 )
+		delta -= _360;
+	else if ( -_180 > delta )
+		delta += _360;;
 
 	if (speed < 0.0)
 		speed = -speed;
@@ -829,12 +841,14 @@ function VS::AngleDiff( destAngle, srcAngle )
 // float
 function VS::AngleNormalize( angle )
 {
-	angle %= 360.0;
+	local _360 = 360.0, _180 = 180.0;
 
-	if ( angle > 180.0 )
-		return angle - 360.0;
-	if ( -180.0 > angle )
-		return angle + 360.0;
+	angle %= _360;
+
+	if ( angle > _180 )
+		return angle - _360;
+	if ( -_180 > angle )
+		return angle + _360;
 	return angle;
 }
 
@@ -845,23 +859,25 @@ function VS::QAngleNormalize( vAng )
 	// vAng.y = AngleNormalize( vAng.y );
 	// vAng.z = AngleNormalize( vAng.z );
 
-	vAng.x %= 360.0;
-	if ( vAng.x > 180.0 )
-		vAng.x -= 360.0;
-	else if ( -180.0 > vAng.x )
-		vAng.x += 360.0;;
+	local _360 = 360.0, _180 = 180.0;
 
-	vAng.y %= 360.0;
-	if ( vAng.y > 180.0 )
-		vAng.y -= 360.0;
-	else if ( -180.0 > vAng.y )
-		vAng.y += 360.0;;
+	vAng.x %= _360;
+	if ( vAng.x > _180 )
+		vAng.x -= _360;
+	else if ( -_180 > vAng.x )
+		vAng.x += _360;;
 
-	vAng.z %= 360.0;
-	if ( vAng.z > 180.0 )
-		vAng.z -= 360.0;
-	else if ( -180.0 > vAng.z )
-		vAng.z += 360.0;;
+	vAng.y %= _360;
+	if ( vAng.y > _180 )
+		vAng.y -= _360;
+	else if ( -_180 > vAng.y )
+		vAng.y += _360;;
+
+	vAng.z %= _360;
+	if ( vAng.z > _180 )
+		vAng.z -= _360;
+	else if ( -_180 > vAng.z )
+		vAng.z += _360;;
 
 	return vAng;
 }
@@ -1052,10 +1068,14 @@ function VS::RandomVectorInUnitSphere( out ) : ( rand, sin, cos, acos, pow )
 	local phi = acos( 1.0 - rand() * 0.00006103702 );
 	local theta = rand() * 0.00019175345; // rd * PI
 	local r = pow( rand() * 0.00003051851, 0.333333 );
-	local sp = r * sin( phi );
-	out.x = sp * cos( theta );
-	out.y = sp * sin( theta );
-	out.z = r * cos( phi );
+	local sp = sin( phi ) * r;
+
+	//if ( !out )
+	//	return Vector( cos( theta ) * sp, sin( theta ) * sp, cos( phi ) );
+
+	out.x = cos( theta ) * sp;
+	out.y = sin( theta ) * sp;
+	out.z = cos( phi ) * r;
 	return r;
 }
 
@@ -1067,8 +1087,12 @@ function VS::RandomVectorOnUnitSphere( out ) : ( rand, sin, cos, acos )
 	local theta = rand() * 0.00019175345; // rd * PI
 	// r = 1
 	local sp = sin( phi );
-	out.x = sp * cos( theta );
-	out.y = sp * sin( theta );
+
+	//if ( !out )
+	//	return Vector( cos( theta ) * sp, sin( theta ) * sp, cos( phi ) );
+
+	out.x = cos( theta ) * sp;
+	out.y = sin( theta ) * sp;
 	out.z = cos( phi );
 }
 
@@ -1305,6 +1329,7 @@ function VS::SmoothCurve_Tweak( x, flPeakPos, flPeakSharpness ) : (MovePeak, Gai
 	return (1.0 - cos(flSharpened * PI)) * 0.5;
 }
 
+// NOTE: The signature of this function differs from its Source Engine mathlib definition where it is (t, A, B)
 function VS::Lerp( A, B, f )
 {
 	return A + ( B - A ) * f;
@@ -2300,7 +2325,7 @@ function VS::QuaternionAngleDiff( p, q ) : ( Quaternion, QuaternionMult, sqrt, a
 */
 }
 
-function VS::QuaternionScale( p, t, q ) : ( Vector, sqrt, sin, asin )
+function VS::QuaternionScale( p, t, q ) : ( sqrt, sin, asin )
 {
 /*
 #if 0
@@ -2319,18 +2344,19 @@ function VS::QuaternionScale( p, t, q ) : ( Vector, sqrt, sin, asin )
 	// FIXME: this isn't overly sensitive to accuracy, and it may be faster to
 	// use the cos part (w) of the quaternion (sin(omega)*N,cos(omega)) to figure the new scale.
 
-	local qv = Vector(p.x,p.y,p.z);
-	local sinom = qv.Length();
+	local sinom = sqrt( p.x * p.x + p.y * p.y + p.z * p.z );
 	if ( sinom > 1.0 )
 		sinom = 1.0;
 
-	local sinsom = sin( asin( sinom ) * t );
+	local r = sin( asin( sinom ) * t );
 
-	t = sinsom / (sinom + FLT_EPSILON);
-	VectorScale( qv, t, q );
+	t = r / (sinom + FLT_EPSILON);
+	q.x = p.x * t;
+	q.y = p.y * t;
+	q.z = p.z * t;
 
 	// rescale rotation
-	local r = 1.0 - sinsom * sinsom;
+	r = 1.0 - r * r;
 
 	// Assert( r >= 0 );
 	if ( r < 0.0 )
@@ -3160,6 +3186,12 @@ function VS::ConcatTransforms( in1, in2, out )
 // VMatrix multiply
 function VS::MatrixMultiply( in1, in2, out )
 {
+	local
+		M_00=M_00, M_01=M_01, M_02=M_02, M_03=M_03,
+		M_10=M_10, M_11=M_11, M_12=M_12, M_13=M_13,
+		M_20=M_20, M_21=M_21, M_22=M_22, M_23=M_23,
+		M_30=M_30, M_31=M_31, M_32=M_32, M_33=M_33;
+
 	in1 = in1[0];
 	in2 = in2[0];
 	out = out[0];
@@ -3267,9 +3299,9 @@ function VS::MatrixBuildRotationAboutAxis( vAxisOfRot, angleDegrees, dst ) : ( s
 
 	dst = dst[0];
 
-	dst[M_00] = xx + (1.0 - xx) * fCos;
-	dst[M_11] = yy + (1.0 - yy) * fCos;
-	dst[M_22] = zz + (1.0 - zz) * fCos;
+	dst[M_00] = xx + fCos - xx * fCos;
+	dst[M_11] = yy + fCos - yy * fCos;
+	dst[M_22] = zz + fCos - zz * fCos;
 
 	fCos = 1.0 - fCos;
 
@@ -4955,10 +4987,12 @@ function VS::Hermite_Spline3Q( q0, q1, q2, t, output )
 //-----------------------------------------------------------------------------
 function VS::Kochanek_Bartels_Spline( tension, bias, continuity, p1, p2, p3, p4, t, output )
 {
-	local ffa = ( 1.0 - tension ) * ( 1.0 + continuity ) * ( 1.0 + bias );
-	local ffb = ( 1.0 - tension ) * ( 1.0 - continuity ) * ( 1.0 - bias );
-	local ffc = ( 1.0 - tension ) * ( 1.0 - continuity ) * ( 1.0 + bias );
-	local ffd = ( 1.0 - tension ) * ( 1.0 + continuity ) * ( 1.0 - bias );
+	local ONE = 1.0;
+
+	local ffa = ( ONE - tension ) * ( ONE + continuity ) * ( ONE + bias );
+	local ffb = ( ONE - tension ) * ( ONE - continuity ) * ( ONE - bias );
+	local ffc = ( ONE - tension ) * ( ONE - continuity ) * ( ONE + bias );
+	local ffd = ( ONE - tension ) * ( ONE + continuity ) * ( ONE - bias );
 
 	//        p1      p2         p3       p4
 	//
@@ -5013,7 +5047,7 @@ function VS::Kochanek_Bartels_Spline( tension, bias, continuity, p1, p2, p3, p4,
 	local t3 = t*t2;
 
 	local a = t3 * -ffa + t2 * 2.0 * ffa - th * ffa;
-	local b = t3 * (4.0 + ffa - ffb - ffc) + t2 * (-6.0 - 2.0 * ffa + 2.0 * ffb + ffc) + th * (ffa - ffb) + 1.0;
+	local b = t3 * (4.0 + ffa - ffb - ffc) + t2 * (-6.0 - 2.0 * ffa + 2.0 * ffb + ffc) + th * (ffa - ffb) + ONE;
 	local c = t3 * (-4.0 + ffb + ffc - ffd) + t2 * (6.0 - 2.0 * ffb - ffc + ffd) + th * ffb;
 	local d = t3 * ffd - t2 * ffd;
 

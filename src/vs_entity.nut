@@ -6,15 +6,17 @@
 //-----------------------------------------------------------------------
 // Make EntFireByHandle allow default parameters
 //-----------------------------------------------------------------------
-::EntFireByHandle <- function( target, action, value = "", delay = 0.0, activator = null, caller = null ):(AddEvent)
+::EntFireByHandle <- function( target, action, value = "", delay = 0.0, activator = null, caller = null )
+	: (AddEvent)
 {
 	return AddEvent( target, ""+action, ""+value, delay, activator, caller );
 }
 
 //-----------------------------------------------------------------------
-// Reduce 3 calls
+// Clone of the original EntFire, reduces 3 calls
 //-----------------------------------------------------------------------
-::EntFire <- function( target, action, value = "", delay = 0.0, activator = null ) : (DoEntFire)
+::EntFire <- function( target, action, value = "", delay = 0.0, activator = null/* , caller = null */ )
+	: (DoEntFire)
 {
 	if ( !value )
 	{
@@ -65,15 +67,6 @@ function VS::SetParent( hChild, hParent ):(AddEvent)
 
 //-----------------------------------------------------------------------
 // Deprecated. Use `ToExtendedPlayer`.
-//
-// Create logic_measure_movement, measure eye angles
-//
-// Input  : string [ target targetname ] (e.g. player targetname)
-//          string [ reference entity name ] (optional)
-//          bool   [ make the reference entity persistent ]
-//          bool   [ measure eyes ]
-//          float  [ scale ]
-// Output : handle reference
 //-----------------------------------------------------------------------
 function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 ):(AddEvent)
 {
@@ -102,12 +95,6 @@ function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 ):(AddEven
 
 //-----------------------------------------------------------------------
 // Deprecated. Use `ToExtendedPlayer`.
-//
-// Start measuring new target
-//
-// Input  : handle [ logic_measure_movement ]
-//          string [ player_targetname ]
-// Output :
 //-----------------------------------------------------------------------
 function VS::SetMeasure(h,s):(AddEvent)
 {
@@ -182,70 +169,65 @@ function VS::OnTimer( hEnt, Func, tScope = null, bExecInEnt = false )
 //
 // Input  : handle [ entity ]
 //          string [ output ]
-//          string|closure [ function ]
-//          table [ scope ] // null === this
-//          bool [ bool ] // execute the function in the scope of hEnt
+//          string|closure [ target|function ]
+//          string|table [ input|scope ]
+//          string [ parameter override ]
+//          float [ delay ]
+//          int [ times to fire ]
 // Output : table [ent scope]
 //-----------------------------------------------------------------------
-function VS::AddOutput( hEnt, szOutput, Func, tScope = null, bExecInEnt = false ) : (compilestring)
+function VS::AddOutput( hEnt, szOutput, szTarget, szInput = "", szParameter = "", flDelay = 0.0, nTimes = -1 )
+	: (Fmt, compilestring)
 {
-	if ( !tScope )
-		tScope = GetCaller();
-
-	if ( Func )
+	switch ( typeof szTarget )
 	{
-		if ( typeof Func == "string" )
-		{
-			if ( Func.find("(") != null )
-				Func = compilestring(Func);
+		case "string":
+
+			if ( szTarget.find("(") == null )
+			{
+				return hEnt.__KeyValueFromString(
+					szOutput,
+					Fmt( "%s,%s,%s,%f,%d",
+						szTarget,
+						szInput,
+						szParameter,
+						flDelay,
+						nTimes ) );
+			}
 			else
-				Func = tScope[Func];
-		}
-		else if ( typeof Func != "function" )
-			throw "Invalid function type " + typeof Func;;
+			{
+				// Target contains a function call.
+				// Compile it and fall to function parameter -
+				// which simply adds the !self,CallScriptFunction action
+				szTarget = compilestring( szTarget );
+			};
+
+		case "function":
+
+			// call env
+			if ( szInput == "" )
+				szInput = GetCaller();
+
+			// assume szInput is valid
+
+			if ( szParameter == "" )
+				szParameter = false;
+
+			hEnt.ValidateScriptScope();
+			local sc = hEnt.GetScriptScope();
+			sc[szOutput] <- szParameter ? szTarget : szTarget.bindenv( szInput );
+
+			return hEnt.ConnectOutput( szOutput, szOutput );
+			// return AddOutput( hEnt, szOutput, "!self", "CallScriptFunction", szOutput );
+
 	}
-	else
-	{
-		Func = null;
-		bExecInEnt = true; // to be able to assign Func (null) below
-	};
-
-	hEnt.ValidateScriptScope();
-
-	local r = hEnt.GetScriptScope();
-
-	r[szOutput] <- bExecInEnt ? Func : Func.bindenv(tScope);
-
-	hEnt.ConnectOutput(szOutput, szOutput);
-
-	return r;
 }
-
-/*
-function VS::AddOutput2( hEnt, szOutput, szTarget, szInput, szParameter = "", flDelay = 0.0, nTimes = -1 ) : (AddEvent, Fmt)
-{
-	return AddEvent(
-		hEnt,
-		"AddOutput",
-		Fmt(
-			"%s %s,%s,%s,%f,%d",
-			szOutput,
-			szTarget,
-			szInput,
-			szParameter,
-			flDelay,
-			nTimes ),
-		0.0,
-		null,
-		hEnt );
-}
-*/
 
 //-----------------------------------------------------------------------
 // CreateByClassname, set keyvalues, return handle
 //
 // Input  : string [ entity classname ]
-//          table [ keyvalues ] // { speed = speed, health = 1337 }
+//          table [ keyvalues ]
 //          bool [ make persistent ]
 // Output : handle [ entity ]
 //-----------------------------------------------------------------------
@@ -394,8 +376,9 @@ function VS::DumpEnt( input = null ) : (Entities, Fmt)
 
 
 if (!PORTAL2){
-
-// return the only / the first connected player in the server
+//
+// Deprecated. Use VS.GetPlayerByIndex(1)
+//
 function VS::GetLocalPlayer( bAddGlobal = true )
 {
 	local e = ::Entc("player");
@@ -421,9 +404,6 @@ function VS::GetLocalPlayer( bAddGlobal = true )
 //
 // If the event listeners are NOT set up, named bots will be shown as players
 //-----------------------------------------------------------------------
-//
-// scope.bot <- scope.networkid == "BOT";
-//
 function VS::GetPlayersAndBots():(Entities)
 {
 	local ent, ply = [], bot = [];
@@ -490,11 +470,11 @@ function VS::DumpPlayers( bDumpScope = false ) : (Fmt)
 }
 
 }else{ // PORTAL2
-
-// vscript in singleplayer games already puts the local player in ::player
-// and they also have native functions for getting it:
-// (Portal2) GetPlayer()
-// (Source2) Entities:GetLocalPlayer()
+//
+// Deprecated.
+// Use VS.GetPlayerByIndex(1) for multiplayer,
+// ::player or ::GetPlayer() for singleplayer.
+//
 function VS::GetLocalPlayer()
 {
 	local e;
