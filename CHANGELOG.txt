@@ -3,6 +3,13 @@
 
 --------------------------------
 
+2021-10-19 [v2.43.9]
+- Fixed a bug in VS.RotationDelta that would calculate the wrong value
+- Eliminated redundant code in VS.QuaternionMult
+- Optimised VS.QuaternionMA
+- Optimised VS.MatrixCopy
+- Optimised VS.IsRayIntersectingOBB
+
 2021-10-17 [v2.43.8]
 - Added alternative parameters on VS.AddOutput (output, target, input, parameter, delay, timesToFire)
 - More minor bytecode optimisations in math lib
@@ -12,8 +19,8 @@
 vs_math:
 - Changed method of internal matrix storage for improved performance and memory usage on initialisation and member access.
 This especially matters for places with high amount of transforms and multiplications.
-For instance: VectorTransform is 30%, MatrixMultiply is 37% faster.
-However 2D member access is now slower than previously.
+For instance: VectorTransform is 25%, MatrixMultiply is 70% faster.
+However 2D member access is now significantly slower than previously.
 - Bytecode optimisations mostly favouring less instruction count in exchange for larger stack size.
 - Bytecode optimisations to reduce stack size in exchange for lesser readability.
 - Added matrix3x4_t::InitXYZ, VMatrix::InitXYZ (FLU)

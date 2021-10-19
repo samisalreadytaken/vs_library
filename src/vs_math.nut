@@ -1775,13 +1775,8 @@ local QuaternionAlign = VS.QuaternionAlign;
 //-----------------------------------------------------------------------------
 // qt = p * q
 //-----------------------------------------------------------------------------
-function VS::QuaternionMult( p, q, qt = _QUAT ) : (QuaternionAlign, Quaternion)
+function VS::QuaternionMult( p, q, qt = _QUAT ) : (QuaternionAlign)
 {
-	if ( p == qt )
-	{
-		return QuaternionMult( Quaternion( p.x, p.y, p.z, p.w ), q, qt );
-	};
-
 	// decide if one of the quaternions is backwards
 	local q2 = QuaternionAlign( p, q );
 
@@ -1815,17 +1810,11 @@ function VS::QuaternionConjugate( p, q )
 //-----------------------------------------------------------------------------
 // qt = p * ( s * q )
 //-----------------------------------------------------------------------------
-function VS::QuaternionMA( p, s, q, qt = _QUAT ) : ( Quaternion, QuaternionNormalize, QuaternionMult )
+function VS::QuaternionMA( p, s, q, qt = _QUAT ) : ( QuaternionNormalize, QuaternionMult )
 {
-	local q1 = Quaternion();
-	QuaternionScale( q, s, q1 );
-	local p1 = QuaternionMult( p, q1 );
-	QuaternionNormalize( p1 );
-
-	qt.x = p1.x;
-	qt.y = p1.y;
-	qt.z = p1.z;
-	qt.w = p1.w;
+	QuaternionScale( q, s, qt );
+	QuaternionMult( p, qt, qt );
+	QuaternionNormalize( qt );
 
 	return qt;
 }
@@ -2374,34 +2363,32 @@ function VS::QuaternionScale( p, t, q ) : ( sqrt, sin, asin )
 function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis ) : (Quaternion)
 {
 	local srcQuat = Quaternion(),
-		destQuat = Quaternion(),
-		srcQuatInv = Quaternion(),
-		out = Quaternion();
+		destQuat = Quaternion();
+
 	AngleQuaternion( srcAngles, srcQuat );
 	AngleQuaternion( destAngles, destQuat );
-	QuaternionScale( srcQuat, -1.0, srcQuatInv );
-	QuaternionMult( destQuat, srcQuatInv, out );
+	QuaternionScale( srcQuat, -1.0, srcQuat );
 
+	local out = QuaternionMult( destQuat, srcQuat );
 	QuaternionNormalize( out );
+
 	return QuaternionAxisAngle( out, deltaAxis );
 }
 
 // QAngle , QAngle, QAngle
-function VS::RotationDelta( srcAngles, destAngles, out ) : ( matrix3x4_t )
+function VS::RotationDelta( srcAngles, destAngles, out ) : ( matrix3x4_t, AngleMatrix, MatrixAngles )
 {
 	local src = matrix3x4_t(),
-		srcInv = matrix3x4_t(),
-		dest = matrix3x4_t(),
-		xform = matrix3x4_t();
+		dest = matrix3x4_t();
 
 	AngleMatrix( srcAngles, null, src );
 	AngleMatrix( destAngles, null, dest );
 	// xform = src(-1) * dest
-	MatrixInvert( src, srcInv );
-	ConcatTransforms( dest, srcInv, xform );
+	MatrixInvert( src, src );
+	ConcatTransforms( dest, src, dest );
 
 	// xformAngles
-	MatrixAngles( dest, out );
+	return MatrixAngles( dest, out );
 }
 
 function VS::MatrixQuaternionFast( matrix, q ) : (sqrt)
@@ -2702,7 +2689,7 @@ function VS::BasisToQuaternion( vecForward, vecRight, vecUp, q = _QUAT ) : ( mat
 }
 
 
-function VS::MatricesAreEqual( src1, src2, flTolerance )
+function VS::MatricesAreEqual( src1, src2, flTolerance = 0.0 )
 {
 	src2 = src2[0];
 
@@ -2718,23 +2705,40 @@ function VS::MatricesAreEqual( src1, src2, flTolerance )
 
 function VS::MatrixCopy( src, dst )
 {
-	src = src[0];
-	dst = dst[0];
+	// Cloning is, compared to individually copying,
+	// 50% faster when dst has no manager
+	// 25% slower when dst has a manager
+	// 7% slower when code falls back to manual copy.
+	// Putting the consts in the stack makes it 14% faster, but increases stack size by 11
+	// Incrementing local index is 2% faster than const loading (14 less instructions)
 
-	dst[M_00] = src[M_00];
-	dst[M_01] = src[M_01];
-	dst[M_02] = src[M_02];
-	dst[M_03] = src[M_03];
+	// Use fallback code because it is more likely that the copied matrices will be pure (no manager)
 
-	dst[M_10] = src[M_10];
-	dst[M_11] = src[M_11];
-	dst[M_12] = src[M_12];
-	dst[M_13] = src[M_13];
+	if ( dst._man )
+	{
+		local i = 0;
+		src = src[i];
+		dst = dst[i];
 
-	dst[M_20] = src[M_20];
-	dst[M_21] = src[M_21];
-	dst[M_22] = src[M_22];
-	dst[M_23] = src[M_23];
+		dst[i] = src[i]; ++i;
+		dst[i] = src[i]; ++i;
+		dst[i] = src[i]; ++i;
+		dst[i] = src[i]; ++i;
+
+		dst[i] = src[i]; ++i;
+		dst[i] = src[i]; ++i;
+		dst[i] = src[i]; ++i;
+		dst[i] = src[i]; ++i;
+
+		dst[i] = src[i]; ++i;
+		dst[i] = src[i]; ++i;
+		dst[i] = src[i]; ++i;
+		dst[i] = src[i];
+
+		return;
+	};
+
+	dst[0] = clone src[0];
 }
 
 // NOTE: This is just the transpose not a general inverse
@@ -3085,6 +3089,11 @@ function VS::ComputeAbsMatrix( in1, out ) : (fabs)
 
 function VS::ConcatRotations( in1, in2, out )
 {
+	local
+		M_00=M_00, M_01=M_01, M_02=M_02,
+		M_10=M_10, M_11=M_11, M_12=M_12,
+		M_20=M_20, M_21=M_21, M_22=M_22;
+
 	in1 = in1[0];
 	in2 = in2[0];
 	out = out[0];
@@ -3131,6 +3140,11 @@ function VS::ConcatRotations( in1, in2, out )
 // matrix3x4_t multiply
 function VS::ConcatTransforms( in1, in2, out )
 {
+	local
+		M_00=M_00, M_01=M_01, M_02=M_02, M_03=M_03,
+		M_10=M_10, M_11=M_11, M_12=M_12, M_13=M_13,
+		M_20=M_20, M_21=M_21, M_22=M_22, M_23=M_23;
+
 	in1 = in1[0];
 	in2 = in2[0];
 	out = out[0];
@@ -5221,9 +5235,9 @@ function VS::PointOnLineNearestPoint( vStartPos, vEndPos, vPoint )
 	local v1 = vEndPos - vStartPos;
 	local dist = v1.Dot(vPoint - vStartPos) / v1.LengthSqr();
 
-	if ( dist < 0.0 )
+	if ( dist <= 0.0 )
 		return vStartPos;
-	if ( dist > 1.0 )
+	if ( dist >= 1.0 )
 		return vEndPos;
 	return vStartPos + v1 * dist;
 }
@@ -5725,10 +5739,10 @@ function VS::IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance
 	// Assert( boxMin.z <= boxMax.z );
 
 	// FIXME: Surely there's a faster way
-	local tmin = FLT_MIN, tmax = FLT_MAX;
+	local tmin = FLT_MIN, tmax = FLT_MAX, EPS = 1.e-8;
 
 	// Parallel case...
-	if ( vecDelta.x < 1.e-8 && vecDelta.x > -1.e-8 )
+	if ( vecDelta.x < EPS && vecDelta.x > -EPS )
 	{
 		// Check that origin is in the box
 		// if not, then it doesn't intersect..
@@ -5766,7 +5780,7 @@ function VS::IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance
 	};
 
 	// other points:
-	if ( vecDelta.y < 1.e-8 && vecDelta.y > -1.e-8 )
+	if ( vecDelta.y < EPS && vecDelta.y > -EPS )
 	{
 		if ( (origin.y < boxMin.y - flTolerance) || (origin.y > boxMax.y + flTolerance) )
 			return false;
@@ -5794,7 +5808,7 @@ function VS::IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance
 			return false;
 	};
 
-	if ( vecDelta.z < 1.e-8 && vecDelta.z > -1.e-8 )
+	if ( vecDelta.z < EPS && vecDelta.z > -EPS )
 	{
 		if ( (origin.z < boxMin.z - flTolerance) || (origin.z > boxMax.z + flTolerance) )
 			return false;
@@ -5857,7 +5871,7 @@ function VS::IsBoxIntersectingRay2( origin, vecBoxMin, vecBoxMax, ray, flToleran
 // Intersects a ray with a ray, return true if they intersect
 // t, s = parameters of closest approach (if not intersecting!)
 //-----------------------------------------------------------------------------
-function VS::IntersectRayWithRay( vecStart0, vecDelta0, vecStart1, vecDelta1/* , pT = [0.0,0.0] */ )
+function VS::IntersectRayWithRay( vecStart0, vecDelta0, vecStart1, vecDelta1/*, pT*/ )
 {
 	//
 	// r0 = p0 + v0t
@@ -5922,6 +5936,8 @@ function VS::IntersectRayWithPlane( org, dir, normal, dist )
 //-----------------------------------------------------------------------------
 function VS::IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, flTolerance, pTrace )
 {
+	local ZERO = 0.0;
+
 	local f, d1, d2;
 
 	local t1 = -1.0;
@@ -5962,7 +5978,7 @@ function VS::IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, fl
 		}
 
 		// if completely in front of face, no intersection
-		if (d1 > 0.0 && d2 > 0.0)
+		if (d1 > ZERO && d2 > ZERO)
 		{
 			// UNDONE: Have to revert this in case it's still set
 			// UNDONE: Refactor to have only 2 return points (true/false) from this function
@@ -5971,18 +5987,18 @@ function VS::IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, fl
 		};
 
 		// completely inside, check next face
-		if (d1 <= 0.0 && d2 <= 0.0)
+		if (d1 <= ZERO && d2 <= ZERO)
 			continue;
 
-		if (d1 > 0.0)
+		if (d1 > ZERO)
 			startsolid = false;
 
 		// crosses face
 		if (d1 > d2)
 		{
 			f = d1 - flTolerance;
-			if ( f < 0.0 )
-				f = 0.0;
+			if ( f < ZERO )
+				f = ZERO;
 			f /= (d1-d2);
 			if (f > t1)
 			{
@@ -6004,7 +6020,7 @@ function VS::IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, fl
 	pTrace[0] = t1;
 	pTrace[1] = t2;
 
-	return startsolid || (t1 < t2 && t1 >= 0.0);
+	return startsolid || (t1 < t2 && t1 >= ZERO);
 }
 
 //-----------------------------------------------------------------------------
@@ -6123,33 +6139,22 @@ function VS::IntersectRayWithOBB( vecRayStart, vecRayDelta, matOBBToWorld,
 // Input  : localMins, localMaxs
 //-----------------------------------------------------------------------------
 function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs )
-	: ( matrix3x4_t, Vector, Ray_t, DotProductAbs )
+	: ( matrix3x4_t, Vector, AngleIMatrix, VectorTransform, VectorRotate, IsBoxIntersectingRay, DotProductAbs )
 {
 	if ( VectorIsZero(angles) )
-	{
-		local vecWorldMins = org + mins;
-		local vecWorldMaxs = org + maxs;
-		return IsBoxIntersectingRay( vecWorldMins, vecWorldMaxs, ray.m_Start, ray.m_Delta );
-	};
+		return IsBoxIntersectingRay( org + mins, org + maxs, ray.m_Start, ray.m_Delta );
 
 	if ( ray.m_IsRay )
 	{
 		local worldToBox = matrix3x4_t();
+		local rayStart = Vector();
+		local rayDelta = Vector();
+
 		AngleIMatrix( angles, org, worldToBox );
+		VectorTransform( ray.m_Start, worldToBox, rayStart );
+		VectorRotate( ray.m_Delta, worldToBox, rayDelta );
 
-		local rotatedRay = Ray_t.instance();
-		rotatedRay.m_Start = Vector();
-		rotatedRay.m_Delta = Vector();
-
-		VectorTransform( ray.m_Start, worldToBox, rotatedRay.m_Start );
-		VectorRotate( ray.m_Delta, worldToBox, rotatedRay.m_Delta );
-
-		rotatedRay.m_StartOffset = Vector();
-		rotatedRay.m_Extents = Vector();
-		rotatedRay.m_IsRay = true;
-		rotatedRay.m_IsSwept = ray.m_IsSwept;
-
-		return IsBoxIntersectingRay2( rotatedRay.m_StartOffset, mins, maxs, rotatedRay );
+		return IsBoxIntersectingRay( mins, maxs, rayStart, rayDelta );
 	};
 
 //	if ( !ray.m_IsSwept )

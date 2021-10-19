@@ -588,8 +588,9 @@ function VS::TraceLine::GetPos()
 {
 	if ( !hitpos )
 	{
-		if ( fraction < 1.0 ) hitpos = startpos + (endpos - startpos) * fraction;
-		else hitpos = endpos;
+		if ( fraction < 1.0 )
+			return hitpos = startpos + (endpos - startpos) * fraction;
+		return hitpos = endpos;
 	};
 	return hitpos;
 }
@@ -601,7 +602,7 @@ function VS::TraceLine::GetDist()
 	return (startpos - hitpos).Length();
 }
 
-// Get distance squared. Useful for comparisons
+// Get distance squared.
 function VS::TraceLine::GetDistSqr()
 {
 	if ( !hitpos ) GetPos();
@@ -616,11 +617,12 @@ function VS::TraceLine::GetNormal() : ( Vector, CTrace )
 		local up = Vector( 0.0, 0.0, 0.1 );
 		local dt = endpos - startpos;
 		dt.Norm();
-		GetPos();
 		local v1 = startpos + dt.Cross(up);
 		local v2 = startpos + up;
-		normal = ( hitpos - CTrace( v1, v1 + dt * MAX_TRACE_LENGTH, ignore, mask ).GetPos() ).Cross(
-			hitpos - CTrace( v2, v2 + dt * MAX_TRACE_LENGTH, ignore, mask ).GetPos() );
+		dt = dt * MAX_TRACE_LENGTH;
+		local hitpos = GetPos();
+		normal = ( hitpos - CTrace( v1, v1 + dt, ignore, mask ).GetPos() ).Cross(
+			hitpos - CTrace( v2, v2 + dt, ignore, mask ).GetPos() );
 		normal.Norm();
 	};
 
