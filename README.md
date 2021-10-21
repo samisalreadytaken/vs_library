@@ -12,11 +12,11 @@ See the [**hlvr**](https://github.com/samisalreadytaken/vs_library/tree/hlvr) br
 See [Documentation.md](Documentation.md)
 
 ## Installation
-Decide on which library you are going to use, download the file and place it in your vscripts directory `/csgo/scripts/vscripts/`
+Download the library file you will be using, and place it in your vscripts directory `/csgo/scripts/vscripts/`
 - [`vs_math.nut`][vs_math]: Standalone math library. Game independent.
 - [`vs_events.nut`][vs_events]: Standalone game events library. CSGO only.
 - [`vs_library.nut`][vs_library]: All libraries. Includes unique utility functions.
-- [`glow.nut`][glow]: Standalone easy glow handling library.
+- [`glow.nut`][glow]: Standalone glow object manager.
 
 [vs_math]: https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/vs_math.nut
 [vs_events]: https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/vs_events.nut
@@ -29,6 +29,9 @@ Include the library file at the beginning of your script: `IncludeScript("vs_lib
 Done!
 
 It only needs to be included once in the lifetime of the map running in the server. Including it more than once does not affect the performance.
+
+### Math library
+The math library is based on Source engine. Working with this makes moving from and to Source development very easy.
 
 ### Extended player
 Use `ToExtendedPlayer()` to access some of the missing player functions in CSGO such as `EyeAngles` and `GetPlayerName`. See the [documentation](/Documentation.md#f_ToExtendedPlayer) for details.
@@ -47,7 +50,9 @@ DebugDrawBoxAngles( player.EyePosition(), Vector(2,-1,-1), Vector(32,1,1), playe
 ### Automatic player info acquisition
 [![](https://img.shields.io/badge/video-red?logo=youtube)](https://www.youtube.com/watch?v=JGnBQ1lwzzg)
 
-Setting up these 2 entities will automatically acquire player userid, SteamID and Steam names; and also expose event listener registration from script with `VS.ListenToGameEvent`.
+The game events library completely automates player userid, SteamID and Steam name acquisition; and also exposes game event listener registration from script with `VS.ListenToGameEvent`.
+
+This requires setting up these 2 entities:
 
 ```
 logic_eventlistener:
@@ -58,15 +63,17 @@ point_template:
 	Template01: vs.eventlistener
 ```
 
-`vs_eventlistener.nut` file contents should execute:  
-(library file inclusion is either 'vs_events' or 'vs_library')
+where `vs_eventlistener.nut` file contents should read:
+
 ```cpp
 IncludeScript("vs_events");
 VS.Events.InitTemplate(this);
 ```
 
-Get the player handle from their userid, and access player data from their script scope.
+Player info will be put in their script scope.
+
 ```cs
+local userid = 2;
 local player = VS.GetPlayerByUserid( userid );
 local scope = player.GetScriptScope();
 
@@ -75,13 +82,13 @@ printl( scope.networkid );
 printl( scope.name );
 ```
 
-Use `VS.ListenToGameEvent` to register, `VS.StopListeningToAllGameEvents` to unregister any events dynamically from script.
+This also enables `VS.ListenToGameEvent` and `VS.StopListeningToAllGameEvents` functions to manage event listeners dynamically from script.
+
 ```cs
 VS.ListenToGameEvent( "bullet_impact", function( event )
 {
 	local pos = Vector( event.x, event.y, event.z );
 	local ply = VS.GetPlayerByUserid( event.userid );
-
 	DebugDrawLine( ply.EyePosition(), pos, 255,0,0,false, 2.0 );
 	DebugDrawBox( pos, Vector(-2,-2,-2), Vector(2,2,2), 255,0,255,127, 2.0 );
 }, "DrawImpact" );
