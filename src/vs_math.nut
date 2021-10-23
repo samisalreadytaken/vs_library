@@ -2714,9 +2714,10 @@ function VS::MatrixCopy( src, dst )
 
 	// Use fallback code because it is more likely that the copied matrices will be pure (no manager)
 
-	if ( dst._man )
+	local i = 0, b1 = M_30 in src[i], b2 = M_30 in dst[i];
+
+	if ( (b1 != b2) || dst._man )
 	{
-		local i = 0;
 		src = src[i];
 		dst = dst[i];
 
@@ -2733,12 +2734,20 @@ function VS::MatrixCopy( src, dst )
 		dst[i] = src[i]; ++i;
 		dst[i] = src[i]; ++i;
 		dst[i] = src[i]; ++i;
-		dst[i] = src[i];
+		dst[i] = src[i]; ++i;
+
+		if ( b1 && b2 )
+		{
+			dst[i] = src[i]; ++i;
+			dst[i] = src[i]; ++i;
+			dst[i] = src[i]; ++i;
+			dst[i] = src[i];
+		};
 
 		return;
 	};
 
-	dst[0] = clone src[0];
+	dst[i] = clone src[i];
 }
 
 // NOTE: This is just the transpose not a general inverse

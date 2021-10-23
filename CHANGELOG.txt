@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2021-10-20 [v2.43.10]
+- Fixed VS.MatrixCopy for cross-type matrix copying (matrix3x4_t v VMatrix and vice versa)
+
 2021-10-19 [v2.43.9]
 - Fixed a bug in VS.RotationDelta that would calculate the wrong value
 - Eliminated redundant code in VS.QuaternionMult
