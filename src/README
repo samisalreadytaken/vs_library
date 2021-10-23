@@ -5,5 +5,3 @@ vs_library source files
 	vs_entity.nut
 	vs_events.nut
 	vs_log.nut
-
-	glow.nut (glow_src.nut)

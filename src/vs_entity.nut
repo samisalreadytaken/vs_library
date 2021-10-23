@@ -163,9 +163,7 @@ function VS::OnTimer( hEnt, Func, tScope = null, bExecInEnt = false )
 }
 
 //-----------------------------------------------------------------------
-// Adds output in the chosen entity
-// Executes the given function in the given scope
-// Accepts function parameters
+// Adds output to the input entity
 //
 // Input  : handle [ entity ]
 //          string [ output ]

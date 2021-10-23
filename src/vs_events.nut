@@ -675,6 +675,8 @@ function VS::Events::InitTemplate( scope )
 	scope.__FinishSpawn <- __FinishSpawn;
 	scope.PreSpawnInstance <- 1;
 	scope.PostSpawn <- PostSpawn;
+	//if ( scope.OnPostSpawnCallChain.chain.find(OnPostSpawn) == null )
+	//	scope.OnPostSpawnCallChain.chain.push( OnPostSpawn );
 	scope.OnPostSpawn <- OnPostSpawn.bindenv(scope);
 
 	// Clear game events that were not fired due to the

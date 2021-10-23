@@ -5,7 +5,7 @@ High-performance vscript libraries; written mainly for CS:GO, compatible with Po
 
 See the [**hlvr**](https://github.com/samisalreadytaken/vs_library/tree/hlvr) branch for usage in Half-Life Alyx.
 
-[ver]: https://img.shields.io/badge/vs__library-v2.43.9-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.43.10-informational
 
 
 ## Documentation
@@ -15,7 +15,7 @@ See [Documentation.md](Documentation.md)
 Download the library file you will be using, and place it in your vscripts directory `/csgo/scripts/vscripts/`
 - [`vs_math.nut`][vs_math]: Standalone math library. Game independent.
 - [`vs_events.nut`][vs_events]: Standalone game events library. CSGO only.
-- [`vs_library.nut`][vs_library]: All libraries. Includes unique utility functions.
+- [`vs_library.nut`][vs_library]: All libraries. Includes unique utility functions in addition to the math and events libraries.
 - [`glow.nut`][glow]: Standalone glow object manager.
 
 [vs_math]: https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/vs_math.nut
@@ -85,10 +85,13 @@ printl( scope.name );
 This also enables `VS.ListenToGameEvent` and `VS.StopListeningToAllGameEvents` functions to manage event listeners dynamically from script.
 
 ```cs
+IncludeScript("vs_events");
+
 VS.ListenToGameEvent( "bullet_impact", function( event )
 {
 	local pos = Vector( event.x, event.y, event.z );
 	local ply = VS.GetPlayerByUserid( event.userid );
+
 	DebugDrawLine( ply.EyePosition(), pos, 255,0,0,false, 2.0 );
 	DebugDrawBox( pos, Vector(-2,-2,-2), Vector(2,2,2), 255,0,255,127, 2.0 );
 }, "DrawImpact" );
@@ -102,7 +105,7 @@ This issue is fixed in listen servers.
 ## Changelog
 See [CHANGELOG.txt](CHANGELOG.txt)
 
-## License
+## Licence
 You are free to use, modify and share this library under the terms of the MIT License. The only condition is keeping the copyright notice, and stating whether or not the code was modified. See [LICENSE](LICENSE) for details.
 
 [![](http://hits.dwyl.com/samisalreadytaken/vs_library.svg)](https://hits.dwyl.com/samisalreadytaken/vs_library)

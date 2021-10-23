@@ -2252,7 +2252,7 @@ function OnAttack( ply )
 
 function OnForwardPressed( ply )
 {
-	printl("-forward " + ply.GetPlayerName())
+	printl("+forward " + ply.GetPlayerName())
 }
 
 function OnForwardReleased( ply )
@@ -2280,7 +2280,7 @@ ________________________________
 ```cpp
 trace_t VS::TraceLine( Vector start, Vector end, handle ignore = null, int mask = MASK_NPCWORLDSTATIC )
 ```
-Mask parameter can take `0x2000b` (`MASK_NPCWORLDSTATIC`) or `0x200400b` (`MASK_SOLID`).
+Mask parameter can take `MASK_NPCWORLDSTATIC` (`0x2000b`) or `MASK_SOLID` (`0x200400b`).
 ________________________________
 
 <a name="f_DidHit"></a>
@@ -2294,7 +2294,7 @@ ________________________________
 ```cpp
 handle VS::TraceLine::GetEnt(float radius = 1.0)
 ```
-return hit entity handle, null if none
+Search and return hit entity handle, null if none
 
 Calling this again will try to find an entity again. Found entity is not saved.
 ________________________________
@@ -2352,11 +2352,11 @@ Draw the normal of a surface the player is looking at
 ```cs
 function Think()
 {
-	local tr = VS.TraceDir( player.EyePosition(), player.EyeForward(), player.self, MASK_SOLID );
+	local tr = VS.TraceDir( player.EyePosition(), player.EyeForward(), MAX_COORD_FLOAT, player.self, MASK_SOLID );
 	local normal = tr.GetNormal();
 	local hitpos = tr.GetPos();
 
-	DebugDrawLine( hitpos, normal * 16 + hitpos, 255, 0, 255, false, 0.1 );
+	DebugDrawLine( hitpos, hitpos + normal * 16, 255, 0, 255, false, 0.1 );
 	DebugDrawBoxAngles( hitpos, Vector(0,-1,-1), Vector(16,1,1), VS.VectorAngles(normal), 0,0,255,255, 0.1 );
 }
 ```
@@ -2369,6 +2369,7 @@ ________________________________
 ```cpp
 trace_t VS::TraceDir(Vector start, Vector direction, float maxdist = MAX_TRACE_LENGTH, handle ignore = null, int mask = MASK_NPCWORLDSTATIC)
 ```
+Trace from `start` to `start + direction * maxdist`.
 
 <details><summary>Example</summary>
 
@@ -2654,9 +2655,10 @@ ________________________________
 
 <a name="f_AddOutput"></a>
 ```cpp
-void VS::AddOutput( CBaseEntity hEnt, string szOutput, string|closure szTarget, string|table szInput = "", string szParameter = "", float flDelay = 0.0, int nTimes = -1 )
+void VS::AddOutput( CBaseEntity hEnt, string szOutput, string szTarget, string szInput = "", string szParameter = "", float flDelay = 0.0, int nTimes = -1 )
+void VS::AddOutput( CBaseEntity hEnt, string szOutput, string|closure fnCallback, table scope = this )
 ```
-Add output in the chosen entity. Passing a function parameter will add the action `!self > CallScriptFunction > OutputName`
+Adds output to the input entity. Passing a function parameter will add the action `!self > CallScriptFunction > OutputName`
 
 <details><summary>Example</summary>
 
