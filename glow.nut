@@ -1,9 +1,139 @@
 //-----------------------------------------------------------------------
-//------------------- Copyright (c) samisalreadytaken -------------------
 //                       github.com/samisalreadytaken
 //- v1.0.11 -------------------------------------------------------------
 //
-// ::Glow.Set( hPlayer, color, nType, flDistance )
-// ::Glow.Disable( hPlayer )
+// Easy glow handling (using prop_dynamic_glow entities).
+// It can be used on any entity that has a model.
 //
-if(!("Glow"in::getroottable())||typeof::Glow!="table"||!("Set"in::Glow)){local AddEvent="DoEntFireByInstanceHandle"in getroottable()?DoEntFireByInstanceHandle:EntFireByHandle,Create=::CreateProp,_l=[];::Glow<-{m_list=_l,Get=null,Set=null,Disable=null}function Glow::Get(S):(_l){if(!S||!S.IsValid()||S.GetModelName()=="")return;for(local i=_l.len();i--;){local h=_l[i];if(h){if(h.GetOwner()==S)return h}else _l.remove(i)}}local Get=::Glow.Get;function Glow::Set(S,C,T,D):(_l,AddEvent,Create,Get){local p=Get(S);if(!p){foreach(v in _l)if(v&&!v.GetOwner()){p=v;break};if(p)p.SetModel(S.GetModelName());else{p=Create("prop_dynamic_glow",S.GetOrigin(),S.GetModelName(),0);_l.insert(_l.len(),p.weakref())};p.__KeyValueFromInt("rendermode",6);p.__KeyValueFromInt("renderamt",0);AddEvent(p,"SetParent","!activator",0.0,S,null);p.SetOwner(S);p.__KeyValueFromString("classname","soundent")};local o=typeof C;if(o=="string")p.__KeyValueFromString("glowcolor",C);else if(o=="Vector")p.__KeyValueFromVector("glowcolor",C);else throw"parameter 2 has an invalid type '"+o+"' ; expected 'string|Vector'";;p.__KeyValueFromInt("glowstyle",T);p.__KeyValueFromFloat("glowdist",D);p.__KeyValueFromInt("glowenabled",1);p.__KeyValueFromInt("effects",18433);return p}function Glow::Disable(S):(AddEvent,Get){local p=Get(S);if(p){p.__KeyValueFromInt("effects",18465);AddEvent(p,"SetParent","",0.0,null,null);AddEvent(p,"SetGlowDisabled","",0.0,null,null);p.SetOwner(null)};return p}}
+// Glow.Set( hPlayer, color, nType, flDistance )
+// Glow.Disable( hPlayer )
+//
+
+if ( !("Glow" in ::getroottable()) || typeof ::Glow != "table" || !("Set" in ::Glow) )
+{
+	local AddEvent = "DoEntFireByInstanceHandle" in getroottable() ?
+		DoEntFireByInstanceHandle : EntFireByHandle;
+	local Create = CreateProp;
+	local _list = [];
+
+	//-----------------------------------------------------------------------
+	// Get the linked glow entity. null if none
+	//
+	// Input  : handle src_ent
+	// Output : handle glow_ent
+	//-----------------------------------------------------------------------
+	local Get = function( src ) : ( _list )
+	{
+		if ( !src || !src.IsValid() || src.GetModelName() == "" )
+			return;
+
+		for ( local i = _list.len(); i--; )
+		{
+			local v = _list[i];
+			if (v)
+			{
+				if( v.GetOwner() == src )
+					return v;
+			}
+			else _list.remove(i);
+		}
+	}
+
+	//-----------------------------------------------------------------------
+	// Set glow. Update if src already has a linked glow.
+	//
+	// Input  : handle src_ent
+	//          string|Vector colour
+	//          int style: 0 (Default (through walls))
+	//                     1 (Shimmer (doesn't glow through walls))
+	//                     2 (Outline (doesn't glow through walls))
+	//                     3 (Outline Pulse (doesn't glow through walls))
+	//          float distance
+	// Output : handle glow_ent
+	//-----------------------------------------------------------------------
+	local Set = function( src, color, style, dist ) : ( _list, AddEvent, Create, Get )
+	{
+		local glow = Get(src);
+
+		if ( !glow )
+		{
+			foreach( v in _list )
+				if ( v && !v.GetOwner() )
+				{
+					glow = v;
+					break;
+				};
+
+			if (glow)
+			{
+				glow.SetModel( src.GetModelName() );
+			}
+			else
+			{
+				glow = Create( "prop_dynamic_glow", src.GetOrigin(), src.GetModelName(), 0 );
+				_list.insert( _list.len(), glow.weakref() );
+			};
+
+			glow.__KeyValueFromInt( "rendermode", 6 );
+			glow.__KeyValueFromInt( "renderamt", 0 );
+
+			// SetParent
+			AddEvent( glow, "SetParent", "!activator", 0.0, src, null );
+
+			// synchronous link
+			glow.SetOwner( src );
+
+			// MakePersistent
+			glow.__KeyValueFromString( "classname", "soundent" );
+		};
+
+		switch ( typeof color )
+		{
+			case "string":
+				glow.__KeyValueFromString( "glowcolor", color );
+				break;
+			case "Vector":
+				glow.__KeyValueFromVector( "glowcolor", color );
+				break;
+			default:
+				throw "parameter 2 has an invalid type '" + typeof color + "' ; expected 'string|Vector'";;
+		}
+		glow.__KeyValueFromInt( "glowstyle", style );
+		glow.__KeyValueFromFloat( "glowdist", dist );
+		glow.__KeyValueFromInt( "glowenabled", 1 );
+		glow.__KeyValueFromInt( "effects", 18433 ); // (1<<0)|(1<<11)|(1<<14)
+
+		return glow;
+	}
+
+	//-----------------------------------------------------------------------
+	// Disable and unlink if src has glow linked with it
+	//
+	// Input  : handle src_ent
+	// Output : handle glow_ent
+	//-----------------------------------------------------------------------
+	local Disable = function( src ) : ( AddEvent, Get )
+	{
+		local glow = Get(src);
+
+		if (glow)
+		{
+			glow.__KeyValueFromInt( "effects", 18465 ); // EF_DEFAULT|EF_NODRAW
+			AddEvent( glow, "SetParent", "", 0.0, null, null );
+			AddEvent( glow, "SetGlowDisabled", "", 0.0, null, null );
+			glow.SetOwner( null );
+			// glow.SetAbsOrigin( MAX_COORD_VEC );
+		};
+
+		return glow;
+	}
+
+	::Glow <-
+	{
+		m_list = _list,
+
+		Get = Get,
+		Set = Set,
+		Disable = Disable
+	}
+};;
