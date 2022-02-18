@@ -430,7 +430,7 @@ function VS::Events::SpawnEntity( eventname ) : (Entities)
 	return r;
 }
 
-function VS::Events::__ExecutePreSpawn( pEnt )
+local __ExecutePreSpawn = function( pEnt )
 {
 	local vs = VS.Events;
 
@@ -457,12 +457,12 @@ function VS::Events::__ExecutePreSpawn( pEnt )
 	__EntityMakerResult = {}
 }
 
-function VS::Events::__FinishSpawn()
+local __FinishSpawn = function()
 {
 	__EntityMakerResult = null;
 }
 
-VS.Events.PostSpawn <- function( pEntities )
+local PostSpawn = function( pEntities )
 {
 	foreach( ent in pEntities )
 	{
@@ -509,7 +509,7 @@ VS.Events.PostSpawn <- function( pEntities )
 }.bindenv( VS.Events );
 
 
-VS.Events.OnPostSpawn <- function() : (__RemovePooledString)
+local OnPostSpawn = function() : (__RemovePooledString)
 {
 	local VS = VS;
 
@@ -651,14 +651,6 @@ VS.StopListeningToAllGameEvents <- function( context ) : (__RemovePooledString)
 		}
 	}
 }.bindenv( VS.Events );
-
-
-// Bind internal functions to the initialiser
-local __ExecutePreSpawn = delete VS.Events.__ExecutePreSpawn;
-local __FinishSpawn = delete VS.Events.__FinishSpawn;
-local PostSpawn = delete VS.Events.PostSpawn;
-local OnPostSpawn = delete VS.Events.OnPostSpawn;
-
 
 function VS::Events::InitTemplate( scope )
 	: (__ExecutePreSpawn, __FinishSpawn, PostSpawn, OnPostSpawn)
