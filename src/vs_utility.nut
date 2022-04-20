@@ -3,8 +3,8 @@
 //                       github.com/samisalreadytaken
 //-----------------------------------------------------------------------
 
-::Ent  <- function( s, i = null ):(Entities){ return Entities.FindByName(i,s); }
-::Entc <- function( s, i = null ):(Entities){ return Entities.FindByClassname(i,s); }
+::Ent  <- function( s, i = null ) { return Entities.FindByName(i,s); }.bindenv(::VS);
+::Entc <- function( s, i = null ) { return Entities.FindByClassname(i,s); }.bindenv(::VS);
 
 //-----------------------------------------------------------------------
 // Input  : Vector
@@ -44,7 +44,7 @@ local DoSetFOV = function( iFOV, flSpeed )
 //
 // FIXME: calling multiple times in a frame on different players
 //
-VS.SetPlayerFOV <- function( hPlayer, iFOV, flSpeed = 0.0 ) : (g_ViewEnts, AddEvent, DoSetFOV, Entities)
+VS.SetPlayerFOV <- function( hPlayer, iFOV, flSpeed = 0.0 ) : (g_ViewEnts, AddEvent, DoSetFOV)
 {
 	if ( !hPlayer || !hPlayer.IsValid() || hPlayer.GetClassname() != "player" )
 		return;
@@ -134,7 +134,7 @@ local OwnerSort = function( a, b )
 }
 
 VS.ToExtendedPlayer <- function( hPlayer )
-	: ( g_Players, g_Eyes, g_GameUIs, NullSort, OwnerSort, AddEvent, SetNameSafe, Entities, FrameTime )
+	: ( g_Players, g_Eyes, g_GameUIs, NullSort, OwnerSort, AddEvent, SetNameSafe, FrameTime )
 {
 	foreach( ply in g_Players )
 		if ( ply.self == hPlayer || ply == hPlayer )
@@ -513,10 +513,10 @@ class VS.TraceLine
 		switch ( nMask )
 		{
 		case MASK_NPCWORLDSTATIC:
-			fraction = DoTrace1( startpos, endpos, ignore );
+			fraction = DoTrace1( start, end, ent );
 			return;
 		case MASK_SOLID:
-			fraction = DoTrace2( startpos, endpos, ignore );
+			fraction = DoTrace2( start, end, ent );
 			return;
 		default:
 			throw "invalid mask";
@@ -541,6 +541,14 @@ class VS.TraceLine
 	mask = null;
 }
 
+local CTrace = VS.TraceLine;
+
+if ( !PORTAL2 )
+{
+	// Portal 2 cannot serialise
+	CTrace.Entities <- Entities;
+};;
+
 //-----------------------------------------------------------------------
 // Set 'f' to limit the max distance
 // Input  : Vector [ start pos ]
@@ -549,50 +557,48 @@ class VS.TraceLine
 //          int [ trace mask ]
 // Output : trace_t [ VS.TraceLine ]
 //-----------------------------------------------------------------------
-local CTrace = VS.TraceLine;
-
 function VS::TraceDir( v1, vDir, f = MAX_TRACE_LENGTH, hEnt = null, mask = MASK_NPCWORLDSTATIC ):(CTrace)
 {
-	return CTrace( v1, v1 + (vDir * f), hEnt, mask );
+	return CTrace( v1, v1 + vDir * f, hEnt, mask );
 }
 
 // if direct LOS return false
 function VS::TraceLine::DidHit()
 {
-	return fraction < 1.0;
+	return fraction != 1.0;
 }
 
 // return hit entity handle, null if none
-function VS::TraceLine::GetEnt( radius ) : (Entities)
+function VS::TraceLine::GetEnt( radius )
 {
 	if ( !hitpos ) GetPos();
 	return Entities.FindByClassnameNearest( "*", hitpos, radius );
 }
 
 // GetEnt, find by name
-function VS::TraceLine::GetEntByName( targetname, radius ):(Entities)
+function VS::TraceLine::GetEntByName( targetname, radius )
 {
 	if ( !hitpos ) GetPos();
 	return Entities.FindByNameNearest( targetname, hitpos, radius );
 }
 
 // GetEnt, find by classname
-function VS::TraceLine::GetEntByClassname( classname, radius ):(Entities)
+function VS::TraceLine::GetEntByClassname( classname, radius )
 {
 	if ( !hitpos ) GetPos();
 	return Entities.FindByClassnameNearest( classname, hitpos, radius );
 }
 
-// return hit position (hitpos)
+// return trace hit position ('CBaseTrace::endpos', stored in 'hitpos')
 function VS::TraceLine::GetPos()
 {
-	if ( !hitpos )
-	{
-		if ( fraction < 1.0 )
-			return hitpos = startpos + (endpos - startpos) * fraction;
-		return hitpos = endpos;
-	};
-	return hitpos;
+	if ( hitpos )
+		return hitpos;
+
+	if ( fraction != 1.0 )
+		return hitpos = startpos + (endpos - startpos) * fraction;
+
+	return hitpos = endpos;
 }
 
 // Get distance from startpos to hit position
@@ -1010,14 +1016,14 @@ local EventQueue =
 VS.EventQueue <- EventQueue;
 
 // enum
-const m_pNext      = 0;
-const m_flFireTime = 1;
-const m_pPrev      = 2;
-const m_hFunc      = 3;
-const m_argv       = 4;
-const m_Env        = 5;
-const m_activator  = 6;
-const m_caller     = 7;
+#define m_pNext      0
+#define m_flFireTime 1
+#define m_pPrev      2
+#define m_hFunc      3
+#define m_argv       4
+#define m_Env        5
+#define m_activator  6
+#define m_caller     7
 
 local m_Events     = [null,null];
 m_Events[ m_flFireTime ] = FLT_MAX_N;

@@ -3,6 +3,12 @@
 
 --------------------------------
 
+2022-04-20 [v2.43.11]
+- Fixed save/restore crash in Portal 2
+- Fixed VS.VectorYawRotate() regression for in==out conditions
+- Added console message print on library load
+- Removed support for old vs_events library methods
+
 2021-10-20 [v2.43.10]
 - Fixed VS.MatrixCopy for cross-type matrix copying (matrix3x4_t v VMatrix and vice versa)
 

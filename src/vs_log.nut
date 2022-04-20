@@ -217,10 +217,10 @@ function VS::Log::_Write() : ( Msg, delay )
 {
 	local t = filter, p = Msg, L = _data;
 
-	if ( !export )
-		for ( local i = nC; i < nN; ++i ) p( L[i] );
-	else
+	if ( export )
 		for ( local i = nC; i < nN; ++i ) p( t + L[i] );
+	else
+		for ( local i = nC; i < nN; ++i ) p( L[i] );
 
 	nC += nD;
 	nN = min( nN + nD, nL );
@@ -228,10 +228,7 @@ function VS::Log::_Write() : ( Msg, delay )
 	if ( nC >= nN )
 	{
 		_data = m_data.weakref(); // revert to default
-		nL = null;
-		nD = null;
-		nC = null;
-		nN = null;
+		nL = nD = nC = nN = null;
 		return _Stop();
 	};
 

@@ -238,11 +238,11 @@ class ::Quaternion
 	}
 }
 
-function Quaternion::_add(d):(Quaternion) { return Quaternion( x+d.x,y+d.y,z+d.z,w+d.w ) }
-function Quaternion::_sub(d):(Quaternion) { return Quaternion( x-d.x,y-d.y,z-d.z,w-d.w ) }
-function Quaternion::_mul(d):(Quaternion) { return Quaternion( x*d,y*d,z*d,w*d ) }
-function Quaternion::_div(d):(Quaternion) { local f = 1.0/d; return Quaternion( x*f,y*f,z*f,w*f ) }
-function Quaternion::_unm() :(Quaternion) { return Quaternion( -x,-y,-z,-w ) }
+function Quaternion::_add(d) : (Quaternion) { return Quaternion( x+d.x,y+d.y,z+d.z,w+d.w ) }
+function Quaternion::_sub(d) : (Quaternion) { return Quaternion( x-d.x,y-d.y,z-d.z,w-d.w ) }
+function Quaternion::_mul(d) : (Quaternion) { return Quaternion( x*d,y*d,z*d,w*d ) }
+function Quaternion::_div(d) : (Quaternion) { local f = 1.0/d; return Quaternion( x*f,y*f,z*f,w*f ) }
+function Quaternion::_unm() : (Quaternion) { return Quaternion( -x,-y,-z,-w ) }
 
 
 //
@@ -507,7 +507,7 @@ local fabs = VS.fabs;
 // IsIntegralValue
 function VS::IsInteger(f)
 {
-	return ( f.tointeger() == f );
+	return f.tointeger() == f;
 }
 
 /*
@@ -693,8 +693,11 @@ function VS::VectorYawRotate( vIn, fYaw, vOut = _VEC ) : (sin, cos)
 	local sy  = sin(fYaw);
 	local cy  = cos(fYaw);
 
-	vOut.x = vIn.x * cy - vIn.y * sy;
-	vOut.y = vIn.x * sy + vIn.y * cy;
+	local x = vIn.x * cy - vIn.y * sy;
+	local y = vIn.x * sy + vIn.y * cy;
+
+	vOut.x = x;
+	vOut.y = y;
 	vOut.z = vIn.z;
 
 	return vOut;
@@ -1593,7 +1596,7 @@ function VS::MatrixAngles( matrix, angles = _VEC, position = null ) : (sqrt,atan
 //          matrix[][1] is left
 //          matrix[][2] is up
 //-----------------------------------------------------------------------------
-function VS::AngleMatrix( angles, position, matrix ):(sin,cos)
+function VS::AngleMatrix( angles, position, matrix ) : (sin, cos)
 {
 	local ay = DEG2RAD*angles.y,
 		ax = DEG2RAD*angles.x,
@@ -2508,7 +2511,7 @@ function VS::QuaternionMatrix( q, pos, matrix )
 // Input  : *quaternion - q3 + q0.i + q1.j + q2.k
 //          *outAngles - PITCH, YAW, ROLL
 //-----------------------------------------------------------------------------
-function VS::QuaternionAngles2( q, angles = _VEC ):(asin,atan2)
+function VS::QuaternionAngles2( q, angles = _VEC ) : (asin, atan2)
 {
 	local m11 = ( 2.0 * q.w * q.w ) + ( 2.0 * q.x * q.x ) - 1.0,
 	      m12 = ( 2.0 * q.x * q.y ) + ( 2.0 * q.w * q.z ),
@@ -2537,7 +2540,7 @@ function VS::QuaternionAngles( q, angles = _VEC ) : ( matrix3x4_t, QuaternionMat
 // Purpose: Converts a quaternion to an axis / angle in degrees
 //          (exponential map)
 //-----------------------------------------------------------------------------
-function VS::QuaternionAxisAngle( q, axis ):(acos)
+function VS::QuaternionAxisAngle( q, axis ) : (acos)
 {
 	local angle = acos(q.w)*RAD2DEG2;
 
@@ -2556,7 +2559,7 @@ function VS::QuaternionAxisAngle( q, axis ):(acos)
 //-----------------------------------------------------------------------------
 // Purpose: Converts an exponential map (ang/axis) to a quaternion
 //-----------------------------------------------------------------------------
-function VS::AxisAngleQuaternion( axis, angle, q = _QUAT ):(sin,cos)
+function VS::AxisAngleQuaternion( axis, angle, q = _QUAT ) : (sin, cos)
 {
 	angle *= DEG2RADDIV2;
 
@@ -2578,7 +2581,7 @@ function VS::AxisAngleQuaternion( axis, angle, q = _QUAT ):(sin,cos)
 //              [2]: ROLL:	Counterclockwise rotation around the X axis.
 //          *outQuat - quaternion of form (i,j,k,real)
 //-----------------------------------------------------------------------------
-function VS::AngleQuaternion( angles, outQuat = _QUAT ):(sin,cos)
+function VS::AngleQuaternion( angles, outQuat = _QUAT ) : (sin, cos)
 {
 	local ay = angles.y * DEG2RADDIV2,
 		ax = angles.x * DEG2RADDIV2,
@@ -2818,14 +2821,14 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 	// Setup AI
 	for ( local i = 0; i < 4; ++i )
 	{
-		local base = 4*i;
+		local bs = 4*i;
 		// local pIn = src[i];
 		local pOut = mat[i];
 
-		pOut[0] = src[base    ];
-		pOut[1] = src[base + 1];
-		pOut[2] = src[base + 2];
-		pOut[3] = src[base + 3];
+		pOut[0] = src[bs    ];
+		pOut[1] = src[bs + 1];
+		pOut[2] = src[bs + 2];
+		pOut[3] = src[bs + 3];
 		pOut[4] =
 		pOut[5] =
 		pOut[6] =
@@ -2906,12 +2909,12 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 	for ( local i = 0; i < 4; ++i )
 	{
 		local pIn = mat[rowMap[i]];
-		local base = 4*i;
+		local bs = 4*i;
 		// local pOut = dst[i];
-			dst[base    ] = pIn[4];
-			dst[base + 1] = pIn[5];
-			dst[base + 2] = pIn[6];
-			dst[base + 3] = pIn[7];
+			dst[bs    ] = pIn[4];
+			dst[bs + 1] = pIn[5];
+			dst[bs + 2] = pIn[6];
+			dst[bs + 3] = pIn[7];
 	}
 
 	return true;

@@ -38,9 +38,8 @@ local gEventData = ROOT["{847D4B}"];
 VS.GetPlayerByUserid <- function( userid ) : (Entities)
 {
 	// cache on lookup
-	// Alternatively cache on userid registration
 
-	if ( m_Players && userid in m_Players )
+	if ( userid in m_Players )
 		return m_Players[userid];
 
 	if ( !m_Players )
@@ -68,10 +67,7 @@ VS.GetPlayerByUserid <- function( userid ) : (Entities)
 	}
 }.bindenv( VS.Events );
 
-//
-// OnPlayerConnect
-//
-VS.Events.player_connect <- function( event ) : ( gEventData, ROOT, SendToConsole )
+VS.Events.OnPlayerConnect <- function( event ) : ( gEventData, ROOT, SendToConsole )
 {
 	if ( event.networkid != "" )
 	{
@@ -94,29 +90,10 @@ VS.Events.player_connect <- function( event ) : ( gEventData, ROOT, SendToConsol
 			}
 
 			idx = 32;
-			Msg( "player_connect: ERROR!!! Player data is not being processed\n" );
+			Msg( "VS::OnPlayerConnect: ERROR!!! Player data is not being processed\n" );
 		};
 
 		gEventData[idx] = event;
-
-		// if using the old method
-		if ( !m_pListeners )
-		{
-			local caller = GetCaller();
-			if ( !caller.parent || !caller.parent.rawin( "{7D6E9A}" ) )
-			{
-				Msg( "player_connect: Warning: event listener is not fixed up!\n" );
-				m_bFixedUp = false;
-			}
-			else
-			{
-				m_bFixedUp = true;
-			};
-
-			if ( "OnGameEvent_player_connect" in ROOT )
-				::OnGameEvent_player_connect(event);
-		};
-
 		return true;
 	};
 
@@ -156,13 +133,9 @@ VS.Events.player_connect <- function( event ) : ( gEventData, ROOT, SendToConsol
 		if ( !(0 in m_SV) )
 			m_SV = null;
 	}
-
 }.bindenv( VS.Events );
 
-//
-// OnPlayerBan
-//
-VS.Events.server_addban <- function( event )
+VS.Events.OnPlayerBan <- function( event )
 {
 	// not playing
 	if ( !event.userid )
@@ -189,10 +162,7 @@ VS.Events.server_addban <- function( event )
 
 }.bindenv( VS.Events );
 
-//
-// OnPlayerSpawn
-//
-VS.Events.player_spawn <- function( event ) : ( gEventData, Fmt, ROOT )
+VS.Events.OnPlayerSpawn <- function( event ) : ( gEventData, Fmt, ROOT )
 {
 	foreach( i, data in gEventData )
 	{
@@ -206,7 +176,7 @@ VS.Events.player_spawn <- function( event ) : ( gEventData, Fmt, ROOT )
 			if ( !player || !player.ValidateScriptScope() )
 			{
 				gEventData[i] = null;
-				Msg( "player_connect: invalid player entity [" + data.userid + "] [" + (data.index+1) + "]\n" );
+				Msg( "VS::OnPlayerConnect: invalid player entity [" + data.userid + "] [" + (data.index+1) + "]\n" );
 				break;
 			};
 
@@ -215,7 +185,7 @@ VS.Events.player_spawn <- function( event ) : ( gEventData, Fmt, ROOT )
 			if ( "networkid" in scope &&
 				scope.networkid != "" ) // if the existing networkid is empty, fall through and update
 			{
-				Msg("player_connect: ERROR!!! Something has gone wrong! ");
+				Msg("VS::OnPlayerConnect: ERROR!!! Something has gone wrong! ");
 
 				if ( scope.networkid == data.networkid )
 				{
@@ -242,16 +212,6 @@ VS.Events.player_spawn <- function( event ) : ( gEventData, Fmt, ROOT )
 			break;
 		};
 	}
-
-	// if using the old method
-	if ( !m_pListeners )
-	{
-		local caller = GetCaller();
-		if ( !caller.parent || !caller.parent.rawin( "{7D6E9A}" ) )
-			Msg( "player_spawn: Warning: event listener is not fixed up!\n" );
-		if ( "OnGameEvent_player_spawn" in ROOT )
-			return ::OnGameEvent_player_spawn(event);
-	};
 }.bindenv( VS.Events );
 
 //
@@ -284,10 +244,10 @@ VS.ForceValidateUserid <- function( ent, internal = 0 ) : ( AddEvent, Fmt, Entit
 
 	if ( !m_hProxy )
 	{
-		local p = Entities.CreateByClassname( "info_game_event_proxy" );
-		p.__KeyValueFromString( "event_name", "player_connect" );
-		MakePersistent( p );
-		m_hProxy = p.weakref();
+		local h = Entities.CreateByClassname( "info_game_event_proxy" );
+		h.__KeyValueFromString( "event_name", "player_connect" );
+		MakePersistent( h );
+		m_hProxy = h.weakref();
 	};
 
 	return AddEvent( m_hProxy, "GenerateGameEvent", "", 0, ent, null );
@@ -309,12 +269,11 @@ function VS::ValidateUseridAll()
 	// fallback and force validate even though there will be other issues
 	else
 	{
-		Msg( "VS::ValidateUseridAll: Warning: player_connect event listener is not fixed up!" );
+		Msg( "Warning: VS::ValidateUseridAll: incorrect eventlistener setup!\n" );
 
-		local delay = ::delay; // not using EventQueue for standalone version
 		local t = ::FrameTime();
 		foreach( i, v in GetAllPlayers() )
-			delay( "::VS.ForceValidateUserid(self)", i * t, v );
+			DoEntFireByInstanceHandle( v, "RunScriptCode", "VS.ForceValidateUserid(self)", i * t, v, v );
 	};
 }
 
@@ -369,7 +328,7 @@ function VS::FixupEventListener( ent )
 		m_ppCache = [];
 	m_ppCache.append( cache.weakref() );
 
-	// Table looks for parent's metamethods.
+	// Table looks for parent (metatable) metamethods.
 	// They are called in child's environment.
 	delegate ( delegate ( delegate sc.parent :
 	{
@@ -384,8 +343,7 @@ function VS::FixupEventListener( ent )
 			if ( k == "event_data" )
 			{
 				// This can of course be used as a manager and call callbacks added with a unique function, but
-				// that would not be compatible with the current method of using outputs, and
-				// be generally pointless as CSGO does not have an addon system where independent scripts
+				// that would generally be pointless as CSGO does not have an addon system where independent scripts
 				// are likely to be run in parallel. The lack of an error handler is also an important problem.
 				cache.insert( 0, v );
 			}
@@ -442,14 +400,13 @@ local __ExecutePreSpawn = function( pEnt )
 		return;
 	};
 
-	local eventname = vs.s_szEventName;
-	if ( !eventname )
+	if ( !vs.s_szEventName )
 	{
 		pEnt.Destroy();
 		return Msg( "VS::Events::PreSpawn: invalid call origin\n" );
 	};
 
-	pEnt.__KeyValueFromString( "EventName", eventname );
+	pEnt.__KeyValueFromString( "EventName", vs.s_szEventName );
 	pEnt.__KeyValueFromInt( "FetchEventData", 1 );
 	pEnt.__KeyValueFromInt( "IsEnabled", 1 );
 	pEnt.__KeyValueFromInt( "TeamNum", -1 );
@@ -508,7 +465,6 @@ local PostSpawn = function( pEntities )
 	}
 }.bindenv( VS.Events );
 
-
 local OnPostSpawn = function() : (__RemovePooledString)
 {
 	local VS = VS;
@@ -516,13 +472,13 @@ local OnPostSpawn = function() : (__RemovePooledString)
 	if ( !VS.Events.m_bFixedUp )
 	{
 		VS.Events.m_bFixedUp = true;
-		Msg("VS::Events init\n");
+		Msg( "VS::Events init '"+VS.version+"'\n" );
 
 		VS.StopListeningToAllGameEvents( "VS::Events" );
 
-		VS.ListenToGameEvent( "player_connect", VS.Events.player_connect, "VS::Events" );
-		VS.ListenToGameEvent( "player_spawn", VS.Events.player_spawn, "VS::Events" );
-		VS.ListenToGameEvent( "server_addban", VS.Events.server_addban, "VS::Events" );
+		VS.ListenToGameEvent( "player_connect", VS.Events.OnPlayerConnect, "VS::Events" );
+		VS.ListenToGameEvent( "player_spawn", VS.Events.OnPlayerSpawn, "VS::Events" );
+		VS.ListenToGameEvent( "server_addban", VS.Events.OnPlayerBan, "VS::Events" );
 
 		VS.ListenToGameEvent( "player_activate", function(ev)
 		{
@@ -583,7 +539,7 @@ VS.ListenToGameEvent <- function( szEventname, fnCallback, pContext )
 
 	if ( !m_bFixedUp )
 	{
-		// Defer registration to fix the events not registering on initial server launch.
+		// Defer registration to fix events not registering on initial server launch.
 
 		if ( !m_DeferredReg )
 			m_DeferredReg = [];
@@ -667,6 +623,7 @@ function VS::Events::InitTemplate( scope )
 	scope.__FinishSpawn <- __FinishSpawn;
 	scope.PreSpawnInstance <- 1;
 	scope.PostSpawn <- PostSpawn;
+	// Mulitple callbacks are not supported to keep the purpose of the template entity simple.
 	//if ( scope.OnPostSpawnCallChain.chain.find(OnPostSpawn) == null )
 	//	scope.OnPostSpawnCallChain.chain.push( OnPostSpawn );
 	scope.OnPostSpawn <- OnPostSpawn.bindenv(scope);

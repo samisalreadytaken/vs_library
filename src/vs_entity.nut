@@ -38,11 +38,16 @@
 
 // no PrecacheModel in Portal2
 if ( "PrecacheModel" in CBaseEntity )
-::PrecacheModel <- CBaseEntity.PrecacheModel.bindenv( World );;
+	::PrecacheModel <- function(s) : (World) return World.PrecacheModel(s);;
 
-// identical to PrecacheScriptSound on server
-::PrecacheScriptSound <- CBaseEntity.PrecacheSoundScript.bindenv( World );
+// PrecacheSoundScript is identical to PrecacheScriptSound on server
+::PrecacheScriptSound <- function(s) : (World) return World.PrecacheSoundScript(s);
 
+if (PORTAL2)
+{
+	VS.MakePersistent <- dummy;
+}
+else
 //-----------------------------------------------------------------------
 // Prevent the entity from being reset every round
 //-----------------------------------------------------------------------
@@ -229,7 +234,7 @@ function VS::AddOutput( hEnt, szOutput, szTarget, szInput = "", szParameter = ""
 //          bool [ make persistent ]
 // Output : handle [ entity ]
 //-----------------------------------------------------------------------
-function VS::CreateEntity( classname, keyvalues = null, preserve = false ):(Entities)
+function VS::CreateEntity( classname, keyvalues = null, preserve = false )
 {
 	local ent = Entities.CreateByClassname(classname);
 
@@ -315,7 +320,7 @@ function VS::SetName( ent, name )
 // Input an entity handle or string to dump its scope.
 // String example: "([2] player: targetname)"
 //-----------------------------------------------------------------------
-function VS::DumpEnt( input = null ) : (Entities, Fmt)
+function VS::DumpEnt( input = null ) : (Fmt)
 {
 	// dump only scope names
 	if ( !input )
@@ -402,7 +407,7 @@ function VS::GetLocalPlayer( bAddGlobal = true )
 //
 // If the event listeners are NOT set up, named bots will be shown as players
 //-----------------------------------------------------------------------
-function VS::GetPlayersAndBots():(Entities)
+function VS::GetPlayersAndBots()
 {
 	local ent, ply = [], bot = [];
 
@@ -429,7 +434,7 @@ function VS::GetPlayersAndBots():(Entities)
 //-----------------------------------------------------------------------
 // Get every player and bot in a single array
 //-----------------------------------------------------------------------
-function VS::GetAllPlayers():(Entities)
+function VS::GetAllPlayers()
 {
 	local e, a = [];
 	while ( e = Entities.FindByClassname(e,"player") )
@@ -499,7 +504,7 @@ function VS::GetLocalPlayer()
 //-----------------------------------------------------------------------
 // PlayerInstanceFromIndex
 //-----------------------------------------------------------------------
-function VS::GetPlayerByIndex( entindex ) : (Entities)
+function VS::GetPlayerByIndex( entindex )
 {
 	local e;
 	while ( e = Entities.FindByClassname( e, "player" ) )
@@ -514,7 +519,7 @@ function VS::GetPlayerByIndex( entindex ) : (Entities)
 //-----------------------------------------------------------------------
 // EntIndexToHScript
 //-----------------------------------------------------------------------
-function VS::GetEntityByIndex( entindex, classname = "*" ) : (Entities)
+function VS::GetEntityByIndex( entindex, classname = "*" )
 {
 	local e;
 	while ( e = Entities.FindByClassname(e, classname) )
@@ -531,7 +536,7 @@ function VS::IsPointSized( h )
 	return VectorIsZero( h.GetBoundingMaxs() );
 }
 
-function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold ):(Entities)
+function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold )
 {
 	local bestDot = fThreshold,
 		best_ent, ent = Entities.First();
@@ -561,7 +566,7 @@ function VS::FindEntityNearestFacing( vOrigin, vFacing, fThreshold ):(Entities)
 	return best_ent;
 }
 
-function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, szClassname ):(Entities)
+function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, szClassname )
 {
 	local bestDot = fThreshold,
 		best_ent, ent;
@@ -586,7 +591,7 @@ function VS::FindEntityClassNearestFacing( vOrigin, vFacing, fThreshold, szClass
 
 // When two candidate entities are in front of each other, pick the closer one
 // Not perfect, but it works to some extent
-function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, szClassname, flRadius ):(Entities)
+function VS::FindEntityClassNearestFacingNearest( vOrigin, vFacing, fThreshold, szClassname, flRadius )
 {
 	local best_ent, ent;
 
