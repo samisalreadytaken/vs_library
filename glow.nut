@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------
 //                       github.com/samisalreadytaken
-//- v1.0.11 -------------------------------------------------------------
+//- v1.0.12 -------------------------------------------------------------
 //
 // Easy glow handling (using prop_dynamic_glow entities).
 // It can be used on any entity that has a model.
@@ -32,7 +32,7 @@ if ( !("Glow" in ::getroottable()) || typeof ::Glow != "table" || !("Set" in ::G
 			local v = _list[i];
 			if (v)
 			{
-				if( v.GetOwner() == src )
+				if ( v.GetOwner() == src )
 					return v;
 			}
 			else _list.remove(i);
@@ -98,10 +98,16 @@ if ( !("Glow" in ::getroottable()) || typeof ::Glow != "table" || !("Set" in ::G
 			default:
 				throw "parameter 2 has an invalid type '" + typeof color + "' ; expected 'string|Vector'";;
 		}
+
 		glow.__KeyValueFromInt( "glowstyle", style );
 		glow.__KeyValueFromFloat( "glowdist", dist );
 		glow.__KeyValueFromInt( "glowenabled", 1 );
-		glow.__KeyValueFromInt( "effects", 18433 ); // (1<<0)|(1<<11)|(1<<14)
+		glow.__KeyValueFromInt( "effects", 18561 ); // (1<<0)|(1<<7)|(1<<11)|(1<<14)
+
+		// Enable again asynchronously in case a Disable input was fired to this glow in this frame,
+		// as disabling is not synchronous (clients need to have received the disable msg first,
+		// which has to be via the input).
+		AddEvent( glow, "SetGlowEnabled", "", 0.1, null, null );
 
 		return glow;
 	}
@@ -118,11 +124,10 @@ if ( !("Glow" in ::getroottable()) || typeof ::Glow != "table" || !("Set" in ::G
 
 		if (glow)
 		{
-			glow.__KeyValueFromInt( "effects", 18465 ); // EF_DEFAULT|EF_NODRAW
+			glow.__KeyValueFromInt( "effects", 18593 ); // AddEffects( EF_NODRAW )
 			AddEvent( glow, "SetParent", "", 0.0, null, null );
 			AddEvent( glow, "SetGlowDisabled", "", 0.0, null, null );
 			glow.SetOwner( null );
-			// glow.SetAbsOrigin( MAX_COORD_VEC );
 		};
 
 		return glow;
