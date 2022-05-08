@@ -2067,7 +2067,7 @@ void Chat(string s)
 Wrapper function for `ScriptPrintMessageChatAll`, but allows text colour to be the first character.
 
 ```
-// colour will not work
+// will not be coloured
 ScriptPrintMessageChatAll(TextColor.Red + "lorem ipsum")
 
 // will be coloured
@@ -2100,6 +2100,10 @@ ________________________________
 ```cpp
 void CenterPrintAll(string s)
 ```
+Show HTML colourable hint text to all players.
+
+NOTE: Because of the hack this function uses, there will be a `$` in the beginning of the hint text in most languages, whereas in Czech, Japanese, Portuguese, Turkish and Ukrainian unrelated words will be displayed.
+
 ```cpp
 local v = VS.RandomVector();
 
@@ -2137,7 +2141,9 @@ TextColor
 ```
 `Chat( TextColor.Red + "RED" + TextColor.Gold + " YELLOW" + TextColor.Normal + " WHITE" )`
 
-The `TextColor` enum is strings for concatenation. For formatting, use their integer values with "%c".
+The `TextColor` enum is strings for concatenation. For formatting, use their char values with "%c".
+
+`Chat(format( "%cRED %cYELLOW %cWHITE", TextColor.Red[0], TextColor.Gold[0], TextColor.Normal[0] ))`
 ________________________________
 
 <a name="f_VecToString"></a>
@@ -2261,6 +2267,9 @@ function OnForwardReleased( ply )
 }
 ```
 
+NOTE: Use the `player_spawn` game event to extend the player as early as possible. Using, for example, a think function on map spawn will set the userids of players who were connected to the server before map change to `-1` until the players are spawned, only then `CExtendedPlayer::GetUserID()` will return the correct ID.
+
+NOTE: The library keeps a strong ref to the player instance; neither `CExtendedPlayer` or `CBasePlayer` weak refs will ever be `null` after this is called. Always use `IsValid()` for player validity check.
 ________________________________
 
 <a name="f_TraceLine"></a>
@@ -2294,7 +2303,7 @@ ________________________________
 ```cpp
 handle VS::TraceLine::GetEnt(float radius = 1.0)
 ```
-Search and return hit entity handle, null if none
+Search for entity in radius and return entity handle, null if none.
 
 Calling this again will try to find an entity again. Found entity is not saved.
 ________________________________
@@ -2828,6 +2837,13 @@ ________________________________
 void VS::ListenToGameEvent( string szEventname, closure fnCallback, string pContext )
 ```
 Register a listener for a game event from script. Requires event listener setup.
+
+Contexts are used to identify event listeners; they can be used to register multiple listeners for the same event.
+```cs
+VS.ListenToGameEvent( "player_say", function(ev) { print("-- 1\n") }, "context1" );
+VS.ListenToGameEvent( "player_say", function(ev) { print("-- 2\n") }, "context2" );
+VS.ListenToGameEvent( "player_say", function(ev) { print("-- 3\n") }, "context3" );
+```
 ________________________________
 
 <a name="f_StopListeningToAllGameEvents"></a>

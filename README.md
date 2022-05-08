@@ -1,12 +1,9 @@
 # VScript Library
 [![ver][]](CHANGELOG.txt)
 
+[ver]: https://img.shields.io/badge/vs__library-v2.43.12-informational
+
 High-performance vscript libraries; written mainly for CS:GO, compatible with Portal 2.
-
-See the [**hlvr**](https://github.com/samisalreadytaken/vs_library/tree/hlvr) branch for usage in Half-Life Alyx.
-
-[ver]: https://img.shields.io/badge/vs__library-v2.43.10-informational
-
 
 ## Documentation
 See [Documentation.md](Documentation.md)
@@ -82,7 +79,7 @@ IncludeScript("vs_events");
 VS.Events.InitTemplate(this);
 ```
 
-Player info will be put in their script scope.
+Player info will automatically be put in their script scope.
 
 ```cs
 local userid = 2;

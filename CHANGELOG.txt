@@ -3,6 +3,14 @@
 
 --------------------------------
 
+2022-05-08 [v2.43.12]
+- Fixed CExtendedPlayer::GetUserID() always returning -1 when ToExtendedPlayer() was called before player spawn
+on a player who was connected to the server before map change. It will now return the
+correct value after the player spawns.
+- Added more error case console prints in game events library.
+- Removed already deprecated functions VS.Events.ValidateUseridAll, VS.Events.ForceValidateUserid
+- Fixed glow.nut bug where setting a glow after disabling one in the same frame would not enable the glow.
+
 2022-04-20 [v2.43.11]
 - Fixed save/restore crash in Portal 2
 - Fixed VS.VectorYawRotate() regression for in==out conditions
@@ -32,7 +40,7 @@ For instance: VectorTransform is 25%, MatrixMultiply is 70% faster.
 However 2D member access is now significantly slower than previously.
 - Bytecode optimisations mostly favouring less instruction count in exchange for larger stack size.
 - Bytecode optimisations to reduce stack size in exchange for lesser readability.
-- Added matrix3x4_t::InitXYZ, VMatrix::InitXYZ (FLU)
+- Added matrix3x4_t::InitXYZ (FLU)
 - Removed VS.ComputeVolume
 
 2021-10-03 [v2.43.6]

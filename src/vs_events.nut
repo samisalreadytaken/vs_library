@@ -67,7 +67,7 @@ VS.GetPlayerByUserid <- function( userid ) : (Entities)
 	}
 }.bindenv( VS.Events );
 
-VS.Events.OnPlayerConnect <- function( event ) : ( gEventData, ROOT, SendToConsole )
+local OnPlayerConnect = function( event ) : ( gEventData, ROOT, SendToConsole )
 {
 	if ( event.networkid != "" )
 	{
@@ -94,26 +94,30 @@ VS.Events.OnPlayerConnect <- function( event ) : ( gEventData, ROOT, SendToConso
 		};
 
 		gEventData[idx] = event;
-		return true;
+		return;
 	};
 
 	if ( m_SV )
 	{
 		local sc = m_SV.remove(0);
 		if ( !sc || !("self" in sc) )
-			return Msg("VS::ForceValidateUserid: invalid scope in validation\n");
+			return Msg("VS::Events: invalid scope in validation\n");
 
 		if ( !sc.__vrefs || !sc.self || !sc.self.IsValid() )
-			return Msg("VS::ForceValidateUserid: invalid entity in validation\n");
+			return Msg("VS::Events: invalid entity in validation\n");
 
-		if ( "userid" in sc && sc.userid != event.userid )
-			Msg("VS::ForceValidateUserid: ERROR!!! conflict! ["+ sc.userid +", "+ event.userid +"]\n");
+		if ( "userid" in sc && sc.userid != event.userid && sc.userid != -1 )
+		{
+			Msg("VS::Events: ERROR!!! conflict! ["+ sc.userid +", "+ event.userid +"]\n");
 
-		//if ( event.userid in m_Players )
-		//{
-		//	if ( m_Players[event.userid] != sc.self )
-		//		Msg("VS::ForceValidateUserid: ERROR!!! conflict! ["+ sc.self +", "+ m_Players[event.userid] +"]\n");
-		//}
+			// if (sc.userid == -1) then ToExtendedPlayer() was called before the player was spawned
+			// where the player was connected before map change.
+		};
+
+		if ( event.userid in m_Players && m_Players[event.userid] != sc.self )
+		{
+			Msg("VS::Events: ERROR!!! conflict! ["+ sc.self +", "+ m_Players[event.userid] +"]\n");
+		};
 
 		sc.userid <- event.userid;
 
@@ -162,12 +166,12 @@ VS.Events.OnPlayerBan <- function( event )
 
 }.bindenv( VS.Events );
 
-VS.Events.OnPlayerSpawn <- function( event ) : ( gEventData, Fmt, ROOT )
+local OnPlayerSpawn = function( event ) : ( gEventData, Fmt, ROOT )
 {
 	foreach( i, data in gEventData )
 	{
 		if ( !data )
-			break;
+			return;
 
 		if ( data.userid == event.userid )
 		{
@@ -177,7 +181,7 @@ VS.Events.OnPlayerSpawn <- function( event ) : ( gEventData, Fmt, ROOT )
 			{
 				gEventData[i] = null;
 				Msg( "VS::OnPlayerConnect: invalid player entity [" + data.userid + "] [" + (data.index+1) + "]\n" );
-				break;
+				return;
 			};
 
 			local scope = player.GetScriptScope();
@@ -196,7 +200,7 @@ VS.Events.OnPlayerSpawn <- function( event ) : ( gEventData, Fmt, ROOT )
 				{
 					Msg(Fmt( "Conflicting data. [%d] ('%s', '%s')\n", data.userid, scope.networkid, data.networkid ));
 				};
-				break;
+				return;
 			};
 
 			scope.userid <- data.userid;
@@ -209,7 +213,7 @@ VS.Events.OnPlayerSpawn <- function( event ) : ( gEventData, Fmt, ROOT )
 			// default sort puts null before instances, reverse it
 			gEventData.reverse();
 
-			break;
+			return;
 		};
 	}
 }.bindenv( VS.Events );
@@ -239,7 +243,7 @@ VS.ForceValidateUserid <- function( ent, internal = 0 ) : ( AddEvent, Fmt, Entit
 
 	if (b)
 		m_SV.append( sc.weakref() );
-	// UNDONE: fail condition when the event queue is reset (round end)
+	// UNDONE: fail condition when the event queue is reset
 	// in the same frame VS.ForceValidateUserid is called
 
 	if ( !m_hProxy )
@@ -276,9 +280,6 @@ function VS::ValidateUseridAll()
 			DoEntFireByInstanceHandle( v, "RunScriptCode", "VS.ForceValidateUserid(self)", i * t, v, v );
 	};
 }
-
-VS.Events.ForceValidateUserid <- VS.ForceValidateUserid.weakref();
-VS.Events.ValidateUseridAll <- VS.ValidateUseridAll.weakref();
 
 //-----------------------------------------------------------------------
 //
@@ -328,8 +329,6 @@ function VS::FixupEventListener( ent )
 		m_ppCache = [];
 	m_ppCache.append( cache.weakref() );
 
-	// Table looks for parent (metatable) metamethods.
-	// They are called in child's environment.
 	delegate ( delegate ( delegate sc.parent :
 	{
 		_delslot = function( k )
@@ -341,23 +340,14 @@ function VS::FixupEventListener( ent )
 		_newslot = function( k, v ) : (cache)
 		{
 			if ( k == "event_data" )
-			{
-				// This can of course be used as a manager and call callbacks added with a unique function, but
-				// that would generally be pointless as CSGO does not have an addon system where independent scripts
-				// are likely to be run in parallel. The lack of an error handler is also an important problem.
-				cache.insert( 0, v );
-			}
-			else
-			{
-				rawset( k, v );
-			}
+				// No error handler, cannot call callbacks here.
+				return cache.insert( 0, v );
+			return rawset( k, v );
 		},
 		_get = function( k ) : (cache)
 		{
 			if ( k == "event_data" )
-			{
 				return cache.pop();
-			};
 			return rawget(k); // throw
 		},
 		["{7D6E9A}"] = null
@@ -449,23 +439,14 @@ local PostSpawn = function( pEntities )
 			sc.parent._newslot = function( k, v ) : (s_fnSynchronous)
 			{
 				if ( k == "event_data" )
-				{
-					//try
-					//{
-						return s_fnSynchronous(v);
-					//}
-					//catch( err )
-					//{
-					//	print(format( "\nAN ERROR HAS OCCURED [%s]\n", err ));
-					//}
-				};
+					return s_fnSynchronous(v);
 				return rawset( k, v );
 			}
 		}
 	}
 }.bindenv( VS.Events );
 
-local OnPostSpawn = function() : (__RemovePooledString)
+local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlayerSpawn)
 {
 	local VS = VS;
 
@@ -476,15 +457,18 @@ local OnPostSpawn = function() : (__RemovePooledString)
 
 		VS.StopListeningToAllGameEvents( "VS::Events" );
 
-		VS.ListenToGameEvent( "player_connect", VS.Events.OnPlayerConnect, "VS::Events" );
-		VS.ListenToGameEvent( "player_spawn", VS.Events.OnPlayerSpawn, "VS::Events" );
+		VS.ListenToGameEvent( "player_connect", OnPlayerConnect, "VS::Events" );
+		VS.ListenToGameEvent( "player_spawn", OnPlayerSpawn, "VS::Events" );
 		VS.ListenToGameEvent( "server_addban", VS.Events.OnPlayerBan, "VS::Events" );
 
 		VS.ListenToGameEvent( "player_activate", function(ev)
 		{
 			foreach( i, v in GetAllPlayers() )
-				if ( !("userid" in v.GetScriptScope()) )
+			{
+				local t = v.GetScriptScope();
+				if ( !("userid" in t) || t.userid == -1 )
 					ForceValidateUserid( v, 1 );
+			}
 		}.bindenv(VS), "VS::Events" );
 
 		VS.ListenToGameEvent( "player_disconnect", function(ev)
@@ -638,6 +622,15 @@ function VS::Events::InitTemplate( scope )
 			local v = m_ppCache[i];
 			if ( v )
 			{
+#ifdef _DEBUG
+				if ( v.len() )
+				{
+					Msg( "Discarding unhandled game event:\n{\n" );
+					foreach ( k,vv in v )
+						Msg(format( "\t%s : %s\n", k, ""+vv ));
+					Msg( "}\n" );
+				}
+#endif
 				v.clear();
 			}
 			else
@@ -649,6 +642,9 @@ function VS::Events::InitTemplate( scope )
 
 	if ( "EventQueue" in VS )
 	{
+#ifdef _DEBUG
+		VS.EventQueue.Dump();
+#endif
 		// NOTE: SetNameSafe calls from ToExtendedPlayer might also be removed if
 		// they were called in an event that was cancelled.
 		// This only results in temporary garbage targetnames on bots not being cleared. It's not harmful.

@@ -136,9 +136,9 @@ local OwnerSort = function( a, b )
 VS.ToExtendedPlayer <- function( hPlayer )
 	: ( g_Players, g_Eyes, g_GameUIs, NullSort, OwnerSort, AddEvent, SetNameSafe, FrameTime )
 {
-	foreach( ply in g_Players )
-		if ( ply.self == hPlayer || ply == hPlayer )
-			return ply;
+	foreach( p in g_Players )
+		if ( p.self == hPlayer || p == hPlayer )
+			return p;
 
 	if ( (typeof hPlayer != "instance") || !(hPlayer instanceof CBasePlayer) || !hPlayer.IsValid() )
 		return;
@@ -211,7 +211,17 @@ VS.ToExtendedPlayer <- function( hPlayer )
 	local bot, uid, nid, pnm;
 
 	if ( !("userid" in sc) )
+	{
+		if ( "Events" in this && Events.m_bFixedUp )
+		{
+			// ToExtendedPlayer() can be called before players - who were connected to the server before map change -
+			// are validated. In this case CExtendedPlayer::userid will always return -1,
+			// and CExtendedPlayer::GetUserID() will return the correct userid after the player spawns.
+			Msg("Warning!!! VS.ToExtendedPlayer was called before player was spawned!\n");
+		};
+
 		sc.userid <- -1;
+	};
 	if ( !("networkid" in sc) )
 		sc.networkid <- "";
 	if ( !("name" in sc) )
@@ -234,7 +244,7 @@ VS.ToExtendedPlayer <- function( hPlayer )
 	if ( "IsBot" in hPlayer )
 		bot = hPlayer.IsBot();
 	else
-		bot = ( sc.networkid == "BOT" );
+		bot = sc.networkid == "BOT";
 
 	uid = sc.userid;;
 	nid = sc.networkid;
@@ -253,7 +263,7 @@ VS.ToExtendedPlayer <- function( hPlayer )
 		static fakeplayer = bot; // m_bFakePlayer
 
 		IsBot = bot ? function() { return true; } : function() { return false; };
-		function GetUserID() : (uid) { return uid; }
+		function GetUserID() : (sc) { return sc.userid; }
 		function GetNetworkIDString() : (nid) { return nid; }
 		function GetPlayerName() : (pnm) { return pnm; }
 
@@ -472,6 +482,8 @@ VS.ToExtendedPlayer <- function( hPlayer )
 	}
 
 	// Set native funcs after custom funcs to keep forward compatibility
+	// TODO: Check for parameter conflicts. Most likely to happen with SetParent -
+	// its parameters were taken from Source 2
 	foreach( k,v in hPlayer.getclass() ) // CBaseMultiplayerPlayer
 		CExtendedPlayer__[k] <- v.bindenv( hPlayer );
 
@@ -618,21 +630,21 @@ function VS::TraceLine::GetDistSqr()
 // Get surface normal
 function VS::TraceLine::GetNormal() : ( Vector, CTrace )
 {
-	if ( !normal )
-	{
-		local up = Vector( 0.0, 0.0, 0.1 );
-		local dt = endpos - startpos;
-		dt.Norm();
-		local v1 = startpos + dt.Cross(up);
-		local v2 = startpos + up;
-		dt = dt * MAX_TRACE_LENGTH;
-		local hitpos = GetPos();
-		normal = ( hitpos - CTrace( v1, v1 + dt, ignore, mask ).GetPos() ).Cross(
-			hitpos - CTrace( v2, v2 + dt, ignore, mask ).GetPos() );
-		normal.Norm();
-	};
+	if ( normal )
+		return normal;
 
-	return normal;
+	local up = Vector( 0.0, 0.0, 0.1 );
+	local v0 = startpos;
+	local dt = endpos - v0;
+	dt.Norm();
+	dt = dt * MAX_TRACE_LENGTH;
+	local v1 = v0 + dt.Cross(up);
+	local v2 = v0 + up;
+	local v3 = GetPos();
+	local vn = normal = ( v3 - CTrace( v1, v1 + dt, ignore, mask ).GetPos() ).Cross(
+		v3 - CTrace( v2, v2 + dt, ignore, mask ).GetPos() );
+	vn.Norm();
+	return vn;
 }
 
 
