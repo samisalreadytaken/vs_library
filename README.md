@@ -1,17 +1,10 @@
 # VScript Library (HLVR)
-[![ver][]](CHANGELOG.txt)
-
-[ver]: https://img.shields.io/badge/vs__library-v0.1.3-informational
-
-The scope and structure of this library is tailored for Half-Life Alyx and its addon system.
-
-The issues with the system is talked about in [this Steam guide](https://steamcommunity.com/sharedfiles/filedetails/?id=2187633818).
 
 This also fixes the a1_intro_world transition issue.
 
 ## Installation
 
-1. Download [vs_library.lua](https://raw.githubusercontent.com/samisalreadytaken/vs_library/hlvr/vs_library.lua).
+1. Download [vs_library.lua](https://raw.githubusercontent.com/samisalreadytaken/vs_library/hlvr/src/vs_library.lua).
 
 2. Place `vs_library.lua` in your addon vscripts directory `/steamapps/common/Half-Life Alyx/game/hlvr_addons/<addonid>/scripts/vscripts/`
 
@@ -79,42 +72,6 @@ ________________________________
 
 ```cpp
 bool VS.IsAddonEnabled(string addonid)
-```
-```cpp
-bool VS.IsInteger(float)
-```
-```cpp
-bool VS.IsLookingAt(Vector vSrc, Vector vTarget, Vector vDir, float cosTolerance)
-```
-```cpp
-Vector VS.PointOnLineNearestPoint(Vector vStartPos, Vector vEndPos, Vector vPoint)
-```
-```cpp
-float VS.Approach(float target, float value, float speed)
-```
-```cpp
-float VS.ApproachAngle(float target, float value, float speed)
-```
-```cpp
-float VS.AngleDiff(float destAngle, float srcAngle)
-```
-```cpp
-float VS.AngleNormalize(float angle)
-```
-```cpp
-QAngle VS.QAngleNormalize(QAngle& angle)
-```
-```cpp
-Vector VS.SnapDirectionToAxis(Vector& direction, float epsilon)
-```
-```cpp
-bool VS.VectorsAreEqual(Vector a, Vector b, float tolerance = 0)
-```
-```cpp
-bool VS.IsPointInBox(Vector vec, Vector mins, Vector maxs)
-```
-```cpp
-bool VS.IsBoxIntersectingBox(Vector mins1, Vector maxs1, Vector mins2, Vector maxs2)
 ```
 ```lua
 table.unpack(list [, i [, j]])

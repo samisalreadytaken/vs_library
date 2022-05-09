@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------
 --------------------- Copyright (c) samisalreadytaken -------------------
---- v0.1.3 --------------------------------------------------------------
+-------------------------------------------------------------------------
 
-local VER = "v0.1.3"
+local VER = "0.1.4"
 
 if not _VS then
 	_VS = {}
@@ -98,7 +98,7 @@ function VS.OnPlayerSpawn(...)
 				append(params,argv[i])
 			end
 
-			msg = msg.." with "..tostring(#params).." parameter(s)"
+			msg = f( "%s with %d parameter(s)", msg, #params )
 
 		end
 
@@ -116,7 +116,7 @@ function VS.OnPlayerSpawn(...)
 		line = info.linedefined
 	}
 
-	Msg(msg.." ["..info.short_src.."]\n")
+	Msg(f( "%s [%s]\n", msg, info.short_src ))
 
 	return true
 
@@ -303,205 +303,6 @@ function VS.IsAddonEnabled(str)
 	end
 	return false
 
-end
-
--------------------------------------------------------------------------
--- math.nut
-
-function VS.IsInteger(f) return floor(f) == f end
-
-function VS.IsLookingAt( vSrc, vTarget, vDir, cosTolerance )
-	return (vTarget-vSrc):Normalized():Dot(vDir) >= cosTolerance
-end
-
-function VS.PointOnLineNearestPoint( vStartPos, vEndPos, vPoint )
-	local v1 = vEndPos - vStartPos
-	local v1l = v1:Length()
-	local dist = v1:Dot( vPoint - vStartPos ) / ( v1l * v1l )
-	if dist <= 0.0 then
-		return vStartPos
-	end
-
-	if dist >= 1.0 then
-		return vEndPos
-	end
-
-	return vStartPos + v1*dist
-end
-
-function VS.Approach( t, v, f )
-	local dt = t - v
-	if dt > f then
-		return v + f
-	end
-	if dt < -f then
-		return v - f
-	end
-	return t
-end
-
-function VS.ApproachAngle( t, v, f )
-	t = t % 360.0
-	if t > 180.0 then
-		t = t - 360.0
-	elseif t < -180.0 then
-		t = t + 360.0
-	end
-	v = v % 360.0
-	if v > 180.0 then
-		v = v - 360.0
-	elseif v < -180.0 then
-		v = v + 360.0
-	end
-	local dt = t - v
-	dt = dt % 360.0
-	if dt > 180.0 then
-		dt = dt - 360.0
-	elseif dt < -180.0 then
-		dt = dt + 360.0
-	end
-	if f < 0 then
-		f = -f
-	end
-	if dt > f then
-		return v + f
-	end
-	if dt < -f then
-		return v - f
-	end
-	return t
-end
-
-function VS.AngleDiff( dst, src )
-	local ang = dst - src
-	ang = ang % 360.0
-	if ang > 180.0 then
-		return ang - 360.0
-	end
-	if ang < -180.0 then
-		return ang + 360.0
-	end
-	return ang
-end
-
-function VS.AngleNormalize( ang )
-	ang = ang % 360.0
-	if ang > 180.0 then
-		return ang - 360.0
-	end
-	if ang < -180.0 then
-		return ang + 360.0
-	end
-	return ang
-end
-
-function VS.QAngleNormalize( ang )
-
-	ang.x = ang.x % 360.0
-	ang.y = ang.y % 360.0
-	ang.z = ang.z % 360.0
-	if ang.x > 180.0 then
-		ang.x = ang.x - 360.0
-	elseif ang.x < -180.0 then
-		ang.x = ang.x + 360.0
-	end
-	if ang.y > 180.0 then
-		ang.y = ang.y - 360.0
-	elseif ang.y < -180.0 then
-		ang.y = ang.y + 360.0
-	end
-	if ang.z > 180.0 then
-		ang.z = ang.z - 360.0
-	elseif ang.z < -180.0 then
-		ang.z = ang.z + 360.0
-	end
-
-end
-
-function VS.SnapDirectionToAxis( vDir, eps )
-
-	local proj = 1.0 - eps
-
-	local x if vDir.x < 0 then x = -vDir.x else x = vDir.x end
-
-	if x > proj then
-
-		if vDir.x < 0.0 then
-			vDir.x = -1.0
-		else
-			vDir.x = 1.0
-		end
-		vDir.y = 0.0
-		vDir.z = 0.0
-
-		return vDir
-
-	end
-
-	local y if vDir.y < 0 then y = -vDir.y else y = vDir.y end
-
-	if y > proj then
-
-		if vDir.y < 0.0 then
-			vDir.y = -1.0
-		else
-			vDir.y = 1.0
-		end
-		vDir.z = 0.0
-		vDir.x = 0.0
-
-		return vDir
-
-	end
-
-	local z if vDir.z < 0 then z = -vDir.z else z = vDir.z end
-
-	if z > proj then
-
-		if vDir.z < 0.0 then
-			vDir.z = -1.0
-		else
-			vDir.z = 1.0
-		end
-		vDir.x = 0.0
-		vDir.y = 0.0
-
-		return vDir
-
-	end
-
-end
-
-function VS.VectorsAreEqual( a, b, tolerance )
-
-	if not tolerance then tolerance = 0 end
-
-	local x = a.x - b.x
-	if x < 0 then x = -x end
-
-	local y = a.y - b.y
-	if y < 0 then y = -y end
-
-	local z = a.z - b.z
-	if z < 0 then z = -z end
-
-	return ( x <= tolerance and
-	         y <= tolerance and
-	         z <= tolerance )
-end
-
-function VS.IsPointInBox( vec, min, max )
-
-	return ( vec.x >= min.x and vec.x <= max.x and
-	         vec.y >= min.y and vec.y <= max.y and
-	         vec.z >= min.z and vec.z <= max.z )
-end
-
-function VS.IsBoxIntersectingBox( min1, max1, min2, max2 )
-	if ( min1.x > max2.x ) or ( max1.x < min2.x ) then return false end
-	if ( min1.y > max2.y ) or ( max1.y < min2.y ) then return false end
-	if ( min1.z > max2.z ) or ( max1.z < min2.z ) then return false end
-	return true
 end
 
 -------------------------------------------------------------------------
