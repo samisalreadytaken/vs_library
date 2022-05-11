@@ -71,43 +71,6 @@ function VS::SetParent( hChild, hParent ):(AddEvent)
 }
 
 //-----------------------------------------------------------------------
-// Deprecated. Use `ToExtendedPlayer`.
-//-----------------------------------------------------------------------
-function VS::CreateMeasure( g, n = null, p = false, e = true, s = 1.0 ):(AddEvent)
-{
-	Msg("Warning: VS::CreateMeasure is deprecated!\n");
-
-	local r = e ? n ? n+"" : "vs.ref_"+UniqueString() : n ? n+"" : null;
-
-	if ( !r || !r.len() )
-		throw "Invalid targetname";
-
-	local e = CreateEntity( "logic_measure_movement",
-	                        { measuretype = e ? 1 : 0,
-	                          measurereference = "",
-	                          targetreference = r,
-	                          target = r,
-	                          measureretarget = "",
-	                          targetscale = s.tofloat(),
-	                          targetname = e?r:null }, p );
-
-	AddEvent( e, "SetMeasureReference", r, 0.0, null, null );
-	AddEvent( e, "SetMeasureTarget", g, 0.0, null, null );
-	AddEvent( e, "Enable", "" , 0.0, null, null );
-
-	return e;
-}
-
-//-----------------------------------------------------------------------
-// Deprecated. Use `ToExtendedPlayer`.
-//-----------------------------------------------------------------------
-function VS::SetMeasure(h,s):(AddEvent)
-{
-	Msg("Warning: VS::SetMeasure is deprecated!\n");
-	return AddEvent( h, "SetMeasureTarget", s, 0.0, null, null );
-}
-
-//-----------------------------------------------------------------------
 // Input  : bool [ start disabled ]
 //          float [ refire time ]
 //          float [ lower (randomtime, used when refire == null) ]
@@ -287,12 +250,12 @@ function VS::SetKeyValue( ent, key, val )
 {
 	switch( typeof val )
 	{
-		case "bool":
-		case "integer":
-			return ent.__KeyValueFromInt( key, val.tointeger() );
-
 		case "float":
 			return ent.__KeyValueFromFloat( key, val );
+
+		case "integer":
+		case "bool":
+			return ent.__KeyValueFromInt( key, val.tointeger() );
 
 		case "string":
 			return ent.__KeyValueFromString( key, val );
@@ -379,27 +342,6 @@ function VS::DumpEnt( input = null ) : (Fmt)
 
 
 if (!PORTAL2){
-//
-// Deprecated. Use VS.GetPlayerByIndex(1)
-//
-function VS::GetLocalPlayer( bAddGlobal = true )
-{
-	local e = ::Entc("player");
-
-	if ( !e )
-		returnMsg("GetLocalPlayer: No player found!\n");
-
-	if ( e != GetPlayerByIndex(1) )
-		Msg("GetLocalPlayer: Discrepancy!\n");
-
-	SetName(e, "localplayer");
-
-	if (bAddGlobal)
-		::HPlayer <- e.weakref();
-
-	return e;
-}
-
 //-----------------------------------------------------------------------
 // Return an array of player and bot arrays.
 //
@@ -471,35 +413,22 @@ function VS::DumpPlayers( bDumpScope = false ) : (Fmt)
 
 	Msg("=======================================\n");
 }
+};; // !PORTAL2
 
-}else{ // PORTAL2
 //
 // Deprecated.
 // Use VS.GetPlayerByIndex(1) for multiplayer,
 // ::player or ::GetPlayer() for singleplayer.
 //
-function VS::GetLocalPlayer()
+function VS::GetLocalPlayer(b=null)
 {
-	local e;
-
-	if ( ::IsMultiplayer() )
-	{
-		e = ::Entc("player");
-	}
-	else
-	{
-		e = ::GetPlayer();
-
-		if ( e != ::player )
-			Msg("GetLocalPlayer: Discrepancy!\n");
-	};
-
-	SetName(e, "localplayer");
-
+	local e = GetPlayerByIndex(1);
+	if ( e )
+		SetName( e, "localplayer" );
+	if ( b )
+		::HPlayer <- e.weakref();
 	return e;
 }
-
-};;
 
 //-----------------------------------------------------------------------
 // PlayerInstanceFromIndex

@@ -592,6 +592,35 @@ VS.StopListeningToAllGameEvents <- function( context ) : (__RemovePooledString)
 	}
 }.bindenv( VS.Events );
 
+#ifdef _DEBUG
+VS.Events.DumpListeners <- function()
+{
+	if ( m_pListeners )
+	{
+		local Fmt = format;
+		Msg( "Game event listener dump start...\n" );
+		foreach( eventname, listener in m_pListeners )
+		{
+			foreach ( context, p in listener )
+			{
+				if ( context != "VS::Events" )
+				{
+					if ( p && (typeof p == "instance") && p.IsValid() )
+					{
+						Msg(Fmt( "  %-16.32s  | %-16.64s |  (%-16.64s)\n", eventname, context, p.GetName() ));
+					}
+					else
+					{
+						Msg(Fmt( "  %-16.32s  | %-16.64s |  !\n", eventname, context ));
+					}
+				};
+			}
+		}
+		Msg( "Game event listener dump end.\n" );
+	}
+}.bindenv( VS.Events );
+#endif
+
 function VS::Events::InitTemplate( scope )
 	: (__ExecutePreSpawn, __FinishSpawn, PostSpawn, OnPostSpawn)
 {

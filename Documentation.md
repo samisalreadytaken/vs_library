@@ -52,7 +52,7 @@ ________________________________
 | Variable       | Creation                          | Description                                           |
 | -------------- | --------------------------------- | ----------------------------------------------------- |
 | `player`       | `ToExtendedPlayer(VS.GetPlayerByIndex(1))`             | Local player in the server                            |
-| `m_hHudHint`   | `VS.CreateEntity("env_hudhint")`  | Hud hint, show messages to the player                 |
+| `DisplayHint()`| `ScriptPrintMessageCenterAll()`   | Hud hint, show messages to the player                 |
 | `Think()`      | `VS.Timer(0, 0.0, Think)`         | A function that is executed every frame               |
 
 
@@ -459,7 +459,7 @@ bool VS::IsLookingAt(Vector source, Vector target, Vector direction, float toler
 ```cs
 function Think()
 {
-	local bLooking
+	local bLooking = false
 	local eyePos = player.EyePosition()
 	local target = Vector()
 
@@ -473,16 +473,12 @@ function Think()
 
 	if ( bLooking )
 	{
-		m_hHudHint.__KeyValueFromString( "message", "LOOKING" );
-		EntFireByHandle( m_hHudHint, "ShowHudHint", "", 0.0, player.self );
-
+		DisplayHint( "LOOKING" );
 		DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 0,255,0,255, -1 )
 	}
 	else
 	{
-		m_hHudHint.__KeyValueFromString( "message", "NOT looking" );
-		EntFireByHandle( m_hHudHint, "ShowHudHint", "", 0.0, player.self );
-
+		DisplayHint( "NOT looking" );
 		DebugDrawBox( target, Vector(-8,-8,-8), Vector(8,8,8), 255,0,0,255, -1 )
 	}
 }
@@ -1916,7 +1912,7 @@ ________________________________
 ```cpp
 bool VS::IsBoxIntersectingBox(Vector boxMin1, Vector boxMax1, Vector boxMin2, Vector boxMax2)
 ```
-Return true of the boxes intersect (but not if they just touch)
+Return true if the boxes intersect (but not if they just touch)
 ________________________________
 
 <a name="f_IsPointInCone"></a>
@@ -2595,20 +2591,6 @@ void VS::SetParent(handle child, handle parent)
 Set child's parent. if parent == null then unparent child
 ________________________________
 
-<a name="f_CreateMeasure"></a>
-```cpp
-handle VS::CreateMeasure(string, string, bool, bool, float)
-```
-Deprecated. Use `ToExtendedPlayer`.
-________________________________
-
-<a name="f_SetMeasure"></a>
-```cpp
-void VS::SetMeasure(handle, string)
-```
-Deprecated. Use `ToExtendedPlayer`.
-________________________________
-
 <a name="f_CreateTimer"></a>
 ```cpp
 CTimerEntity VS::CreateTimer(bool bDisabled, float flInterval, float flLower = null, float flUpper = null, bool bOscillator = false, bool bMakePersistent = false)
@@ -2766,13 +2748,6 @@ ________________________________
 CBasePlayer[] VS::GetAllPlayers()
 ```
 Get every player and bot in a single array
-________________________________
-
-<a name="f_GetLocalPlayer"></a>
-```cpp
-CBasePlayer VS::GetLocalPlayer(bool)
-```
-Deprecated. Use `VS.GetPlayerByIndex(1)` in multiplayer, `::player` or `::GetPlayer()` in singleplayer.
 ________________________________
 
 <a name="f_GetPlayerByIndex"></a>

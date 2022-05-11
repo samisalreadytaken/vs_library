@@ -5,28 +5,40 @@
 //
 // Math library. Contains code from the Source Engine and DirectX.
 //
+//
+// Run the following regex replacement for SQ3:
+//	(?!function[\s\w\:]*[\(]?.*[\)]?[^\{]+?)\:\s*\(\s*[\s\w,]*\)
+//
 //-----------------------------------------------------------------------
 
 
 if ( !("VS" in getroottable()) )
-	::VS <- { version = "vs_library 0.0.0" };
+	::VS <- { version = "0.0.0" };
 
 if ( "VectorRotate" in VS )
 	return;
 
-
+//
 // External dependencies
-/*
+//
 if ( !("DebugDrawLine" in getroottable()) )
-	::DebugDrawLine <- dummy;
+{
+	if ( "debugoverlay" in getroottable() && "Line" in debugoverlay )
+		::DebugDrawLine <- debugoverlay.Line.bindenv(debugoverlay);
+	else
+		::DebugDrawLine <- dummy;
+};
 
 if ( !("RandomFloat" in getroottable()) )
+{
 	::RandomFloat <- function( a, b ) : (rand)
 	{
 		return (rand().tofloat() / RAND_MAX) * (b - a) + a;
 	}
+};
 
 if ( !("Vector" in getroottable()) )
+{
 	::Vector <- class
 	{
 		x = 0.0; y = 0.0; z = 0.0;
@@ -72,7 +84,7 @@ if ( !("Vector" in getroottable()) )
 			return format( "%f %f %f", x, y, z );
 		}
 	}
-*/
+};
 
 
 const FLT_EPSILON		= 1.192092896e-7;;
@@ -121,55 +133,55 @@ delete CONST.FLT_MAX_N;
 // class ::vec3_t extends Vector {}
 // local Vector = vec3_t;
 
-function Vector::IsValid()
+Vector.IsValid <- function()
 {
 	return ( x > -FLT_MAX && x < FLT_MAX ) &&
 		( y > -FLT_MAX && y < FLT_MAX ) &&
 		( z > -FLT_MAX && z < FLT_MAX );
 }
 
-function Vector::IsZero()
+Vector.IsZero <- function()
 {
 	return !x && !y && !z;
 }
 
-function Vector::_unm()
+Vector._unm <- function()
 {
 	return this * -1.0;
 }
 
-function Vector::_div(f)
+Vector._div <- function(f)
 {
 	return this * ( 1.0 / f );
 }
 
-function Vector::Negate()
+Vector.Negate <- function()
 {
 	x = -x;
 	y = -y;
 	z = -z;
 }
 
-function Vector::Init(X, Y, Z)
+Vector.Init <- function(X, Y, Z)
 {
 	x = X;
 	y = Y;
 	z = Z;
 }
 
-function Vector::Copy(v)
+Vector.Copy <- function(v)
 {
 	x = v.x;
 	y = v.y;
 	z = v.z;
 }
 
-function Vector::Replicate(f)
+Vector.Replicate <- function(f)
 {
 	x = y = z = f;
 }
 
-function Vector::Normalized()
+Vector.Normalized <- function()
 {
 	local v = this * 1.0;
 	v.Norm();
@@ -179,8 +191,12 @@ function Vector::Normalized()
 
 
 local Fmt = format;
+local sin = sin, cos = cos, tan = tan, asin = asin, acos = acos, atan = atan, atan2 = atan2,
+	sqrt = sqrt, rand = rand, pow = pow, log = log, exp = exp, array = array,
+	RandomFloat = RandomFloat, Vector = Vector;
 
-class ::Quaternion
+
+local Quaternion = class
 {
 	x = 0.0;
 	y = 0.0;
@@ -238,11 +254,11 @@ class ::Quaternion
 	}
 }
 
-function Quaternion::_add(d) : (Quaternion) { return Quaternion( x+d.x,y+d.y,z+d.z,w+d.w ) }
-function Quaternion::_sub(d) : (Quaternion) { return Quaternion( x-d.x,y-d.y,z-d.z,w-d.w ) }
-function Quaternion::_mul(d) : (Quaternion) { return Quaternion( x*d,y*d,z*d,w*d ) }
-function Quaternion::_div(d) : (Quaternion) { local f = 1.0/d; return Quaternion( x*f,y*f,z*f,w*f ) }
-function Quaternion::_unm() : (Quaternion) { return Quaternion( -x,-y,-z,-w ) }
+Quaternion._add <- function(v) : (Quaternion) { return Quaternion( x+v.x,y+v.y,z+v.z,w+v.w ) }
+Quaternion._sub <- function(v) : (Quaternion) { return Quaternion( x-v.x,y-v.y,z-v.z,w-v.w ) }
+Quaternion._mul <- function(v) : (Quaternion) { return Quaternion( x*v,y*v,z*v,w*v ) }
+Quaternion._div <- function(v) : (Quaternion) { local f = 1.0/v; return Quaternion( x*f,y*f,z*f,w*f ) }
+Quaternion._unm <- function() : (Quaternion) { return Quaternion( -x,-y,-z,-w ) }
 
 
 //
@@ -285,7 +301,7 @@ const M_10 = 4;;  const M_11 = 5;;  const M_12 = 6;;  const M_13 = 7;;
 const M_20 = 8;;  const M_21 = 9;;  const M_22 = 10;; const M_23 = 11;;
 const M_30 = 12;; const M_31 = 13;; const M_32 = 14;; const M_33 = 15;;
 
-class ::matrix3x4_t
+local matrix3x4_t = class
 {
 	[0] = null;
 
@@ -381,9 +397,7 @@ class ::matrix3x4_t
 	}
 }
 
-
-
-class ::VMatrix extends matrix3x4_t
+local VMatrix = class extends matrix3x4_t
 {
 	[0] = null;
 
@@ -4195,95 +4209,88 @@ local initCapsule = function()
 	local Line = DebugDrawLine;
 
 	local g_capsuleVertPositions = [
-		[ -0.01, -0.01, 1.0 ],	[ 0.51, 0.0, 0.86 ],	[ 0.44, 0.25, 0.86 ],	[ 0.25, 0.44, 0.86 ],
-		[ -0.01, 0.51, 0.86 ],	[ -0.26, 0.44, 0.86 ],	[ -0.45, 0.25, 0.86 ],	[ -0.51, 0.0, 0.86 ],
-		[ -0.45, -0.26, 0.86 ],	[ -0.26, -0.45, 0.86 ],	[ -0.01, -0.51, 0.86 ],	[ 0.25, -0.45, 0.86 ],
-		[ 0.44, -0.26, 0.86 ],	[ 0.86, 0.0, 0.51 ],	[ 0.75, 0.43, 0.51 ],	[ 0.43, 0.75, 0.51 ],
-		[ -0.01, 0.86, 0.51 ],	[ -0.44, 0.75, 0.51 ],	[ -0.76, 0.43, 0.51 ],	[ -0.87, 0.0, 0.51 ],
-		[ -0.76, -0.44, 0.51 ],	[ -0.44, -0.76, 0.51 ],	[ -0.01, -0.87, 0.51 ],	[ 0.43, -0.76, 0.51 ],
-		[ 0.75, -0.44, 0.51 ],	[ 1.0, 0.0, 0.01 ],		[ 0.86, 0.5, 0.01 ],	[ 0.49, 0.86, 0.01 ],
-		[ -0.01, 1.0, 0.01 ],	[ -0.51, 0.86, 0.01 ],	[ -0.87, 0.5, 0.01 ],	[ -1.0, 0.0, 0.01 ],
-		[ -0.87, -0.5, 0.01 ],	[ -0.51, -0.87, 0.01 ],	[ -0.01, -1.0, 0.01 ],	[ 0.49, -0.87, 0.01 ],
-		[ 0.86, -0.51, 0.01 ],	[ 1.0, 0.0, -0.02 ],	[ 0.86, 0.5, -0.02 ],	[ 0.49, 0.86, -0.02 ],
-		[ -0.01, 1.0, -0.02 ],	[ -0.51, 0.86, -0.02 ],	[ -0.87, 0.5, -0.02 ],	[ -1.0, 0.0, -0.02 ],
-		[ -0.87, -0.5, -0.02 ],	[ -0.51, -0.87, -0.02 ],[ -0.01, -1.0, -0.02 ],	[ 0.49, -0.87, -0.02 ],
-		[ 0.86, -0.51, -0.02 ],	[ 0.86, 0.0, -0.51 ],	[ 0.75, 0.43, -0.51 ],	[ 0.43, 0.75, -0.51 ],
-		[ -0.01, 0.86, -0.51 ],	[ -0.44, 0.75, -0.51 ],	[ -0.76, 0.43, -0.51 ],	[ -0.87, 0.0, -0.51 ],
-		[ -0.76, -0.44, -0.51 ],[ -0.44, -0.76, -0.51 ],[ -0.01, -0.87, -0.51 ],[ 0.43, -0.76, -0.51 ],
-		[ 0.75, -0.44, -0.51 ],	[ 0.51, 0.0, -0.87 ],	[ 0.44, 0.25, -0.87 ],	[ 0.25, 0.44, -0.87 ],
-		[ -0.01, 0.51, -0.87 ],	[ -0.26, 0.44, -0.87 ],	[ -0.45, 0.25, -0.87 ],	[ -0.51, 0.0, -0.87 ],
-		[ -0.45, -0.26, -0.87 ],[ -0.26, -0.45, -0.87 ],[ -0.01, -0.51, -0.87 ],[ 0.25, -0.45, -0.87 ],
-		[ 0.44, -0.26, -0.87 ],	[ 0.0, 0.0, -1.0 ]
+		-0.01, -0.01, 1.0,		0.51, 0.0, 0.86,		0.44, 0.25, 0.86,		0.25, 0.44, 0.86,
+		-0.01, 0.51, 0.86,		-0.26, 0.44, 0.86,		-0.45, 0.25, 0.86,		-0.51, 0.0, 0.86,
+		-0.45, -0.26, 0.86,		-0.26, -0.45, 0.86,		-0.01, -0.51, 0.86,		0.25, -0.45, 0.86,
+		0.44, -0.26, 0.86,		0.86, 0.0, 0.51,		0.75, 0.43, 0.51,		0.43, 0.75, 0.51,
+		-0.01, 0.86, 0.51,		-0.44, 0.75, 0.51,		-0.76, 0.43, 0.51,		-0.87, 0.0, 0.51,
+		-0.76, -0.44, 0.51,		-0.44, -0.76, 0.51,		-0.01, -0.87, 0.51,		0.43, -0.76, 0.51,
+		0.75, -0.44, 0.51,		1.0, 0.0, 0.01,			0.86, 0.5, 0.01,		0.49, 0.86, 0.01,
+		-0.01, 1.0, 0.01,		-0.51, 0.86, 0.01,		-0.87, 0.5, 0.01,		-1.0, 0.0, 0.01,
+		-0.87, -0.5, 0.01,		-0.51, -0.87, 0.01,		-0.01, -1.0, 0.01,		0.49, -0.87, 0.01,
+		0.86, -0.51, 0.01,		1.0, 0.0, -0.02,		0.86, 0.5, -0.02,		0.49, 0.86, -0.02,
+		-0.01, 1.0, -0.02,		-0.51, 0.86, -0.02,		-0.87, 0.5, -0.02,		-1.0, 0.0, -0.02,
+		-0.87, -0.5, -0.02,		-0.51, -0.87, -0.02,	-0.01, -1.0, -0.02,		0.49, -0.87, -0.02,
+		0.86, -0.51, -0.02,		0.86, 0.0, -0.51,		0.75, 0.43, -0.51,		0.43, 0.75, -0.51,
+		-0.01, 0.86, -0.51,		-0.44, 0.75, -0.51,		-0.76, 0.43, -0.51,		-0.87, 0.0, -0.51,
+		-0.76, -0.44, -0.51,	-0.44, -0.76, -0.51,	-0.01, -0.87, -0.51,	0.43, -0.76, -0.51,
+		0.75, -0.44, -0.51,		0.51, 0.0, -0.87,		0.44, 0.25, -0.87,		0.25, 0.44, -0.87,
+		-0.01, 0.51, -0.87,		-0.26, 0.44, -0.87,		-0.45, 0.25, -0.87,		-0.51, 0.0, -0.87,
+		-0.45, -0.26, -0.87,	-0.26, -0.45, -0.87,	-0.01, -0.51, -0.87,	0.25, -0.45, -0.87,
+		0.44, -0.26, -0.87,		0.0, 0.0, -1.0
 	];
 
-	local g_capsuleLineIndices = [ -1,
-		14,		0,	4,	16,	28,	40,	52,	64,	73,	70,	58,	46,	34,	22,	10,		-1,
-		14,		0,	1,	13,	25,	37,	49,	61,	73,	67,	55,	43,	31,	19,	7,		-1,
-		12,		61,	62,	63,	64,	65,	66,	67,	68,	69,	70,	71,	72,				-1,
-		12,		49,	50,	51,	52,	53,	54,	55,	56,	57,	58,	59,	60,				-1,
-		12,		37,	38,	39,	40,	41,	42,	43,	44,	45,	46,	47,	48,				-1,
-		12,		25,	26,	27,	28,	29,	30,	31,	32,	33,	34,	35,	36,				-1,
-		12,		13,	14,	15,	16,	17,	18,	19,	20,	21,	22,	23,	24,				-1,
-		12,		1,	2,	3,	4,	5,	6,	7,	8,	9,	10,	11,	12,				-1
+	local g_capsuleLineIndices = [
+		0,	4,	16,	28,	40,	52,	64,	73,	70,	58,	46,	34,	22,	10,		0,	-1,
+		0,	1,	13,	25,	37,	49,	61,	73,	67,	55,	43,	31,	19,	7,		0,	-1,
+		61,	62,	63,	64,	65,	66,	67,	68,	69,	70,	71,	72,				61,	-1,
+		49,	50,	51,	52,	53,	54,	55,	56,	57,	58,	59,	60,				49,	-1,
+		37,	38,	39,	40,	41,	42,	43,	44,	45,	46,	47,	48,				37,	-1,
+		25,	26,	27,	28,	29,	30,	31,	32,	33,	34,	35,	36,				25,	-1,
+		13,	14,	15,	16,	17,	18,	19,	20,	21,	22,	23,	24,				13,	-1,
+		1,	2,	3,	4,	5,	6,	7,	8,	9,	10,	11,	12,				1
 	];
 
 	local g_capsuleVerts = array(74);
-	// local matCapsuleRotationSpace = matrix3x4_t();
-	// VS.VectorMatrix( Vector(0,0,1), matCapsuleRotationSpace );
+	local matCapsuleRotationSpace = matrix3x4_t();
+	VS.VectorMatrix( Vector(0,0,1), matCapsuleRotationSpace );
 
 	//-----------------------------------------------------------------------
 	// Draws a capsule at world origin.
 	//-----------------------------------------------------------------------
 	function VS::DrawCapsule( start, end, radius, r, g, b, z, time )
-		: ( g_capsuleVertPositions, g_capsuleLineIndices, g_capsuleVerts, Line, Vector, matrix3x4_t )
+		: ( g_capsuleVertPositions, g_capsuleLineIndices, g_capsuleVerts, Line, matCapsuleRotationSpace, Vector, matrix3x4_t )
 	{
-		// local vecCapsuleCoreNormal = start - end;
+		local vecCapsuleCoreNormal = start - end;
 		local vecLen = end - start;
-		// vecCapsuleCoreNormal.Norm();
+		vecCapsuleCoreNormal.Norm();
 
-		// local matCapsuleSpace = matrix3x4_t();
-		// VectorMatrix( vecCapsuleCoreNormal, matCapsuleSpace );
+		local matCapsuleSpace = matrix3x4_t();
+		VectorMatrix( vecCapsuleCoreNormal, matCapsuleSpace );
+
+		ConcatTransforms( matCapsuleSpace, matCapsuleRotationSpace, matCapsuleSpace );
 
 		for ( local i = 0; i < 74; ++i )
 		{
+			local j = i*3;
 			local vert = Vector(
-				g_capsuleVertPositions[i][0],
-				g_capsuleVertPositions[i][1],
-				g_capsuleVertPositions[i][2] );
+				g_capsuleVertPositions[j],
+				g_capsuleVertPositions[j+1],
+				g_capsuleVertPositions[j+2] );
 
-			// VectorRotate( vert, matCapsuleRotationSpace, vert );
-			// VectorRotate( vert, matCapsuleSpace, vert );
+			VectorRotate( vert, matCapsuleSpace, vert );
 
 			vert *= radius;
 
-			if ( g_capsuleVertPositions[i][2] > 0.0 )
-			{
+			if ( g_capsuleVertPositions[j+2] > 0.0 )
 				vert += vecLen;
-			};
+
 			g_capsuleVerts[i] = vert + start;
 		}
 
 		local i = 0;
-		while ( i < 117 )
+		do
 		{
 			local i0 = g_capsuleLineIndices[i];
-			if ( i0 == 0xFFFFFFFF )
-			{
-				i += 2;
-				continue;
-			};
-
 			local i1 = g_capsuleLineIndices[++i];
 			if ( i1 == 0xFFFFFFFF )
 			{
-				i += 2;
-				if ( i > 116 )
-					break;
+				++i;
 				continue;
 			};
 
 			Line( g_capsuleVerts[i0], g_capsuleVerts[i1], r, g, b, z, time )
-		}
+		} while ( i != 114 );
 	}
 }
 
@@ -5296,7 +5303,7 @@ function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut )
 }
 
 
-class ::Ray_t
+local Ray_t = class
 {
 	m_Start = null;
 	m_Delta = null;
@@ -6619,3 +6626,15 @@ function VS::ComputeSeparatingPlane2( org1, angles1, min1, max1, org2, angles2, 
 	return ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, tolerance, pNormal );
 }
 */
+
+//=============================================================================
+//=============================================================================
+
+// NOTE: Change to VS.Quaternion for mapbase!
+::Quaternion <- Quaternion;
+::matrix3x4_t <- matrix3x4_t;
+::VMatrix <- VMatrix;
+::Ray_t <- Ray_t;
+
+//=============================================================================
+//=============================================================================

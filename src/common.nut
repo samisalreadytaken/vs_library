@@ -78,7 +78,7 @@ local VS =
 }
 
 // reduce a call on Msg
-if ( ::print.getinfos().native )
+if ( ::print.getinfos().native && !::Msg.getinfos().native )
 	::Msg <- ::print;;
 
 if ( ::EntFireByHandle.getinfos().native )

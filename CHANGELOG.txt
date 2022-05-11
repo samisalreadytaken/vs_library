@@ -3,12 +3,16 @@
 
 --------------------------------
 
+2022-05-11 [v2.43.13]
+- Fixed VS.DrawCapsule missing lines and rotation
+- Removed deprecated functions VS.CreateMeasure, VS.SetMeasure. Instead use ToExtendedPlayer() for player eye angles.
+
 2022-05-08 [v2.43.12]
 - Fixed CExtendedPlayer::GetUserID() always returning -1 when ToExtendedPlayer() was called before player spawn
 on a player who was connected to the server before map change. It will now return the
 correct value after the player spawns.
 - Added more error case console prints in game events library.
-- Removed already deprecated functions VS.Events.ValidateUseridAll, VS.Events.ForceValidateUserid
+- Removed deprecated functions VS.Events.ValidateUseridAll, VS.Events.ForceValidateUserid
 - Fixed glow.nut bug where setting a glow after disabling one in the same frame would not enable the glow.
 
 2022-04-20 [v2.43.11]
