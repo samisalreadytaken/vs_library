@@ -263,9 +263,15 @@ VS.ToExtendedPlayer <- function( hPlayer )
 		static fakeplayer = bot; // m_bFakePlayer
 
 		IsBot = bot ? function() { return true; } : function() { return false; };
-		function GetUserID() : (sc) { return sc.userid; }
-		function GetNetworkIDString() : (nid) { return nid; }
-		function GetPlayerName() : (pnm) { return pnm; }
+
+		// Lookup if not found
+		GetUserID = (uid > 0) ? function() : (uid) { return uid; } : function() : (sc) { return sc.userid; };
+
+		// Lookup so that it can be retrieved on dedicated servers by executing the command: (banid 0.01 UID)
+		GetNetworkIDString = (nid == "") ? function() : (sc) { return sc.networkid; } : function() : (nid) { return nid; };
+
+		// Lookup if not a bot, it can change
+		GetPlayerName = bot ? function() : (pnm) { return pnm; } : function() : (sc) { return sc.name; };
 
 		EyeAngles = CBaseEntity.GetAngles.bindenv(eye);
 		EyeForward = CBaseEntity.GetForwardVector.bindenv(eye);
@@ -1084,6 +1090,9 @@ VS.EventQueue.Dump <- function( bUseTicks = false, indent = 0 ) : ( m_Events, Ti
 
 VS.EventQueue.Clear <- function() : ( m_Events )
 {
+#ifdef _DEBUG
+	local c = 0;
+#endif
 	local ev = m_Events[ m_pNext ];
 	while ( ev )
 	{
@@ -1091,11 +1100,17 @@ VS.EventQueue.Clear <- function() : ( m_Events )
 		ev[ m_pNext ] = null;
 		ev[ m_pPrev ] = null;
 		ev = next;
+#ifdef _DEBUG
+		++c;
+#endif
 	}
 	m_Events[ m_pNext ] = null;
 	m_flNextQueue = -1.0;
 	m_flLastQueue = -1.0;
-
+#ifdef _DEBUG
+	if ( c )
+		return Msg( "VS::EventQueue::Clear() cleared "+c+" events.\n" );
+#endif
 }.bindenv(VS.EventQueue);
 
 VS.EventQueue.CancelEventsByInput <- function( f ) : ( m_Events )

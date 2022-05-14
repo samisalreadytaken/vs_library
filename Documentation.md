@@ -41,7 +41,7 @@ ________________________________
 | `VMatrix`             | `VMatrix()`                                                                         |
 | `trace_t`             | `VS.TraceLine()`                                                                    |
 | `Ray_t`               | `Ray_t()`                                                                           |
-| `TYPE`                | Multiple types. Any unless specified in description                                 |
+| `ANY`                 | Any type                                                                            |
 
 | Symbols | Description                                                                                                                                                                                                       |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1092,6 +1092,8 @@ ________________________________
 void VS::QuaternionSquad(Quaternion q0, Quaternion q1, Quaternion q2, Quaternion q3, float t, Quaternion &qt)
 ```
 Interpolates between quaternions Q1 to Q2, using spherical quadrangle interpolation.
+
+Inputs are sequential, squad setup is done inside. This may change in the future.
 ________________________________
 
 <a name="f_QuaternionAverageExponential"></a>
@@ -1173,7 +1175,7 @@ ________________________________
 
 <a name="f_MatrixQuaternionFast"></a>
 ```cpp
-Quaternion VS::MatrixQuaternionFast(matrix3x4_t matrix, Quaternion& angles)
+void VS::MatrixQuaternionFast(matrix3x4_t matrix, Quaternion& angles)
 ```
 matrix3x4 -> Quaternion
 ________________________________
@@ -1233,7 +1235,7 @@ ________________________________
 
 <a name="f_MatrixCopy"></a>
 ```cpp
-matrix3x4_t VS::MatrixCopy(matrix3x4_t src, matrix3x4_t& dst)
+void VS::MatrixCopy(matrix3x4_t src, matrix3x4_t& dst)
 ```
 
 ________________________________
@@ -1624,14 +1626,14 @@ ________________________________
 
 <a name="f_Interpolator_CurveInterpolate"></a>
 ```cpp
-Vector VS::Interpolator_CurveInterpolate(int interpolationType, Vector vPre, Vector vStart, Vector vEnd, Vector vNext, f, Vector& vOut)
+void VS::Interpolator_CurveInterpolate(int interpolationType, Vector vPre, Vector vStart, Vector vEnd, Vector vNext, f, Vector& vOut)
 ```
 
 ________________________________
 
 <a name="f_Interpolator_CurveInterpolate_NonNormalized"></a>
 ```cpp
-Vector VS::Interpolator_CurveInterpolate_NonNormalized(int interpolationType, Vector vPre, Vector vStart, Vector vEnd, Vector vNext, f, Vector& vOut)
+void VS::Interpolator_CurveInterpolate_NonNormalized(int interpolationType, Vector vPre, Vector vStart, Vector vEnd, Vector vNext, f, Vector& vOut)
 ```
 
 ________________________________
@@ -1645,7 +1647,7 @@ ________________________________
 
 <a name="f_Catmull_Rom_Spline"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Catmull_Rom_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 Interpolate a Catmull-Rom spline.
 
@@ -1654,7 +1656,7 @@ ________________________________
 
 <a name="f_Catmull_Rom_Spline_Tangent"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline_Tangent(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Catmull_Rom_Spline_Tangent(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 Interpolate a Catmull-Rom spline.
 
@@ -1663,21 +1665,21 @@ ________________________________
 
 <a name="f_Catmull_Rom_Spline_Integral"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline_Integral(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Catmull_Rom_Spline_Integral(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 area under the curve [0..t]
 ________________________________
 
 <a name="f_Catmull_Rom_Spline_Integral2"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline_Integral2(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Catmull_Rom_Spline_Integral2(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 area under the curve [0..1]
 ________________________________
 
 <a name="f_Catmull_Rom_Spline_Normalize"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Catmull_Rom_Spline_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 Interpolate a Catmull-Rom spline.
 
@@ -1686,7 +1688,7 @@ ________________________________
 
 <a name="f_Catmull_Rom_Spline_Integral_Normalize"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline_Integral_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Catmull_Rom_Spline_Integral_Normalize(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 area under the curve [0..t]
 
@@ -1695,7 +1697,7 @@ ________________________________
 
 <a name="f_Catmull_Rom_Spline_NormalizeX"></a>
 ```cpp
-Vector VS::Catmull_Rom_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Catmull_Rom_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 Interpolate a Catmull-Rom spline.
 
@@ -1704,7 +1706,7 @@ ________________________________
 
 <a name="f_Hermite_Spline"></a>
 ```cpp
-Vector VS::Hermite_Spline(Vector p1, Vector p2, Vector d1, Vector d2, float t, Vector& output)
+void VS::Hermite_Spline(Vector p1, Vector p2, Vector d1, Vector d2, float t, Vector& output)
 ```
 Basic hermite spline
 
@@ -1729,7 +1731,7 @@ ________________________________
 
 <a name="f_Hermite_Spline3V"></a>
 ```cpp
-Vector VS::Hermite_Spline3V(Vector p0, Vector p1, Vector p2, float t, Vector& output)
+void VS::Hermite_Spline3V(Vector p0, Vector p1, Vector p2, float t, Vector& output)
 ```
 Simple three data point hermite spline.
 
@@ -1747,14 +1749,14 @@ ________________________________
 
 <a name="f_Hermite_Spline3Q"></a>
 ```cpp
-Quaternion VS::Hermite_Spline3Q(Quaternion q0, Quaternion q1, Quaternion q2, float t, Quaternion& output)
+void VS::Hermite_Spline3Q(Quaternion q0, Quaternion q1, Quaternion q2, float t, Quaternion& output)
 ```
 
 ________________________________
 
 <a name="f_Kochanek_Bartels_Spline"></a>
 ```cpp
-Vector VS::Kochanek_Bartels_Spline(float tension, float bias, float continuity, Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Kochanek_Bartels_Spline(float tension, float bias, float continuity, Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 
 See http://en.wikipedia.org/wiki/Kochanek-Bartels_curves
@@ -1774,49 +1776,49 @@ ________________________________
 
 <a name="f_Kochanek_Bartels_Spline_NormalizeX"></a>
 ```cpp
-Vector VS::Kochanek_Bartels_Spline_NormalizeX(float tension, float bias, float continuity, Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Kochanek_Bartels_Spline_NormalizeX(float tension, float bias, float continuity, Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 
 ________________________________
 
 <a name="f_Cubic_Spline"></a>
 ```cpp
-Vector VS::Cubic_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Cubic_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 See link at Kochanek_Bartels_Spline for info on the basis matrix used
 ________________________________
 
 <a name="f_Cubic_Spline_NormalizeX"></a>
 ```cpp
-Vector VS::Cubic_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Cubic_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 
 ________________________________
 
 <a name="f_BSpline"></a>
 ```cpp
-Vector VS::BSpline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::BSpline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 See link at Kochanek_Bartels_Spline for info on the basis matrix used
 ________________________________
 
 <a name="f_BSpline_NormalizeX"></a>
 ```cpp
-Vector VS::BSpline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::BSpline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 
 ________________________________
 
 <a name="f_Parabolic_Spline"></a>
 ```cpp
-Vector VS::Parabolic_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Parabolic_Spline(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 See link at Kochanek_Bartels_Spline for info on the basis matrix used
 ________________________________
 
 <a name="f_Parabolic_Spline_NormalizeX"></a>
 ```cpp
-Vector VS::Parabolic_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
+void VS::Parabolic_Spline_NormalizeX(Vector p1, Vector p2, Vector p3, Vector p4, float t, Vector& output)
 ```
 
 ________________________________
@@ -1830,7 +1832,7 @@ ________________________________
 
 <a name="f_InterpolateAngles"></a>
 ```cpp
-QAngle VS::InterpolateAngles(QAngle v1, QAngle v2, float flPercent, QAngle &out)
+QAngle VS::InterpolateAngles(QAngle v1, QAngle v2, float flPercent, QAngle &out = _VEC)
 ```
 QAngle slerp
 ________________________________
@@ -2106,9 +2108,9 @@ local v = VS.RandomVector();
 CenterPrintAll(format( "\n<font color='#ff0000'>%.2f</font>\n<font color='#00ff00'>%.2f</font>\n<font color='#0000ff'>%.2f</font>", v.x, v.y, v.z ));
 
 
-function HintColor( msg, r, g, b )
+function HintColour( msg, r, g, b )
 {
-	return CenterPrintAll(format( "<font color='#%02x%02x%02x'>%s</font>", r&0xFF, g&0xFF, b&0xFF, msg ));
+	return CenterPrintAll(format( "<font color='#%02x%02x%02x'>%s</font>", r, g, b, msg ));
 }
 ```
 ________________________________
@@ -2383,7 +2385,7 @@ Example draw a cube at player aim
 function Think()
 {
 	local eye = player.EyePosition()
-	local pos = VS.TraceDir( eye, player.EyeForward() ).GetPos()
+	local pos = VS.TraceDir( eye, player.EyeForward(), 1024.0 ).GetPos()
 
 	DebugDrawLine(eye, pos, 255, 255, 255, false, -1)
 	DebugDrawBox(pos, Vector(-2,-2,-2), Vector(2,2,2), 255, 255, 255, 125, -1)
@@ -2478,7 +2480,7 @@ ________________________________
 
 <a name="f_DumpEnt"></a>
 ```cpp
-void VS::DumpEnt(TYPE input = null)
+void VS::DumpEnt(ANY input = null)
 ```
 (debug) Dump all entities whose script scopes are already created.
 
@@ -2526,7 +2528,7 @@ ________________________________
 
 <a name="f_GetVarName"></a>
 ```cpp
-string VS::GetVarName(TYPE v)
+string VS::GetVarName(ANY v)
 ```
 Does a linear search through the root table.
 
@@ -2617,37 +2619,106 @@ ________________________________
 
 <a name="f_Timer"></a>
 ```cpp
-CTimerEntity VS::Timer(bool bDisabled, float flInterval, TYPE func = null, table scope = null, bool bExecInEnt = false, bool bMakePersistent = false)
+CTimerEntity VS::Timer(bool bDisabled, float flInterval, closure func = null, table env = null, bool bExecInEnt = false, bool bMakePersistent = false)
 ```
 Create and return a timer that executes func
 
 Identical to:
 ```cs
 local hTimer = VS.CreateTimer( bDisabled, flInterval )
-VS.AddOutput( hTimer, "OnTimer", func, scope )
+VS.AddOutput( hTimer, "OnTimer", func, env )
 ```
 
-`TYPE`: `string|function|null`
+Example:
+```cs
+function callback()
+{
+	print("callback()\n");
+}
 
-`VS.Timer(true, 0.5)`  
-`VS.Timer(false, 0.5, MyFunc)`  
-`VS.Timer(false, 0.5, "MyFunc")`
+VS.Timer( false, 0.5, callback, this )
+VS.Timer( false, 1.5, function() { print("anonymous timer callback\n") } )
+```
+
+Example: Animate a random vector on a sphere move towards another.
+```cs
+// Get 2 random direction vectors
+v1 <- Vector();
+v2 <- Vector();
+VS.RandomVectorOnUnitSphere( v1 );
+VS.RandomVectorOnUnitSphere( v2 );
+
+// Draw it in front of the player
+start_pos <- player.EyePosition() + player.EyeForward() * 32.0 - player.EyeUp() * 4.0;
+start_time <- Time();
+
+// Animate one vector moving towards the other every frame over 10 seconds
+anim_timer <- VS.Timer( 0, 0.0, function()
+{
+	local time = 10.0;
+
+	local frac = (Time() - start_time) / time;
+
+	local radius = 16.0;
+
+	// Draw the sphere
+	VS.DrawSphere( start_pos, radius, 16, 16, 100, 100, 255, true, -1 );
+
+	// Draw v1 (red)
+	DebugDrawLine( start_pos, start_pos + v1 * radius, 255, 0, 0, true, -1 );
+
+	// Draw v2 (green)
+	DebugDrawLine( start_pos, start_pos + v2 * radius, 0, 255, 0, true, -1 );
+
+	// Spherically interpolate direction vectors by turning them into angles
+	local ang1 = Vector();
+	local ang2 = Vector();
+	VS.VectorAngles( v1, ang1 );
+	VS.VectorAngles( v2, ang2 );
+
+	// Interpolate
+	local new_ang = VS.InterpolateAngles( ang1, ang2, frac );
+
+	// Back to direction vector from interpolated angles
+	local new_dir = VS.AngleVectors( new_ang );
+
+	// Draw the new direction (yellow)
+	local end_point = start_pos + new_dir * radius;
+	DebugDrawLine( start_pos, end_point, 255, 255, 0, true, -1 );
+
+	// Draw small points on the sphere to show the travel trajectory
+
+	// Change colour from red to green
+	local r = (1.0-frac)*255;
+	local g = frac*255;
+
+	DebugDrawBox( end_point, Vector(-0.25,-0.25,-0.25), Vector(0.25,0.25,0.25), r, g, 0, 255, (1.0-frac)*time );
+
+	// if the journey is complete, kill the timer
+	if ( frac > 0.9999 )
+	{
+		print("done!\n");
+		anim_timer.Destroy();
+	}
+}, this );
+```
 ________________________________
 
 <a name="f_OnTimer"></a>
 ```cpp
-void VS::OnTimer(CTimerEntity ent, string|function func, table scope = null, bool bExecInEnt = false)
+void VS::OnTimer(CTimerEntity ent, function func, table env = null, bool bExecInEnt = false)
 ```
 Add OnTimer output to the timer entity to execute the input function.
 
-Identical to: `VS.AddOutput( ent, "OnTimer", func, scope )`
+`bExecInEnt` allows referring to the timer as `self` in the callback function. Otherwise the timer handle needs to be accessed differently.
 
+Identical to: `VS.AddOutput( ent, "OnTimer", func, env )`
 ________________________________
 
 <a name="f_AddOutput"></a>
 ```cpp
 void VS::AddOutput( CBaseEntity hEnt, string szOutput, string szTarget, string szInput = "", string szParameter = "", float flDelay = 0.0, int nTimes = -1 )
-void VS::AddOutput( CBaseEntity hEnt, string szOutput, string|closure fnCallback, table scope = this )
+void VS::AddOutput( CBaseEntity hEnt, string szOutput, string|closure fnCallback, table env = this )
 ```
 Adds output to the input entity. Passing a function parameter will add the action `!self > CallScriptFunction > OutputName`
 
@@ -2718,7 +2789,7 @@ ________________________________
 
 <a name="f_SetKeyValue"></a>
 ```cpp
-bool VS::SetKeyValue(handle ent, string key, TYPE val)
+bool VS::SetKeyValue(handle ent, string key, float|int|bool|string|Vector val)
 ```
 `CBaseEntity::KeyValue`
 
@@ -2929,28 +3000,25 @@ void VS::Log::WriteKeyValues( szName, hTable )
 Recursively write a script table as KeyValues into the internal log.
 
 ```cs
-function test()
+local kv =
 {
-	local kv =
+	Key1 = "string value 1",
+	Key2 = 2,
+	[true] = Vector(1,1,1),
+	[4] =
 	{
-		Key1 = "string value 1",
-		Key2 = 2,
-		[true] = Vector(1,1,1),
-		[4] =
-		{
-			subkey1 = 5,
-			subkey2 = 6
-		},
-		testarray = [ Vector(0,0,1), Vector(0,1,0), Vector(1,0,0) ]
-	}
-
-	VS.Log.Clear()
-	VS.Log.export = false
-
-	VS.Log.WriteKeyValues( "TestKV", kv )
-
-	VS.Log.Run()
+		subkey1 = 5,
+		subkey2 = 6
+	},
+	testarray = [ Vector(0,0,1), Vector(0,1,0), Vector(1,0,0) ]
 }
+
+VS.Log.Clear()
+VS.Log.export = false
+
+VS.Log.WriteKeyValues( "TestKV", kv )
+
+VS.Log.Run()
 ```
 ________________________________
 
@@ -2960,11 +3028,28 @@ string VS::Log::Run( data = null, function callback = null, table env = null )
 ```
 If `data` is null, the internal log is used. `callback` is called after logging is complete. Exported file name is passed to the callback function.
 
-If VS.Log.export is true, then export the log file to the game directory. Returns exported file name.
+If `VS.Log.export` is true, then export the log file to the game directory. Returns exported file name.
 
-If VS.Log.export is false, then print in the console.
+If `VS.Log.export` is false, then print in the console.
 
 Do NOT call multiple times in a frame, or before the previous export is done.
+
+```cs
+VS.Log.Clear();
+VS.Log.enabled = true;
+VS.Log.export = true;
+VS.Log.file_prefix = ":cache/test";
+
+VS.Log.Add( "Vivamus id laoreet felis.\n" );
+VS.Log.Add( "Fusce maximus libero nec efficitur aliquet.\n" );
+
+print( "Exporting log file...\n" );
+
+VS.Log.Run( null, function(filename)
+{
+	printl( "Exported log file to: " + filename );
+}, this );
+```
 ________________________________
 
 <a name="f_Logfilter"></a>

@@ -3,6 +3,11 @@
 
 --------------------------------
 
+2022-05-14 [v2.43.14]
+- Fixed VS.InterpolateAngles not having a default output parameter
+- Fixed VS.QuaternionExp, VS.QuaternionLn, VS.QuaternionSquad, VS.QuaternionAverageExponential functions returning incorrect values
+- Fixed VS.Hermite_SplineBasis
+
 2022-05-11 [v2.43.13]
 - Fixed VS.DrawCapsule missing lines and rotation
 - Removed deprecated functions VS.CreateMeasure, VS.SetMeasure. Instead use ToExtendedPlayer() for player eye angles.

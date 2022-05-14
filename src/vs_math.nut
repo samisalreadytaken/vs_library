@@ -1987,7 +1987,7 @@ function VS::QuaternionExp( p, q ) : (sqrt, sin, cos)
 	// const g_XMEpsilon = XMVectorReplicate(1.192092896e-7f)
 
 	// Theta = XMVector3Length(Q);
-	local Theta = sqrt( p.x*q.x + p.y*q.y + p.z*q.z );
+	local Theta = sqrt( p.x*p.x + p.y*p.y + p.z*p.z );
 
 	// Control = XMVectorNearEqual(Theta, Zero, g_XMEpsilon.v);
 	if ( Theta > FLT_EPSILON )
@@ -2023,7 +2023,7 @@ function VS::QuaternionLn( p, q ) : (acos, sin)
 	// const OneMinusEpsilon = XMVectorReplicate(1.0f - 0.00001f);
 
 	// ControlW = XMVectorInBounds(QW, OneMinusEpsilon.v);
-	if ( p.w > 0.99999 || -0.99999 > p.w )
+	if ( p.w < 0.99999 || -0.99999 < p.w )
 	{
 		// Theta = XMVectorACos(QW);
 		local Theta = acos(p.w);
@@ -2053,7 +2053,7 @@ function VS::QuaternionLn( p, q ) : (acos, sin)
 //
 // DirectX (c) Microsoft
 //-------------------------------------------------
-function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, out ) : (Quaternion, QuaternionSlerpNoAlign)
+function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, qt ) : (Quaternion, QuaternionSlerpNoAlign)
 {
 	// FLOAT T;
 	// XMVECTOR Q0;
@@ -2120,19 +2120,19 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, out ) : (Quaternion, Quaternion
 				SQ0 = Q0;
 			};
 
-		// QuaternionAlign( Q2, Q3 )
+		// QuaternionAlign( SQ2, Q3 )
 			// LS23 = XMQuaternionLengthSq(XMVectorAdd(SQ2, Q3));
-			local aQ23x = Q2.x + Q3.x;
-			local aQ23y = Q2.y + Q3.y;
-			local aQ23z = Q2.z + Q3.z;
-			local aQ23w = Q2.w + Q3.w;
+			local aQ23x = SQ2.x + Q3.x;
+			local aQ23y = SQ2.y + Q3.y;
+			local aQ23z = SQ2.z + Q3.z;
+			local aQ23w = SQ2.w + Q3.w;
 			local LS23 = aQ23x*aQ23x + aQ23y*aQ23y + aQ23z*aQ23z + aQ23w*aQ23w;
 
 			// LD23 = XMQuaternionLengthSq(XMVectorSubtract(SQ2, Q3));
-			local sQ23x = Q2.x - Q3.x;
-			local sQ23y = Q2.y - Q3.y;
-			local sQ23z = Q2.z - Q3.z;
-			local sQ23w = Q2.w - Q3.w;
+			local sQ23x = SQ2.x - Q3.x;
+			local sQ23y = SQ2.y - Q3.y;
+			local sQ23z = SQ2.z - Q3.z;
+			local sQ23w = SQ2.w - Q3.w;
 			local LD23 = sQ23x*sQ23x + sQ23y*sQ23y + sQ23z*sQ23z + sQ23w*sQ23w;
 
 			local SQ3;
@@ -2148,50 +2148,46 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, out ) : (Quaternion, Quaternion
 			};
 
 		// InvQ1 = XMQuaternionInverse(Q1);
-		local InvQ1 = Quaternion();
-		QuaternionInvert( Q1, InvQ1 );
 		// InvQ2 = XMQuaternionInverse(SQ2);
+		local InvQ1 = Quaternion();
 		local InvQ2 = Quaternion();
-		QuaternionInvert( Q2, InvQ2 );
+		QuaternionInvert( Q1, InvQ1 );
+		QuaternionInvert( SQ2, InvQ2 );
 
 		// LnQ0 = XMQuaternionLn(XMQuaternionMultiply(InvQ1, SQ0));
 		local LnQ0 = Quaternion();
-			// QuaternionMult(InvQ1, SQ0, LnQ0)
-			LnQ0.x =  InvQ1.x * SQ0.w + InvQ1.y * SQ0.z - InvQ1.z * SQ0.y + InvQ1.w * SQ0.x;
-			LnQ0.y = -InvQ1.x * SQ0.z + InvQ1.y * SQ0.w + InvQ1.z * SQ0.x + InvQ1.w * SQ0.y;
-			LnQ0.z =  InvQ1.x * SQ0.y - InvQ1.y * SQ0.x + InvQ1.z * SQ0.w + InvQ1.w * SQ0.z;
-			LnQ0.w = -InvQ1.x * SQ0.x - InvQ1.y * SQ0.y - InvQ1.z * SQ0.z + InvQ1.w * SQ0.w;
-			// QuaternionLn(LnQ0, LnQ0)
+			// QuaternionMultNoAlign(SQ0, InvQ1, LnQ0)
+			LnQ0.x = SQ0.w * InvQ1.x + SQ0.x * InvQ1.w + SQ0.y * InvQ1.z - SQ0.z * InvQ1.y;
+			LnQ0.y = SQ0.w * InvQ1.y - SQ0.x * InvQ1.z + SQ0.y * InvQ1.w + SQ0.z * InvQ1.x;
+			LnQ0.z = SQ0.w * InvQ1.z + SQ0.x * InvQ1.y - SQ0.y * InvQ1.x + SQ0.z * InvQ1.w;
+			LnQ0.w = SQ0.w * InvQ1.w - SQ0.x * InvQ1.x - SQ0.y * InvQ1.y - SQ0.z * InvQ1.z;
 			QuaternionLn(LnQ0, LnQ0);
 
 		// LnQ2 = XMQuaternionLn(XMQuaternionMultiply(InvQ1, SQ2));
 		local LnQ2 = Quaternion();
-			// QuaternionMult(InvQ1, SQ2, LnQ2)
-			LnQ2.x =  InvQ1.x * SQ2.w + InvQ1.y * SQ2.z - InvQ1.z * SQ2.y + InvQ1.w * SQ2.x;
-			LnQ2.y = -InvQ1.x * SQ2.z + InvQ1.y * SQ2.w + InvQ1.z * SQ2.x + InvQ1.w * SQ2.y;
-			LnQ2.z =  InvQ1.x * SQ2.y - InvQ1.y * SQ2.x + InvQ1.z * SQ2.w + InvQ1.w * SQ2.z;
-			LnQ2.w = -InvQ1.x * SQ2.x - InvQ1.y * SQ2.y - InvQ1.z * SQ2.z + InvQ1.w * SQ2.w;
-			// QuaternionLn(LnQ2, LnQ2)
+			// QuaternionMultNoAlign(SQ2, InvQ1, LnQ2)
+			LnQ2.x = SQ2.w * InvQ1.x + SQ2.x * InvQ1.w + SQ2.y * InvQ1.z - SQ2.z * InvQ1.y;
+			LnQ2.y = SQ2.w * InvQ1.y - SQ2.x * InvQ1.z + SQ2.y * InvQ1.w + SQ2.z * InvQ1.x;
+			LnQ2.z = SQ2.w * InvQ1.z + SQ2.x * InvQ1.y - SQ2.y * InvQ1.x + SQ2.z * InvQ1.w;
+			LnQ2.w = SQ2.w * InvQ1.w - SQ2.x * InvQ1.x - SQ2.y * InvQ1.y - SQ2.z * InvQ1.z;
 			QuaternionLn(LnQ2, LnQ2);
 
 		// LnQ1 = XMQuaternionLn(XMQuaternionMultiply(InvQ2, Q1));
 		local LnQ1 = Quaternion();
-			// QuaternionMult(InvQ2, Q1, LnQ1)
-			LnQ1.x =  InvQ2.x * Q1.w + InvQ2.y * Q1.z - InvQ2.z * Q1.y + InvQ2.w * Q1.x;
-			LnQ1.y = -InvQ2.x * Q1.z + InvQ2.y * Q1.w + InvQ2.z * Q1.x + InvQ2.w * Q1.y;
-			LnQ1.z =  InvQ2.x * Q1.y - InvQ2.y * Q1.x + InvQ2.z * Q1.w + InvQ2.w * Q1.z;
-			LnQ1.w = -InvQ2.x * Q1.x - InvQ2.y * Q1.y - InvQ2.z * Q1.z + InvQ2.w * Q1.w;
-			// QuaternionLn(LnQ1, LnQ1)
+			// QuaternionMultNoAlign(Q1, InvQ2, LnQ1)
+			LnQ1.x = Q1.w * InvQ2.x + Q1.x * InvQ2.w + Q1.y * InvQ2.z - Q1.z * InvQ2.y;
+			LnQ1.y = Q1.w * InvQ2.y - Q1.x * InvQ2.z + Q1.y * InvQ2.w + Q1.z * InvQ2.x;
+			LnQ1.z = Q1.w * InvQ2.z + Q1.x * InvQ2.y - Q1.y * InvQ2.x + Q1.z * InvQ2.w;
+			LnQ1.w = Q1.w * InvQ2.w - Q1.x * InvQ2.x - Q1.y * InvQ2.y - Q1.z * InvQ2.z;
 			QuaternionLn(LnQ1, LnQ1);
 
 		// LnQ3 = XMQuaternionLn(XMQuaternionMultiply(InvQ2, SQ3));
 		local LnQ3 = Quaternion();
-			// QuaternionMult(InvQ2, SQ3, LnQ3)
-			LnQ3.x =  InvQ2.x * SQ3.w + InvQ2.y * SQ3.z - InvQ2.z * SQ3.y + InvQ2.w * SQ3.x;
-			LnQ3.y = -InvQ2.x * SQ3.z + InvQ2.y * SQ3.w + InvQ2.z * SQ3.x + InvQ2.w * SQ3.y;
-			LnQ3.z =  InvQ2.x * SQ3.y - InvQ2.y * SQ3.x + InvQ2.z * SQ3.w + InvQ2.w * SQ3.z;
-			LnQ3.w = -InvQ2.x * SQ3.x - InvQ2.y * SQ3.y - InvQ2.z * SQ3.z + InvQ2.w * SQ3.w;
-			// QuaternionLn(LnQ3, LnQ3)
+			// QuaternionMultNoAlign(SQ3, InvQ2, LnQ3)
+			LnQ3.x = SQ3.w * InvQ2.x + SQ3.x * InvQ2.w + SQ3.y * InvQ2.z - SQ3.z * InvQ2.y;
+			LnQ3.y = SQ3.w * InvQ2.y - SQ3.x * InvQ2.z + SQ3.y * InvQ2.w + SQ3.z * InvQ2.x;
+			LnQ3.z = SQ3.w * InvQ2.z + SQ3.x * InvQ2.y - SQ3.y * InvQ2.x + SQ3.z * InvQ2.w;
+			LnQ3.w = SQ3.w * InvQ2.w - SQ3.x * InvQ2.x - SQ3.y * InvQ2.y - SQ3.z * InvQ2.z;
 			QuaternionLn(LnQ3, LnQ3);
 
 		// const NegativeOneQuarter = XMVectorSplatConstant(-1, 2);
@@ -2217,35 +2213,34 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, out ) : (Quaternion, Quaternion
 
 		// pA = XMQuaternionMultiply(Q1, ExpQ02);
 		local pA = Quaternion();
-			// QuaternionMult(Q1, ExpQ02, pA)
-			pA.x =  Q1.x * ExpQ02.w + Q1.y * ExpQ02.z - Q1.z * ExpQ02.y + Q1.w * ExpQ02.x;
-			pA.y = -Q1.x * ExpQ02.z + Q1.y * ExpQ02.w + Q1.z * ExpQ02.x + Q1.w * ExpQ02.y;
-			pA.z =  Q1.x * ExpQ02.y - Q1.y * ExpQ02.x + Q1.z * ExpQ02.w + Q1.w * ExpQ02.z;
-			pA.w = -Q1.x * ExpQ02.x - Q1.y * ExpQ02.y - Q1.z * ExpQ02.z + Q1.w * ExpQ02.w;
+			// QuaternionMultNoAlign(ExpQ02, Q1, pA)
+			pA.x = ExpQ02.x * Q1.w + ExpQ02.y * Q1.z - ExpQ02.z * Q1.y + ExpQ02.w * Q1.x;
+			pA.y = ExpQ02.y * Q1.w + ExpQ02.z * Q1.x + ExpQ02.w * Q1.y - ExpQ02.x * Q1.z;
+			pA.z = ExpQ02.x * Q1.y - ExpQ02.y * Q1.x + ExpQ02.z * Q1.w + ExpQ02.w * Q1.z;
+			pA.w = ExpQ02.w * Q1.w - ExpQ02.x * Q1.x - ExpQ02.y * Q1.y - ExpQ02.z * Q1.z;
 
 		// pB = XMQuaternionMultiply(SQ2, ExpQ13);
 		local pB = Quaternion();
-			// QuaternionMult(SQ2, ExpQ13, pB)
-			pB.x =  SQ2.x * ExpQ13.w + SQ2.y * ExpQ13.z - SQ2.z * ExpQ13.y + SQ2.w * ExpQ13.x;
-			pB.y = -SQ2.x * ExpQ13.z + SQ2.y * ExpQ13.w + SQ2.z * ExpQ13.x + SQ2.w * ExpQ13.y;
-			pB.z =  SQ2.x * ExpQ13.y - SQ2.y * ExpQ13.x + SQ2.z * ExpQ13.w + SQ2.w * ExpQ13.z;
-			pB.w = -SQ2.x * ExpQ13.x - SQ2.y * ExpQ13.y - SQ2.z * ExpQ13.z + SQ2.w * ExpQ13.w;
+			// QuaternionMultNoAlign(ExpQ13, SQ2, pB)
+			pB.x = ExpQ13.x * SQ2.w + ExpQ13.y * SQ2.z - ExpQ13.z * SQ2.y + ExpQ13.w * SQ2.x;
+			pB.y = ExpQ13.y * SQ2.w + ExpQ13.z * SQ2.x + ExpQ13.w * SQ2.y - ExpQ13.x * SQ2.z;
+			pB.z = ExpQ13.x * SQ2.y - ExpQ13.y * SQ2.x + ExpQ13.z * SQ2.w + ExpQ13.w * SQ2.z;
+			pB.w = ExpQ13.w * SQ2.w - ExpQ13.x * SQ2.x - ExpQ13.y * SQ2.y - ExpQ13.z * SQ2.z;
 
 		// pC = SQ2;
 		local pC = SQ2;
 
-	// XMQuaternionSquad(Q0, Q1, Q2, Q3, T, out)
+	// XMQuaternionSquad(Q0, Q1, Q2, Q3, T, qt)
 		local _Q0 = Q1;
 		local _Q1 = pA;
 		local _Q2 = pB;
 		local _Q3 = pC;
 
-		// XMQuaternionSlerpV
+		// XMQuaternionSlerpV(Q0, Q3, T)
+		// XMQuaternionSlerpV(Q1, Q2, T)
 		local Q03 = Quaternion();
-		QuaternionSlerpNoAlign( _Q0, _Q3, T, Q03 );
-
-		// XMQuaternionSlerpV
 		local Q12 = Quaternion();
+		QuaternionSlerpNoAlign( _Q0, _Q3, T, Q03 );
 		QuaternionSlerpNoAlign( _Q1, _Q2, T, Q12 );
 
 		// TP = XMVectorReplicate(T);
@@ -2254,7 +2249,7 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, out ) : (Quaternion, Quaternion
 		// TP = XMVectorMultiply(TP, Two);
 		T = (T - T * T) * 2.0;
 
-		return QuaternionSlerpNoAlign( Q03, Q12, T, out );
+		return QuaternionSlerpNoAlign( Q03, Q12, T, qt );
 }
 
 
@@ -4360,7 +4355,7 @@ function VS::DrawVertArrow( startPos, endPos, width, r, g, b, noDepthTest, flDur
 
 
 /*
-class ::cplane_t
+local cplane_t = class
 {
 	normal = null;
 	dist = 0.0;
@@ -4375,11 +4370,11 @@ local SignbitsForPlane = function( out )
 
 	// for fast box on planeside test
 	if ( normal.x < 0.0 )
-		bits = bits | 1; //1<<0;
+		bits = bits | 1;
 	if ( normal.y < 0.0 )
-		bits = bits | 2; //1<<1;
+		bits = bits | 2;
 	if ( normal.z < 0.0 )
-		bits = bits | 4; //1<<2;
+		bits = bits | 4;
 
 	return bits;
 }
@@ -4401,7 +4396,7 @@ const FRUSTUM_NEARZ		= 4;;
 const FRUSTUM_FARZ		= 5;;
 const FRUSTUM_NUMPLANES	= 6;;
 
-class ::Frustum_t
+local Frustum_t = class
 {
 	constructor()
 	{
@@ -5227,7 +5222,7 @@ function VS::RangeCompressor( flValue, flMin, flMax, flBase ) : ( Hermite_Spline
 }
 
 // QAngle slerp
-function VS::InterpolateAngles( v1, v2, flPercent, out ) :
+function VS::InterpolateAngles( v1, v2, flPercent, out = _VEC ) :
 	( Quaternion, AngleQuaternion, QuaternionAngles, QuaternionSlerp )
 {
 	if ( v1 == v2 )

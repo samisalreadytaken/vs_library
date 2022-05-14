@@ -139,7 +139,7 @@ local OnPlayerConnect = function( event ) : ( gEventData, ROOT, SendToConsole )
 	}
 }.bindenv( VS.Events );
 
-VS.Events.OnPlayerBan <- function( event )
+local OnPlayerBan = function( event )
 {
 	// not playing
 	if ( !event.userid )
@@ -446,7 +446,7 @@ local PostSpawn = function( pEntities )
 	}
 }.bindenv( VS.Events );
 
-local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlayerSpawn)
+local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlayerSpawn, OnPlayerBan)
 {
 	local VS = VS;
 
@@ -459,7 +459,7 @@ local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlaye
 
 		VS.ListenToGameEvent( "player_connect", OnPlayerConnect, "VS::Events" );
 		VS.ListenToGameEvent( "player_spawn", OnPlayerSpawn, "VS::Events" );
-		VS.ListenToGameEvent( "server_addban", VS.Events.OnPlayerBan, "VS::Events" );
+		VS.ListenToGameEvent( "server_addban", OnPlayerBan, "VS::Events" );
 
 		VS.ListenToGameEvent( "player_activate", function(ev)
 		{
