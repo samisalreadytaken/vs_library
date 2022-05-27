@@ -3,6 +3,12 @@
 
 --------------------------------
 
+2022-05-27 [v2.43.15]
+- Fixed VS.TraceLine.GetNormal() regression in v2.43.14
+- Fixed CExtendedPlayer::SetInputCallback() cleanup on disabling the listener
+- Fixed VS.Catmull_Rom_Spline_Integral()
+- Fixed VS.Catmull_Rom_Spline_Integral2()
+
 2022-05-14 [v2.43.14]
 - Fixed VS.InterpolateAngles not having a default output parameter
 - Fixed VS.QuaternionExp, VS.QuaternionLn, VS.QuaternionSquad, VS.QuaternionAverageExponential functions returning incorrect values

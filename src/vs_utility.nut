@@ -368,14 +368,18 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 				foreach( input, cb in sc.m_pCallbacks )
 				{
-					foreach( context, callback in cb )
-						cb[context] = null;
+					// will be freed on m_pCallbacks.clear()
+					// cb.clear();
 
 					if ( input in sc )
 						delete sc[input];
 
 					_ui.DisconnectOutput( input, input );
 				}
+
+				// Remove all user callbacks as turning the listener back on requires re-registering callbacks.
+				sc.m_pCallbacks.clear();
+
 				return;
 			};
 
@@ -643,10 +647,10 @@ function VS::TraceLine::GetNormal() : ( Vector, CTrace )
 	local v0 = startpos;
 	local dt = endpos - v0;
 	dt.Norm();
-	dt = dt * MAX_TRACE_LENGTH;
 	local v1 = v0 + dt.Cross(up);
 	local v2 = v0 + up;
 	local v3 = GetPos();
+	dt = dt * MAX_TRACE_LENGTH;
 	local vn = normal = ( v3 - CTrace( v1, v1 + dt, ignore, mask ).GetPos() ).Cross(
 		v3 - CTrace( v2, v2 + dt, ignore, mask ).GetPos() );
 	vn.Norm();

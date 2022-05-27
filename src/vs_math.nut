@@ -1616,14 +1616,9 @@ function VS::AngleMatrix( angles, position, matrix ) : (sin, cos)
 		ax = DEG2RAD*angles.x,
 		az = DEG2RAD*angles.z;
 
-	local sy = sin(ay),
-		cy = cos(ay),
-
-		sp = sin(ax),
-		cp = cos(ax),
-
-		sr = sin(az),
-		cr = cos(az);
+	local sy = sin(ay), cy = cos(ay),
+		sp = sin(ax), cp = cos(ax),
+		sr = sin(az), cr = cos(az);
 
 	matrix = matrix[0];
 	// matrix = (YAW * PITCH) * ROLL
@@ -1663,14 +1658,9 @@ function VS::AngleIMatrix( angles, position, matrix ) : (sin, cos, VectorRotate)
 		ax = DEG2RAD*angles.x,
 		az = DEG2RAD*angles.z;
 
-	local sy = sin(ay),
-		cy = cos(ay),
-
-		sp = sin(ax),
-		cp = cos(ax),
-
-		sr = sin(az),
-		cr = cos(az);
+	local sy = sin(ay), cy = cos(ay),
+		sp = sin(ax), cp = cos(ax),
+		sr = sin(az), cr = cos(az);
 
 	local m = matrix[0];
 
@@ -2388,15 +2378,14 @@ function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis ) : (Quate
 }
 
 // QAngle , QAngle, QAngle
-function VS::RotationDelta( srcAngles, destAngles, out ) : ( matrix3x4_t, AngleMatrix, MatrixAngles )
+function VS::RotationDelta( srcAngles, destAngles, out ) : ( matrix3x4_t )
 {
 	local src = matrix3x4_t(),
 		dest = matrix3x4_t();
 
-	AngleMatrix( srcAngles, null, src );
-	AngleMatrix( destAngles, null, dest );
 	// xform = src(-1) * dest
-	MatrixInvert( src, src );
+	AngleIMatrix( srcAngles, null, src );
+	AngleMatrix( destAngles, null, dest );
 	ConcatTransforms( dest, src, dest );
 
 	// xformAngles
@@ -2596,14 +2585,9 @@ function VS::AngleQuaternion( angles, outQuat = _QUAT ) : (sin, cos)
 		ax = angles.x * DEG2RADDIV2,
 		az = angles.z * DEG2RADDIV2,
 
-		sy = sin(ay),
-		cy = cos(ay),
-
-		sp = sin(ax),
-		cp = cos(ax),
-
-		sr = sin(az),
-		cr = cos(az),
+		sy = sin(ay), cy = cos(ay),
+		sp = sin(ax), cp = cos(ax),
+		sr = sin(az), cr = cos(az),
 
 		srcp = sr * cp,
 		crsp = cr * sp,
@@ -4844,16 +4828,16 @@ function VS::Catmull_Rom_Spline_Integral( p1, p2, p3, p4, t, output )
 	local ttt = tt*t;
 
 	local o = p2*t
-			- 0.25*(p1 - p3)*tt
-			+ 0.166667*(2.0*p1 - 5.0*p2 + 4.0*p3 - p4)*ttt
-			- 0.125*(p1 - 3.0*p2 + 3.0*p3 - p4)*ttt*t;
+			- (p1 - p3)*(tt*0.25)
+			+ (p1*2.0 - p2*5.0 + p3*4.0 - p4)*(ttt*0.166667)
+			- (p1 - p2*3.0 + p3*3.0 - p4)*(ttt*t*0.125);
 	output.x = o.x;
 	output.y = o.y;
 	output.z = o.z;
 }
 
 // area under the curve [0..1]
-function VS::Catmull_Rom_Spline_Integral2( p1, p2, p3, p4, t, output )
+function VS::Catmull_Rom_Spline_Integral2( p1, p2, p3, p4, output )
 {
 	local o = ( (p2 + p3)*3.25 - (p1 + p4)*0.25 ) * 0.166667;
 	output.x = o.x;
