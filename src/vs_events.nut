@@ -218,16 +218,10 @@ local OnPlayerSpawn = function( event ) : ( gEventData, Fmt, ROOT )
 	}
 }.bindenv( VS.Events );
 
-//
-// Deprecated. Manual calls to this are not necessary.
-//
-VS.ForceValidateUserid <- function( ent, internal = 0 ) : ( AddEvent, Fmt, Entities )
+local ValidateUserid = function( ent ) : ( AddEvent, Fmt, Entities )
 {
-	if ( !internal )
-		Msg("Warning: VS::ForceValidateUserid is deprecated!\n");
-
 	if ( !ent || !ent.IsValid() || (ent.GetClassname() != "player") || !ent.ValidateScriptScope() )
-		return Msg(Fmt( "VS::ForceValidateUserid: invalid input: %s\n", ""+ent ));
+		return Msg(Fmt( "VS::ValidateUserid: invalid input: %s\n", ""+ent ));
 
 	if ( !m_SV )
 		m_SV = [];
@@ -244,7 +238,7 @@ VS.ForceValidateUserid <- function( ent, internal = 0 ) : ( AddEvent, Fmt, Entit
 	if (b)
 		m_SV.append( sc.weakref() );
 	// UNDONE: fail condition when the event queue is reset
-	// in the same frame VS.ForceValidateUserid is called
+	// in the same frame this function is called
 
 	if ( !m_hProxy )
 	{
@@ -257,103 +251,6 @@ VS.ForceValidateUserid <- function( ent, internal = 0 ) : ( AddEvent, Fmt, Entit
 	return AddEvent( m_hProxy, "GenerateGameEvent", "", 0, ent, null );
 }.bindenv( VS.Events );
 
-//
-// Deprecated. Manual calls to this are not necessary.
-//
-function VS::ValidateUseridAll()
-{
-	Msg("Warning: VS::ValidateUseridAll is deprecated!\n");
-
-	if ( Events.m_bFixedUp )
-	{
-		foreach( i, v in GetAllPlayers() )
-			if ( !("userid" in v.GetScriptScope()) )
-				ForceValidateUserid( v );
-	}
-	// fallback and force validate even though there will be other issues
-	else
-	{
-		Msg( "Warning: VS::ValidateUseridAll: incorrect eventlistener setup!\n" );
-
-		local t = ::FrameTime();
-		foreach( i, v in GetAllPlayers() )
-			DoEntFireByInstanceHandle( v, "RunScriptCode", "VS.ForceValidateUserid(self)", i * t, v, v );
-	};
-}
-
-//-----------------------------------------------------------------------
-//
-// NOTE: not needed if using VS.ListenToGameEvent
-//
-// While event listeners dump the event data whenever events are fired,
-// entity outputs are added to the event queue to be executed in the next frame.
-// Because of this delay, when an event is fired multiple times before
-// the output is fired - before the script function is executed via the output - previous events would be lost.
-//
-// This function catches each event data dump, saving it for the next time it is
-// fetched by user script which is called by the event listener output.
-// Because of this save-restore action, the event data can only be fetched once.
-// This means there can only be 1 event listener output with event_data access.
-//
-// Run this function on each round start on the event listeners you expect to be fired multiple times in a frame.
-//
-//		VS.FixupEventListener( Ent("bullet_impact") )
-//
-// It is harmless to run it on all event listeners.
-//
-//		for ( local ent; ent = Entities.FindByClassname( ent, "logic_eventlistener" ); )
-//			VS.FixupEventListener( ent )
-//
-// Alternatively you can create a script file with this execution, and attach it to your event listeners. (fixupeventlistener.nut)
-//
-//		IncludeScript("vs_library")
-//		VS.FixupEventListener( self )
-//
-//-----------------------------------------------------------------------
-function VS::FixupEventListener( ent )
-{
-	if ( !ent || !ent.IsValid() ||
-		(ent.GetClassname() != "logic_eventlistener") || !ent.ValidateScriptScope() )
-		return Msg("VS::FixupEventListener: invalid event listener input\n");
-
-	local sc = ent.GetScriptScope();
-
-	if ( sc.parent.rawin( "{7D6E9A}" ) )
-		return Msg("VS::FixupEventListener: already fixed up " + ent + "\n");
-
-	local cache = [];
-	// sc.rawset( "event_cache", cache );
-	sc.rawdelete("event_data");
-
-	if ( !m_ppCache )
-		m_ppCache = [];
-	m_ppCache.append( cache.weakref() );
-
-	delegate ( delegate ( delegate sc.parent :
-	{
-		_delslot = function( k )
-		{
-			delete parent.parent[k];
-		}
-	} ) :
-	{
-		_newslot = function( k, v ) : (cache)
-		{
-			if ( k == "event_data" )
-				// No error handler, cannot call callbacks here.
-				return cache.insert( 0, v );
-			return rawset( k, v );
-		},
-		_get = function( k ) : (cache)
-		{
-			if ( k == "event_data" )
-				return cache.pop();
-			return rawget(k); // throw
-		},
-		["{7D6E9A}"] = null
-	} ) : sc
-}
-
 // gross hack
 local __RemovePooledString = function(sz)
 {
@@ -362,7 +259,7 @@ local __RemovePooledString = function(sz)
 	__rem = null;
 }.bindenv( VS.Events );
 
-function VS::Events::SpawnEntity( eventname ) : (Entities)
+local SpawnEntity = function( eventname ) : (Entities)
 {
 	if ( !m_pSpawner )
 	{
@@ -386,22 +283,22 @@ local __ExecutePreSpawn = function( pEnt )
 	{
 		pEnt.__KeyValueFromString( "targetname", vs.__rem );
 		pEnt.__KeyValueFromString( "EventName", "player_connect" ); // suppress warnings
-		pEnt.Destroy();
-		return;
+		return pEnt.Destroy();
 	};
 
 	if ( !vs.s_szEventName )
 	{
-		pEnt.Destroy();
-		return Msg( "VS::Events::PreSpawn: invalid call origin\n" );
+		Msg( "VS::Events::PreSpawn: invalid call origin\n" );
+		return pEnt.Destroy();
 	};
 
+	pEnt.__KeyValueFromString( "targetname", "" );
 	pEnt.__KeyValueFromString( "EventName", vs.s_szEventName );
 	pEnt.__KeyValueFromInt( "FetchEventData", 1 );
 	pEnt.__KeyValueFromInt( "IsEnabled", 1 );
 	pEnt.__KeyValueFromInt( "TeamNum", -1 );
 
-	__EntityMakerResult = {}
+	__EntityMakerResult = { [""] = null }
 }
 
 local __FinishSpawn = function()
@@ -409,44 +306,64 @@ local __FinishSpawn = function()
 	__EntityMakerResult = null;
 }
 
-local PostSpawn = function( pEntities )
+local PostSpawn = function( pp )
 {
-	foreach( ent in pEntities )
-	{
+	local ent = pp[""];
+
 		s_hListener = ent;
-		FixupEventListener(ent);
 		MakePersistent(ent);
+
+		ent.ValidateScriptScope();
 		local sc = ent.GetScriptScope();
 
-		// asynchronous callbacks
+		delegate delegate delegate sc.parent :
+		{
+			_delslot = function( k )
+			{
+				delete parent.parent[k];
+			}
+		} : {
+			_newslot = null,
+			["{7D6E9A}"] = null
+		} : sc;
+
+		sc.rawdelete("event_data");
+
 		if ( !s_fnSynchronous )
 		{
-			// naming it with the event name and UID makes debugging easier
-			local name = sc.__vname;
-			local i = name.find("_");
-			name = s_szEventName + "_" + name.slice( 0, i );
-			SetName( ent, name );
-			ent.__KeyValueFromString( "OnEventFired", name+",CallScriptFunction,OnEventFired" );
-			sc.OnEventFired <- null;
-		}
-		// synchronous callbacks, not possible to dump call stack when exception is thrown
-		else
-		{
-			m_ppCache.pop();
+			local cache = [];
+			if ( !m_ppCache )
+				m_ppCache = [];
+			m_ppCache.append( cache.weakref() );
 
-			SetName( ent, "" );
-			delete sc.parent._get;
-			sc.parent._newslot = function( k, v ) : (s_fnSynchronous)
+			sc.parent._newslot = function( k, v ) : (cache)
 			{
 				if ( k == "event_data" )
-					return s_fnSynchronous(v);
+					return cache.insert( 0, v );
 				return rawset( k, v );
 			}
-		}
-	}
+
+			sc.parent._get <- function( k ) : (cache)
+			{
+				if ( k == "event_data" )
+					return cache.pop();
+				return rawget(k);
+			}
+
+			local name = sc.__vname;
+
+			// naming it with the event name and UID makes debugging easier
+			local i = name.find("_");
+			name = s_szEventName + "_" + name.slice( 0, i );
+
+			ent.__KeyValueFromString( "targetname", name );
+			ent.__KeyValueFromString( "OnEventFired", name+",CallScriptFunction," );
+			sc[""] <- null;
+		};
+
 }.bindenv( VS.Events );
 
-local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlayerSpawn, OnPlayerBan)
+local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlayerSpawn, OnPlayerBan, ValidateUserid)
 {
 	local VS = VS;
 
@@ -461,23 +378,15 @@ local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlaye
 		VS.ListenToGameEvent( "player_spawn", OnPlayerSpawn, "VS::Events" );
 		VS.ListenToGameEvent( "server_addban", OnPlayerBan, "VS::Events" );
 
-		VS.ListenToGameEvent( "player_activate", function(ev)
+		VS.ListenToGameEvent( "player_activate", function(ev) : (ValidateUserid)
 		{
 			foreach( i, v in GetAllPlayers() )
 			{
 				local t = v.GetScriptScope();
 				if ( !("userid" in t) || t.userid == -1 )
-					ForceValidateUserid( v, 1 );
+					ValidateUserid( v );
 			}
 		}.bindenv(VS), "VS::Events" );
-
-		VS.ListenToGameEvent( "player_disconnect", function(ev)
-		{
-			if ( m_Players && ev.userid in m_Players )
-			{
-				delete m_Players[ev.userid];
-			}
-		}.bindenv( VS.Events ), "VS::Events" );
 
 		if ( VS.Events.m_DeferredReg )
 		{
@@ -487,22 +396,45 @@ local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlaye
 		};
 	};
 
+	// Clear the cache on round start
+	local players = VS.Events.m_Players;
+	if ( players && players.len() )
+	{
+		local t = [];
+
+		foreach ( k, v in players )
+			if ( !v || !v.IsValid() )
+				t.append(k);
+
+		foreach ( v in t )
+			delete players[v];
+	};
+
 	if ( VS.Events.__tmp )
 		__RemovePooledString( VS.Events.__tmp );
 	VS.Events.__tmp = __vname;
 }
 
-VS.ListenToGameEvent <- function( szEventname, fnCallback, pContext )
+VS.ListenToGameEvent <- function( szEventName, fnCallback, pContext, bSynchronous = 0 ) : (SpawnEntity)
 {
-	local err;
+	local err, paramCount;
 
 	if ( (typeof fnCallback != "function") && (typeof fnCallback != "native function") )
+	{
 		err = "invalid callback param";
+	}
+	else
+	{
+		paramCount = fnCallback.getinfos().parameters.len();
+
+		if ( paramCount != 2 && paramCount != 1 )
+			err = "invalid callback param: wrong number of parameters";
+	};
 
 	if ( typeof pContext != "string" )
 		err = "invalid context param";
 
-	if ( typeof szEventname != "string" )
+	if ( typeof szEventName != "string" )
 		err = "invalid eventname param";
 
 	if ( err )
@@ -514,10 +446,10 @@ VS.ListenToGameEvent <- function( szEventname, fnCallback, pContext )
 	if ( !m_pListeners )
 		m_pListeners = {};
 
-	if ( !(szEventname in m_pListeners) )
-		m_pListeners[szEventname] <- {};
+	if ( !(szEventName in m_pListeners) )
+		m_pListeners[szEventName] <- {};
 
-	local pListener = m_pListeners[szEventname];
+	local pListener = m_pListeners[szEventName];
 	if ( !(pContext in pListener) )
 		pListener[pContext] <- null;
 
@@ -527,16 +459,17 @@ VS.ListenToGameEvent <- function( szEventname, fnCallback, pContext )
 
 		if ( !m_DeferredReg )
 			m_DeferredReg = [];
-		m_DeferredReg.append( [this, szEventname, fnCallback, pContext] );
+		m_DeferredReg.append( [this, szEventName, fnCallback, pContext, bSynchronous] );
 
-		return; //Msg("VS::ListenToGameEvent: defer {'"+pContext+"'}\n");
+		//Msg(Fmt( "VS::ListenToGameEvent: defer %s:%s\n", szEventName, pContext ));
+		return;
 	};
 
 	local p = pListener[pContext];
-	if ( !p )
+	if ( !p || !p.IsValid() )
 	{
 		// library functions are synchronous
-		if ( pContext == "VS::Events" )
+		if ( bSynchronous || pContext == "VS::Events" )
 		{
 			s_fnSynchronous = fnCallback;
 		}
@@ -545,34 +478,75 @@ VS.ListenToGameEvent <- function( szEventname, fnCallback, pContext )
 			s_fnSynchronous = null;
 		};
 
-		if ( !(p = SpawnEntity( szEventname )) )
+		if ( !(p = SpawnEntity( szEventName )) )
 			return Msg("VS::ListenToGameEvent: ERROR!!! NULL ent!\n");
+
 		pListener[pContext] = p.weakref();
 
 		if ( s_fnSynchronous )
 		{
 			s_fnSynchronous = null;
-			return;
+
+			if ( pContext == "VS::Events" )
+			{
+				p.GetScriptScope().parent._newslot = function( k, v ) : (fnCallback)
+				{
+					if ( k == "event_data" )
+						return fnCallback(v);
+				}
+				return;
+			};
 		};
 	};
 
 	local sc = p.GetScriptScope();
 
-	//local paramCount = fnCallback.getinfos().parameters.len();
-	//if ( paramCount == 1 )
-	//{
-	//	sc.OnEventFired <- fnCallback;
-	//}
-	//else
-	//{
-		sc.OnEventFired <- function() : (fnCallback)
+	if ( !!bSynchronous == sc.parent.rawin("_get") )
+	{
+		Msg( "VS::ListenToGameEvent: changing synchronicity of "+szEventName+":"+pContext+"\n" );
+		p.Destroy();
+		return ListenToGameEvent( szEventName, fnCallback, pContext, bSynchronous );
+	};
+
+	if ( !bSynchronous )
+	{
+		// Support for parameterless event callback.
+		// Useful if the event does not contain any data or the user is not interested in it.
+		if ( paramCount == 1 )
 		{
-			return fnCallback( event_data );
+			sc[""] = fnCallback;
 		}
-	//};
+		else
+		{
+			sc[""] = function() : (fnCallback) return fnCallback( event_data );
+		};
+	}
+	else
+	{
+		if ( paramCount == 1 )
+		{
+			sc.parent._newslot = function( k, v ) : (fnCallback, szEventName, pContext)
+			{
+				if ( k == "event_data" )
+					try fnCallback() catch(x)
+						return print(format( "\nAN ERROR HAS OCCURED [%s] ON EVENT [%s:%s]\n\n", x, szEventName, pContext ));
+				// else return rawset( k, v );
+			}
+		}
+		else
+		{
+			sc.parent._newslot = function( k, v ) : (fnCallback, szEventName, pContext)
+			{
+				if ( k == "event_data" )
+					try fnCallback(v) catch(x)
+						return print(format( "\nAN ERROR HAS OCCURED [%s] ON EVENT [%s:%s]\n\n", x, szEventName, pContext ));
+				// else return rawset( k, v );
+			}
+		};
+	};
 }.bindenv( VS.Events );
 
-VS.StopListeningToAllGameEvents <- function( context ) : (__RemovePooledString)
+VS.StopListeningToAllGameEvents <- function( context ) : (dummy)
 {
 	if ( m_pListeners )
 	{
@@ -581,47 +555,51 @@ VS.StopListeningToAllGameEvents <- function( context ) : (__RemovePooledString)
 			if ( context in listener )
 			{
 				local p = listener[context];
-				if ( p && (typeof p == "instance") && p.IsValid() )
+				if ( (typeof p == "instance") && p.IsValid() )
 				{
+					// UTIL_Remove is not immediate, this event can still fire until it is removed.
+					p.GetScriptScope().parent._newslot = dummy;
 					p.Destroy();
 				};
 				delete listener[context];
-				// Msg( "Stopped listening to [" + context + "]" + eventname + "\n" );
+				// Msg(Fmt( "Stopped listening to %s:%s\n", eventname, context ));
 			}
 		}
 	}
 }.bindenv( VS.Events );
 
-#ifdef _DEBUG
 VS.Events.DumpListeners <- function()
 {
-	if ( m_pListeners )
+	if ( m_pListeners && m_pListeners.len() )
 	{
+		local list = [];
+		foreach ( eventname, listener in m_pListeners )
+			list.append( eventname );
+
+		list.sort();
 		local Fmt = format;
-		Msg( "Game event listener dump start...\n" );
-		foreach( eventname, listener in m_pListeners )
+		foreach ( eventname in list )
 		{
+			local listener = m_pListeners[eventname];
 			foreach ( context, p in listener )
 			{
 				if ( context != "VS::Events" )
 				{
 					if ( p && (typeof p == "instance") && p.IsValid() )
 					{
-						Msg(Fmt( "  %-16.32s  | %-16.64s |  (%-16.64s)\n", eventname, context, p.GetName() ));
+						Msg(Fmt( "  %-32.32s  | %-32.64s |  '%.64s'\n", eventname, context, p.GetName() ));
 					}
 					else
 					{
-						Msg(Fmt( "  %-16.32s  | %-16.64s |  !\n", eventname, context ));
-					}
+						Msg(Fmt( "  %-32.32s  | %-32.64s |  <null>\n", eventname, context ));
+					};
 				};
 			}
 		}
-		Msg( "Game event listener dump end.\n" );
 	}
 }.bindenv( VS.Events );
-#endif
 
-function VS::Events::InitTemplate( scope )
+VS.Events.InitTemplate <- function( scope )
 	: (__ExecutePreSpawn, __FinishSpawn, PostSpawn, OnPostSpawn)
 {
 	local self;
@@ -655,10 +633,15 @@ function VS::Events::InitTemplate( scope )
 				if ( v.len() )
 				{
 					Msg( "Discarding unhandled game event:\n{\n" );
-					foreach ( k,vv in v )
-						Msg(format( "\t%s : %s\n", k, ""+vv ));
+					foreach ( kk,vv in v )
+					{
+						Msg( "\t{\n" );
+						foreach ( kkk, vvv in vv )
+							Msg(format( "\t\t%s : %s\n", ""+kkk, ""+vvv ));
+						Msg( "\t}\n" );
+					}
 					Msg( "}\n" );
-				}
+				};
 #endif
 				v.clear();
 			}

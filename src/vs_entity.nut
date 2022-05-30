@@ -267,7 +267,7 @@ function VS::SetKeyValue( ent, key, val )
 			return true;
 
 		default:
-			throw "Invalid input type: " + typeof val;
+			throw "VS::SetKeyValue: invalid input: " + typeof val;
 	}
 }
 

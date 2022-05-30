@@ -3,6 +3,12 @@
 
 --------------------------------
 
+2022-05-30 [v2.43.16]
+- Added support for synchronous game event callbacks. See the documentation on VS.ListenToGameEvent for details.
+- Added (debug) VS.Events.DumpListeners
+- Removed VS.FixupEventListener
+- Removed deprecated functions VS.ValidateUseridAll, VS.ForceValidateUserid
+
 2022-05-27 [v2.43.15]
 - Fixed VS.TraceLine.GetNormal() regression in v2.43.14
 - Fixed CExtendedPlayer::SetInputCallback() cleanup on disabling the listener

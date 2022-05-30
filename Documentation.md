@@ -337,8 +337,8 @@ IncludeScript("myscript")
 [`VS.GetPlayerByUserid()`](#f_GetPlayerByUserid)  
 [`VS.ListenToGameEvent()`](#f_ListenToGameEvent)  
 [`VS.StopListeningToAllGameEvents()`](#f_StopListeningToAllGameEvents)  
-[`VS.FixupEventListener()`](#f_FixupEventListener)  
 [`VS.Events.InitTemplate()`](#f_InitTemplate)  
+[`VS.Events.DumpListeners()`](#f_DumpListeners)  
 
 
 ### [vs_log](#vs_log-1)
@@ -2880,15 +2880,40 @@ ________________________________
 
 <a name="f_ListenToGameEvent"></a>
 ```cpp
-void VS::ListenToGameEvent( string szEventname, closure fnCallback, string pContext )
+void VS::ListenToGameEvent( string szEventname, closure fnCallback, string pContext, bool bSynchronous = false )
 ```
 Register a listener for a game event from script. Requires event listener setup.
 
 Contexts are used to identify event listeners; they can be used to register multiple listeners for the same event.
 ```cs
-VS.ListenToGameEvent( "player_say", function(ev) { print("-- 1\n") }, "context1" );
-VS.ListenToGameEvent( "player_say", function(ev) { print("-- 2\n") }, "context2" );
-VS.ListenToGameEvent( "player_say", function(ev) { print("-- 3\n") }, "context3" );
+VS.ListenToGameEvent( "player_say", function() { print("-- 1\n") }, "context1" );
+VS.ListenToGameEvent( "player_say", function() { print("-- 2\n") }, "context2" );
+VS.ListenToGameEvent( "player_say", function() { print("-- 3\n") }, "context3" );
+```
+
+`bSynchronous == true` sets the listener to be synchronous, and execute callbacks as events are fired instead of waiting for the next server frame where some information you are after may become irrelevant.
+
+However note that synchronous event listener callbacks will not have error handlers to dump the call stack and line info to help you debug. Use this mindfully!
+
+Example show the world position players disconnect from - this would not be possible with async callbacks as the player entity no longer exists in the frame after the player_disconnect event.
+```cs
+VS.ListenToGameEvent( "player_disconnect", function(ev)
+{
+	local player = VS.GetPlayerByUserid( ev.userid );
+	local origin = player.GetOrigin();
+
+	print(format( "Player disconnected at %f %f %f\n", origin.x, origin.y, origin.z ));
+	DebugDrawBox( origin, Vector(-16,-16,0), Vector(16,16,72), 255, 0, 0, 127, 10.0 );
+
+}, "ShowDisconnectLocation-Sync", 1 );
+
+VS.ListenToGameEvent( "player_disconnect", function(ev)
+{
+	local player = VS.GetPlayerByUserid( ev.userid );
+	if ( !player )
+		print("Player does not exist, disconnected!\n");
+
+}, "ShowDisconnectLocation-Async", 0 );
 ```
 ________________________________
 
@@ -2899,38 +2924,18 @@ void VS::StopListeningToAllGameEvents( string context )
 Stop listening to all game events within a specific context.
 ________________________________
 
-<a name="f_ForceValidateUserid"></a>
-```cpp
-void VS::ForceValidateUserid(handle)
-```
-Deprecated. Manual calls to this are not necessary.
-________________________________
-
-<a name="f_ValidateUseridAll"></a>
-```cpp
-void VS::ValidateUseridAll()
-```
-Deprecated. Manual calls to this are not necessary.
-________________________________
-
-<a name="f_FixupEventListener"></a>
-```cpp
-void VS::FixupEventListener(handle)
-```
-Not needed when event listeners are registered using `VS.ListenToGameEvent`.
-
-Details:
-
-While event listeners dump the event data whenever events are fired, entity outputs are added to the event queue to be executed in the next frame. Because of this delay, when an event is fired multiple times before the output is fired - before the script function is executed via the output - previous events would be lost.
-
-This function catches each event data dump, saving it for the next time it is fetched by user script which is called by the event listener output. Because of this save-restore action, the event data can only be fetched once. This means there can only be 1 event listener output with event_data access.
-________________________________
-
 <a name="f_InitTemplate"></a>
 ```cpp
 void VS::Events::InitTemplate( table entityScope )
 ```
 Initialise point_template for automatic user data validation and dynamic event listening.
+________________________________
+
+<a name="f_DumpListeners"></a>
+```cpp
+void VS::Events::DumpListeners()
+```
+Debug print all game event listeners. `script VS.Events.DumpListeners()`
 ________________________________
 
 
