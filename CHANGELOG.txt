@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2022-05-30 [v2.43.17]
+- Added CExtendedPlayer::GetFOV
+
 2022-05-30 [v2.43.16]
 - Added support for synchronous game event callbacks. See the documentation on VS.ListenToGameEvent for details.
 - Added (debug) VS.Events.DumpListeners

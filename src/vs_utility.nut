@@ -19,85 +19,18 @@
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
 
-
+// unique entity pools
 if ( !("{F71A8D}" in ROOT) )
-{
-	// unique entity pools
-	ROOT["{F71A8D}"] <- [];
-	ROOT["{E3D627}"] <- [];
-	ROOT["{5E457F}"] <- [];
-	ROOT["{D9154C}"] <- [];
-};;
+	ROOT["{F71A8D}"] <- [];;
 
 local g_Players = ROOT["{F71A8D}"];
-local g_Eyes = ROOT["{E3D627}"];
-local g_GameUIs = ROOT["{5E457F}"];
-local g_ViewEnts = ROOT["{D9154C}"]; // usually contains only 1 entity
 
-
-local DoSetFOV = function( iFOV, flSpeed )
+// b/w compat
+VS.SetPlayerFOV <- function( hPlayer, iFOV, flSpeed = 0.0 )
 {
-	SetFov( iFOV, flSpeed );
-	SetOwner( null );
-}
-
-//
-// FIXME: calling multiple times in a frame on different players
-//
-VS.SetPlayerFOV <- function( hPlayer, iFOV, flSpeed = 0.0 ) : (g_ViewEnts, AddEvent, DoSetFOV)
-{
-	if ( !hPlayer || !hPlayer.IsValid() || hPlayer.GetClassname() != "player" )
-		return;
-
-	local hView;
-
-	for ( local i = g_ViewEnts.len(); i--; )
-	{
-		local v = g_ViewEnts[i];
-		if ( !v )
-		{
-			g_ViewEnts.remove(i);
-			continue;
-		};
-
-		local owner = v.GetOwner();
-		if ( owner == hPlayer )
-		{
-			// called multiple times in a frame - still active on player
-			DoSetFOV.call( v, iFOV, flSpeed );
-			return v;
-		};
-
-		if ( !owner )
-		{
-			hView = v;
-			// continue searching to see if owner == hPlayer
-		};
-	}
-
-	if ( !hView )
-	{
-		hView = Entities.CreateByClassname( "point_viewcontrol" );
-		MakePersistent( hView );
-		// SF 0 makes the transition smooth; 7 overrides existing view owner, if exists
-		hView.__KeyValueFromInt( "spawnflags", (1<<0)|(1<<7) );
-		hView.__KeyValueFromInt( "effects", (1<<5) );
-		hView.__KeyValueFromInt( "movetype", 8 );
-		hView.__KeyValueFromInt( "renderamt", 0 );
-		hView.__KeyValueFromInt( "rendermode", 2 );
-		g_ViewEnts.insert( 0, hView.weakref() );
-	};
-
-	// This script takes advantage of how hViewEntity->m_hPlayer is not
-	// nullified on disabling, and how ScriptSetFov() only calls pPlayer->SetFOV()
-	hView.SetOwner( hPlayer );
-	AddEvent( hView, "Enable", "", 0.0, hPlayer, null );
-	AddEvent( hView, "Disable", "", 0.0, null, null );
-	EventQueue.AddEvent( DoSetFOV, 0.0, [ hView, iFOV, flSpeed ] );
-	return hView;
-
+	if ( hPlayer = ToExtendedPlayer( hPlayer ) )
+		return hPlayer.SetFOV( iFOV, flSpeed );
 }.bindenv(::VS);
-
 
 
 // used for async name setting
@@ -134,7 +67,7 @@ local OwnerSort = function( a, b )
 }
 
 VS.ToExtendedPlayer <- function( hPlayer )
-	: ( g_Players, g_Eyes, g_GameUIs, NullSort, OwnerSort, AddEvent, SetNameSafe, FrameTime )
+	: ( g_Players, ROOT, NullSort, OwnerSort, AddEvent, SetNameSafe, FrameTime )
 {
 	foreach( p in g_Players )
 		if ( p.self == hPlayer || p == hPlayer )
@@ -152,6 +85,11 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 	hPlayer.ValidateScriptScope();
 	local sc = hPlayer.GetScriptScope();
+
+	if ( !("{E3D627}" in ROOT) )
+		ROOT["{E3D627}"] <- [];
+
+	local g_Eyes = ROOT["{E3D627}"];
 
 	local eye;
 	g_Eyes.sort( NullSort );
@@ -222,8 +160,10 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 		sc.userid <- -1;
 	};
+
 	if ( !("networkid" in sc) )
 		sc.networkid <- "";
+
 	if ( !("name" in sc) )
 		sc.name <- "";
 
@@ -300,10 +240,9 @@ VS.ToExtendedPlayer <- function( hPlayer )
 			return self.__KeyValueFromInt( "movetype", n );
 		}
 
-		function SetFOV( nFov, flRate )
-		{
-			return ::SetPlayerFOV( self, nFov, flRate );
-		}
+		// FOV functions are not commonly used, create the required entity only when called.
+		GetFOV = null;
+		SetFOV = null;
 
 		function SetParent( hParent, szAttachment ) : (AddEvent)
 		{
@@ -314,10 +253,15 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 		_ui = null;
 
-		function SetInputCallback( szInput, fn, env ) : (AddEvent, g_GameUIs, NullSort, OwnerSort)
+		function SetInputCallback( szInput, fn, env ) : (AddEvent, ROOT, NullSort, OwnerSort)
 		{
 			if ( !_ui || !_ui.IsValid() )
 			{
+				if ( !("{5E457F}" in ROOT) )
+					ROOT["{5E457F}"] <- [];
+
+				local g_GameUIs = ROOT["{5E457F}"];
+
 				g_GameUIs.sort( NullSort );
 				g_GameUIs.sort( OwnerSort );
 				for ( local i = g_GameUIs.len(); i--; )
@@ -489,6 +433,66 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 		_tostring = hPlayer.tostring.bindenv( hPlayer );
 		getclass = hPlayer.getclass.bindenv( hPlayer );
+	}
+
+	//
+	// Used to get/set player FOV.
+	// FOV could be set asynchronously in SetPlayerFOV, but it can't be got.
+	// Assigning a view entity for each player will ensure successful synchronous GetFOV calls.
+	//
+	CExtendedPlayer__.GetFOV <- CExtendedPlayer__.SetFOV <- function(...) : ( ROOT, NullSort, OwnerSort, AddEvent )
+	{
+		if ( !("{D9154C}" in ROOT) )
+			ROOT["{D9154C}"] <- [];
+
+		local g_ViewEnts = ROOT["{D9154C}"];
+
+		local hView;
+		g_ViewEnts.sort( NullSort );
+		g_ViewEnts.sort( OwnerSort );
+
+		for ( local i = g_ViewEnts.len(); i--; )
+		{
+			local v = g_ViewEnts[i];
+			if ( !v )
+			{
+				g_ViewEnts.remove(i);
+				continue;
+			};
+
+			local owner = v.GetOwner();
+			if ( !owner || owner == self )
+			{
+				hView = v;
+				break;
+			};
+		}
+
+		if ( !hView )
+		{
+			hView = Entities.CreateByClassname( "point_viewcontrol" );
+			VS.MakePersistent( hView );
+			// SF 0 makes the transition smooth; 7 overrides existing view owner, if exists
+			hView.__KeyValueFromInt( "spawnflags", (1<<0)|(1<<7) );
+			hView.__KeyValueFromInt( "effects", (1<<5) );
+			hView.__KeyValueFromInt( "movetype", 8 );
+			hView.__KeyValueFromInt( "renderamt", 0 );
+			hView.__KeyValueFromInt( "rendermode", 2 );
+			g_ViewEnts.insert( 0, hView.weakref() );
+		};
+
+		// This script takes advantage of hViewEntity->m_hPlayer not being
+		// nullified on disabling, and ScriptSetFov() only calling pPlayer->SetFOV()
+		hView.SetOwner( self );
+		AddEvent( hView, "Enable", "", 0.0, self, null );
+		AddEvent( hView, "Disable", "", 0.0, null, null );
+
+		// CTriggerCamera
+		GetFOV = hView.GetFov.bindenv(hView);
+		SetFOV = hView.SetFov.bindenv(hView);
+
+		// The first call will be incorrect anyway, return the default value.
+		return 90.0;
 	}
 
 	// Set native funcs after custom funcs to keep forward compatibility

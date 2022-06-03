@@ -2177,6 +2177,7 @@ class CExtendedPlayer
 	void SetName( string targetname );
 	void SetEffects( int n );
 	void SetMoveType( int n );
+	int GetFOV();
 	void SetFOV( int fov, float rate );
 	void SetParent( CBaseEntity parent, string attachment );
 
