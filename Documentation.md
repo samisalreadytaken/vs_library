@@ -211,7 +211,6 @@ IncludeScript("myscript")
 [`VS.IRotateAABB()`](#f_IRotateAABB)  
 [`VS.GetBoxVertices()`](#f_GetBoxVertices)  
 [`VS.MatrixBuildPerspective()`](#f_MatrixBuildPerspective)  
-[`VS.ComputeViewMatrix()`](#f_ComputeViewMatrix)  
 [`VS.ScreenToWorldMatrix()`](#f_ScreenToWorldMatrix)  
 [`VS.ScreenToWorld()`](#f_ScreenToWorld)  
 [`VS.ComputeCameraVariables()`](#f_ComputeCameraVariables)  
@@ -1479,18 +1478,54 @@ Y range: [0..1]
 Z range: [0..1]
 ________________________________
 
-<a name="f_ComputeViewMatrix"></a>
-```cpp
-void VS::ComputeViewMatrix( VMatrix &pWorldToView, Vector origin, Vector forward, Vector left, Vector up )
-```
-
-________________________________
-
 <a name="f_ScreenToWorldMatrix"></a>
 ```cpp
-void VS::ScreenToWorldMatrix( VMatrix& pOut, Vector origin, Vector forward, Vector right, Vector up, float fov, float flAspect, float zNear, float zFar )
+void VS::ScreenToWorldMatrix( VMatrix& pOut, Vector origin, Vector forward, Vector right, Vector up, float fovX, float flAspect, float zNear, float zFar )
 ```
+Example detect if a position is on a player's screen:
 
+```cs
+local targetPos = Vector();
+
+local aspectRatio = 16.0/9.0;
+
+local viewOrigin = player.EyePosition();
+local viewAngles = player.EyeAngles();
+local viewForward = player.EyeForward();
+local viewRight = player.EyeRight();
+local viewUp = player.EyeUp();
+local fovx = VS.CalcFovX( player.GetFOV(), aspectRatio * (3.0/4.0) );
+
+local worldToScreen = VMatrix();
+VS.ScreenToWorldMatrix(
+	worldToScreen,
+	viewOrigin,
+	viewForward,
+	viewRight,
+	viewUp,
+	fovx,
+	aspectRatio,
+	8.0,
+	MAX_COORD_FLOAT );
+VS.MatrixInverseGeneral( worldToScreen, worldToScreen );
+
+local screen = Vector();
+VS.Vector3DMultiplyPositionProjective( worldToScreen, targetPos, screen );
+
+local x = screen.x;
+local y = 1.0 - screen.y;
+
+// Target is off screen
+if ( x < 0.0 || x > 1.0 || y < 0.0 || y > 1.0 || screen.z > 1.0 )
+{
+
+}
+// Target is on screen
+else
+{
+
+}
+```
 ________________________________
 
 <a name="f_ScreenToWorld"></a>
@@ -1498,28 +1533,37 @@ ________________________________
 Vector VS::ScreenToWorld( float x, float y, VMatrix screenToWorld, Vector &pOut = _VEC )
 ```
 ```cs
-{
-	local x = 0.35
-	local y = 0.65
-	local eyeAng = player.EyeAngles()
-	local eyePos = player.EyePosition()
-	local mat = VMatrix();
-	VS.ScreenToWorldMatrix(
-		mat,
-		eyePos,
-		player.EyeForward(),
-		player.EyeRight(),
-		player.EyeUp(),
-		90.0,
-		16.0/9.0,
-		1.0,
-		16.0 );
+local x = 0.75;
+local y = 0.25;
 
-	local worldPos = VS.ScreenToWorld( x, y, mat );
+local viewOrigin = player.EyePosition();
+local viewAngles = player.EyeAngles();
+local viewForward = player.EyeForward();
+local viewRight = player.EyeRight();
+local viewUp = player.EyeUp();
+local aspectRatio = 16.0/9.0;
+local fovx = VS.CalcFovX( player.GetFOV(), aspectRatio * (3.0/4.0) );
 
-	local maxs = vec3_t( 0.0, 0.5, 0.5 );
-	DrawBoxAnglesFilled( worldPos, -maxs, maxs, eyeAng, 0, 255, 255, 64, 5.0 );
-}
+local mat = VMatrix();
+
+VS.ScreenToWorldMatrix(
+	mat,
+	viewOrigin,
+	viewForward,
+	viewRight,
+	viewUp,
+	fovx,
+	aspectRatio,
+	1.0,
+	16.0 );
+
+local worldPos = VS.ScreenToWorld( x, y, mat );
+
+local maxs = Vector( 0.0, 0.5, 0.5 );
+DebugDrawBoxAngles( worldPos, maxs*-1, maxs, viewAngles, 0, 255, 255, 64, 5.0 );
+
+VS.DrawViewFrustum( viewOrigin, viewForward, viewRight, viewUp,
+	fovx, aspectRatio, 2.0, 16.0, 255, 0, 0, false, 5.0 );
 ```
 ________________________________
 
@@ -1530,6 +1574,17 @@ void VS::ComputeCameraVariables( Vector vecOrigin, Vector pVecForward, Vector pV
 Compute camera matrix.
 
 This returns the inverted inverse camera matrix to simplify its local usage - _technically_ it's not the camera matrix. This may have unwanted effects if not expected, but for the purposes of its usage here, it is fine.
+
+NOTE: In CS:GO, view render origin is offset from the eye position (origin+viewoffset). Use the following conversion to get more precision:
+
+```cs
+function MainViewOrigin()
+{
+	local viewOrigin = player.EyePosition();
+	viewOrigin.z += 0.062561;
+	return viewOrigin;
+}
+```
 ________________________________
 
 <a name="f_CalcFovY"></a>

@@ -601,12 +601,10 @@ function VS::AngleVectors( angle, forward = _VEC, right = null, up = null ) : (s
 	local sr, cr,
 
 		yr = DEG2RAD*angle.y,
-		sy = sin(yr),
-		cy = cos(yr),
+		sy = sin(yr), cy = cos(yr),
 
 		pr = DEG2RAD*angle.x,
-		sp = sin(pr),
-		cp = cos(pr);
+		sp = sin(pr), cp = cos(pr);
 
 	if ( angle.z )
 	{
@@ -2071,16 +2069,12 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, qt ) : (Quaternion, QuaternionS
 			local sQ12w = Q1.w - Q2.w;
 			local LD12 = sQ12x*sQ12x + sQ12y*sQ12y + sQ12z*sQ12z + sQ12w*sQ12w;
 
-			local SQ2;
+			local SQ2 = Q2;
 			// Control1 = XMVectorLess(LS12, LD12);
 			// SQ2 = XMVectorSelect(Q2, XMVectorNegate(Q2), Control1);
 			if ( LS12 < LD12 )
 			{
 				SQ2 = Quaternion( -Q2.x, -Q2.y, -Q2.z, -Q2.w );
-			}
-			else
-			{
-				SQ2 = Q2;
 			};
 
 		// QuaternionAlign( Q0, Q1 )
@@ -2098,16 +2092,12 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, qt ) : (Quaternion, QuaternionS
 			local sQ01w = Q0.w - Q1.w;
 			local LD01 = sQ01x*sQ01x + sQ01y*sQ01y + sQ01z*sQ01z + sQ01w*sQ01w;
 
-			local SQ0;
+			local SQ0 = Q0;
 			// Control0 = XMVectorLess(LS01, LD01);
 			// SQ0 = XMVectorSelect(Q0, XMVectorNegate(Q0), Control0);
 			if ( LS01 < LD01 )
 			{
 				SQ0 = Quaternion( -Q0.x, -Q0.y, -Q0.z, -Q0.w );
-			}
-			else
-			{
-				SQ0 = Q0;
 			};
 
 		// QuaternionAlign( SQ2, Q3 )
@@ -2125,16 +2115,12 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, qt ) : (Quaternion, QuaternionS
 			local sQ23w = SQ2.w - Q3.w;
 			local LD23 = sQ23x*sQ23x + sQ23y*sQ23y + sQ23z*sQ23z + sQ23w*sQ23w;
 
-			local SQ3;
+			local SQ3 = Q3;
 			// Control2 = XMVectorLess(LS23, LD23);
 			// SQ3 = XMVectorSelect(Q3, XMVectorNegate(Q3), Control2);
 			if ( LS23 < LD23 )
 			{
 				SQ3 = Quaternion( -Q3.x, -Q3.y, -Q3.z, -Q3.w );
-			}
-			else
-			{
-				SQ3 = Q3;
 			};
 
 		// InvQ1 = XMQuaternionInverse(Q1);
@@ -2788,19 +2774,18 @@ function VS::MatrixInvert( in1, out )
 	local tmp2 = in1[M_23];
 
 	// -DotProduct( tmp, out[0] );
-	out[M_03] = -(tmp0*out[M_00] + tmp1*out[M_01] + tmp2*out[M_02]);
-	out[M_13] = -(tmp0*out[M_10] + tmp1*out[M_11] + tmp2*out[M_12]);
-	out[M_23] = -(tmp0*out[M_20] + tmp1*out[M_21] + tmp2*out[M_22]);
+	out[M_03] = -(tmp0 * out[M_00] + tmp1 * out[M_01] + tmp2 * out[M_02]);
+	out[M_13] = -(tmp0 * out[M_10] + tmp1 * out[M_11] + tmp2 * out[M_12]);
+	out[M_23] = -(tmp0 * out[M_20] + tmp1 * out[M_21] + tmp2 * out[M_22]);
 }
 
 //-----------------------------------------------------------------------------
 // Inverts any matrix at all
 //-----------------------------------------------------------------------------
-function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
+function VS::MatrixInverseGeneral( src, dst ) : ( array )
 {
 	// [4][8]
 	local mat = [ array(8, 0.0), array(8, 0.0), array(8, 0.0), array(8, 0.0) ];
-
 	local rowMap = [0, 1, 2, 3];
 
 	// How it's done.
@@ -2814,14 +2799,14 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 	// Setup AI
 	for ( local i = 0; i < 4; ++i )
 	{
-		local bs = 4*i;
+		local ii = 4*i;
 		// local pIn = src[i];
 		local pOut = mat[i];
 
-		pOut[0] = src[bs    ];
-		pOut[1] = src[bs + 1];
-		pOut[2] = src[bs + 2];
-		pOut[3] = src[bs + 3];
+		pOut[0] = src[ii    ];
+		pOut[1] = src[ii + 1];
+		pOut[2] = src[ii + 2];
+		pOut[3] = src[ii + 3];
 		pOut[4] =
 		pOut[5] =
 		pOut[6] =
@@ -2843,7 +2828,10 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 		local iLargest = 0xFFFFFFFF;
 		for ( local iTest = iRow; iTest < 4; ++iTest )
 		{
-			local fTest = fabs( mat[rowMap[iTest]][iRow] );
+			local fTest = mat[rowMap[iTest]][iRow];
+			if ( 0.0 > fTest )
+				fTest = -fTest;
+
 			if (fTest > fLargest)
 			{
 				iLargest = iTest;
@@ -2877,22 +2865,22 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 		// Eliminate this element from the other rows using operation 2.
 		for ( local i = 0; i < 4; ++i )
 		{
-			if (i == iRow)
-				continue;
+			if ( i != iRow )
+			{
+				local pScaleRow = mat[rowMap[i]];
 
-			local pScaleRow = mat[rowMap[i]];
-
-			// Multiply this row by -(iRow*the element).
-			mul = pScaleRow[iRow];
-				pScaleRow[0] -= pRow[0] * mul;
-				pScaleRow[1] -= pRow[1] * mul;
-				pScaleRow[2] -= pRow[2] * mul;
-				pScaleRow[3] -= pRow[3] * mul;
-				pScaleRow[4] -= pRow[4] * mul;
-				pScaleRow[5] -= pRow[5] * mul;
-				pScaleRow[6] -= pRow[6] * mul;
-				pScaleRow[7] -= pRow[7] * mul;
-			pScaleRow[iRow] = 0.0; // Preserve accuracy...
+				// Multiply this row by -(iRow*the element).
+				mul = pScaleRow[iRow];
+					pScaleRow[0] -= pRow[0] * mul;
+					pScaleRow[1] -= pRow[1] * mul;
+					pScaleRow[2] -= pRow[2] * mul;
+					pScaleRow[3] -= pRow[3] * mul;
+					pScaleRow[4] -= pRow[4] * mul;
+					pScaleRow[5] -= pRow[5] * mul;
+					pScaleRow[6] -= pRow[6] * mul;
+					pScaleRow[7] -= pRow[7] * mul;
+				pScaleRow[iRow] = 0.0; // Preserve accuracy...
+			}
 		}
 	}
 
@@ -2902,12 +2890,12 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 	for ( local i = 0; i < 4; ++i )
 	{
 		local pIn = mat[rowMap[i]];
-		local bs = 4*i;
+		local ii = 4*i;
 		// local pOut = dst[i];
-			dst[bs    ] = pIn[4];
-			dst[bs + 1] = pIn[5];
-			dst[bs + 2] = pIn[6];
-			dst[bs + 3] = pIn[7];
+			dst[ii    ] = pIn[4];
+			dst[ii + 1] = pIn[5];
+			dst[ii + 2] = pIn[6];
+			dst[ii + 3] = pIn[7];
 	}
 
 	return true;
@@ -2918,24 +2906,10 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array, fabs )
 //-----------------------------------------------------------------------------
 function VS::MatrixInverseTR( src, dst )
 {
-	src = src[0];
-	dst = dst[0];
-
-	// Transpose the upper 3x3.
-	dst[M_00] = src[M_00];  dst[M_01] = src[M_10]; dst[M_02] = src[M_20];
-	dst[M_10] = src[M_01];  dst[M_11] = src[M_11]; dst[M_12] = src[M_21];
-	dst[M_20] = src[M_02];  dst[M_21] = src[M_12]; dst[M_22] = src[M_22];
-
-	// Transform the translation.
-	// Vector vTrans( -src.m[0][3], -src.m[1][3], -src.m[2][3] );
-	// Vector3DMultiply( dst, vTrans, vNewTrans );
-	// MatrixSetColumn( dst, 3, vNewTrans );
-	dst[M_03] = -( dst[M_00] * src[M_03] + dst[M_01] * src[M_13] + dst[M_02] * src[M_23] );
-	dst[M_13] = -( dst[M_10] * src[M_03] + dst[M_11] * src[M_13] + dst[M_12] * src[M_23] );
-	dst[M_23] = -( dst[M_20] * src[M_03] + dst[M_21] * src[M_13] + dst[M_22] * src[M_23] );
-
-	dst[M_30] = dst[M_31] = dst[M_32] = 0.0;
-	dst[M_33] = 1.0;
+	local m = dst[0];
+	m[M_30] = m[M_31] = m[M_32] = 0.0;
+	m[M_33] = 1.0;
+	return MatrixInvert( src, dst );
 }
 
 /*
@@ -3823,106 +3797,6 @@ function VS::ComputeProjectionMatrix( pCameraToProjection, flZNear, flZFar, flFO
 	m[2][2] = flZFar / ( flZNear - flZFar );
 	m[3][2] = -1.0;
 	m[2][3] = flZNear * flZFar / ( flZNear - flZFar );
-}
-*/
-
-function VS::ComputeViewMatrix( pWorldToView, origin, forward, left, up ) : ( Vector, matrix3x4_t, VMatrix )
-{
-	local transform = matrix3x4_t();
-
-	// AngleMatrix( angles, origin, transform );
-	MatrixSetColumn( forward, 0, transform );
-	MatrixSetColumn( left, 1, transform );
-	MatrixSetColumn( up, 2, transform );
-	MatrixSetColumn( origin, 3, transform );
-
-	local matRotate = VMatrix();
-	MatrixCopy( transform, matRotate );
-
-	local matRotateZ = VMatrix();
-	MatrixBuildRotationAboutAxis( Vector(0,0,1), -90, matRotateZ );
-	MatrixMultiply( matRotate, matRotateZ, matRotate );
-
-	local matRotateX = VMatrix();
-	MatrixBuildRotationAboutAxis( Vector(1,0,0), 90, matRotateX );
-	MatrixMultiply( matRotate, matRotateX, matRotate );
-
-	MatrixCopy( matRotate, transform );
-
-	// local invTransform = matrix3x4_t();
-	MatrixInvert( transform, transform );
-
-	MatrixCopy( transform, pWorldToView );
-}
-
-/*
-function VS::ComputeViewMatrix( pWorldToView, vecOrigin, vecForward, vecLeft, vecUp ) : ( matrix3x4_t )
-{
-	local pCameraToWorld = matrix3x4_t();
-	MatrixSetColumn( vecForward, 0, pCameraToWorld );
-	MatrixSetColumn( vecLeft, 1, pCameraToWorld );
-	MatrixSetColumn( vecUp, 2, pCameraToWorld );
-	MatrixSetColumn( vecOrigin, 3, pCameraToWorld );
-
-	local g_ViewAlignMatrix = matrix3x4_t();
-	local m = g_ViewAlignMatrix.m;
-	m[0][0] = 0.0;  m[0][1] = 0.0; m[0][2] = -1.0; m[0][3] = 0.0;
-	m[1][0] = -1.0; m[1][1] = 0.0; m[1][2] = 0.0;  m[1][3] = 0.0;
-	m[2][0] = 0.0;  m[2][1] = 1.0; m[2][2] = 0.0;  m[2][3] = 0.0;
-
-	local tmp = matrix3x4_t();
-	ConcatTransforms( pCameraToWorld, g_ViewAlignMatrix, tmp );
-	MatrixInvert( tmp, pWorldToView );
-}
-
-function VS::ComputeViewMatrix( pViewMatrix, matGameCustom )
-{
-	pViewMatrix = pViewMatrix.m;
-	matGameCustom = matGameCustom.m;
-
-	pViewMatrix[0][0] = -matGameCustom[1][0];
-	pViewMatrix[0][1] = -matGameCustom[1][1];
-	pViewMatrix[0][2] = -matGameCustom[1][2];
-	pViewMatrix[0][3] = -matGameCustom[1][3];
-
-	pViewMatrix[1][0] = matGameCustom[2][0];
-	pViewMatrix[1][1] = matGameCustom[2][1];
-	pViewMatrix[1][2] = matGameCustom[2][2];
-	pViewMatrix[1][3] = matGameCustom[2][3];
-
-	pViewMatrix[2][0] = -matGameCustom[0][0];
-	pViewMatrix[2][1] = -matGameCustom[0][1];
-	pViewMatrix[2][2] = -matGameCustom[0][2];
-	pViewMatrix[2][3] = -matGameCustom[0][3];
-
-	pViewMatrix[3][0] = pViewMatrix[3][1] = pViewMatrix[3][2] = 0.0;
-	pViewMatrix[3][3] = 1.0;
-}
-
-function VS::ViewMatrixRH( vEye, vForward, vUp, mOut )
-{
-	local zAxis = vEye - vForward;
-	local xAxis = vUp.Cross( zAxis );
-	local yAxis = zAxis.Cross( xAxis );
-	xAxis.Norm();
-	yAxis.Norm();
-	zAxis.Norm();
-	local flDotX = -xAxis.Dot( vEye );
-	local flDotY = -yAxis.Dot( vEye );
-	local flDotZ = -zAxis.Dot( vEye );
-
-	local m = mOut.m;
-
-	// xAxis.x, yAxis.x, zAxis.x, 0
-	// xAxis.y, yAxis.y, zAxis.y, 0
-	// xAxis.z, yAxis.z, zAxis.z, 0
-	// flDotX,  flDotY,  flDotZ,  1
-
-	// Transpose
-	m[0][0] = xAxis.x; m[1][0] = xAxis.y; m[2][0] = xAxis.z; m[3][0] = flDotX;
-	m[0][1] = yAxis.x; m[1][1] = yAxis.y; m[2][1] = yAxis.z; m[3][1] = flDotY;
-	m[0][2] = zAxis.x; m[1][2] = zAxis.y; m[2][2] = zAxis.z; m[3][2] = flDotZ;
-	m[0][3] = 0.0;     m[1][3] = 0.0;     m[2][3] = 0.0;     m[3][3] = 1.0;
 }
 */
 
@@ -5417,9 +5291,9 @@ function VS::IntersectRayWithTriangle( ray, v1, v2, v3, oneSided ) : (ComputeBox
 
 	// Compute the distance along the ray direction that we need to fudge
 	// when using swept boxes
-	local boxt;
-	if ( ray.m_IsRay ) boxt = 1.e-3;
-	else boxt = ComputeBoxOffset( ray );
+	local boxt = 1.e-3;
+	if ( !ray.m_IsRay )
+		boxt = ComputeBoxOffset( ray );
 	local t = orgCrossEdge1.Dot( edge2 ) * denom;
 	if ( ( -boxt > t ) || ( t > 1.0 + boxt ) )
 		return 0xFFFFFFFF;
@@ -5474,9 +5348,9 @@ function VS::ComputeIntersectionBarycentricCoordinates( ray, v1, v2, v3, uvt ) :
 	{
 		// Compute the distance along the ray direction that we need to fudge
 		// when using swept boxes
-		local boxt;
-		if ( ray.m_IsRay ) boxt = 1.e-3;
-		else boxt = ComputeBoxOffset( ray );
+		local boxt = 1.e-3;
+		if ( !ray.m_IsRay )
+			boxt = ComputeBoxOffset( ray );
 		local t = uvt[2] = orgCrossEdge1.Dot( edge2 ) * denom;
 		if ( ( -boxt > t ) || ( t > 1.0 + boxt ) )
 			return false;

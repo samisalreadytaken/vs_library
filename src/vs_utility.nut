@@ -549,13 +549,6 @@ class VS.TraceLine
 		}
 	}
 
-	function _cmp(d) { if ( fraction < d.fraction ) return -1; if ( fraction > d.fraction ) return 1; return 0; }
-	function _add(d) { return fraction + d.fraction; }
-	function _sub(d) { return fraction - d.fraction; }
-	function _mul(d) { return fraction * d.fraction; }
-	function _div(d) { return fraction / d.fraction; }
-	function _modulo(d) { return fraction % d.fraction; }
-	function _unm() { return -fraction; }
 	function _typeof() { return "trace_t"; }
 
 	startpos = null;

@@ -1,7 +1,7 @@
 # VScript Library
 [![ver][]](CHANGELOG.txt)
 
-[ver]: https://img.shields.io/badge/vs__library-v2.43.17-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.43.18-informational
 
 High-performance vscript libraries; written mainly for CS:GO, compatible with Portal 2.
 
@@ -43,17 +43,20 @@ VS.EventQueue.CancelEventsByInput( fn2 );
 ```
 
 ### Extended player
-Use `ToExtendedPlayer()` to access some of the missing player functions in CSGO such as `EyeAngles()` and `GetPlayerName()`. See the [documentation](/Documentation.md#f_ToExtendedPlayer) for details.
+Use `ToExtendedPlayer()` to access some of the missing player functions in CSGO such as `EyeAngles()`, `GetPlayerName()` and `GetFOV()`. See the [documentation](/Documentation.md#f_ToExtendedPlayer) for details.
 
 ```cs
 local player = ToExtendedPlayer( VS.GetPlayerByIndex(1) );
 
 print(format( "Draw view frustum of [%s] %s\n", player.GetNetworkIDString(), player.GetPlayerName() ));
 
-VS.DrawViewFrustum( player.EyePosition(), player.EyeForward(), player.EyeRight(), player.EyeUp(),
-	90.0, 1.7778, 2.0, 16.0, 255, 0, 0, false, 5.0 );
+local aspectRatio = 16.0/9.0;
 
-DebugDrawBoxAngles( player.EyePosition(), Vector(2,-1,-1), Vector(32,1,1), player.EyeAngles(), 0, 255, 0, 16, 5.0 );
+VS.DrawViewFrustum( player.EyePosition(), player.EyeForward(), player.EyeRight(), player.EyeUp(),
+	VS.CalcFovX( player.GetFOV(), aspectRatio * (3.0/4.0) ), aspectRatio,
+	2.0, 16.0, 255, 0, 0, false, 5.0 );
+
+DebugDrawBoxAngles( player.EyePosition(), Vector(2,-0.5,-0.5), Vector(16,0.5,0.5), player.EyeAngles(), 0, 255, 0, 16, 5.0 );
 ```
 
 ### Automatic player info acquisition
