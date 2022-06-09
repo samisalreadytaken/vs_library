@@ -1,7 +1,7 @@
 # VScript Library
 [![ver][]](CHANGELOG.txt)
 
-[ver]: https://img.shields.io/badge/vs__library-v2.43.18-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.43.19-informational
 
 High-performance vscript libraries; written mainly for CS:GO, compatible with Portal 2.
 
