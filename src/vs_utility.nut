@@ -376,7 +376,8 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 					if ( !cb.len() )
 					{
-						delete sc.m_pCallbacks[szInput];
+						// Let the output functions keep reference to user callbacks
+						// delete sc.m_pCallbacks[szInput];
 
 						if ( szInput != "PlayerOff" )
 						{
@@ -640,18 +641,22 @@ function VS::TraceLine::GetNormal() : ( Vector, CTrace )
 	if ( normal )
 		return normal;
 
-	local up = Vector( 0.0, 0.0, 0.1 );
+	local up = Vector( 0.0, 0.05, 0.1 );
 	local v0 = startpos;
 	local dt = endpos - v0;
 	dt.Norm();
+
 	local v1 = v0 + dt.Cross(up);
 	local v2 = v0 + up;
-	local v3 = GetPos();
+	v0 = GetPos();
 	dt = dt * MAX_TRACE_LENGTH;
-	local vn = normal = ( v3 - CTrace( v1, v1 + dt, ignore, mask ).GetPos() ).Cross(
-		v3 - CTrace( v2, v2 + dt, ignore, mask ).GetPos() );
-	vn.Norm();
-	return vn;
+
+	v1 = v0 - CTrace( v1, v1 + dt, ignore, mask ).GetPos();
+	v2 = v0 - CTrace( v2, v2 + dt, ignore, mask ).GetPos();
+	up = normal = v1.Cross( v2 );
+	up.Norm();
+
+	return up;
 }
 
 

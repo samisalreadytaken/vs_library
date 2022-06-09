@@ -587,7 +587,7 @@ VS.Events.DumpListeners <- function()
 				{
 					if ( p && (typeof p == "instance") && p.IsValid() )
 					{
-						Msg(Fmt( "  %-32.32s  | %-32.64s |  '%.64s'\n", eventname, context, p.GetName() ));
+						Msg(Fmt( "  %-32.32s  | %-32.64s |  %.64s\n", eventname, context, p.GetName() ));
 					}
 					else
 					{
