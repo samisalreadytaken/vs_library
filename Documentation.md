@@ -211,7 +211,7 @@ IncludeScript("myscript")
 [`VS.IRotateAABB()`](#f_IRotateAABB)  
 [`VS.GetBoxVertices()`](#f_GetBoxVertices)  
 [`VS.MatrixBuildPerspective()`](#f_MatrixBuildPerspective)  
-[`VS.ScreenToWorldMatrix()`](#f_ScreenToWorldMatrix)  
+[`VS.WorldToScreenMatrix()`](#f_WorldToScreenMatrix)  
 [`VS.ScreenToWorld()`](#f_ScreenToWorld)  
 [`VS.ComputeCameraVariables()`](#f_ComputeCameraVariables)  
 [`VS.CalcFovY()`](#f_CalcFovY)  
@@ -1478,11 +1478,11 @@ Y range: [0..1]
 Z range: [0..1]
 ________________________________
 
-<a name="f_ScreenToWorldMatrix"></a>
+<a name="f_WorldToScreenMatrix"></a>
 ```cpp
-void VS::ScreenToWorldMatrix( VMatrix& pOut, Vector origin, Vector forward, Vector right, Vector up, float fovX, float flAspect, float zNear, float zFar )
+void VS::WorldToScreenMatrix( VMatrix& pOut, Vector origin, Vector forward, Vector right, Vector up, float fovX, float flAspect, float zNear, float zFar )
 ```
-Example detect if a position is on a player's screen:
+Example detect if a world position is on a player's screen:
 
 ```cs
 local targetPos = Vector();
@@ -1497,7 +1497,7 @@ local viewUp = player.EyeUp();
 local fovx = VS.CalcFovX( player.GetFOV(), aspectRatio * (3.0/4.0) );
 
 local worldToScreen = VMatrix();
-VS.ScreenToWorldMatrix(
+VS.WorldToScreenMatrix(
 	worldToScreen,
 	viewOrigin,
 	viewForward,
@@ -1507,7 +1507,6 @@ VS.ScreenToWorldMatrix(
 	aspectRatio,
 	8.0,
 	MAX_COORD_FLOAT );
-VS.MatrixInverseGeneral( worldToScreen, worldToScreen );
 
 local screen = Vector();
 VS.Vector3DMultiplyPositionProjective( worldToScreen, targetPos, screen );
@@ -1546,7 +1545,7 @@ local fovx = VS.CalcFovX( player.GetFOV(), aspectRatio * (3.0/4.0) );
 
 local mat = VMatrix();
 
-VS.ScreenToWorldMatrix(
+VS.WorldToScreenMatrix(
 	mat,
 	viewOrigin,
 	viewForward,
@@ -1556,6 +1555,8 @@ VS.ScreenToWorldMatrix(
 	aspectRatio,
 	1.0,
 	16.0 );
+
+VS.MatrixInverseGeneral( mat, mat );
 
 local worldPos = VS.ScreenToWorld( x, y, mat );
 

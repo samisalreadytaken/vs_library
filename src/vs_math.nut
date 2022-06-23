@@ -3675,19 +3675,18 @@ function VS::GetBoxVertices( origin, angles, mins, maxs, pVerts )
 //-----------------------------------------------------------------------------
 function VS::MatrixBuildPerspective( dst, fovX, flAspect, zNear, zFar ) : ( tan )
 {
+	local width = -0.5 / tan( fovX * DEG2RADDIV2 );
+	local range = zFar / ( zNear - zFar );
+
 	dst = dst[0];
-	// memset( dst.Base(), 0, sizeof( dst ) );
+
 	            dst[M_01] =             dst[M_03] =
 	dst[M_10] =                         dst[M_13] =
 	dst[M_20] = dst[M_21] =
 	dst[M_30] = dst[M_31] =             dst[M_33] = 0.0;
 
-	local invW = -0.5 / tan( fovX * DEG2RADDIV2 );
-	local range = zFar / ( zNear - zFar );
-
-	// create the final matrix directly
-	dst[M_00] = invW;
-	dst[M_11] = invW * flAspect;
+	dst[M_00] = width;
+	dst[M_11] = width * flAspect;
 	dst[M_02] = dst[M_12] = 0.5;
 	dst[M_22] = -range;
 	dst[M_32] = 1.0;
@@ -3752,51 +3751,28 @@ function VS::MatrixBuildPerspective( dst, fovX, flAspect, zNear, zFar ) : ( tan 
 */
 }
 
-/*
-function VS::MatrixBuildPerspectiveX( dst, flFovX, flAspect, flZNear, flZFar )
+function VS::MatrixBuildPerspectiveX( dst, flFovX, flAspect, flZNear, flZFar ) : ( tan )
 {
-	local flWidthScale = 1.0 / tan( flFovX * DEG2RAD );
-	local flHeightScale = flAspect * flWidthScale;
+	local width = 1.0 / tan( flFovX * DEG2RAD );
+	local range = flZFar / ( flZNear - flZFar );
 
-	dst = dst.m;
+	dst = dst[0];
 
-	dst[0][0] = flWidthScale;
-	dst[0][1] = 0.0;
-	dst[0][2] = 0.0;
-	dst[0][3] = 0.0;
+				dst[M_01] = dst[M_02] = dst[M_03] =
+	dst[M_10] =             dst[M_12] = dst[M_13] =
+	dst[M_20] = dst[M_21] =
+	dst[M_30] = dst[M_31] =             dst[M_33] = 0.0;
 
-	dst[1][0] = 0.0;
-	dst[1][1] = flHeightScale;
-	dst[1][2] = 0.0;
-	dst[1][3] = 0.0;
-
-	local flRange = flZFar / ( flZNear - flZFar );
-	dst[2][0] = 0.0;
-	dst[2][1] = 0.0;
-	dst[2][2] = flRange;
-	dst[2][3] = flZNear * flRange;
-
-	dst[3][0] = 0.0;
-	dst[3][1] = 0.0;
-	dst[3][2] = -1.0;
-	dst[3][3] = 0.0;
+	dst[M_00] = width;
+	dst[M_11] = width * flAspect;
+	dst[M_22] = range;
+	dst[M_32] = -1.0;
+	dst[M_23] = flZNear * range;
 }
-
-function VS::ComputeProjectionMatrix( pCameraToProjection, flZNear, flZFar, flFOVX, flAspect )
+/*
+function VS::ComputeProjectionMatrix( dst, flZNear, flZFar, flFovX, flAspect )
 {
-	// memset( pCameraToProjection, 0, sizeof( VMatrix ) );
-	local m = pCameraToProjection.m;
-	MatrixScaleByZero( pCameraToProjection );
-	m[3][0] = m[3][1] = m[3][2] = m[3][3] = 0.0;
-
-	local halfWidth = tan( flFOVX * DEG2RAD * 0.5 );
-	local halfHeight = halfWidth / flAspect;
-
-	m[0][0]  = 1.0 / halfWidth;
-	m[1][1]  = 1.0 / halfHeight;
-	m[2][2] = flZFar / ( flZNear - flZFar );
-	m[3][2] = -1.0;
-	m[2][3] = flZNear * flZFar / ( flZNear - flZFar );
+	return MatrixBuildPerspectiveX( dst, flFovX * 0.5, flAspect, flZNear, flZFar );
 }
 */
 
@@ -3825,48 +3801,40 @@ function VS::ComputeCameraVariables( vecOrigin, pVecForward, pVecRight, pVecUp, 
 }
 
 
-function VS::ScreenToWorldMatrix( pOut, origin, forward, right, up, fov, flAspect, zNear, zFar )
+function VS::WorldToScreenMatrix( pOut, origin, forward, right, up, fov, flAspect, zNear, zFar )
 	: (VMatrix)
 {
 	local viewToProj = VMatrix();
-	MatrixBuildPerspective( viewToProj, fov, flAspect, zNear, zFar );
-
 	local worldToView = VMatrix();
-	ComputeCameraVariables(
-		origin,
-		forward,
-		right,
-		up,
-		worldToView );
+
+	MatrixBuildPerspective( viewToProj, fov, flAspect, zNear, zFar );
+	ComputeCameraVariables( origin, forward, right, up, worldToView );
 
 	local worldToProj = viewToProj; // VMatrix();
 	MatrixMultiply( viewToProj, worldToView, worldToProj );
 
-	local screenToWorld = worldToView; // VMatrix();
-	MatrixInverseGeneral( worldToProj, screenToWorld );
-
 	pOut = pOut[0];
-	screenToWorld = screenToWorld[0];
+	worldToProj = worldToProj[0];
 
-	pOut[M_00] = screenToWorld[M_00];
-	pOut[M_01] = screenToWorld[M_01];
-	pOut[M_02] = screenToWorld[M_02];
-	pOut[M_03] = screenToWorld[M_03];
+	pOut[M_00] = worldToProj[M_00];
+	pOut[M_01] = worldToProj[M_01];
+	pOut[M_02] = worldToProj[M_02];
+	pOut[M_03] = worldToProj[M_03];
 
-	pOut[M_10] = screenToWorld[M_10];
-	pOut[M_11] = screenToWorld[M_11];
-	pOut[M_12] = screenToWorld[M_12];
-	pOut[M_13] = screenToWorld[M_13];
+	pOut[M_10] = worldToProj[M_10];
+	pOut[M_11] = worldToProj[M_11];
+	pOut[M_12] = worldToProj[M_12];
+	pOut[M_13] = worldToProj[M_13];
 
-	pOut[M_20] = screenToWorld[M_20];
-	pOut[M_21] = screenToWorld[M_21];
-	pOut[M_22] = screenToWorld[M_22];
-	pOut[M_23] = screenToWorld[M_23];
+	pOut[M_20] = worldToProj[M_20];
+	pOut[M_21] = worldToProj[M_21];
+	pOut[M_22] = worldToProj[M_22];
+	pOut[M_23] = worldToProj[M_23];
 
-	pOut[M_30] = screenToWorld[M_30];
-	pOut[M_31] = screenToWorld[M_31];
-	pOut[M_32] = screenToWorld[M_32];
-	pOut[M_33] = screenToWorld[M_33];
+	pOut[M_30] = worldToProj[M_30];
+	pOut[M_31] = worldToProj[M_31];
+	pOut[M_32] = worldToProj[M_32];
+	pOut[M_33] = worldToProj[M_33];
 }
 
 local Vector3DMultiplyPositionProjective = VS.Vector3DMultiplyPositionProjective;
@@ -3877,7 +3845,14 @@ function VS::ScreenToWorld( x, y, screenToWorld, pOut = _VEC ) : (Vector, Vector
 	Vector3DMultiplyPositionProjective( screenToWorld, vecScreen, pOut );
 	return pOut;
 }
-
+/*
+function VS::WorldToScreen( vecPos, worldToScreen, pOut = _VEC ) : (Vector, Vector3DMultiplyPositionProjective)
+{
+	Vector3DMultiplyPositionProjective( worldToScreen, vecPos, pOut );
+	pOut.y = 1.0 - pOut.y;
+	return pOut;
+}
+*/
 
 //-----------------------------------------------------------------------------
 // Computes Y fov from an X fov and a screen aspect ratio
@@ -3919,6 +3894,7 @@ local initFrustumDraw = function()
 	local v101 = Vector( 1.0, 0.0, 1.0 );
 	local v111 = Vector( 1.0, 1.0, 1.0 );
 	local v110 = Vector( 1.0, 1.0, 0.0 );
+
 	local frustum = [
 		v000, v001,
 		v001, v011,
@@ -3951,14 +3927,16 @@ local initFrustumDraw = function()
 	}
 
 	local DrawFrustum = VS.DrawFrustum;
-	local ScreenToWorldMatrix = VS.ScreenToWorldMatrix;
+	local WorldToScreenMatrix = VS.WorldToScreenMatrix;
+	local MatrixInverseGeneral = VS.MatrixInverseGeneral;
 
 	function VS::DrawViewFrustum( vecOrigin, vecForward, vecRight, vecUp,
 		flFovX, flAspect, zNear, zFar, r, g, b, z, time ) :
-			( VMatrix, ScreenToWorldMatrix, DrawFrustum )
+			( VMatrix, WorldToScreenMatrix, MatrixInverseGeneral, DrawFrustum )
 	{
 		local mat = VMatrix();
-		ScreenToWorldMatrix( mat, vecOrigin, vecForward, vecRight, vecUp, flFovX, flAspect, zNear, zFar );
+		WorldToScreenMatrix( mat, vecOrigin, vecForward, vecRight, vecUp, flFovX, flAspect, zNear, zFar );
+		MatrixInverseGeneral( mat, mat );
 		return DrawFrustum( mat, r, g, b, z, time );
 	}
 }
@@ -5170,19 +5148,19 @@ local Ray_t = class
 		m_Delta = end - start;
 		m_IsSwept = ( m_Delta.LengthSqr() != 0.0 );
 
-		if ( !mins )
-		{
-			m_Extents = Vector();
-			m_IsRay = true;
-			m_StartOffset = Vector();
-			m_Start = start * 1.0;
-		}
-		else
+		if ( mins )
 		{
 			m_Extents = (maxs - mins) * 0.5;
 			m_IsRay = ( m_Extents.LengthSqr() < 1.e-6 );
 			m_StartOffset = (mins + maxs) * -0.5;
 			m_Start = start - m_StartOffset;
+		}
+		else
+		{
+			m_Extents = Vector();
+			m_IsRay = true;
+			m_StartOffset = Vector();
+			m_Start = start * 1.0;
 		};
 	}
 }

@@ -3,6 +3,12 @@
 
 --------------------------------
 
+2022-06-23 [v2.43.20]
+- Added VS.WorldToScreenMatrix
+- Removed VS.ScreenToWorldMatrix
+	To get the ScreenToWorld matrix, invert the WorldToScreen matrix using VS.MatrixInverseGeneral
+	Note that VS.ScreenToWorld still requires ScreenToWorld matrix input.
+
 2022-06-09 [v2.43.19]
 - Fixed vertical VS.TraceLine.GetNormal calculations
 - Fixed CExtendedPlayer::SetInputCallback callback unregistration
