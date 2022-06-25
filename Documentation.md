@@ -211,8 +211,10 @@ IncludeScript("myscript")
 [`VS.IRotateAABB()`](#f_IRotateAABB)  
 [`VS.GetBoxVertices()`](#f_GetBoxVertices)  
 [`VS.MatrixBuildPerspective()`](#f_MatrixBuildPerspective)  
+[`VS.MatrixBuildPerspectiveX()`](#f_MatrixBuildPerspectiveX)  
 [`VS.WorldToScreenMatrix()`](#f_WorldToScreenMatrix)  
 [`VS.ScreenToWorld()`](#f_ScreenToWorld)  
+[`VS.WorldToScreen()`](#f_WorldToScreen)  
 [`VS.ComputeCameraVariables()`](#f_ComputeCameraVariables)  
 [`VS.CalcFovY()`](#f_CalcFovY)  
 [`VS.CalcFovX()`](#f_CalcFovX)  
@@ -1478,10 +1480,68 @@ Y range: [0..1]
 Z range: [0..1]
 ________________________________
 
+<a name="f_MatrixBuildPerspectiveX"></a>
+```cpp
+void VS::MatrixBuildPerspectiveX( VMatrix& dst, float fovX, float flAspect, float zNear, float zFar )
+```
+________________________________
+
 <a name="f_WorldToScreenMatrix"></a>
 ```cpp
 void VS::WorldToScreenMatrix( VMatrix& pOut, Vector origin, Vector forward, Vector right, Vector up, float fovX, float flAspect, float zNear, float zFar )
 ```
+range [-1,1]
+________________________________
+
+<a name="f_ScreenToWorld"></a>
+```cpp
+Vector VS::ScreenToWorld( float x, float y, VMatrix screenToWorld, Vector &pOut = _VEC )
+```
+Input screen position in [0,1] range.
+
+```cs
+local x = 0.75;
+local y = 0.25;
+
+local viewOrigin = player.EyePosition();
+local viewAngles = player.EyeAngles();
+local viewForward = player.EyeForward();
+local viewRight = player.EyeRight();
+local viewUp = player.EyeUp();
+local aspectRatio = 16.0/9.0;
+local fovx = VS.CalcFovX( player.GetFOV(), aspectRatio * (3.0/4.0) );
+
+local screenToWorld = VMatrix();
+
+VS.WorldToScreenMatrix(
+	screenToWorld,
+	viewOrigin,
+	viewForward,
+	viewRight,
+	viewUp,
+	fovx,
+	aspectRatio,
+	1.0,
+	16.0 );
+
+VS.MatrixInverseGeneral( screenToWorld, screenToWorld );
+
+local worldPos = VS.ScreenToWorld( x, y, screenToWorld );
+
+local maxs = Vector( 0.0, 0.5, 0.5 );
+DebugDrawBoxAngles( worldPos, maxs*-1, maxs, viewAngles, 0, 255, 255, 64, 5.0 );
+
+VS.DrawViewFrustum( viewOrigin, viewForward, viewRight, viewUp,
+	fovx, aspectRatio, 2.0, 16.0, 255, 0, 0, false, 5.0 );
+```
+________________________________
+
+<a name="f_WorldToScreen"></a>
+```cpp
+Vector VS::WorldToScreen( Vector worldPos, VMatrix worldToScreen, Vector &pOut = _VEC )
+```
+Returns screen position of a world position in [0,1] range.
+
 Example detect if a world position is on a player's screen:
 
 ```cs
@@ -1508,11 +1568,10 @@ VS.WorldToScreenMatrix(
 	8.0,
 	MAX_COORD_FLOAT );
 
-local screen = Vector();
-VS.Vector3DMultiplyPositionProjective( worldToScreen, targetPos, screen );
+local screen = VS.WorldToScreen( targetPos, worldToScreen );
 
 local x = screen.x;
-local y = 1.0 - screen.y;
+local y = screen.y;
 
 // Target is off screen
 if ( x < 0.0 || x > 1.0 || y < 0.0 || y > 1.0 || screen.z > 1.0 )
@@ -1527,54 +1586,11 @@ else
 ```
 ________________________________
 
-<a name="f_ScreenToWorld"></a>
-```cpp
-Vector VS::ScreenToWorld( float x, float y, VMatrix screenToWorld, Vector &pOut = _VEC )
-```
-```cs
-local x = 0.75;
-local y = 0.25;
-
-local viewOrigin = player.EyePosition();
-local viewAngles = player.EyeAngles();
-local viewForward = player.EyeForward();
-local viewRight = player.EyeRight();
-local viewUp = player.EyeUp();
-local aspectRatio = 16.0/9.0;
-local fovx = VS.CalcFovX( player.GetFOV(), aspectRatio * (3.0/4.0) );
-
-local mat = VMatrix();
-
-VS.WorldToScreenMatrix(
-	mat,
-	viewOrigin,
-	viewForward,
-	viewRight,
-	viewUp,
-	fovx,
-	aspectRatio,
-	1.0,
-	16.0 );
-
-VS.MatrixInverseGeneral( mat, mat );
-
-local worldPos = VS.ScreenToWorld( x, y, mat );
-
-local maxs = Vector( 0.0, 0.5, 0.5 );
-DebugDrawBoxAngles( worldPos, maxs*-1, maxs, viewAngles, 0, 255, 255, 64, 5.0 );
-
-VS.DrawViewFrustum( viewOrigin, viewForward, viewRight, viewUp,
-	fovx, aspectRatio, 2.0, 16.0, 255, 0, 0, false, 5.0 );
-```
-________________________________
-
 <a name="f_ComputeCameraVariables"></a>
 ```cpp
 void VS::ComputeCameraVariables( Vector vecOrigin, Vector pVecForward, Vector pVecRight, Vector pVecUp, VMatrix &pMatCamInverse )
 ```
 Compute camera matrix.
-
-This returns the inverted inverse camera matrix to simplify its local usage - _technically_ it's not the camera matrix. This may have unwanted effects if not expected, but for the purposes of its usage here, it is fine.
 
 NOTE: In CS:GO, view render origin is offset from the eye position (origin+viewoffset). Use the following conversion to get more precision:
 

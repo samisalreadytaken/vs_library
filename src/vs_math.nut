@@ -130,8 +130,8 @@ delete CONST.FLT_MAX_N;
 // I am wary of the uncertain edge cases.
 // For personal uses, use this vec3_t class.
 /*
-// class ::vec3_t extends Vector {}
-// local Vector = vec3_t;
+class ::vec3_t extends ::Vector {}
+local Vector = vec3_t;
 
 Vector.IsValid <- function()
 {
@@ -157,23 +157,17 @@ Vector._div <- function(f)
 
 Vector.Negate <- function()
 {
-	x = -x;
-	y = -y;
-	z = -z;
+	x = -x; y = -y; z = -z;
 }
 
 Vector.Init <- function(X, Y, Z)
 {
-	x = X;
-	y = Y;
-	z = Z;
+	x = X; y = Y; z = Z;
 }
 
 Vector.Copy <- function(v)
 {
-	x = v.x;
-	y = v.y;
-	z = v.z;
+	x = v.x; y = v.y; z = v.z;
 }
 
 Vector.Replicate <- function(f)
@@ -2911,22 +2905,20 @@ function VS::MatrixInverseTR( src, dst )
 	m[M_33] = 1.0;
 	return MatrixInvert( src, dst );
 }
-
 /*
-// matrix, int, vector
 function VS::MatrixRowDotProduct( in1, row, in2 )
 {
-	in1row = in1.m[row];
-	return in1row[0] * in2.x + in1row[1] * in2.y + in1row[2] * in2.z;
+	row = row * 4;
+	in1 = in1[0];
+	return in1[row] * in2.x + in1[row+1] * in2.y + in1[row+2] * in2.z;
 }
 
 function VS::MatrixColumnDotProduct( in1, col, in2 )
 {
-	in1 = in1.m;
-	return in1[0][col] * in2.x + in1[1][col] * in2.y + in1[2][col] * in2.z;
+	in1 = in1[0];
+	return in1[col] * in2.x + in1[4+col] * in2.y + in1[8+col] * in2.z;
 }
 */
-
 function VS::MatrixGetColumn( in1, column, out = _VEC )
 {
 	in1 = in1[0];
@@ -3283,25 +3275,25 @@ function VS::MatrixTranslate( dst, vecTranslation )
 function VS::MatrixBuildRotationAboutAxis( vAxisOfRot, angleDegrees, dst ) : ( sin, cos )
 {
 	angleDegrees = angleDegrees * DEG2RAD;
-	local fSin = sin( angleDegrees );
 	local fCos = cos( angleDegrees );
-
+{
 	local xx = vAxisOfRot.x * vAxisOfRot.x;
 	local yy = vAxisOfRot.y * vAxisOfRot.y;
 	local zz = vAxisOfRot.z * vAxisOfRot.z;
 
 	dst = dst[0];
-
 	dst[M_00] = xx + fCos - xx * fCos;
 	dst[M_11] = yy + fCos - yy * fCos;
 	dst[M_22] = zz + fCos - zz * fCos;
-
+}
+{
 	fCos = 1.0 - fCos;
 
 	local xyc = vAxisOfRot.x * vAxisOfRot.y * fCos;
 	local yzc = vAxisOfRot.y * vAxisOfRot.z * fCos;
 	local xzc = vAxisOfRot.z * vAxisOfRot.x * fCos;
 
+	local fSin = sin( angleDegrees );
 	local xs = vAxisOfRot.x * fSin;
 	local ys = vAxisOfRot.y * fSin;
 	local zs = vAxisOfRot.z * fSin;
@@ -3314,7 +3306,7 @@ function VS::MatrixBuildRotationAboutAxis( vAxisOfRot, angleDegrees, dst ) : ( s
 
 	dst[M_02] = xzc + ys;
 	dst[M_12] = yzc - xs;
-
+}
 	dst[M_03] = dst[M_13] = dst[M_23] = 0.0;
 }
 
@@ -3776,38 +3768,39 @@ function VS::ComputeProjectionMatrix( dst, flZNear, flZFar, flFovX, flAspect )
 }
 */
 
-// NOTE: inverted!
 function VS::ComputeCameraVariables( vecOrigin, pVecForward, pVecRight, pVecUp, pMatCamInverse )
 {
 	pMatCamInverse = pMatCamInverse[0];
 
-	pMatCamInverse[M_00] = -pVecRight.x;
-	pMatCamInverse[M_01] = -pVecRight.y;
-	pMatCamInverse[M_02] = -pVecRight.z;
-	pMatCamInverse[M_03] = pVecRight.Dot( vecOrigin );
+	pMatCamInverse[M_00] = pVecRight.x;
+	pMatCamInverse[M_01] = pVecRight.y;
+	pMatCamInverse[M_02] = pVecRight.z;
+	pMatCamInverse[M_03] = -pVecRight.Dot( vecOrigin );
 
-	pMatCamInverse[M_10] = -pVecUp.x;
-	pMatCamInverse[M_11] = -pVecUp.y;
-	pMatCamInverse[M_12] = -pVecUp.z;
-	pMatCamInverse[M_13] = pVecUp.Dot( vecOrigin );
+	pMatCamInverse[M_10] = pVecUp.x;
+	pMatCamInverse[M_11] = pVecUp.y;
+	pMatCamInverse[M_12] = pVecUp.z;
+	pMatCamInverse[M_13] = -pVecUp.Dot( vecOrigin );
 
-	pMatCamInverse[M_20] = pVecForward.x;
-	pMatCamInverse[M_21] = pVecForward.y;
-	pMatCamInverse[M_22] = pVecForward.z;
-	pMatCamInverse[M_23] = -pVecForward.Dot( vecOrigin );
+	pMatCamInverse[M_20] = -pVecForward.x;
+	pMatCamInverse[M_21] = -pVecForward.y;
+	pMatCamInverse[M_22] = -pVecForward.z;
+	pMatCamInverse[M_23] = pVecForward.Dot( vecOrigin );
 
 	pMatCamInverse[M_30] = pMatCamInverse[M_31] = pMatCamInverse[M_32] = 0.0;
 	pMatCamInverse[M_33] = 1.0;
 }
 
-
+//
+// range [-1,1]
+//
 function VS::WorldToScreenMatrix( pOut, origin, forward, right, up, fov, flAspect, zNear, zFar )
 	: (VMatrix)
 {
 	local viewToProj = VMatrix();
 	local worldToView = VMatrix();
 
-	MatrixBuildPerspective( viewToProj, fov, flAspect, zNear, zFar );
+	MatrixBuildPerspectiveX( viewToProj, fov * 0.5, flAspect, zNear, zFar );
 	ComputeCameraVariables( origin, forward, right, up, worldToView );
 
 	local worldToProj = viewToProj; // VMatrix();
@@ -3836,23 +3829,78 @@ function VS::WorldToScreenMatrix( pOut, origin, forward, right, up, fov, flAspec
 	pOut[M_32] = worldToProj[M_32];
 	pOut[M_33] = worldToProj[M_33];
 }
+/*
+//
+// range [0,1]
+//
+function VS::WorldToScreenMatrix2( pOut, origin, forward, right, up, fov, flAspect, zNear, zFar )
+	: (VMatrix)
+{
+	local view = VMatrix(), proj = VMatrix();
+	MatrixBuildPerspective( proj, fov, flAspect, zNear, zFar );
+	{
+		local viewm = view[0];
+		viewm[M_00] = -right.x;
+		viewm[M_01] = -right.y;
+		viewm[M_02] = -right.z;
+		viewm[M_03] = right.Dot( origin );
+
+		viewm[M_10] = up.x;
+		viewm[M_11] = up.y;
+		viewm[M_12] = up.z;
+		viewm[M_13] = -up.Dot( origin );
+
+		viewm[M_20] = forward.x;
+		viewm[M_21] = forward.y;
+		viewm[M_22] = forward.z;
+		viewm[M_23] = -forward.Dot( origin );
+
+		viewm[M_33] = 1.0;
+	}
+	MatrixMultiply( proj, view, proj );
+
+	pOut = pOut[0];
+	proj = proj[0];
+
+	pOut[M_00] = proj[M_00];
+	pOut[M_01] = proj[M_01];
+	pOut[M_02] = proj[M_02];
+	pOut[M_03] = proj[M_03];
+
+	pOut[M_10] = proj[M_10];
+	pOut[M_11] = proj[M_11];
+	pOut[M_12] = proj[M_12];
+	pOut[M_13] = proj[M_13];
+
+	pOut[M_20] = proj[M_20];
+	pOut[M_21] = proj[M_21];
+	pOut[M_22] = proj[M_22];
+	pOut[M_23] = proj[M_23];
+
+	pOut[M_30] = proj[M_30];
+	pOut[M_31] = proj[M_31];
+	pOut[M_32] = proj[M_32];
+	pOut[M_33] = proj[M_33];
+}
+*/
 
 local Vector3DMultiplyPositionProjective = VS.Vector3DMultiplyPositionProjective;
 
 function VS::ScreenToWorld( x, y, screenToWorld, pOut = _VEC ) : (Vector, Vector3DMultiplyPositionProjective)
 {
-	local vecScreen = Vector( x, 1.0 - y, 1.0 );
+	local vecScreen = Vector( 2.0 * x - 1.0, 1.0 - 2.0 * y, 1.0 );
 	Vector3DMultiplyPositionProjective( screenToWorld, vecScreen, pOut );
 	return pOut;
 }
-/*
+
 function VS::WorldToScreen( vecPos, worldToScreen, pOut = _VEC ) : (Vector, Vector3DMultiplyPositionProjective)
 {
 	Vector3DMultiplyPositionProjective( worldToScreen, vecPos, pOut );
-	pOut.y = 1.0 - pOut.y;
+	local s = 0.5;
+	pOut.x = s + pOut.x * s;
+	pOut.y = s - pOut.y * s;
 	return pOut;
 }
-*/
 
 //-----------------------------------------------------------------------------
 // Computes Y fov from an X fov and a screen aspect ratio
@@ -3886,12 +3934,23 @@ local initFrustumDraw = function()
 		return Line( startWorldSpace, endWorldSpace, r, g, b, z, t );
 	}
 
-	local v000 = Vector();
-	local v001 = Vector( 0.0, 0.0, 1.0 );
-	local v011 = Vector( 0.0, 1.0, 1.0 );
-	local v010 = Vector( 0.0, 1.0, 0.0 );
-	local v100 = Vector( 1.0, 0.0, 0.0 );
-	local v101 = Vector( 1.0, 0.0, 1.0 );
+	// [0,1]
+	//local v000 = Vector();
+	//local v001 = Vector( 0.0, 0.0, 1.0 );
+	//local v011 = Vector( 0.0, 1.0, 1.0 );
+	//local v010 = Vector( 0.0, 1.0, 0.0 );
+	//local v100 = Vector( 1.0, 0.0, 0.0 );
+	//local v101 = Vector( 1.0, 0.0, 1.0 );
+	//local v111 = Vector( 1.0, 1.0, 1.0 );
+	//local v110 = Vector( 1.0, 1.0, 0.0 );
+
+	// [-1,1]
+	local v000 = Vector( -1.0, -1.0, 0.0 );
+	local v001 = Vector( -1.0, -1.0, 1.0 );
+	local v011 = Vector( -1.0, 1.0, 1.0 );
+	local v010 = Vector( -1.0, 1.0, 0.0 );
+	local v100 = Vector( 1.0, -1.0, 0.0 );
+	local v101 = Vector( 1.0, -1.0, 1.0 );
 	local v111 = Vector( 1.0, 1.0, 1.0 );
 	local v110 = Vector( 1.0, 1.0, 0.0 );
 
@@ -6128,7 +6187,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	// NOTE: These basis place the origin at the centroid of each box!
 	local box2ToBox1 = matrix3x4_t();
 	ConcatTransforms( worldToBox1, box2ToWorld, box2ToBox1 );
-	worldToBox1 = worldToBox1.m;
+	worldToBox1 = worldToBox1[0];
 
 	// We're going to be using the origin of box2 in the space of box1 alot,
 	// lets extract it from the matrix....
@@ -6162,9 +6221,9 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	originProjection = fabs( box2Origin.x ) + tolerance;
 	if ( originProjection > boxProjectionSum )
 	{
-		pNormalOut.x = worldToBox1[0][0];
-		pNormalOut.y = worldToBox1[0][1];
-		pNormalOut.z = worldToBox1[0][2];
+		pNormalOut.x = worldToBox1[M_00];
+		pNormalOut.y = worldToBox1[M_01];
+		pNormalOut.z = worldToBox1[M_02];
 		return true;
 	};
 
@@ -6173,9 +6232,9 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	originProjection = fabs( box2Origin.y ) + tolerance;
 	if ( originProjection > boxProjectionSum )
 	{
-		pNormalOut.x = worldToBox1[1][0];
-		pNormalOut.y = worldToBox1[1][1];
-		pNormalOut.z = worldToBox1[1][2];
+		pNormalOut.x = worldToBox1[M_10];
+		pNormalOut.y = worldToBox1[M_11];
+		pNormalOut.z = worldToBox1[M_12];
 		return true;
 	};
 
@@ -6184,9 +6243,9 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	originProjection = fabs( box2Origin.z ) + tolerance;
 	if ( originProjection > boxProjectionSum )
 	{
-		pNormalOut.x = worldToBox1[2][0];
-		pNormalOut.y = worldToBox1[2][1];
-		pNormalOut.z = worldToBox1[2][2];
+		pNormalOut.x = worldToBox1[M_20];
+		pNormalOut.y = worldToBox1[M_21];
+		pNormalOut.z = worldToBox1[M_22];
 		return true;
 	};
 
@@ -6270,20 +6329,20 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	// NOTE: These checks can be bogus if both edges are parallel. The if
 	// checks at the beginning of each block are designed to catch that case
 
-	absBox2ToBox1 = absBox2ToBox1.m;
-	box2ToBox1 = box2ToBox1.m;
+	absBox2ToBox1 = absBox2ToBox1[0];
+	box2ToBox1 = box2ToBox1[0];
 
 	// b1e1 x b2e1
-	if ( absBox2ToBox1[0][0] < 0.999 )
+	if ( absBox2ToBox1[M_00] < 0.999 )
 	{
 		boxProjectionSum =
-			box1Size.y * absBox2ToBox1[2][0] + box1Size.z * absBox2ToBox1[1][0] +
-			box2Size.y * absBox2ToBox1[0][2] + box2Size.z * absBox2ToBox1[0][1];
-		originProjection = fabs( -box2Origin.y * box2ToBox1[2][0] + box2Origin.z * box2ToBox1[1][0] ) + tolerance;
+			box1Size.y * absBox2ToBox1[M_20] + box1Size.z * absBox2ToBox1[M_10] +
+			box2Size.y * absBox2ToBox1[M_02] + box2Size.z * absBox2ToBox1[M_01];
+		originProjection = fabs( -box2Origin.y * box2ToBox1[M_20] + box2Origin.z * box2ToBox1[M_10] ) + tolerance;
 		if ( originProjection > boxProjectionSum )
 		{
 			MatrixGetColumn( box2ToWorld, 0, pNormalOut );
-			local v = worldToBox1[0].Cross(pNormalOut);
+			local v = Vector( worldToBox1[M_00], worldToBox1[M_01], worldToBox1[M_02] ).Cross(pNormalOut);
 			pNormalOut.x = v.x;
 			pNormalOut.y = v.y;
 			pNormalOut.z = v.z;
@@ -6292,16 +6351,16 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 
 	// b1e1 x b2e2
-	if ( absBox2ToBox1[0][1] < 0.999 )
+	if ( absBox2ToBox1[M_01] < 0.999 )
 	{
 		boxProjectionSum =
-			box1Size.y * absBox2ToBox1[2][1] + box1Size.z * absBox2ToBox1[1][1] +
-			box2Size.x * absBox2ToBox1[0][2] + box2Size.z * absBox2ToBox1[0][0];
-		originProjection = fabs( -box2Origin.y * box2ToBox1[2][1] + box2Origin.z * box2ToBox1[1][1] ) + tolerance;
+			box1Size.y * absBox2ToBox1[M_21] + box1Size.z * absBox2ToBox1[M_11] +
+			box2Size.x * absBox2ToBox1[M_02] + box2Size.z * absBox2ToBox1[M_00];
+		originProjection = fabs( -box2Origin.y * box2ToBox1[M_21] + box2Origin.z * box2ToBox1[M_11] ) + tolerance;
 		if ( originProjection > boxProjectionSum )
 		{
 			MatrixGetColumn( box2ToWorld, 1, pNormalOut );
-			local v = worldToBox1[0].Cross(pNormalOut);
+			local v = Vector( worldToBox1[M_00], worldToBox1[M_01], worldToBox1[M_02] ).Cross(pNormalOut);
 			pNormalOut.x = v.x;
 			pNormalOut.y = v.y;
 			pNormalOut.z = v.z;
@@ -6310,16 +6369,16 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 
 	// b1e1 x b2e3
-	if ( absBox2ToBox1[0][2] < 0.999 )
+	if ( absBox2ToBox1[M_02] < 0.999 )
 	{
 		boxProjectionSum =
-			box1Size.y * absBox2ToBox1[2][2] + box1Size.z * absBox2ToBox1[1][2] +
-			box2Size.x * absBox2ToBox1[0][1] + box2Size.y * absBox2ToBox1[0][0];
-		originProjection = fabs( -box2Origin.y * box2ToBox1[2][2] + box2Origin.z * box2ToBox1[1][2] ) + tolerance;
+			box1Size.y * absBox2ToBox1[M_22] + box1Size.z * absBox2ToBox1[M_12] +
+			box2Size.x * absBox2ToBox1[M_01] + box2Size.y * absBox2ToBox1[M_00];
+		originProjection = fabs( -box2Origin.y * box2ToBox1[M_22] + box2Origin.z * box2ToBox1[M_12] ) + tolerance;
 		if ( originProjection > boxProjectionSum )
 		{
 			MatrixGetColumn( box2ToWorld, 2, pNormalOut );
-			local v = worldToBox1[0].Cross(pNormalOut);
+			local v = Vector( worldToBox1[M_00], worldToBox1[M_01], worldToBox1[M_02] ).Cross(pNormalOut);
 			pNormalOut.x = v.x;
 			pNormalOut.y = v.y;
 			pNormalOut.z = v.z;
@@ -6328,16 +6387,16 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 
 	// b1e2 x b2e1
-	if ( absBox2ToBox1[1][0] < 0.999 )
+	if ( absBox2ToBox1[M_10] < 0.999 )
 	{
 		boxProjectionSum =
-			box1Size.x * absBox2ToBox1[2][0] + box1Size.z * absBox2ToBox1[0][0] +
-			box2Size.y * absBox2ToBox1[1][2] + box2Size.z * absBox2ToBox1[1][1];
-		originProjection = fabs( box2Origin.x * box2ToBox1[2][0] - box2Origin.z * box2ToBox1[0][0] ) + tolerance;
+			box1Size.x * absBox2ToBox1[M_20] + box1Size.z * absBox2ToBox1[M_00] +
+			box2Size.y * absBox2ToBox1[M_12] + box2Size.z * absBox2ToBox1[M_11];
+		originProjection = fabs( box2Origin.x * box2ToBox1[M_20] - box2Origin.z * box2ToBox1[M_00] ) + tolerance;
 		if ( originProjection > boxProjectionSum )
 		{
 			MatrixGetColumn( box2ToWorld, 0, pNormalOut );
-			local v = worldToBox1[1].Cross(pNormalOut);
+			local v = Vector( worldToBox1[M_10], worldToBox1[M_11], worldToBox1[M_12] ).Cross(pNormalOut);
 			pNormalOut.x = v.x;
 			pNormalOut.y = v.y;
 			pNormalOut.z = v.z;
@@ -6346,16 +6405,16 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 
 	// b1e2 x b2e2
-	if ( absBox2ToBox1[1][1] < 0.999 )
+	if ( absBox2ToBox1[M_11] < 0.999 )
 	{
 		boxProjectionSum =
-			box1Size.x * absBox2ToBox1[2][1] + box1Size.z * absBox2ToBox1[0][1] +
-			box2Size.x * absBox2ToBox1[1][2] + box2Size.z * absBox2ToBox1[1][0];
-		originProjection = fabs( box2Origin.x * box2ToBox1[2][1] - box2Origin.z * box2ToBox1[0][1] ) + tolerance;
+			box1Size.x * absBox2ToBox1[M_21] + box1Size.z * absBox2ToBox1[M_01] +
+			box2Size.x * absBox2ToBox1[M_12] + box2Size.z * absBox2ToBox1[M_10];
+		originProjection = fabs( box2Origin.x * box2ToBox1[M_21] - box2Origin.z * box2ToBox1[M_01] ) + tolerance;
 		if ( originProjection > boxProjectionSum )
 		{
 			MatrixGetColumn( box2ToWorld, 1, pNormalOut );
-			local v = worldToBox1[1].Cross(pNormalOut);
+			local v = Vector( worldToBox1[M_10], worldToBox1[M_11], worldToBox1[M_12] ).Cross(pNormalOut);
 			pNormalOut.x = v.x;
 			pNormalOut.y = v.y;
 			pNormalOut.z = v.z;
@@ -6364,16 +6423,16 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 
 	// b1e2 x b2e3
-	if ( absBox2ToBox1[1][2] < 0.999 )
+	if ( absBox2ToBox1[M_12] < 0.999 )
 	{
 		boxProjectionSum =
-			box1Size.x * absBox2ToBox1[2][2] + box1Size.z * absBox2ToBox1[0][2] +
-			box2Size.x * absBox2ToBox1[1][1] + box2Size.y * absBox2ToBox1[1][0];
-		originProjection = fabs( box2Origin.x * box2ToBox1[2][2] - box2Origin.z * box2ToBox1[0][2] ) + tolerance;
+			box1Size.x * absBox2ToBox1[M_22] + box1Size.z * absBox2ToBox1[M_02] +
+			box2Size.x * absBox2ToBox1[M_11] + box2Size.y * absBox2ToBox1[M_10];
+		originProjection = fabs( box2Origin.x * box2ToBox1[M_22] - box2Origin.z * box2ToBox1[M_02] ) + tolerance;
 		if ( originProjection > boxProjectionSum )
 		{
 			MatrixGetColumn( box2ToWorld, 2, pNormalOut );
-			local v = worldToBox1[1].Cross(pNormalOut);
+			local v = Vector( worldToBox1[M_10], worldToBox1[M_11], worldToBox1[M_12] ).Cross(pNormalOut);
 			pNormalOut.x = v.x;
 			pNormalOut.y = v.y;
 			pNormalOut.z = v.z;
@@ -6382,16 +6441,16 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 
 	// b1e3 x b2e1
-	if ( absBox2ToBox1[2][0] < 0.999 )
+	if ( absBox2ToBox1[M_20] < 0.999 )
 	{
 		boxProjectionSum =
-			box1Size.x * absBox2ToBox1[1][0] + box1Size.y * absBox2ToBox1[0][0] +
-			box2Size.y * absBox2ToBox1[2][2] + box2Size.z * absBox2ToBox1[2][1];
-		originProjection = fabs( -box2Origin.x * box2ToBox1[1][0] + box2Origin.y * box2ToBox1[0][0] ) + tolerance;
+			box1Size.x * absBox2ToBox1[M_10] + box1Size.y * absBox2ToBox1[M_00] +
+			box2Size.y * absBox2ToBox1[M_22] + box2Size.z * absBox2ToBox1[M_21];
+		originProjection = fabs( -box2Origin.x * box2ToBox1[M_10] + box2Origin.y * box2ToBox1[M_00] ) + tolerance;
 		if ( originProjection > boxProjectionSum )
 		{
 			MatrixGetColumn( box2ToWorld, 0, pNormalOut );
-			local v = worldToBox1[2].Cross(pNormalOut);
+			local v = Vector( worldToBox1[M_20], worldToBox1[M_21], worldToBox1[M_22] ).Cross(pNormalOut);
 			pNormalOut.x = v.x;
 			pNormalOut.y = v.y;
 			pNormalOut.z = v.z;
@@ -6400,16 +6459,16 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 
 	// b1e3 x b2e2
-	if ( absBox2ToBox1[2][1] < 0.999 )
+	if ( absBox2ToBox1[M_21] < 0.999 )
 	{
 		boxProjectionSum =
-			box1Size.x * absBox2ToBox1[1][1] + box1Size.y * absBox2ToBox1[0][1] +
-			box2Size.x * absBox2ToBox1[2][2] + box2Size.z * absBox2ToBox1[2][0];
-		originProjection = fabs( -box2Origin.x * box2ToBox1[1][1] + box2Origin.y * box2ToBox1[0][1] ) + tolerance;
+			box1Size.x * absBox2ToBox1[M_11] + box1Size.y * absBox2ToBox1[M_01] +
+			box2Size.x * absBox2ToBox1[M_22] + box2Size.z * absBox2ToBox1[M_20];
+		originProjection = fabs( -box2Origin.x * box2ToBox1[M_11] + box2Origin.y * box2ToBox1[M_01] ) + tolerance;
 		if ( originProjection > boxProjectionSum )
 		{
 			MatrixGetColumn( box2ToWorld, 1, pNormalOut );
-			local v = worldToBox1[2].Cross(pNormalOut);
+			local v = Vector( worldToBox1[M_20], worldToBox1[M_21], worldToBox1[M_22] ).Cross(pNormalOut);
 			pNormalOut.x = v.x;
 			pNormalOut.y = v.y;
 			pNormalOut.z = v.z;
@@ -6418,16 +6477,16 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 
 	// b1e3 x b2e3
-	if ( absBox2ToBox1[2][2] < 0.999 )
+	if ( absBox2ToBox1[M_22] < 0.999 )
 	{
 		boxProjectionSum =
-			box1Size.x * absBox2ToBox1[1][2] + box1Size.y * absBox2ToBox1[0][2] +
-			box2Size.x * absBox2ToBox1[2][1] + box2Size.y * absBox2ToBox1[2][0];
-		originProjection = fabs( -box2Origin.x * box2ToBox1[1][2] + box2Origin.y * box2ToBox1[0][2] ) + tolerance;
+			box1Size.x * absBox2ToBox1[M_12] + box1Size.y * absBox2ToBox1[M_02] +
+			box2Size.x * absBox2ToBox1[M_21] + box2Size.y * absBox2ToBox1[M_20];
+		originProjection = fabs( -box2Origin.x * box2ToBox1[M_12] + box2Origin.y * box2ToBox1[M_02] ) + tolerance;
 		if ( originProjection > boxProjectionSum )
 		{
 			MatrixGetColumn( box2ToWorld, 2, pNormalOut );
-			local v = worldToBox1[2].Cross(pNormalOut);
+			local v = Vector( worldToBox1[M_20], worldToBox1[M_21], worldToBox1[M_22] ).Cross(pNormalOut);
 			pNormalOut.x = v.x;
 			pNormalOut.y = v.y;
 			pNormalOut.z = v.z;
@@ -6436,7 +6495,8 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 	return false;
 }
-
+*/
+/*
 //-----------------------------------------------------------------------------
 // Compute a separating plane between two boxes (expensive!)
 // Returns false if no separating plane exists
