@@ -2366,7 +2366,7 @@ function VS::RotationDelta( srcAngles, destAngles, out ) : ( matrix3x4_t )
 	// xform = src(-1) * dest
 	AngleIMatrix( srcAngles, null, src );
 	AngleMatrix( destAngles, null, dest );
-	ConcatTransforms( dest, src, dest );
+	ConcatRotations( dest, src, dest );
 
 	// xformAngles
 	return MatrixAngles( dest, out );
@@ -3140,7 +3140,7 @@ function VS::ConcatTransforms( in1, in2, out )
 		m0 = in1[M_00] * i2m00 + in1[M_01] * i2m10 + in1[M_02] * i2m20,
 		m1 = in1[M_00] * i2m01 + in1[M_01] * i2m11 + in1[M_02] * i2m21,
 		m2 = in1[M_00] * i2m02 + in1[M_01] * i2m12 + in1[M_02] * i2m22,
-		m3 = in1[M_00] * i2m03 + in1[M_01] * i2m13 + in1[M_02] * i2m23;
+		m3 = in1[M_00] * i2m03 + in1[M_01] * i2m13 + in1[M_02] * i2m23 + in1[M_03];
 
 	out[M_00] = m0;
 	out[M_01] = m1;
@@ -3150,7 +3150,7 @@ function VS::ConcatTransforms( in1, in2, out )
 		m0 = in1[M_10] * i2m00 + in1[M_11] * i2m10 + in1[M_12] * i2m20;
 		m1 = in1[M_10] * i2m01 + in1[M_11] * i2m11 + in1[M_12] * i2m21;
 		m2 = in1[M_10] * i2m02 + in1[M_11] * i2m12 + in1[M_12] * i2m22;
-		m3 = in1[M_10] * i2m03 + in1[M_11] * i2m13 + in1[M_12] * i2m23;
+		m3 = in1[M_10] * i2m03 + in1[M_11] * i2m13 + in1[M_12] * i2m23 + in1[M_13];
 
 	out[M_10] = m0;
 	out[M_11] = m1;
@@ -3160,7 +3160,7 @@ function VS::ConcatTransforms( in1, in2, out )
 		m0 = in1[M_20] * i2m00 + in1[M_21] * i2m10 + in1[M_22] * i2m20;
 		m1 = in1[M_20] * i2m01 + in1[M_21] * i2m11 + in1[M_22] * i2m21;
 		m2 = in1[M_20] * i2m02 + in1[M_21] * i2m12 + in1[M_22] * i2m22;
-		m3 = in1[M_20] * i2m03 + in1[M_21] * i2m13 + in1[M_22] * i2m23;
+		m3 = in1[M_20] * i2m03 + in1[M_21] * i2m13 + in1[M_22] * i2m23 + in1[M_23];
 
 	out[M_20] = m0;
 	out[M_21] = m1;
@@ -4838,18 +4838,6 @@ function VS::Hermite_SplineF( p1, p2, d1, d2, t )
 	return b1 * p1 + (1.0 - b1) * p2 + (t3 - 2.0 * t2 + t) * d1 + (t3 - t2) * d2;
 }
 
-// float basis[4]
-function VS::Hermite_SplineBasis( t, basis )
-{
-	local t2 = t*t;
-	local t3 = t*t2;
-
-	basis[0] = 2.0 * t3 - 3.0 * t2 + 1.0;
-	basis[1] = 1.0 - basis[0]; // -2.0 * t3 + 3.0 * t2;
-	basis[2] = t3 - 2.0 * t2 + t;
-	basis[3] = t3 - t2;
-}
-
 local Hermite_Spline = VS.Hermite_Spline;
 local Hermite_SplineF = VS.Hermite_SplineF;
 
@@ -5117,20 +5105,19 @@ function VS::RangeCompressor( flValue, flMin, flMax, flBase ) : ( Hermite_Spline
 }
 
 // QAngle slerp
-function VS::InterpolateAngles( v1, v2, flPercent, out = _VEC ) :
+function VS::InterpolateAngles( v1, v2, t, out = _VEC ) :
 	( Quaternion, AngleQuaternion, QuaternionAngles, QuaternionSlerp )
 {
 	if ( v1 == v2 )
 		return v1;
 
-	local src = Quaternion();
-	AngleQuaternion( v1, src );
-	local dest = Quaternion();
-	AngleQuaternion( v2, dest );
+	local p = Quaternion(), q = Quaternion();
+	AngleQuaternion( v1, p );
+	AngleQuaternion( v2, q );
 
-	local result = QuaternionSlerp( src, dest, flPercent );
+	local qt = QuaternionSlerp( p, q, t );
 
-	return QuaternionAngles( result, out );
+	return QuaternionAngles( qt, out );
 }
 
 
@@ -6501,14 +6488,13 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 // Compute a separating plane between two boxes (expensive!)
 // Returns false if no separating plane exists
 //-----------------------------------------------------------------------------
-function VS::ComputeSeparatingPlane2( org1, angles1, min1, max1, org2, angles2, min2, max2, tolerance, pNormal = _VEC )
+function VS::ComputeSeparatingPlane2( org1, ang1, min1, max1, org2, ang2, min2, max2, tolerance, pNormal = _VEC )
 	: (matrix3x4_t)
 {
-	local worldToBox1 = matrix3x4_t(),
-		box2ToWorld = matrix3x4_t();
+	local worldToBox1 = matrix3x4_t(), box2ToWorld = matrix3x4_t();
 
-	ComputeCenterIMatrix( org1, angles1, min1, max1, worldToBox1 );
-	ComputeCenterMatrix( org2, angles2, min2, max2, box2ToWorld );
+	ComputeCenterIMatrix( org1, ang1, min1, max1, worldToBox1 );
+	ComputeCenterMatrix( org2, ang2, min2, max2, box2ToWorld );
 
 	// Then compute the size of the two boxes
 	local box1Size = (max1 - min1) * 0.5;
@@ -6517,7 +6503,6 @@ function VS::ComputeSeparatingPlane2( org1, angles1, min1, max1, org2, angles2, 
 	return ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, tolerance, pNormal );
 }
 */
-
 //=============================================================================
 //=============================================================================
 

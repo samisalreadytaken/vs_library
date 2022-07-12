@@ -120,11 +120,11 @@ VS.ToExtendedPlayer <- function( hPlayer )
 		eye.__KeyValueFromString( "measurereference", "" );
 		eye.__KeyValueFromString( "measureretarget", "" );
 		eye.__KeyValueFromFloat( "targetscale", 1.0 );
-		local name_eye = "vs.ref_" + UniqueString();
-		eye.__KeyValueFromString( "targetname", name_eye );
-		eye.__KeyValueFromString( "targetreference", name_eye );
-		eye.__KeyValueFromString( "target", name_eye );
-		AddEvent( eye, "SetMeasureReference", name_eye, 0.0, null, null );
+		local szName = "vs.ref_" + UniqueString();
+		eye.__KeyValueFromString( "targetname", szName );
+		eye.__KeyValueFromString( "targetreference", szName );
+		eye.__KeyValueFromString( "target", szName );
+		AddEvent( eye, "SetMeasureReference", szName, 0.0, null, null );
 
 		// Need to keep ent name because
 		// CLogicMeasureMovement::InputSetMeasureTarget updates the references from targetname
@@ -137,11 +137,11 @@ VS.ToExtendedPlayer <- function( hPlayer )
 	};
 
 	{
-		local name_old = hPlayer.GetName();
-		local name_new = sc.__vname;
-		hPlayer.__KeyValueFromString( "targetname", name_new );
-		AddEvent( eye, "SetMeasureTarget", name_new, 0.0, null, null );
-		EventQueue.AddEvent( SetNameSafe, FrameTime()+0.001, [ null, hPlayer, name_old ] );
+		local szOld = hPlayer.GetName();
+		local szNew = sc.__vname;
+		hPlayer.__KeyValueFromString( "targetname", szNew );
+		AddEvent( eye, "SetMeasureTarget", szNew, 0.0, null, null );
+		EventQueue.AddEvent( SetNameSafe, FrameTime()+0.001, [ null, hPlayer, szOld ] );
 	}
 
 	eye.SetOwner( hPlayer );
@@ -167,9 +167,9 @@ VS.ToExtendedPlayer <- function( hPlayer )
 	if ( !("name" in sc) )
 		sc.name <- "";
 
+	//
 	// To keep the member variables forward compatible, get the data from native funcs first if possible.
-	// Should empty strings return null instead?
-
+	//
 	if ( "GetUserID" in hPlayer )
 		sc.userid = hPlayer.GetUserID();
 	else if ( "GetPlayerUserId" in hPlayer )
@@ -213,17 +213,10 @@ VS.ToExtendedPlayer <- function( hPlayer )
 		// Lookup if not a bot, it can change
 		GetPlayerName = bot ? function() : (pnm) { return pnm; } : function() : (sc) { return sc.name; };
 
-		EyeAngles = CBaseEntity.GetAngles.bindenv(eye);
-		EyeForward = CBaseEntity.GetForwardVector.bindenv(eye);
-		EyeRight = CBaseEntity.GetLeftVector.bindenv(eye);
-		EyeUp = CBaseEntity.GetUpVector.bindenv(eye);
-
-		//function CalcEntityToWorldTransform()
-		//{
-		//	local m = matrix3x4_t();
-		//	VS.AngleMatrix( GetAngles(), GetOrigin(), m );
-		//	return m;
-		//}
+		EyeAngles = eye.GetAngles.bindenv(eye);
+		EyeForward = eye.GetForwardVector.bindenv(eye);
+		EyeRight = eye.GetLeftVector.bindenv(eye);
+		EyeUp = eye.GetUpVector.bindenv(eye);
 
 		function SetName( sz )
 		{
@@ -251,185 +244,10 @@ VS.ToExtendedPlayer <- function( hPlayer )
 				AddEvent( self, "SetParentAttachment", szAttachment, 0.0, null, null );
 		}
 
-		_ui = null;
-
-		function SetInputCallback( szInput, fn, env ) : (AddEvent, ROOT, NullSort, OwnerSort)
+		function SetInputCallback( szInput, fn, env )
 		{
-			if ( !_ui || !_ui.IsValid() )
-			{
-				if ( !("{5E457F}" in ROOT) )
-					ROOT["{5E457F}"] <- [];
-
-				local g_GameUIs = ROOT["{5E457F}"];
-
-				g_GameUIs.sort( NullSort );
-				g_GameUIs.sort( OwnerSort );
-				for ( local i = g_GameUIs.len(); i--; )
-				{
-					local v = g_GameUIs[i];
-					if ( !v )
-					{
-						g_GameUIs.remove(i);
-						continue;
-					};
-
-					local owner = v.GetOwner();
-					if ( !owner || owner == self )
-					{
-						v.SetTeam(0); // reset
-						_ui = v;
-						break;
-					};
-				}
-
-				if ( !_ui )
-				{
-					_ui = Entities.CreateByClassname( "game_ui" );
-					_ui.__KeyValueFromInt( "spawnflags", 128 );
-					_ui.__KeyValueFromFloat( "fieldofview", -1 );
-					VS.MakePersistent( _ui );
-					_ui.__KeyValueFromString( "targetname", "" );
-					g_GameUIs.insert( 0, _ui.weakref() );
-					_ui.ValidateScriptScope();
-				};
-
-				_ui.SetOwner( self );
-			};
-
-			local sc = _ui.GetScriptScope();
-			if ( !("m_pCallbacks" in sc) )
-				sc.m_pCallbacks <- {};
-
-			// turn off
-			if ( !szInput )
-			{
-				if ( _ui.GetTeam() && _ui.GetOwner() )
-				{
-					AddEvent( _ui, "Deactivate", "", 0.0, self, null );
-				};
-
-				_ui.SetTeam(0);
-
-				foreach( input, cb in sc.m_pCallbacks )
-				{
-					// will be freed on m_pCallbacks.clear()
-					// cb.clear();
-
-					if ( input in sc )
-						delete sc[input];
-
-					_ui.DisconnectOutput( input, input );
-				}
-
-				// Remove all user callbacks as turning the listener back on requires re-registering callbacks.
-				sc.m_pCallbacks.clear();
-
-				return;
-			};
-
-			switch ( szInput )
-			{
-				case "+use":		szInput = "PlayerOff"; break;
-				case "+attack":		szInput = "PressedAttack"; break;
-				case "-attack":		szInput = "UnpressedAttack"; break;
-				case "+attack2":	szInput = "PressedAttack2"; break;
-				case "-attack2":	szInput = "UnpressedAttack2"; break;
-				case "+forward":	szInput = "PressedForward"; break;
-				case "-forward":	szInput = "UnpressedForward"; break;
-				case "+back":		szInput = "PressedBack"; break;
-				case "-back":		szInput = "UnpressedBack"; break;
-				case "+moveleft":	szInput = "PressedMoveLeft"; break;
-				case "-moveleft":	szInput = "UnpressedMoveLeft"; break;
-				case "+moveright":	szInput = "PressedMoveRight"; break;
-				case "-moveright":	szInput = "UnpressedMoveRight"; break;
-				default: throw "invalid input";
-			}
-
-			local context;
-
-			switch ( typeof env )
-			{
-				case "string":
-					context = env;
-					env = null;
-					break;
-				case "table":
-				case "instance":
-				case "class":
-					context = 0;
-					break;
-				default:
-					throw "invalid context param";
-			}
-
-			if ( !(szInput in sc.m_pCallbacks) )
-				sc.m_pCallbacks[szInput] <- {};
-
-			local cb = sc.m_pCallbacks[szInput];
-
-			// disable input
-			if ( !fn )
-			{
-				if ( context in cb )
-				{
-					delete cb[context];
-
-					if ( !cb.len() )
-					{
-						// Let the output functions keep reference to user callbacks
-						// delete sc.m_pCallbacks[szInput];
-
-						if ( szInput != "PlayerOff" )
-						{
-							if ( szInput in sc )
-								sc[szInput] = null;
-							_ui.DisconnectOutput( szInput, szInput );
-						};
-					};
-				};
-
-				return;
-			};
-
-			if ( env )
-			{
-				cb[context] <- fn.bindenv(env);
-			}
-			else
-			{
-				cb[context] <- fn;
-			};
-
-			if ( (szInput != "PlayerOff") && ( !(szInput in sc) || !sc[szInput] ) )
-			{
-				sc[szInput] <- function() : (cb)
-				{
-					foreach( fn in cb )
-						fn(this);
-				}.bindenv(this);
-				_ui.ConnectOutput( szInput, szInput );
-			};
-
-			if ( !("PlayerOff" in sc) || !sc.PlayerOff )
-			{
-				if ( !("PlayerOff" in sc.m_pCallbacks) )
-					sc.m_pCallbacks.PlayerOff <- {};
-
-				local cb = sc.m_pCallbacks.PlayerOff;
-				sc.PlayerOff <- function() : (cb, _ui, AddEvent)
-				{
-					AddEvent( _ui, "Activate", "", 0.0, self, null );
-					foreach( fn in cb )
-						fn(this);
-				}.bindenv(this);
-				_ui.ConnectOutput( "PlayerOff", "PlayerOff" );
-			};
-
-			if ( !_ui.GetTeam() )
-			{
-				_ui.SetTeam(1);
-				AddEvent( _ui, "Activate", "", 0.0, self, null );
-			};
+			Msg( "CExtendedPlayer::SetInputCallback() is deprecated, use VS::SetInputCallback() instead!\n" );
+			return VS.SetInputCallback( this, szInput, fn, env );
 		}
 
 		_tostring = hPlayer.tostring.bindenv( hPlayer );
@@ -515,6 +333,194 @@ VS.ToExtendedPlayer <- function( hPlayer )
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
 
+//
+// Execute callback on player input, passes player as CExtendedPlayer to the callback.
+//
+// This at the moment disables player movement prediction while the listener is on due to the usage of game_ui entity as the input listener.
+// This can be retroactively fixed in the future without changing any old user code if necessary API is added to the game.
+//
+function VS::SetInputCallback( hPlayer, szInput, fn, env ) : ( AddEvent, ROOT, NullSort, OwnerSort )
+{
+	if ( !(hPlayer = ToExtendedPlayer( hPlayer )) )
+		return;
+
+	if ( !("{5E457F}" in ROOT) )
+		ROOT["{5E457F}"] <- [];
+
+	local g_GameUIs = ROOT["{5E457F}"];
+	local hListener;
+
+	g_GameUIs.sort( NullSort );
+	g_GameUIs.sort( OwnerSort );
+
+	for ( local i = g_GameUIs.len(); i--; )
+	{
+		local v = g_GameUIs[i];
+		if ( !v )
+		{
+			g_GameUIs.remove(i);
+			continue;
+		};
+
+		local owner = v.GetOwner();
+		if ( !owner || owner == hPlayer.self )
+		{
+			v.SetTeam(0); // reset
+			hListener = v;
+			break;
+		};
+	}
+
+	if ( !hListener )
+	{
+		hListener = Entities.CreateByClassname( "game_ui" );
+		hListener.__KeyValueFromInt( "spawnflags", 128 );
+		hListener.__KeyValueFromFloat( "fieldofview", -1 );
+		MakePersistent( hListener );
+		hListener.__KeyValueFromString( "targetname", "" );
+		g_GameUIs.insert( 0, hListener.weakref() );
+		hListener.ValidateScriptScope();
+	};
+
+	hListener.SetOwner( hPlayer.self );
+
+	local sc = hListener.GetScriptScope();
+	if ( !("m_pCallbacks" in sc) )
+		sc.m_pCallbacks <- {};
+
+	// turn off
+	if ( !szInput )
+	{
+		if ( hListener.GetTeam() && hListener.GetOwner() )
+		{
+			AddEvent( hListener, "Deactivate", "", 0.0, hPlayer.self, null );
+		};
+
+		hListener.SetTeam(0);
+
+		foreach( input, cb in sc.m_pCallbacks )
+		{
+			// will be freed on m_pCallbacks.clear()
+			// cb.clear();
+
+			if ( input in sc )
+				delete sc[input];
+
+			hListener.DisconnectOutput( input, input );
+		}
+
+		// Remove all user callbacks as turning the listener back on requires re-registering callbacks.
+		sc.m_pCallbacks.clear();
+
+		return;
+	};
+
+	switch ( szInput )
+	{
+		case "+use":		szInput = "PlayerOff"; break;
+		case "+attack":		szInput = "PressedAttack"; break;
+		case "-attack":		szInput = "UnpressedAttack"; break;
+		case "+attack2":	szInput = "PressedAttack2"; break;
+		case "-attack2":	szInput = "UnpressedAttack2"; break;
+		case "+forward":	szInput = "PressedForward"; break;
+		case "-forward":	szInput = "UnpressedForward"; break;
+		case "+back":		szInput = "PressedBack"; break;
+		case "-back":		szInput = "UnpressedBack"; break;
+		case "+moveleft":	szInput = "PressedMoveLeft"; break;
+		case "-moveleft":	szInput = "UnpressedMoveLeft"; break;
+		case "+moveright":	szInput = "PressedMoveRight"; break;
+		case "-moveright":	szInput = "UnpressedMoveRight"; break;
+		default: throw "VS::SetInputCallback: invalid input";
+	}
+
+	local context;
+
+	switch ( typeof env )
+	{
+		case "string":
+			context = env;
+			env = null;
+			break;
+		case "table":
+		case "instance":
+		case "class":
+			context = 0;
+			break;
+		default:
+			throw "VS::SetInputCallback: invalid context";
+	}
+
+	if ( !(szInput in sc.m_pCallbacks) )
+		sc.m_pCallbacks[szInput] <- {};
+
+	local cb = sc.m_pCallbacks[szInput];
+
+	// disable input
+	if ( !fn )
+	{
+		if ( context in cb )
+		{
+			delete cb[context];
+
+			if ( !cb.len() )
+			{
+				// Let the output functions keep reference to user callbacks
+				// delete sc.m_pCallbacks[szInput];
+
+				if ( szInput != "PlayerOff" )
+				{
+					if ( szInput in sc )
+						sc[szInput] = null;
+					hListener.DisconnectOutput( szInput, szInput );
+				};
+			};
+		};
+
+		return;
+	};
+
+	if ( env )
+	{
+		cb[context] <- fn.bindenv(env);
+	}
+	else
+	{
+		cb[context] <- fn;
+	};
+
+	if ( (szInput != "PlayerOff") && ( !(szInput in sc) || !sc[szInput] ) )
+	{
+		sc[szInput] <- function() : ( cb )
+		{
+			foreach( fn in cb )
+				fn( this );
+		}.bindenv( hPlayer );
+		hListener.ConnectOutput( szInput, szInput );
+	};
+
+	if ( !("PlayerOff" in sc) || !sc.PlayerOff )
+	{
+		if ( !("PlayerOff" in sc.m_pCallbacks) )
+			sc.m_pCallbacks.PlayerOff <- {};
+
+		local cb = sc.m_pCallbacks.PlayerOff;
+		sc.PlayerOff <- function() : ( cb, hListener, AddEvent )
+		{
+			AddEvent( hListener, "Activate", "", 0.0, self, null );
+			foreach( fn in cb )
+				fn( this );
+		}.bindenv( hPlayer );
+		hListener.ConnectOutput( "PlayerOff", "PlayerOff" );
+	};
+
+	if ( !hListener.GetTeam() )
+	{
+		hListener.SetTeam(1);
+		AddEvent( hListener, "Activate", "", 0.0, hPlayer.self, null );
+	};
+}
+
+
 
 //-----------------------------------------------------------------------
 // Ray tracing
@@ -546,7 +552,7 @@ class VS.TraceLine
 			fraction = DoTrace2( start, end, ent );
 			return;
 		default:
-			throw "invalid mask";
+			throw "invalid trace mask";
 		}
 	}
 
@@ -672,43 +678,40 @@ function VS::TraceLine::GetNormal() : ( Vector, CTrace )
 // VECTOR_CONE_10DEGREES = Vector( 0.08716, 0.08716, 0.08716 )
 // VECTOR_CONE_15DEGREES = Vector( 0.13053, 0.13053, 0.13053 )
 // VECTOR_CONE_20DEGREES = Vector( 0.17365, 0.17365, 0.17365 )
+/*
+function VS::ApplySpread( vecSpread, vecShotDirection, vecRight, vecUp, bias = 1.0 )
+{
+	// get circular gaussian spread
+	local x, y, z;
 
-//function VS::ApplySpread(vecShotDirection, vecSpread, bias = 1.0)
-//{
-//	// get circular gaussian spread
-//	local x, y, z;
-//
-//	if ( bias > 1.0 )
-//		bias = 1.0;
-//	else if ( bias < 0.0 )
-//		bias = 0.0;;
-//
-//	local shotBiasMin = -1.0;
-//	local shotBiasMax = 1.0;
-//
-//	// 1.0 gaussian, 0.0 is flat, -1.0 is inverse gaussian
-//	local shotBias = ( ( shotBiasMax - shotBiasMin ) * bias ) + shotBiasMin;
-//
-//	local flatness = ( fabs(shotBias) * 0.5 );
-//
-//	do
-//	{
-//		x = RandomFloat(-1.0,1.0) * flatness + RandomFloat(-1.0,1.0) * (1.0 - flatness);
-//		y = RandomFloat(-1.0,1.0) * flatness + RandomFloat(-1.0,1.0) * (1.0 - flatness);
-//		if ( shotBias < 0.0 )
-//		{
-//			x = ( x >= 0.0 ) ? 1.0 - x : -1.0 - x;
-//			y = ( y >= 0.0 ) ? 1.0 - y : -1.0 - y;
-//		};
-//		z = x*x+y*y;
-//	} while (z > 1)
-//
-//	local vecRight = Vector(), vecUp = Vector();
-//	VectorVectors(vecShotDirection, vecRight, vecUp);
-//
-//	return vecShotDirection + x * vecSpread.x * vecRight + y * vecSpread.y * vecUp;
-//}
+	if ( bias > 1.0 )
+		bias = 1.0;
+	else if ( bias < 0.0 )
+		bias = 0.0;;
 
+	local shotBiasMin = -1.0;
+	local shotBiasMax = 1.0;
+
+	// 1.0 gaussian, 0.0 is flat, -1.0 is inverse gaussian
+	local shotBias = ( ( shotBiasMax - shotBiasMin ) * bias ) + shotBiasMin;
+
+	local flatness = ( fabs(shotBias) * 0.5 );
+
+	do
+	{
+		x = RandomFloat(-1.0,1.0) * flatness + RandomFloat(-1.0,1.0) * (1.0 - flatness);
+		y = RandomFloat(-1.0,1.0) * flatness + RandomFloat(-1.0,1.0) * (1.0 - flatness);
+		if ( shotBias < 0.0 )
+		{
+			x = ( x >= 0.0 ) ? 1.0 - x : -1.0 - x;
+			y = ( y >= 0.0 ) ? 1.0 - y : -1.0 - y;
+		};
+		z = x*x+y*y;
+	} while ( z > 1.0 );
+
+	return vecShotDirection + ( x * vecSpread.x ) * vecRight + ( y * vecSpread.y ) * vecUp;
+}
+*/
 //-----------------------------------------------------------------------
 // UniqueString without _ in the end
 //-----------------------------------------------------------------------
@@ -718,7 +721,7 @@ function VS::UniqueString():(DoUniqueString)
 }
 
 //-----------------------------------------------------------------------
-// Debug dump scope. expensive
+// Debug dump scope
 //
 // < VS.DumpScope(input, 1, 1, 0, nDepth) > is equivalent to <__DumpScope(nDepth, input)>
 //
@@ -731,7 +734,7 @@ function VS::UniqueString():(DoUniqueString)
 function VS::DumpScope( input, bPrintAll = false, bDeepPrint = true, bPrintGuides = true, nDepth = 0 )
 {
 	// non-native variables
-	local _skip = ["Assert","Document","Documentation","PrintHelp","RetrieveNativeSignature","RegisterFunctionDocumentation","UniqueString","IncludeScript","Entities","CSimpleCallChainer","CCallChainer","LateBinder","__ReplaceClosures","__DumpScope","printl","VSquirrel_OnCreateScope","VSquirrel_OnReleaseScope","PrecacheCallChain","OnPostSpawnCallChain","DispatchOnPostSpawn","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn","EntFireByHandle","EntFire","RAND_MAX","_version_","_intsize_","PI","_charsize_","_floatsize_","self","__vname","__vrefs","{847D4B}","{F71A8D}","{E3D627}","{5E457F}","{D9154C}","ToExtendedPlayer","SetPlayerFOV","VS","Chat","ChatTeam","TextColor","PrecacheModel","PrecacheScriptSound","delay","VecToString","HPlayer","Ent","Entc","Quaternion","matrix3x4_t","VMatrix","Ray_t","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
+	local _skip = ["Assert","Document","Documentation","PrintHelp","RetrieveNativeSignature","RegisterFunctionDocumentation","UniqueString","IncludeScript","Entities","CSimpleCallChainer","CCallChainer","LateBinder","__ReplaceClosures","__DumpScope","printl","VSquirrel_OnCreateScope","VSquirrel_OnReleaseScope","PrecacheCallChain","OnPostSpawnCallChain","DispatchOnPostSpawn","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn","EntFireByHandle","EntFire","RAND_MAX","_version_","_intsize_","PI","_charsize_","_floatsize_","self","__vname","__vrefs","{847D4B}","{F71A8D}","{E3D627}","{5E457F}","{D9154C}","ToExtendedPlayer","SetPlayerFOV","VS","Chat","ChatTeam","TextColor","PrecacheModel","PrecacheScriptSound","delay","VecToString","Ent","Entc","Quaternion","matrix3x4_t","VMatrix","Ray_t","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
 	local indent = function(c) for( local i = c; i--; ) print("   ");
 	local SWorld = Entities.First().GetScriptScope();
 	if ( bPrintGuides ) print(" ------------------------------\n");
@@ -762,7 +765,7 @@ function VS::DumpScope( input, bPrintAll = false, bDeepPrint = true, bPrintGuide
 						break;
 
 					case "table":
-						if ( val == SWorld )
+						if ( val == SWorld || "{7D6E9A}" in val )
 						{
 							bSkip = true;
 						};

@@ -370,7 +370,7 @@ local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlaye
 	if ( !VS.Events.m_bFixedUp )
 	{
 		VS.Events.m_bFixedUp = true;
-		Msg( "VS::Events init '"+VS.version+"'\n" );
+		Msg( "VS::Events init "+VS.version+"\n" );
 
 		VS.StopListeningToAllGameEvents( "VS::Events" );
 

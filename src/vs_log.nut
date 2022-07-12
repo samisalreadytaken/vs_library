@@ -9,15 +9,14 @@
 
 local Log =
 {
-	enabled     = false,
 	export      = false,
 	file_prefix = "vs.log",
 	filter      = "L ",
-	m_data      = null, // internal data
-	_data       = null, // data to print
+	_dev        = null,
+	_data       = null,
 	_cb         = null,
-	_env        = null,
-	_file       = null
+	_file       = null,
+	_inprogress = false
 }
 
 VS.Log <- Log;
@@ -25,9 +24,7 @@ VS.Log <- Log;
 
 VS.Log.Add <- function(s)
 {
-	local L = _data;
-	// logs may have thousands of entries, allocate memory size+1 instead of size*2
-	L.insert( L.len(), s );
+	return _data.append(s);
 }.bindenv(VS.Log);
 
 
@@ -39,27 +36,55 @@ VS.Log.Pop <- function()
 
 VS.Log.Clear <- function()
 {
-	if ( !m_data )
-		m_data = [];
-
-	if ( !_data )
-		_data = m_data.weakref();
-
-	_data.clear();
-
+	if ( _data )
+	{
+		_data.clear();
+	}
+	else
+	{
+		_data = [];
+	}
 }.bindenv(VS.Log);
 
 
-VS.Log.Run <- function( data = null, callback = null, env = null )
+local ClientCommand = SendToConsole;
+
+VS.Log.Run <- function( callback = null, env = null ) : ( ClientCommand, developer, Fmt, TICK_INTERVAL )
 {
-	if ( !enabled )
+	if ( !_data )
 		return;
 
-	_data = data ? data.weakref() : m_data.weakref();
-	_cb = typeof callback == "function" ? callback : null;
-	_env = env ? env : VS.GetCaller();
+	if ( _inprogress )
+		return;
 
-	return _Start();
+	if ( typeof callback == "function" )
+	{
+		if ( env )
+			callback = callback.bindenv( env );
+		_cb = callback;
+	};
+
+	nL <- _data.len();
+	nD <- 1984;
+	// nS <- ceil( nL / nD.tofloat() );
+	nC <- 0;
+	nN <- nD < nL ? nD : nL;
+	_inprogress = true;
+
+	// _WR <- VS.EventQueue.CreateEvent( _Write, this );
+
+	if ( export )
+	{
+		local file = _file = file_prefix[0] == ':' ? file_prefix.slice(1) : Fmt( "%s_%s", file_prefix, VS.UniqueString() );
+		_dev = developer();
+		ClientCommand(Fmt( "developer 0;con_filter_enable 1;con_filter_text_out\"%s\";con_filter_text\"\";con_logfile\"%s.log\";script VS.EventQueue.AddEvent(VS.Log._Write,%g,VS.Log)", filter, file, TICK_INTERVAL * 4.0 ));
+		return file;
+	}
+	else
+	{
+		// Do it all on client
+		ClientCommand("script VS.Log._Write()");
+	};
 }.bindenv(VS.Log);
 
 /*
@@ -67,7 +92,7 @@ VS.Log.Run <- function( data = null, callback = null, env = null )
 // Write Valve KeyValues file
 //
 local Fmt = format;
-function VS::Log::WriteKeyValues( szName, hTable, curIndent = "" ) : ( Fmt )
+VS.Log.WriteKeyValues <- function( szName, hTable, curIndent = "" ) : ( Fmt )
 {
 	local nextIndent = curIndent + "\t";
 
@@ -131,7 +156,7 @@ function VS::Log::WriteKeyValues( szName, hTable, curIndent = "" ) : ( Fmt )
 //
 // Write squirrel 2.2 readable table (with assignments)
 //
-function VS::Log::WriteTable( szName, hTable, indentLevel = 0, curIndent = "" ) : ( Fmt )
+VS.Log.WriteTable <- function( szName, hTable, indentLevel = 0, curIndent = "" ) : ( Fmt )
 {
 	local nextIndent = curIndent + "\t";
 	local bIsArray = typeof hTable == "array";
@@ -206,79 +231,52 @@ function VS::Log::WriteTable( szName, hTable, indentLevel = 0, curIndent = "" ) 
 
 
 
-//-----------------------------------------------------------------------
-// Internal functions. Do not call these
-//-----------------------------------------------------------------------
+local EventQueueAdd = VS.EventQueue.AddEvent;
 
-local delay = VS.EventQueue.AddEvent;
-local ClientCommand = SendToConsole;
-
-function VS::Log::_Write() : ( Msg, delay )
+VS.Log._Write <- function() : ( Msg, EventQueueAdd, ClientCommand )
 {
+	{
 	local t = filter, p = Msg, L = _data;
-
 	if ( export )
 		for ( local i = nC; i < nN; ++i ) p( t + L[i] );
 	else
 		for ( local i = nC; i < nN; ++i ) p( L[i] );
+	}
 
 	nC += nD;
-	nN = min( nN + nD, nL );
+	local i = nN + nD;
+	if ( i < nL )
+		nN = i;
+	else
+		nN = nL;
 
+	// end
 	if ( nC >= nN )
 	{
-		_data = m_data.weakref(); // revert to default
-		nL = nD = nC = nN = null;
-		return _Stop();
+		_data = nL = nD = nC = nN = null;
+		_inprogress = false;
+
+		if ( export )
+		{
+			ClientCommand("con_logfile\"\";con_filter_text_out\"\";con_filter_text\"\";con_filter_enable 0;developer "+_dev+";script VS.Log._Dispatch()");
+		}
+		else
+		{
+			_Dispatch();
+		};
+
+		return;
 	};
 
-	return delay( _Write, 0.001, this );
+	return EventQueueAdd( _Write, 0.002, this );
 }
 
-function VS::Log::_Start() : ( ClientCommand, developer, Fmt, TICK_INTERVAL )
-{
-	nL <- _data.len();
-	nD <- 2000;
-	// nS <- ceil( nL / nD.tofloat() );
-	nC <- 0;
-	nN <- min( nD, nL );
-
-	//if ( !( "_WR" in this ) )
-	//	_WR <- VS.EventQueue.CreateEvent( _Write, this );
-
-	if ( export )
-	{
-		local file = _file = file_prefix[0] == ':' ? file_prefix.slice(1) : Fmt( "%s_%s", file_prefix, VS.UniqueString() );
-		_d <- developer();
-		ClientCommand(Fmt( "developer 0;con_filter_enable 1;con_filter_text_out\"%s\";con_filter_text\"\";con_logfile\"%s.log\";script VS.EventQueue.AddEvent(VS.Log._Write,%g,VS.Log)", filter, file, TICK_INTERVAL * 4.0 ));
-		return file;
-	}
-	else
-	{
-		// Do it all on client
-		ClientCommand("script VS.Log._Write()");
-	};
-}
-
-function VS::Log::_Stop():(ClientCommand)
-{
-	if (export)
-	{
-		ClientCommand("con_logfile\"\";con_filter_text_out\"\";con_filter_text\"\";con_filter_enable 0;developer "+_d+";script VS.Log._Dispatch()");
-	}
-	else
-	{
-		_Dispatch();
-	}
-}
-
-function VS::Log::_Dispatch()
+VS.Log._Dispatch <- function()
 {
 	if (_cb)
 	{
-		_cb.call(_env, _file);
+		_cb(_file);
 		_cb =
-		_env =
 		_file = null;
 	}
 }

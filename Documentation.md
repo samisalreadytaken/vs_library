@@ -239,7 +239,6 @@ IncludeScript("myscript")
 [`VS.Catmull_Rom_Spline_NormalizeX()`](#f_Catmull_Rom_Spline_NormalizeX)  
 [`VS.Hermite_Spline()`](#f_Hermite_Spline)  
 [`VS.Hermite_SplineF()`](#f_Hermite_SplineF)  
-[`VS.Hermite_SplineBasis()`](#f_Hermite_SplineBasis)  
 [`VS.Hermite_Spline3V()`](#f_Hermite_Spline3V)  
 [`VS.Hermite_Spline3F()`](#f_Hermite_Spline3F)  
 [`VS.Hermite_Spline3Q()`](#f_Hermite_Spline3Q)  
@@ -285,6 +284,7 @@ IncludeScript("myscript")
 [`TextColor`](#f_TextColor)  
 [`VecToString()`](#f_VecToString)  
 [`ToExtendedPlayer()`](#f_ToExtendedPlayer)  
+[`VS.SetInputCallback`](#f_SetInputCallback)  
 [`VS.TraceLine`](#f_TraceLine)  
 [`VS.TraceLine.DidHit()`](#f_DidHit)  
 [`VS.TraceLine.GetEnt()`](#f_GetEnt)  
@@ -329,9 +329,6 @@ IncludeScript("myscript")
 [`VS.GetPlayerByIndex()`](#f_GetPlayerByIndex)  
 [`VS.GetEntityByIndex()`](#f_GetEntityByIndex)  
 [`VS.IsPointSized()`](#f_IsPointSized)  
-[`VS.FindEntityClassNearestFacing()`](#f_FindEntityClassNearestFacing)  
-[`VS.FindEntityNearestFacing()`](#f_FindEntityNearestFacing)  
-[`VS.FindEntityClassNearestFacingNearest()`](#f_FindEntityClassNearestFacingNearest)  
 
 
 ### [vs_events](#vs_events-1)
@@ -343,7 +340,6 @@ IncludeScript("myscript")
 
 
 ### [vs_log](#vs_log-1)
-[`VS.Log.enabled`](#f_Logenabled)  
 [`VS.Log.export`](#f_Logexport)  
 [`VS.Log.file_prefix`](#f_Logfile_prefix)  
 [`VS.Log.Add()`](#f_LogAdd)  
@@ -351,6 +347,7 @@ IncludeScript("myscript")
 [`VS.Log.Clear()`](#f_LogClear)  
 [`VS.Log.WriteKeyValues()`](#f_LogWriteKeyValues)  
 [`VS.Log.Run()`](#f_LogRun)  
+[`VS.Log._data`](#f_Logdata)  
 [`VS.Log.filter`](#f_Logfilter)  
 
 
@@ -1794,13 +1791,6 @@ float VS::Hermite_SplineF(float p1, float p2, float d1, float d2, float t)
 
 ________________________________
 
-<a name="f_Hermite_SplineBasis"></a>
-```cpp
-void VS::Hermite_SplineBasis(float t, float& basis[4])
-```
-
-________________________________
-
 <a name="f_Hermite_Spline3V"></a>
 ```cpp
 void VS::Hermite_Spline3V(Vector p0, Vector p1, Vector p2, float t, Vector& output)
@@ -2225,7 +2215,7 @@ ________________________________
 
 <a name="f_ToExtendedPlayer"></a>
 ```cpp
-class CExtendedPlayer
+class CExtendedPlayer : CBaseMultiplayerPlayer
 {
 	const CBasePlayer self;
 	const int m_EntityIndex;
@@ -2252,11 +2242,9 @@ class CExtendedPlayer
 	int GetFOV();
 	void SetFOV( int fov, float rate );
 	void SetParent( CBaseEntity parent, string attachment );
-
-	void SetInputCallback( string szInput, closure callback, string context );
 }
 
-CExtendedPlayer ToExtendedPlayer( CBasePlayer player )
+CExtendedPlayer ToExtendedPlayer( CBasePlayer player );
 ```
 
 There is no performance penalty for using `CExtendedPlayer` exclusively.
@@ -2275,7 +2263,16 @@ The following functions require event listener setup and do not work in Portal 2
 
 When a player disconnects, `CExtendedPlayer::IsValid()` returns false.
 
-Player (as CExtendedPlayer) is passed as parameter to the `SetInputCallback` callback function. `szInput == null` turns off the input listener. `callback == null` removes the callback.
+NOTE: Use the `player_spawn` game event to extend the player as early as possible. Using, for example, a think function on map spawn will set the userids of players who were connected to the server before map change to `-1` until the players are spawned, only then `CExtendedPlayer::GetUserID()` will return the correct ID.
+
+NOTE: The library keeps a strong ref to the player instance; neither `CExtendedPlayer` or `CBasePlayer` weak refs will ever be `null` after this is called. Always use `IsValid()` for player validity check.
+________________________________
+
+<a name="f_SetInputCallback"></a>
+```cpp
+void VS::SetInputCallback( CBasePlayer player, string szInput, closure( CExtendedPlayer ) callback, string context )
+```
+Player as `CExtendedPlayer` is passed as parameter to the `SetInputCallback` callback function. `szInput == null` turns off the input listener. `callback == null` removes the callback.
 
 List of available inputs:
 ```
@@ -2337,10 +2334,6 @@ function OnForwardReleased( ply )
 	printl("-forward " + ply.GetPlayerName())
 }
 ```
-
-NOTE: Use the `player_spawn` game event to extend the player as early as possible. Using, for example, a think function on map spawn will set the userids of players who were connected to the server before map change to `-1` until the players are spawned, only then `CExtendedPlayer::GetUserID()` will return the correct ID.
-
-NOTE: The library keeps a strong ref to the player instance; neither `CExtendedPlayer` or `CBasePlayer` weak refs will ever be `null` after this is called. Always use `IsValid()` for player validity check.
 ________________________________
 
 <a name="f_TraceLine"></a>
@@ -2917,27 +2910,6 @@ bool VS::IsPointSized(CBaseEntity ent)
 
 ________________________________
 
-<a name="f_FindEntityClassNearestFacing"></a>
-```cpp
-handle VS::FindEntityClassNearestFacing(Vector vOrigin, Vector vFacing, float fThreshold, string szClassname)
-```
-
-________________________________
-
-<a name="f_FindEntityNearestFacing"></a>
-```cpp
-handle VS::FindEntityNearestFacing(Vector vOrigin, Vector vFacing, float fThreshold)
-```
-
-________________________________
-
-<a name="f_FindEntityClassNearestFacingNearest"></a>
-```cpp
-handle VS::FindEntityClassNearestFacingNearest(Vector vOrigin, Vector vFacing, float fThreshold, string szClassname, float flRadius )
-```
-When two candidate entities are in front of each other, pick the closer one
-________________________________
-
 
 ### [vs_events](https://github.com/samisalreadytaken/vs_library/blob/master/src/vs_events.nut)
 ________________________________
@@ -2957,6 +2929,16 @@ void VS::ListenToGameEvent( string szEventname, closure fnCallback, string pCont
 ```
 Register a listener for a game event from script. Requires event listener setup.
 
+Event data is optionally passed to the user callback function.
+```cs
+VS.ListenToGameEvent( "player_hurt", function( event )
+{
+	local player = VS.GetPlayerByUserid( event.userid );
+	printl( player.GetScriptScope().name + " is hurt!\n" );
+	VS.DumpScope( event ) // debug
+}, "" );
+```
+
 Contexts are used to identify event listeners; they can be used to register multiple listeners for the same event.
 ```cs
 VS.ListenToGameEvent( "player_say", function() { print("-- 1\n") }, "context1" );
@@ -2964,7 +2946,7 @@ VS.ListenToGameEvent( "player_say", function() { print("-- 2\n") }, "context2" )
 VS.ListenToGameEvent( "player_say", function() { print("-- 3\n") }, "context3" );
 ```
 
-`bSynchronous == true` sets the listener to be synchronous, and execute callbacks as events are fired instead of waiting for the next server frame where some information you are after may become irrelevant.
+`bSynchronous` parameter sets the listener to be synchronous, and execute callbacks as events are fired instead of waiting for the next server frame where some information you are after may become irrelevant.
 
 However note that synchronous event listener callbacks will not have error handlers to dump the call stack and line info to help you debug. Use this mindfully!
 
@@ -3021,27 +3003,20 @@ Overrides the user con_filter settings but if the user cares about this at all, 
 Works for listen server host (local player) only.
 ________________________________
 
-<a name="f_Logenabled"></a>
-```cpp
-VS.Log.enabled = true
-```
-Print the log?
-________________________________
-
 <a name="f_Logexport"></a>
 ```cpp
 VS.Log.export = true
 ```
 Export the log?
 
-if( enabled && !export ) then print the log in the console
+if false then print the log in the console
 ________________________________
 
 <a name="f_Logfile_prefix"></a>
 ```cpp
 VS.Log.file_prefix = "vs.log"
 ```
-The exported log file name prefix.
+Exported log file name prefix.
 
 By default, every file is appended with random strings to make each exported file unique. Putting `:` in the beginning will remove this suffix, and each export will overwrite the previously exported file. E.g.: `VS.Log.file_prefix = ":vs.log"`
 
@@ -3054,28 +3029,28 @@ ________________________________
 ```cpp
 void VS::Log::Add(string s)
 ```
-Add new string to the internal log.
+Add new string to the log.
 ________________________________
 
 <a name="f_LogPop"></a>
 ```cpp
 void VS::Log::Pop()
 ```
-Pop the last string from the internal log.
+Pop the last string from the log.
 ________________________________
 
 <a name="f_LogClear"></a>
 ```cpp
 void VS::Log::Clear()
 ```
-Clear the internal log.
+Clear the log.
 ________________________________
 
 <a name="f_LogWriteKeyValues"></a>
 ```cpp
 void VS::Log::WriteKeyValues( szName, hTable )
 ```
-Recursively write a script table as KeyValues into the internal log.
+Recursively write a script table as KeyValues into the log.
 
 ```cs
 local kv =
@@ -3102,9 +3077,9 @@ ________________________________
 
 <a name="f_LogRun"></a>
 ```cpp
-string VS::Log::Run( data = null, function callback = null, table env = null )
+string VS::Log::Run( function callback = null, table env = null )
 ```
-If `data` is null, the internal log is used. `callback` is called after logging is complete. Exported file name is passed to the callback function.
+`callback` is called after export is complete. Exported file name is passed to the callback function.
 
 If `VS.Log.export` is true, then export the log file to the game directory. Returns exported file name.
 
@@ -3114,7 +3089,6 @@ Do NOT call multiple times in a frame, or before the previous export is done.
 
 ```cs
 VS.Log.Clear();
-VS.Log.enabled = true;
 VS.Log.export = true;
 VS.Log.file_prefix = ":cache/test";
 
@@ -3123,11 +3097,18 @@ VS.Log.Add( "Fusce maximus libero nec efficitur aliquet.\n" );
 
 print( "Exporting log file...\n" );
 
-VS.Log.Run( null, function(filename)
+VS.Log.Run( function( filename )
 {
 	printl( "Exported log file to: " + filename );
 }, this );
 ```
+________________________________
+
+<a name="f_Logdata"></a>
+```cpp
+VS.Log._data = []
+```
+Data array to print
 ________________________________
 
 <a name="f_Logfilter"></a>

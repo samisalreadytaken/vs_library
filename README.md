@@ -1,7 +1,7 @@
 # VScript Library
 [![ver][]](CHANGELOG.txt)
 
-[ver]: https://img.shields.io/badge/vs__library-v2.43.21-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.43.22-informational
 
 High-performance vscript libraries; written mainly for CS:GO, compatible with Portal 2.
 
@@ -25,7 +25,7 @@ Include the library file at the beginning of your script: `IncludeScript("vs_lib
 
 Done!
 
-It only needs to be included once in the lifetime of the map running in the server. Including it more than once does not affect the performance.
+It only needs to be included once in the lifetime of the map running in the server. Including it more than once does not affect anything.
 
 ### Math library
 The math library is based on Source engine. Working with this makes moving from and to Source development very easy.
@@ -101,11 +101,11 @@ IncludeScript("vs_events");
 
 VS.ListenToGameEvent( "bullet_impact", function( event )
 {
-	local pos = Vector( event.x, event.y, event.z );
-	local ply = VS.GetPlayerByUserid( event.userid );
+	local position = Vector( event.x, event.y, event.z );
+	local player = VS.GetPlayerByUserid( event.userid );
 
-	DebugDrawLine( ply.EyePosition(), pos, 255,0,0,false, 2.0 );
-	DebugDrawBox( pos, Vector(-2,-2,-2), Vector(2,2,2), 255,0,255,127, 2.0 );
+	DebugDrawLine( player.EyePosition(), position, 255, 0, 0, false, 2.0 );
+	DebugDrawBox( position, Vector(-2,-2,-2), Vector(2,2,2), 255, 0, 255, 127, 2.0 );
 }, "DrawImpact" );
 ```
 
