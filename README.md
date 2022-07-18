@@ -107,6 +107,16 @@ VS.ListenToGameEvent( "bullet_impact", function( event )
 	DebugDrawLine( player.EyePosition(), position, 255, 0, 0, false, 2.0 );
 	DebugDrawBox( position, Vector(-2,-2,-2), Vector(2,2,2), 255, 0, 255, 127, 2.0 );
 }, "DrawImpact" );
+
+VS.ListenToGameEvent( "player_disconnect", function( event )
+{
+	local player = VS.GetPlayerByUserid( event.userid );
+	local origin = player.GetOrigin();
+
+	print(format( "Player disconnected at %f %f %f\n", origin.x, origin.y, origin.z ));
+	DebugDrawBox( origin, Vector(-16,-16,0), Vector(16,16,72), 255, 0, 0, 127, 10.0 );
+
+}, "ShowDisconnectLocation", 1 );
 ```
 
 #### Use on dedicated servers

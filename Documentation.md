@@ -34,8 +34,8 @@ ________________________________
 | `closure`, `function` | function                                                                            |
 | `handle`,`CBaseEntity`| Generic entity script handle                                                        |
 | `CBasePlayer`         | Player entity script handle                                                         |
-| `Vector`, `vec3_t`    | `Vector(0,1,2)`                                                                     |
-| `QAngle`              | `Vector(0,1,2)`, `(pitch, yaw, roll)` Euler angle. Vector, **not a different type** |
+| `Vector`, `vec3_t`    | `Vector(x,y,z)`                                                                     |
+| `QAngle`              | `Vector(pitch, yaw, roll)` Euler angle. Vector, **not a different type**            |
 | `Quaternion`          | `Quaternion(0,1,2,3)`                                                               |
 | `matrix3x4_t`         | `matrix3x4_t()`                                                                     |
 | `VMatrix`             | `VMatrix()`                                                                         |
@@ -452,6 +452,8 @@ ________________________________
 ```cpp
 bool VS::IsLookingAt(Vector source, Vector target, Vector direction, float tolerance)
 ```
+See also [VS.IsBoxIntersectingRay](f_IsBoxIntersectingRay), [VS.IsRayIntersectingSphere](f_IsRayIntersectingSphere).
+
 <details><summary>Example</summary>
 
 ```cs
@@ -459,14 +461,16 @@ function Think()
 {
 	local bLooking = false
 	local eyePos = player.EyePosition()
-	local target = Vector()
+	local target = Vector() // arbitrary world position to test
 
 	DebugDrawLine( player.GetOrigin(), target, 255,0,0,true, -1 )
 
 	// only check if there is direct LOS with the target
 	if ( !VS.TraceLine( eyePos, target, player.self, MASK_SOLID ).DidHit() )
 	{
-		bLooking = VS.IsLookingAt( eyePos, target, player.EyeForward(), VIEW_FIELD_NARROW )
+		local lookThreshold = cos( DEG2RAD * 10.0 ) // 10 degrees
+
+		bLooking = VS.IsLookingAt( eyePos, target, player.EyeForward(), lookThreshold )
 	}
 
 	if ( bLooking )
@@ -602,14 +606,14 @@ ________________________________
 ```cpp
 float VS::AngleNormalize(float angle)
 ```
-
+Normalises the angle in -180,+180
 ________________________________
 
 <a name="f_QAngleNormalize"></a>
 ```cpp
 QAngle VS::QAngleNormalize(QAngle& angle)
 ```
-
+Normalises the angle in -180,+180
 ________________________________
 
 <a name="f_SnapDirectionToAxis"></a>
@@ -650,7 +654,7 @@ ________________________________
 ```cpp
 Vector VS::VectorNegate(Vector& vec)
 ```
-
+Negates the vector in place.
 ________________________________
 
 <a name="f_VectorCopy"></a>
@@ -1161,7 +1165,6 @@ ________________________________
 Quaternion VS::AngleQuaternion(QAngle angles, Quaternion& out = _QUAT)
 ```
 QAngle -> Quaternion
-
 ________________________________
 
 <a name="f_MatrixQuaternion"></a>
@@ -1494,7 +1497,7 @@ ________________________________
 ```cpp
 Vector VS::ScreenToWorld( float x, float y, VMatrix screenToWorld, Vector &pOut = _VEC )
 ```
-Input screen position in [0,1] range.
+Input normalised screen position in [0,1] range.
 
 ```cs
 local x = 0.75;
@@ -1544,6 +1547,7 @@ Example detect if a world position is on a player's screen:
 ```cs
 local targetPos = Vector();
 
+// aspect ratio of the player's game (width/height)
 local aspectRatio = 16.0/9.0;
 
 local viewOrigin = player.EyePosition();
@@ -1587,7 +1591,7 @@ ________________________________
 ```cpp
 void VS::ComputeCameraVariables( Vector vecOrigin, Vector pVecForward, Vector pVecRight, Vector pVecUp, VMatrix &pMatCamInverse )
 ```
-Compute camera matrix.
+Compute camera matrix where the camera looks down +z, +y is up, +x is right.
 
 NOTE: In CS:GO, view render origin is offset from the eye position (origin+viewoffset). Use the following conversion to get more precision:
 
@@ -2029,16 +2033,48 @@ ________________________________
 
 <a name="f_IsBoxIntersectingRay"></a>
 ```cpp
-bool VS::IsBoxIntersectingRay(Vector boxMin, Vector boxMax, Vector origin, Vector vecDelta, float flTolerance = 0.0)
+bool VS::IsBoxIntersectingRay(Vector boxMin, Vector boxMax, Vector vecRayStart, Vector vecRayDelta, float flTolerance = 0.0)
 ```
 Intersects a ray with a AABB, return true if they intersect
 
 Input  : worldMins, worldMaxs
+
+<details><summary>Example</summary>
+
+```cs
+
+// Box definitions
+m_vecBoxOrigin <- Vector( 0, 0, 16 );
+m_vecBoxMins <- Vector( 0, -8, -8 );
+m_vecBoxMaxs <- Vector( 128, 8, 8 );
+
+function Think()
+{
+	local vecEyePos = player.EyePosition();
+	local vecEyeFwd = player.EyeForward();
+
+	local mins = m_vecBoxOrigin + m_vecBoxMins;
+	local maxs = m_vecBoxOrigin + m_vecBoxMaxs;
+
+	if ( VS.IsBoxIntersectingRay( mins, maxs, vecEyePos, vecEyeFwd * MAX_COORD_FLOAT, 0.0 ) )
+	{
+		// green box
+		DebugDrawBox( m_vecBoxOrigin, m_vecBoxMins, m_vecBoxMaxs, 0, 255, 0, 64, -1 );
+	}
+	else
+	{
+		// red box
+		DebugDrawBox( m_vecBoxOrigin, m_vecBoxMins, m_vecBoxMaxs, 255, 0, 0, 64, -1 );
+	}
+}
+```
+
+</details>
 ________________________________
 
 <a name="f_IsBoxIntersectingRay2"></a>
 ```cpp
-bool VS::IsBoxIntersectingRay2(Vector origin, Vector vecBoxMin, Vector vecBoxMax, Ray_t ray, float flTolerance = 0.0)
+bool VS::IsBoxIntersectingRay2(Vector vecBoxOrigin, Vector vecBoxMin, Vector vecBoxMax, Ray_t ray, float flTolerance = 0.0)
 ```
 Intersects a ray with a AABB, return true if they intersect
 
@@ -2114,7 +2150,7 @@ ________________________________
 
 <a name="f_delay"></a>
 ```cpp
-void delay(string exec, float time = 0.0, handle ent = World, handle activator = null, handle caller = null)
+void delay()
 ```
 Deprecated. Use [`VS.EventQueue.AddEvent`](#f_EventQueueAddEvent).
 
@@ -2252,11 +2288,11 @@ There is no performance penalty for using `CExtendedPlayer` exclusively.
 One aspect to pay attention to is passing players to native functions such as `EntFireByHandle` or `CEntities::Next`. Use `CExtendedPlayer::self` for passing player parameters to native functions.
 
 ```cs
-local ply = ToExtendedPlayer( VS.GetPlayerByIndex(1) );
+local player = ToExtendedPlayer( VS.GetPlayerByIndex(1) );
 
-EntFireByHandle( ply.self, "SetHealth", 1 );
+EntFireByHandle( player.self, "SetHealth", 1 );
 
-local tr = TraceLine( v1, v2, ply.self, MASK_SOLID );
+local tr = TraceLine( v1, v2, player.self, MASK_SOLID );
 ```
 
 The following functions require event listener setup and do not work in Portal 2: `IsBot`, `GetUserID`, `GetNetworkIDString`, `GetPlayerName`.
@@ -2296,42 +2332,42 @@ const PLAYER_INPUT_CONTEXT = "";
 
 VS.ListenToGameEvent( "player_spawn", function(ev)
 {
-	local ply = ToExtendedPlayer( VS.GetPlayerByUserid( ev.userid ) );
-	if ( !ply )
+	local player = ToExtendedPlayer( VS.GetPlayerByUserid( ev.userid ) );
+	if ( !player )
 		return;
 
-	if ( !ply.IsBot() )
+	if ( !player.IsBot() )
 	{
-		ply.SetInputCallback( "+forward",  OnForwardPressed, PLAYER_INPUT_CONTEXT );
-		ply.SetInputCallback( "-forward",  OnForwardReleased, PLAYER_INPUT_CONTEXT );
-	};
+		player.SetInputCallback( "+forward",  OnForwardPressed, PLAYER_INPUT_CONTEXT );
+		player.SetInputCallback( "-forward",  OnForwardReleased, PLAYER_INPUT_CONTEXT );
+	}
 
-	ply.SetInputCallback( "+attack", OnAttack, PLAYER_INPUT_CONTEXT );
+	player.SetInputCallback( "+attack", OnAttack, PLAYER_INPUT_CONTEXT );
 }.bindenv(this), "" );
 
-function OnAttack( ply )
+function OnAttack( player )
 {
-	printl("+attack " + ply.GetPlayerName());
+	printl("+attack " + player.GetPlayerName());
 
-	local eyePos = ply.EyePosition();
-	local org = ply.GetOrigin();
+	local eyePos = player.EyePosition();
+	local org = player.GetOrigin();
 	org.z += 16.0;
 	VS.DrawCapsule( org, org + Vector(0,0,48), 16.0, 0, 255, 255, false, 5.0 );
 
-	VS.DrawViewFrustum( eyePos, ply.EyeForward(), ply.EyeRight(), ply.EyeUp(),
+	VS.DrawViewFrustum( eyePos, player.EyeForward(), player.EyeRight(), player.EyeUp(),
 		90.0, 1.7778, 2.0, 16.0, 255, 0, 0, false, 5.0 );
 
-	DebugDrawBoxAngles( eyePos, Vector(2,-1,-1), Vector(32,1,1), ply.EyeAngles(), 0, 255, 0, 16, 5.0 );
+	DebugDrawBoxAngles( eyePos, Vector(2,-1,-1), Vector(32,1,1), player.EyeAngles(), 0, 255, 0, 16, 5.0 );
 }
 
-function OnForwardPressed( ply )
+function OnForwardPressed( player )
 {
-	printl("+forward " + ply.GetPlayerName())
+	printl("+forward " + player.GetPlayerName())
 }
 
-function OnForwardReleased( ply )
+function OnForwardReleased( player )
 {
-	printl("-forward " + ply.GetPlayerName())
+	printl("-forward " + player.GetPlayerName())
 }
 ```
 ________________________________
@@ -2353,7 +2389,7 @@ ________________________________
 ```cpp
 trace_t VS::TraceLine( Vector start, Vector end, handle ignore = null, int mask = MASK_NPCWORLDSTATIC )
 ```
-Mask parameter can take `MASK_NPCWORLDSTATIC` (`0x2000b`) or `MASK_SOLID` (`0x200400b`).
+Mask parameter can take `MASK_NPCWORLDSTATIC` or `MASK_SOLID`
 ________________________________
 
 <a name="f_DidHit"></a>
@@ -2478,41 +2514,100 @@ ________________________________
 
 <a name="f_EventQueueAddEvent"></a>
 ```cpp
-EventQueuePrioritizedEvent_t VS::EventQueue::AddEvent( closure hFunc, float flDelay, table|array argv = null, handle activator = null, handle caller = null )
+EventQueuePrioritizedEvent_t VS::EventQueue::AddEvent( closure hFunc, float flDelay, table|array argv = null, CBaseEntity activator = null, CBaseEntity caller = null )
 ```
-Add new function callback to the queue.
+Execute input function after time in seconds.
 
-`argv` can be a table for call environment (e.g. `this`), or an array for parameters to pass to the function call.
+`argv` can be a table as call environment (e.g. `this`), or an array of parameters to pass to the function call. The array parameter needs to have its first index as the call environment (e.g. `[this, "param1", "param2"]`).
 
-The array parameter needs to have its first index as the call environment (e.g. `[this, "param1", "param2"]`).
+Examples:
 
+Execute `MyFunc` after 2 seconds delay without passing any parameters:
 ```cs
 function MyFunc()
 {
-	Msg("Message 1\n")
+	print("Message 1\n");
 }
 
-function MyFunc2( a, b, c )
-{
-	Msg(a + ", " + b + ", " + c + "\n")
-}
-
-VS.EventQueue.AddEvent( MyFunc, 2.0 )
-VS.EventQueue.AddEvent( MyFunc, 2.5, this )
-VS.EventQueue.AddEvent( Msg, 1.0, [null, "Message 2\n"] )
-VS.EventQueue.AddEvent( MyFunc2, 4.0, [this, "x", "y", "z"] )
-VS.EventQueue.AddEvent( function()
-{
-	Msg("Message 3\n")
-}, 0.5, this )
+VS.EventQueue.AddEvent( MyFunc, 2.0, this );
 ```
 
-The internal function can also be called with a premade event object using `VS.EventQueue.CreateEvent`.
+Execute `MyFunc` after 3 seconds delay passing 1 parameter:
+```cs
+function MyFunc( a )
+{
+	print("Message "+ a +"\n");
+}
+
+VS.EventQueue.AddEvent( MyFunc, 3.0, [this, 2] );
+```
+
+Execute anonymous function after 0,5 second delay without passing any parameters:
+```cs
+VS.EventQueue.AddEvent( function()
+{
+	print("Message 3\n");
+}, 0.5, this );
+```
+
+Freeze the movement of a player for 2 seconds:
+```cs
+local player = ToExtendedPlayer( VS.GetPlayerByIndex(1) );
+
+local curHealth = player.GetHealth();
+
+// freeze
+player.SetMoveType( 0 );
+player.SetHealth( 1 );
+
+// unfreeze and restore health 2 seconds later
+VS.EventQueue.AddEvent( player.SetMoveType, 2.0, [player, 2] );
+VS.EventQueue.AddEvent( player.SetHealth, 2.0, [player, curHealth] );
+```
+
+Cancel all queued events of `MyFunc`
+```cs
+function MyFunc()
+{
+	print("Message 1\n")
+}
+
+// Multiple or unknown amount of events
+VS.EventQueue.AddEvent( MyFunc, 0.5, this );
+VS.EventQueue.AddEvent( MyFunc, 1.0, this );
+VS.EventQueue.AddEvent( MyFunc, 2.0, this );
+
+// Cancel all MyFunc events
+VS.EventQueue.CancelEventsByInput( MyFunc );
+```
+
+Start the countdown to kill a player unless they jump:
 
 ```cs
-local event = VS.EventQueue.CreateEvent( Msg, [null, "Message 2\n"] )
+function KillPlayer( player )
+{
+	EntFireByHandle( player, "SetHealth", 0 );
+}
 
-VS.EventQueue.AddEventInternal( event, delay )
+// Cancel the saved event when player jumps
+VS.ListenToGameEvent( "player_jump", function( event )
+{
+	local player = VS.GetPlayerByUserid( event.userid );
+	local scope = player.GetScriptScope();
+
+	if ( "m_DeathEvent" in scope && scope.m_DeathEvent )
+	{
+		VS.EventQueue.RemoveEvent( scope.m_DeathEvent );
+		scope.m_DeathEvent = null;
+	}
+}, "" );
+
+
+local player = VS.GetPlayerByIndex(1);
+local scope = player.GetScriptScope();
+
+// Kill after 10 seconds
+scope.m_DeathEvent <- VS.EventQueue.AddEvent( KillPlayer, 10.0, [this, player] );
 ```
 ________________________________
 
@@ -2575,7 +2670,7 @@ ________________________________
 ```cpp
 void VS::PrintStack(int startlevel = 0)
 ```
-Print stack
+
 ________________________________
 
 <a name="f_GetCallerFunc"></a>
@@ -2600,8 +2695,7 @@ Does a linear search through the root table.
 
 Doesn't work with primitive variables if there are multiple variables with the same value. But it can work if the value is unique, like a unique string.
 
-<details><summary>Example</summary>
-
+Example:
 ```cs
 somestring <- "my unique string"
 somefunc <- function(){}
@@ -2612,8 +2706,6 @@ printl( VS.GetVarName(somestring) )
 // prints "somefunc"
 printl( VS.GetVarName(somefunc) )
 ```
-
-</details>
 
 ________________________________
 
@@ -2788,8 +2880,7 @@ void VS::AddOutput( CBaseEntity hEnt, string szOutput, string|closure fnCallback
 ```
 Adds output to the input entity. Passing a function parameter will add the action `!self > CallScriptFunction > OutputName`
 
-<details><summary>Example</summary>
-
+Example:
 ```cs
 function MyFunction( param = null )
 {
@@ -2802,34 +2893,31 @@ VS.AddOutput( hButton, "OnPressed", "player", "RunScriptCode", "printl(\"output 
 VS.AddOutput( hButton, "OnPressed", "player", "RunScriptCode", "printl(\"output 2\")", 1.0 )
 VS.AddOutput( hButton, "OnPressed", "player", "RunScriptCode", "printl(\"output 3\")", 1.0, 1 )
 ```
-
-</details>
-
 ________________________________
 
 <a name="f_CreateEntity"></a>
 ```cpp
-handle VS::CreateEntity(string classname, table keyvalues = null, bool preserve = false)
+CBaseEntity VS::CreateEntity(string classname, table keyvalues = null, bool preserve = false)
 ```
-CreateByClassname, set keyvalues, return handle
+CreateByClassname, set keyvalues, return entity handle
 
 <details><summary><code>game_text</code></summary>
 
 ```cs
 	VS.CreateEntity("game_text", 
 	{
-//		channel = 1,
-//		color = "100 100 100",
-//		color2 = "240 110 0",
-//		effect = 0,
-//		fadein = 1.5,
-//		fadeout = 0.5,
-//		fxtime = 0.25,
-//		holdtime = 1.2,
-//		x = -1,
-//		y = -1,
-//		spawnflags = 0,
-//		message = ""
+		channel = 1,
+		color = "100 100 100",
+		color2 = "240 110 0",
+		effect = 0,
+		fadein = 1.5,
+		fadeout = 0.5,
+		fxtime = 0.25,
+		holdtime = 1.2,
+		x = -1,
+		y = -1,
+		spawnflags = 0,
+		message = ""
 	});
 ```
 
@@ -2840,12 +2928,12 @@ CreateByClassname, set keyvalues, return handle
 ```cs
 	VS.CreateEntity("point_worldtext", 
 	{
-//		spawnflags = 0,
-//		origin = Vector(),
-//		angles = Vector(),
-//		message = "msg",
-//		textsize = 10,
-//		color = Vector(255,255,255)
+		spawnflags = 0,
+		origin = Vector(),
+		angles = Vector(),
+		message = "msg",
+		textsize = 10,
+		color = Vector(255,255,255)
 	});
 ```
 
@@ -2927,7 +3015,7 @@ ________________________________
 ```cpp
 void VS::ListenToGameEvent( string szEventname, closure fnCallback, string pContext, bool bSynchronous = false )
 ```
-Register a listener for a game event from script. Requires event listener setup.
+Register a listener for a game event from script. Requires entity setup in Hammer.
 
 Event data is optionally passed to the user callback function.
 ```cs
