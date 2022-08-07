@@ -274,6 +274,8 @@ IncludeScript("myscript")
 [`VS.IntersectRayWithBox()`](#f_IntersectRayWithBox)  
 [`VS.IntersectRayWithOBB()`](#f_IntersectRayWithOBB)  
 [`VS.IsRayIntersectingOBB()`](#f_IsRayIntersectingOBB)  
+[`VS.IsOBBIntersectingOBB()`](#f_IsOBBIntersectingOBB)  
+[`VS.ComputeSeparatingPlane()`](#f_ComputeSeparatingPlane)  
 
 
 ### [vs_utility](#vs_utility-1)
@@ -2116,6 +2118,20 @@ ________________________________
 bool VS::IsRayIntersectingOBB( Ray_t ray, Vector org, QAngle angles, Vector mins, Vector maxs )
 ```
 Swept OBB test
+________________________________
+
+<a name="f_IsOBBIntersectingOBB"></a>
+```cpp
+bool VS::IsOBBIntersectingOBB( Vector org1, Vector ang1, Vector min1, Vector max1, Vector org2, Vector ang2, Vector min2, Vector max2, float tolerance )
+```
+Returns true if there's an intersection between two OBBs
+________________________________
+
+<a name="f_ComputeSeparatingPlane"></a>
+```cpp
+bool VS::ComputeSeparatingPlane( matrix3x4_t worldToBox1, matrix3x4_t box2ToWorld, Vector box1Size, Vector box2Size, float tolerance, Vector &pNormalOut = _VEC )
+```
+Compute a separating plane between two boxes (expensive!). Returns false if no separating plane exists
 ________________________________
 
 

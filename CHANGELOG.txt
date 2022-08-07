@@ -3,6 +3,10 @@
 
 --------------------------------
 
+2022-08-07 [v2.43.23]
+- Added VS.IsOBBIntersectingOBB
+- Added VS.ComputeSeparatingPlane
+
 2022-07-12 [v2.43.22]
 - Fixed VS.ConcatTransforms incorrect translation calculation
 - Deprecated CExtendedPlayer::SetInputCallback(), moved to VS.SetInputCallback(). No functional changes.

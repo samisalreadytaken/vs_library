@@ -2905,7 +2905,7 @@ function VS::MatrixInverseTR( src, dst )
 	m[M_33] = 1.0;
 	return MatrixInvert( src, dst );
 }
-/*
+
 function VS::MatrixRowDotProduct( in1, row, in2 )
 {
 	row = row * 4;
@@ -2918,7 +2918,7 @@ function VS::MatrixColumnDotProduct( in1, col, in2 )
 	in1 = in1[0];
 	return in1[col] * in2.x + in1[4+col] * in2.y + in1[8+col] * in2.z;
 }
-*/
+
 function VS::MatrixGetColumn( in1, column, out = _VEC )
 {
 	in1 = in1[0];
@@ -6055,8 +6055,8 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs )
 
 //	if ( !ray.m_IsSwept )
 //	{
-//		return ComputeSeparatingPlane2( ray.m_Start, Vector(), ray.m_Extents * -1, ray.m_Extents,
-//			org, angles, mins, maxs, 0.0 ) == false;
+//		return IsOBBIntersectingOBB( ray.m_Start, Vector(), ray.m_Extents * -1, ray.m_Extents,
+//			org, angles, mins, maxs, 0.0 );
 //	};
 
 	// NOTE: See the comments in ComputeSeparatingPlane to understand this math
@@ -6158,7 +6158,7 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs )
 
 	return true;
 }
-/*
+
 //-----------------------------------------------------------------------------
 // Compute a separating plane between two boxes (expensive!)
 // Returns false if no separating plane exists
@@ -6482,13 +6482,12 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 	return false;
 }
-*/
-/*
+
 //-----------------------------------------------------------------------------
 // Compute a separating plane between two boxes (expensive!)
-// Returns false if no separating plane exists
+// Returns true if there's an intersection between two OBBs
 //-----------------------------------------------------------------------------
-function VS::ComputeSeparatingPlane2( org1, ang1, min1, max1, org2, ang2, min2, max2, tolerance, pNormal = _VEC )
+function VS::IsOBBIntersectingOBB( org1, ang1, min1, max1, org2, ang2, min2, max2, tolerance )
 	: (matrix3x4_t)
 {
 	local worldToBox1 = matrix3x4_t(), box2ToWorld = matrix3x4_t();
@@ -6500,9 +6499,9 @@ function VS::ComputeSeparatingPlane2( org1, ang1, min1, max1, org2, ang2, min2, 
 	local box1Size = (max1 - min1) * 0.5;
 	local box2Size = (max2 - min2) * 0.5;
 
-	return ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, tolerance, pNormal );
+	return !ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, tolerance );
 }
-*/
+
 //=============================================================================
 //=============================================================================
 
