@@ -256,6 +256,7 @@ IncludeScript("myscript")
 [`VS.CalcSqrDistanceToAABB()`](#f_CalcSqrDistanceToAABB)  
 [`VS.CalcClosestPointOnAABB()`](#f_CalcClosestPointOnAABB)  
 [`Ray_t`](#f_Ray_t)  
+[`trace_t`](#f_trace_t)  
 [`VS.ComputeBoxOffset()`](#f_ComputeBoxOffset)  
 [`VS.IntersectRayWithTriangle()`](#f_IntersectRayWithTriangle)  
 [`VS.ComputeIntersectionBarycentricCoordinates()`](#f_ComputeIntersectionBarycentricCoordinates)  
@@ -272,7 +273,11 @@ IncludeScript("myscript")
 [`VS.IntersectRayWithRay()`](#f_IntersectRayWithRay)  
 [`VS.IntersectRayWithPlane()`](#f_IntersectRayWithPlane)  
 [`VS.IntersectRayWithBox()`](#f_IntersectRayWithBox)  
+[`VS.ClipRayToBox()`](#f_ClipRayToBox)  
+[`VS.ClipRayToBox2()`](#f_ClipRayToBox2)  
 [`VS.IntersectRayWithOBB()`](#f_IntersectRayWithOBB)  
+[`VS.ClipRayToOBB()`](#f_ClipRayToOBB)  
+[`VS.ClipRayToOBB2()`](#f_ClipRayToOBB2)  
 [`VS.IsRayIntersectingOBB()`](#f_IsRayIntersectingOBB)  
 [`VS.IsOBBIntersectingOBB()`](#f_IsOBBIntersectingOBB)  
 [`VS.ComputeSeparatingPlane()`](#f_ComputeSeparatingPlane)  
@@ -1623,7 +1628,7 @@ ________________________________
 
 <a name="f_DrawFrustum"></a>
 ```cpp
-void VS::DrawFrustum( VMatrix matWorldToView, int r, int g, int b, bool z, float time )
+void VS::DrawFrustum( VMatrix matViewToWorld, int r, int g, int b, bool z, float time )
 ```
 ________________________________
 
@@ -1934,7 +1939,27 @@ class Ray_t
 	bool m_IsRay;
 	bool m_IsSwept;
 
-	void Init( Vector start, Vector end, Vector mins = null, Vector maxs = null );
+	void Init( Vector start, Vector end );
+	void Init( Vector start, Vector end, Vector mins, Vector maxs );
+}
+```
+________________________________
+
+<a name="f_trace_t"></a>
+```cpp
+class trace_t
+{
+	Vector startpos;
+	Vector endpos;
+	float fraction;
+	bool allsolid;
+	bool startsolid;
+
+	cplane_t plane
+	{
+		Vector normal;
+		float dist;
+	}
 }
 ```
 ________________________________
@@ -1961,7 +1986,7 @@ ________________________________
 
 <a name="f_ComputeIntersectionBarycentricCoordinates"></a>
 ```cpp
-bool VS::ComputeIntersectionBarycentricCoordinates( Ray_t ray, Vector v1, Vector v2, Vector v3, float[3] uvt )
+bool VS::ComputeIntersectionBarycentricCoordinates( Ray_t ray, Vector v1, Vector v2, Vector v3, float uvt[3] )
 ```
 Figures out the barycentric coordinates (u,v) where a ray hits a triangle.
 
@@ -2037,14 +2062,18 @@ ________________________________
 ```cpp
 bool VS::IsBoxIntersectingRay(Vector boxMin, Vector boxMax, Vector vecRayStart, Vector vecRayDelta, float flTolerance = 0.0)
 ```
-Intersects a ray with a AABB, return true if they intersect
+Intersects a ray with an AABB, return true if they intersect
+________________________________
 
-Input  : worldMins, worldMaxs
+<a name="f_IsBoxIntersectingRay2"></a>
+```cpp
+bool VS::IsBoxIntersectingRay2( Vector vecBoxOrigin, Vector vecBoxMin, Vector vecBoxMax, Ray_t ray, float flTolerance = 0.0 )
+```
+Intersects a ray with an AABB, return true if they intersect
 
 <details><summary>Example</summary>
 
 ```cs
-
 // Box definitions
 m_vecBoxOrigin <- Vector( 0, 0, 16 );
 m_vecBoxMins <- Vector( 0, -8, -8 );
@@ -2055,39 +2084,35 @@ function Think()
 	local vecEyePos = player.EyePosition();
 	local vecEyeFwd = player.EyeForward();
 
-	local mins = m_vecBoxOrigin + m_vecBoxMins;
-	local maxs = m_vecBoxOrigin + m_vecBoxMaxs;
+	local ray = Ray_t();
+	local rayHullMin = Vector(-2,-2,-2);
+	local rayHullMax = Vector(2,2,2);
+	ray.Init( vecEyePos, vecEyePos + vecEyeFwd * MAX_COORD_FLOAT, rayHullMin, rayHullMax );
 
-	if ( VS.IsBoxIntersectingRay( mins, maxs, vecEyePos, vecEyeFwd * MAX_COORD_FLOAT, 0.0 ) )
+	if ( VS.IsBoxIntersectingRay2( m_vecBoxOrigin, m_vecBoxMins, m_vecBoxMaxs, ray, 0.0 ) )
 	{
 		// green box
-		DebugDrawBox( m_vecBoxOrigin, m_vecBoxMins, m_vecBoxMaxs, 0, 255, 0, 64, -1 );
+		DebugDrawBox( m_vecBoxOrigin, m_vecBoxMins, m_vecBoxMaxs, 0, 255, 0, 16, -1 );
 	}
 	else
 	{
 		// red box
-		DebugDrawBox( m_vecBoxOrigin, m_vecBoxMins, m_vecBoxMaxs, 255, 0, 0, 64, -1 );
+		DebugDrawBox( m_vecBoxOrigin, m_vecBoxMins, m_vecBoxMaxs, 255, 0, 0, 16, -1 );
 	}
 }
 ```
 
 </details>
-________________________________
 
-<a name="f_IsBoxIntersectingRay2"></a>
-```cpp
-bool VS::IsBoxIntersectingRay2(Vector vecBoxOrigin, Vector vecBoxMin, Vector vecBoxMax, Ray_t ray, float flTolerance = 0.0)
-```
-Intersects a ray with a AABB, return true if they intersect
-
-Input  : localMins, localMaxs
 ________________________________
 
 <a name="f_IntersectRayWithRay"></a>
 ```cpp
-bool VS::IntersectRayWithRay( Vector vecStart0, Vector vecDelta0, Vector vecStart1, Vector vecDelta1 )
+bool VS::IntersectRayWithRay( Vector vecStart0, Vector vecDelta0, Vector vecStart1, Vector vecDelta1, float pTrace[2] )
 ```
 Intersects a ray with a ray, return true if they intersect
+
+Returns (t,s) parameters of closest approach (if not intersecting!)
 ________________________________
 
 <a name="f_IntersectRayWithPlane"></a>
@@ -2100,17 +2125,153 @@ ________________________________
 <a name="f_IntersectRayWithBox"></a>
 ```cpp
 bool VS::IntersectRayWithBox( Vector vecRayStart, Vector vecRayDelta,
-	Vector boxMins, Vector boxMaxs, float flTolerance, float[2] pTrace )
+	Vector boxMins, Vector boxMaxs, float flTolerance, float pTrace[2] )
 ```
 Intersects a ray against a box, returns t1 and t2
+________________________________
+
+<a name="f_ClipRayToBox"></a>
+```cpp
+bool VS::ClipRayToBox( Vector vecRayStart, Vector vecRayDelta,
+	Vector boxMins, Vector boxMaxs, float flTolerance, trace_t &pTrace )
+```
+Intersects a ray against a box, returns trace_t info
+________________________________
+
+<a name="f_ClipRayToBox2"></a>
+```cpp
+bool VS::ClipRayToBox2( Ray_t ray, Vector boxMins, Vector boxMaxs, float flTolerance, trace_t &pTrace )
+```
+Intersects a ray against a box, returns trace_t info
+
+<details><summary>Example</summary>
+
+```cs
+// Box definitions
+m_vecBoxOrigin <- Vector( 0, 0, 48 );
+m_vecBoxMins <- Vector( 0, -8, -8 );
+m_vecBoxMaxs <- Vector( 32, 8, 8 );
+
+function Think()
+{
+	local vecEyePos = player.EyePosition();
+	local vecEyeFwd = player.EyeForward();
+
+	local ray = Ray_t();
+	local rayHullMin = Vector(-2,-2,-2);
+	local rayHullMax = Vector(2,2,2);
+	ray.Init( vecEyePos, vecEyePos + vecEyeFwd * MAX_COORD_FLOAT, rayHullMin, rayHullMax );
+
+	local tr = trace_t();
+
+	if ( VS.ClipRayToBox2( ray, m_vecBoxOrigin + m_vecBoxMins, m_vecBoxOrigin + m_vecBoxMaxs, 0.0, tr ) )
+	{
+		// green box
+		DebugDrawBox( m_vecBoxOrigin, m_vecBoxMins, m_vecBoxMaxs, 0, 255, 0, 16, -1 );
+
+		// surface normal
+		DebugDrawLine( tr.endpos, tr.endpos + tr.plane.normal * 16, 0, 0, 255, true, -1 );
+	}
+	else
+	{
+		// red box
+		DebugDrawBox( m_vecBoxOrigin, m_vecBoxMins, m_vecBoxMaxs, 255, 0, 0, 16, -1 );
+	}
+
+	// Draw the ray
+	if ( ray.m_IsRay )
+	{
+		DebugDrawLine( ray.m_Start, ray.m_Start + ray.m_Delta, 255, 160, false, -1 );
+	}
+	else
+	{
+		rayHullMin.x = 0.0;
+		rayHullMax.x = ray.m_Delta.Length();
+		DebugDrawBoxAngles( ray.m_Start, rayHullMin, rayHullMax, VS.VectorAngles(ray.m_Delta), 255, 160, 0, 8, -1 );
+	}
+}
+```
+
+</details>
+
 ________________________________
 
 <a name="f_IntersectRayWithOBB"></a>
 ```cpp
 bool VS::IntersectRayWithOBB( Vector vecRayStart, Vector vecRayDelta, matrix3x4_t matOBBToWorld,
-	Vector vecOBBMins, Vector vecOBBMaxs, float flTolerance, float[2] pTrace )
+	Vector vecOBBMins, Vector vecOBBMaxs, float flTolerance, float pTrace[2] )
 ```
 Intersects a ray against an OBB, returns t1 and t2
+________________________________
+
+<a name="f_ClipRayToOBB"></a>
+```cpp
+bool VS::ClipRayToOBB( Vector vecRayStart, Vector vecRayDelta, matrix3x4_t matOBBToWorld,
+	Vector boxMins, Vector boxMaxs, float flTolerance, trace_t &pTrace )
+```
+Intersects a ray against an OBB, returns trace_t info
+________________________________
+
+<a name="f_ClipRayToOBB2"></a>
+```cpp
+bool VS::ClipRayToOBB2( Ray_t ray, matrix3x4_t matOBBToWorld, Vector boxMins, Vector boxMaxs, float flTolerance, trace_t &pTrace )
+```
+Intersects a ray against an OBB, returns trace_t info
+
+<details><summary>Example</summary>
+
+```cs
+// Box definitions
+m_vecBoxOrigin <- Vector( 0, 0, 48 );
+m_vecBoxMins <- Vector( 0, -8, -8 );
+m_vecBoxMaxs <- Vector( 32, 8, 8 );
+m_vecBoxAngles <- Vector( 10, 15, 0 );
+m_matBoxTransform <- matrix3x4_t();
+
+VS.AngleMatrix( m_vecBoxAngles, m_vecBoxOrigin, m_matBoxTransform );
+
+function Think()
+{
+	local vecEyePos = player.EyePosition();
+	local vecEyeFwd = player.EyeForward();
+
+	local ray = Ray_t();
+	local rayHullMin = Vector(-2,-2,-2);
+	local rayHullMax = Vector(2,2,2);
+	ray.Init( vecEyePos, vecEyePos + vecEyeFwd * MAX_COORD_FLOAT, rayHullMin, rayHullMax );
+
+	local tr = trace_t();
+
+	if ( VS.ClipRayToOBB2( ray, m_matBoxTransform, m_vecBoxMins, m_vecBoxMaxs, 0.0, tr ) )
+	{
+		// green box
+		DebugDrawBoxAngles( m_vecBoxOrigin, m_vecBoxMins, m_vecBoxMaxs, m_vecBoxAngles, 0, 255, 0, 16, -1 );
+
+		// surface normal
+		DebugDrawLine( tr.endpos, tr.endpos + tr.plane.normal * 16, 0, 0, 255, true, -1 );
+	}
+	else
+	{
+		// red box
+		DebugDrawBoxAngles( m_vecBoxOrigin, m_vecBoxMins, m_vecBoxMaxs, m_vecBoxAngles, 255, 0, 0, 16, -1 );
+	}
+
+	// Draw the ray
+	if ( ray.m_IsRay )
+	{
+		DebugDrawLine( ray.m_Start, ray.m_Start + ray.m_Delta, 255, 160, false, -1 );
+	}
+	else
+	{
+		rayHullMin.x = 0.0;
+		rayHullMax.x = ray.m_Delta.Length();
+		DebugDrawBoxAngles( ray.m_Start, rayHullMin, rayHullMax, VS.VectorAngles(ray.m_Delta), 255, 160, 0, 8, -1 );
+	}
+}
+```
+
+</details>
+
 ________________________________
 
 <a name="f_IsRayIntersectingOBB"></a>
@@ -2354,11 +2515,11 @@ VS.ListenToGameEvent( "player_spawn", function(ev)
 
 	if ( !player.IsBot() )
 	{
-		player.SetInputCallback( "+forward",  OnForwardPressed, PLAYER_INPUT_CONTEXT );
-		player.SetInputCallback( "-forward",  OnForwardReleased, PLAYER_INPUT_CONTEXT );
+		VS.SetInputCallback( player, "+forward",  OnForwardPressed, PLAYER_INPUT_CONTEXT );
+		VS.SetInputCallback( player, "-forward",  OnForwardReleased, PLAYER_INPUT_CONTEXT );
 	}
 
-	player.SetInputCallback( "+attack", OnAttack, PLAYER_INPUT_CONTEXT );
+	VS.SetInputCallback( player, "+attack", OnAttack, PLAYER_INPUT_CONTEXT );
 }.bindenv(this), "" );
 
 function OnAttack( player )

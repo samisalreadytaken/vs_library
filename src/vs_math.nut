@@ -126,12 +126,13 @@ delete CONST.FLT_MAX_N;
 // This cannot be guaranteed when the library is executed post server init -
 // where other scripts could have created a vector instance.
 
-// REMOVED: While I could keep this in for map scripts where this would be guaranteed,
-// I am wary of the uncertain edge cases.
-// For personal uses, use this vec3_t class.
+// This is not included with the library to prevent possible issues with
+// multiple origin scripts referencing the wrong Vector class passed in from others, expecting extended functionality and breaking.
+// For personal uses where your scripts use the expected class, use vec3_t below
+// which can be a complete substitute for Vector.
 /*
-class ::vec3_t extends ::Vector {}
-local Vector = vec3_t;
+::vec3_t <- class extends ::Vector {}
+local Vector = ::vec3_t;
 
 Vector.IsValid <- function()
 {
@@ -147,7 +148,7 @@ Vector.IsZero <- function()
 
 Vector._unm <- function()
 {
-	return this * -1.0;
+	return this * 0xFFFFFFFF;
 }
 
 Vector._div <- function(f)
@@ -160,7 +161,7 @@ Vector.Negate <- function()
 	x = -x; y = -y; z = -z;
 }
 
-Vector.Init <- function(X, Y, Z)
+Vector.Init <- function( X = 0.0, Y = 0.0, Z = 0.0 )
 {
 	x = X; y = Y; z = Z;
 }
@@ -3571,7 +3572,41 @@ function VS::IRotateAABB( transform, vecMinsIn, vecMaxsIn, vecMinsOut, vecMaxsOu
 	VectorSubtract( newCenter, newExtents, vecMinsOut );
 	VectorAdd( newCenter, newExtents, vecMaxsOut );
 }
+/*
+function VS::MatrixTransformPlane( src, inNormal, inDist, outNormal ) : ( VectorRotate )
+{
+	// What we want to do is the following:
+	// 1) transform the normal into the new space.
+	// 2) Determine a point on the old plane given by plane dist * plane normal
+	// 3) Transform that point into the new space
+	// 4) Plane dist = DotProduct( new normal, new point )
 
+	// An optimized version, which works if the plane is orthogonal.
+	// 1) Transform the normal into the new space
+	// 2) Realize that transforming the old plane point into the new space
+	// is given by [ d * n'x + Tx, d * n'y + Ty, d * n'z + Tz ]
+	// where d = old plane dist, n' = transformed normal, Tn = translational component of transform
+	// 3) Compute the new plane dist using the dot product of the normal result of #2
+
+	// For a correct result, this should be an inverse-transpose matrix
+	// but that only matters if there are nonuniform scale or skew factors in this matrix.
+	VectorRotate( inNormal, src, outNormal );
+	src = src[0];
+	return inDist * outNormal.LengthSqr() + outNormal.x * src[M_03] + outNormal.y * src[M_13] + outNormal.z * src[M_23];
+}
+
+function VS::MatrixITransformPlane( src, inNormal, inDist, outNormal ) : ( VectorIRotate )
+{
+	// The trick here is that Tn = translational component of transform,
+	// but for an inverse transform, Tn = - R^-1 * T
+	local vecTranslation = Vector( src[0][M_03], src[0][M_13], src[0][M_23] );
+	local vecInvTranslation = VectorIRotate( vecTranslation, src );
+
+	VectorIRotate( inNormal, src, outNormal );
+
+	return inDist * outNormal.LengthSqr() - outNormal.Dot( vecInvTranslation );
+}
+*/
 //
 // Get the vertices of a rotated box.
 //
@@ -4249,31 +4284,91 @@ function VS::DrawVertArrow( startPos, endPos, width, r, g, b, noDepthTest, flDur
 }
 
 
+//==============================================================
+//==============================================================
+
 /*
+//
+// Vector mins, Vector maxs, cplane_t plane{ Vector normal, float dist, int type, string sindex }
+//
+local BoxOnPlaneSide = function( emins, emaxs, p )
+{
+	// fast axial cases
+	if ( p.type < 3 )
+	{
+		if ( p.dist <= emins[ p.sindex ] )
+			return 1;
+		if ( p.dist >= emaxs[ p.sindex ] )
+			return 2;
+		return 3;
+	}
+
+	local dist1, dist2;
+	local normal = p.normal;
+
+	// general case
+	switch ( p.signbits )
+	{
+	case 0:
+		dist1 = normal.Dot( emaxs );
+		dist2 = normal.Dot( emins );
+		break;
+	case 1:
+		dist1 = normal.x*emins.x + normal.y*emaxs.y + normal.z*emaxs.z;
+		dist2 = normal.x*emaxs.x + normal.y*emins.y + normal.z*emins.z;
+		break;
+	case 2:
+		dist1 = normal.x*emaxs.x + normal.y*emins.y + normal.z*emaxs.z;
+		dist2 = normal.x*emins.x + normal.y*emaxs.y + normal.z*emins.z;
+		break;
+	case 3:
+		dist1 = normal.x*emins.x + normal.y*emins.y + normal.z*emaxs.z;
+		dist2 = normal.x*emaxs.x + normal.y*emaxs.y + normal.z*emins.z;
+		break;
+	case 4:
+		dist1 = normal.x*emaxs.x + normal.y*emaxs.y + normal.z*emins.z;
+		dist2 = normal.x*emins.x + normal.y*emins.y + normal.z*emaxs.z;
+		break;
+	case 5:
+		dist1 = normal.x*emins.x + normal.y*emaxs.y + normal.z*emins.z;
+		dist2 = normal.x*emaxs.x + normal.y*emins.y + normal.z*emaxs.z;
+		break;
+	case 6:
+		dist1 = normal.x*emaxs.x + normal.y*emins.y + normal.z*emins.z;
+		dist2 = normal.x*emins.x + normal.y*emaxs.y + normal.z*emaxs.z;
+		break;
+	case 7:
+		dist1 = normal.Dot( emins );
+		dist2 = normal.Dot( emaxs );
+		break;
+	default:
+		Msg( "VS::BoxOnPlaneSide: invalid plane signbits "+p.signbits+"\n" );
+		break;
+	}
+
+	local sides = 0;
+
+	if ( dist1 >= p.dist )
+		sides = 1;
+
+	if ( dist2 < p.dist )
+		sides = sides | 2;
+
+	// Assert( sides != 0 );
+	return sides;
+}
+*/
+
 local cplane_t = class
 {
 	normal = null;
 	dist = 0.0;
 	type = 0;			// for fast side tests
+	sindex = "";		// for indexing vectors
 	signbits = 0;		// signx + (signy<<1) + (signz<<1)
 }
 
-local SignbitsForPlane = function( out )
-{
-	local bits = 0;
-	local normal = out.normal;
-
-	// for fast box on planeside test
-	if ( normal.x < 0.0 )
-		bits = bits | 1;
-	if ( normal.y < 0.0 )
-		bits = bits | 2;
-	if ( normal.z < 0.0 )
-		bits = bits | 4;
-
-	return bits;
-}
-
+/*
 // 0-2 are axial planes
 const PLANE_X			= 0;;
 const PLANE_Y			= 1;;
@@ -4289,14 +4384,17 @@ const FRUSTUM_TOP		= 2;;
 const FRUSTUM_BOTTOM	= 3;;
 const FRUSTUM_NEARZ		= 4;;
 const FRUSTUM_FARZ		= 5;;
-const FRUSTUM_NUMPLANES	= 6;;
+//const FRUSTUM_NUMPLANES	= 6;;
 
 local Frustum_t = class
 {
-	constructor()
+	m_Plane = null;			// cplane_t[6]
+	m_AbsNormal = null;		// Vector[6]
+
+	constructor() : ( Vector, cplane_t )
 	{
-		m_Plane = [null,null,null,null,null,null];
-		m_AbsNormal = [null,null,null,null,null,null];
+		m_Plane = [ null, null, null, null, null, null ];
+		m_AbsNormal = [ null, null, null, null, null, null ];
 
 		for ( local i = 6; i--; )
 		{
@@ -4305,41 +4403,64 @@ local Frustum_t = class
 		}
 	}
 
-	function SetPlane( i, nType, vecNormal, dist ) : ( SignbitsForPlane )
+	function SetPlane( i, nType, vecNormal, dist ) : ( fabs )
 	{
 		local plane = m_Plane[i];
 		plane.normal = vecNormal;
 		plane.dist = dist;
 		plane.type = nType;
-		plane.signbits = SignbitsForPlane( plane );
+
+		if ( nType < 3 )
+			plane.sindex = ('x'+nType).tochar();
+		else
+			plane.sindex = ('x'+(nType-3)).tochar();
+
+		// for fast box on planeside test
+		local bits = 0;
+		if ( 0.0 > vecNormal.x )
+			bits = 1;
+		if ( 0.0 > vecNormal.y )
+			bits = bits | 2;
+		if ( 0.0 > vecNormal.z )
+			bits = bits | 4;
+		plane.signbits = bits;
+
 		local normal = m_AbsNormal[i];
 		normal.x = fabs( vecNormal.x );
 		normal.y = fabs( vecNormal.y );
 		normal.z = fabs( vecNormal.z );
 	}
 
-	m_Plane = null;
-	m_AbsNormal = null;
+	function CullBox( mins, maxs ) : ( BoxOnPlaneSide )
+	{
+		local plane = m_Plane;
+		return (( BoxOnPlaneSide( mins, maxs, plane[FRUSTUM_RIGHT] ) == 2 ) ||
+				( BoxOnPlaneSide( mins, maxs, plane[FRUSTUM_LEFT] ) == 2 ) ||
+				( BoxOnPlaneSide( mins, maxs, plane[FRUSTUM_TOP] ) == 2 ) ||
+				( BoxOnPlaneSide( mins, maxs, plane[FRUSTUM_BOTTOM] ) == 2 ) ||
+				( BoxOnPlaneSide( mins, maxs, plane[FRUSTUM_NEARZ] ) == 2 ) ||
+				( BoxOnPlaneSide( mins, maxs, plane[FRUSTUM_FARZ] ) == 2 ) );
+	}
 }
-
+*/
+/*
 //-----------------------------------------------------------------------------
 // Generate a frustum based on perspective view parameters
 //-----------------------------------------------------------------------------
-function VS::GeneratePerspectiveFrustum( origin, vecForward, vecRight, vecUp, flZNear, flZFar, flFovX, flAspectRatio, frustum )
+function VS::GeneratePerspectiveFrustum( origin, forward, right, up, flZNear, flZFar, flFovX, flAspectRatio, frustum ) : ( Vector, tan )
 {
 	local flIntercept = origin.Dot( forward );
 
-	// Setup the near and far planes.
-	frustum.SetPlane( FRUSTUM_FARZ, PLANE_ANYZ, -forward, -flZFar - flIntercept );
+	frustum.SetPlane( FRUSTUM_FARZ, PLANE_ANYZ, forward * 0xFFFFFFFF, -flZFar - flIntercept );
 	frustum.SetPlane( FRUSTUM_NEARZ, PLANE_ANYZ, forward, flZNear + flIntercept );
 
-	local flTanX = tan( DEG2RAD * flFovX * 0.5 );
+	local flTanX = tan( DEG2RADDIV2 * flFovX );
 	local flTanY = flTanX / flAspectRatio;
 
 	local normalPos = Vector(), normalNeg = Vector();
 
 	VectorMA( right, flTanX, forward, normalPos );
-	VectorMA( normalPos, -2.0, right * -1.0, normalNeg );
+	VectorMA( normalPos, -2.0, right, normalNeg );
 
 	normalPos.Norm();
 	normalNeg.Norm();
@@ -4357,8 +4478,6 @@ function VS::GeneratePerspectiveFrustum( origin, vecForward, vecRight, vecUp, fl
 	frustum.SetPlane( FRUSTUM_TOP, PLANE_ANYZ, normalNeg, normalNeg.Dot( origin ) );
 }
 */
-
-
 //==============================================================
 //==============================================================
 {
@@ -5140,43 +5259,86 @@ function VS::PointOnLineNearestPoint( vStartPos, vEndPos, vPoint )
 
 function VS::CalcSqrDistanceToAABB( mins, maxs, point )
 {
-	local flDelta;
+	local flDelta, flDistSqr = 0.0;
 
 	if ( point.x < mins.x )
 	{
 		flDelta = mins.x - point.x;
+		flDistSqr += flDelta * flDelta;
 	}
 	else if ( point.x > maxs.x )
 	{
 		flDelta = point.x - maxs.x;
+		flDistSqr += flDelta * flDelta;
 	};;
 
 	if ( point.y < mins.y )
 	{
 		flDelta = mins.y - point.y;
+		flDistSqr += flDelta * flDelta;
 	}
 	else if ( point.y > maxs.y )
 	{
 		flDelta = point.y - maxs.y;
+		flDistSqr += flDelta * flDelta;
 	};;
 
 	if ( point.z < mins.z )
 	{
 		flDelta = mins.z - point.z;
+		flDistSqr += flDelta * flDelta;
 	}
 	else if ( point.z > maxs.z )
 	{
 		flDelta = point.z - maxs.z;
+		flDistSqr += flDelta * flDelta;
 	};;
 
-	return flDelta * flDelta;
+	return flDistSqr;
 }
 
-function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut )
+function VS::CalcClosestPointOnAABB( mins, maxs, point, closestOut = _VEC )
 {
-	closestOut.x = (point.x < mins.x) ? mins.x : (maxs.x < point.x) ? maxs.x : point.x;
-	closestOut.y = (point.y < mins.y) ? mins.y : (maxs.y < point.y) ? maxs.y : point.y;
-	closestOut.z = (point.z < mins.z) ? mins.z : (maxs.z < point.z) ? maxs.z : point.z;
+	if ( point.x < mins.x )
+	{
+		closestOut.x = mins.x;
+	}
+	else if ( maxs.x < point.x )
+	{
+		closestOut.x = maxs.x;
+	}
+	else
+	{
+		closestOut.x = point.x;
+	};;
+
+	if ( point.y < mins.y )
+	{
+		closestOut.y = mins.y;
+	}
+	else if ( maxs.y < point.y )
+	{
+		closestOut.y = maxs.y;
+	}
+	else
+	{
+		closestOut.y = point.y;
+	};;
+
+	if ( point.z < mins.z )
+	{
+		closestOut.z = mins.z;
+	}
+	else if ( maxs.z < point.z )
+	{
+		closestOut.z = maxs.z;
+	}
+	else
+	{
+		closestOut.z = point.z;
+	};;
+
+	return closestOut;
 }
 
 
@@ -5211,6 +5373,22 @@ local Ray_t = class
 	}
 }
 
+local trace_t = class
+{
+	startpos = null;
+	endpos = null;
+	fraction = 1.0;
+	allsolid = false;
+	startsolid = false;
+	fractionleftsolid = 0.0;
+	plane = null;
+
+	constructor() : (cplane_t)
+	{
+		plane = cplane_t();
+	}
+}
+
 /*
 //-----------------------------------------------------------------------------
 // Clears the trace
@@ -5220,6 +5398,7 @@ function VS::Collision_ClearTrace( vecRayStart, vecRayDelta, pTrace )
 	pTrace.startpos = vecRayStart;
 	pTrace.endpos = vecRayStart + vecRayDelta;
 	pTrace.fraction = 1.0;
+	pTrace.startsolid = pTrace.allsolid = false;
 }
 */
 
@@ -5397,8 +5576,11 @@ function VS::ComputePointFromBarycentric( v0, v1, v2, u, v, pt )
 	pt.z = p.z;
 }
 */
-// function VS::IsBoxIntersectingTriangle()
-
+/*
+function VS::IsBoxIntersectingTriangle()
+{
+}
+*/
 // VectorWithinAABox
 function VS::IsPointInBox( vec, boxmin, boxmax )
 {
@@ -5541,12 +5723,9 @@ function VS::IsRayIntersectingSphere( vecRayOrigin, vecRayDelta, vecCenter, flRa
 	local vecRayToSphere = vecCenter - vecRayOrigin;
 	local flNumerator = vecRayToSphere.Dot( vecRayDelta );
 
-	local t;
-	if ( flNumerator <= 0.0 )
-	{
-		t = 0.0;
-	}
-	else
+	local t = 0.0; // ( flNumerator <= 0.0 )
+
+	if ( t < flNumerator )
 	{
 		local flDenominator = vecRayDelta.LengthSqr();
 		if ( flNumerator > flDenominator )
@@ -5584,25 +5763,26 @@ function VS::IntersectInfiniteRayWithSphere( vecRayOrigin, vecRayDelta, vecSpher
 	local vecSphereToRay = vecRayOrigin - vecSphereCenter;
 
 	local a = vecRayDelta.LengthSqr();
+	if ( a )
+	{
+		local b = 2.0 * vecSphereToRay.Dot( vecRayDelta );
+		local c = vecSphereToRay.LengthSqr() - flRadius * flRadius;
+		local flDiscrim = b * b - 4.0 * a * c;
+		if ( flDiscrim < 0.0 )
+			return false;
 
+		flDiscrim = sqrt( flDiscrim );
+		local oo2a = 0.5 / a;
+		pT[0] = ( -flDiscrim - b ) * oo2a;
+		pT[1] = ( flDiscrim - b ) * oo2a;
+		return true;
+	}
 	// This would occur in the case of a zero-length ray
-	if ( !a )
+	else
 	{
 		pT[0] = pT[1] = 0.0;
 		return vecSphereToRay.LengthSqr() <= flRadius * flRadius;
 	};
-
-	local b = 2.0 * vecSphereToRay.Dot( vecRayDelta );
-	local c = vecSphereToRay.LengthSqr() - flRadius * flRadius;
-	local flDiscrim = b * b - 4.0 * a * c;
-	if ( flDiscrim < 0.0 )
-		return false;
-
-	flDiscrim = sqrt( flDiscrim );
-	local oo2a = 0.5 / a;
-	pT[0] = ( -flDiscrim - b ) * oo2a;
-	pT[1] = ( flDiscrim - b ) * oo2a;
-	return true;
 }
 /*
 //-----------------------------------------------------------------------------
@@ -5625,8 +5805,7 @@ function VS::IntersectRayWithSphere( vecRayOrigin, vecRayDelta, vecSphereCenter,
 }
 */
 //-----------------------------------------------------------------------------
-// Intersects a ray with a AABB, return true if they intersect
-// Input  : worldMins, worldMaxs
+// Intersects a ray with an AABB, return true if they intersect
 //-----------------------------------------------------------------------------
 function VS::IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance = 0.0 )
 {
@@ -5635,7 +5814,7 @@ function VS::IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance
 	// Assert( boxMin.z <= boxMax.z );
 
 	// FIXME: Surely there's a faster way
-	local tmin = FLT_MIN, tmax = FLT_MAX, EPS = 1.e-8;
+	local tmin = FLT_MAX_N, tmax = FLT_MAX, EPS = 1.e-8;
 
 	// Parallel case...
 	if ( vecDelta.x < EPS && vecDelta.x > -EPS )
@@ -5738,36 +5917,34 @@ function VS::IsBoxIntersectingRay( boxMin, boxMax, origin, vecDelta, flTolerance
 local IsBoxIntersectingRay = VS.IsBoxIntersectingRay;
 
 //-----------------------------------------------------------------------------
-// Intersects a ray with a AABB, return true if they intersect
-// Input  : localMins, localMaxs
+// Intersects a ray with an AABB, return true if they intersect
 //-----------------------------------------------------------------------------
 function VS::IsBoxIntersectingRay2( origin, vecBoxMin, vecBoxMax, ray, flTolerance = 0.0 )
 	: ( IsBoxIntersectingRay )
 {
-	if ( !ray.m_IsSwept )
+	if ( ray.m_IsSwept )
+		return IsBoxIntersectingRay(
+			origin + vecBoxMin - ray.m_Extents,
+			origin + vecBoxMax + ray.m_Extents,
+			ray.m_Start,
+			ray.m_Delta,
+			flTolerance );
+
+	local rayMins = ray.m_Start - ray.m_Extents;
+	local rayMaxs = ray.m_Start + ray.m_Extents;
+	if ( flTolerance )
 	{
-		local rayMins = ray.m_Start - ray.m_Extents;
-		local rayMaxs = ray.m_Start + ray.m_Extents;
-		if ( flTolerance )
-		{
-			rayMins.x -= flTolerance; rayMins.y -= flTolerance; rayMins.z -= flTolerance;
-			rayMaxs.x += flTolerance; rayMaxs.y += flTolerance; rayMaxs.z += flTolerance;
-		};
-		return IsBoxIntersectingBox( vecBoxMin, vecBoxMax, rayMins, rayMaxs );
+		rayMins.x -= flTolerance; rayMins.y -= flTolerance; rayMins.z -= flTolerance;
+		rayMaxs.x += flTolerance; rayMaxs.y += flTolerance; rayMaxs.z += flTolerance;
 	};
-
-	// world
-	local vecExpandedBoxMin = vecBoxMin - ray.m_Extents + origin;
-	local vecExpandedBoxMax = vecBoxMax + ray.m_Extents + origin;
-
-	return IsBoxIntersectingRay( vecExpandedBoxMin, vecExpandedBoxMax, ray.m_Start, ray.m_Delta, flTolerance );
+	return IsBoxIntersectingBox( vecBoxMin, vecBoxMax, rayMins, rayMaxs );
 }
 
 //-----------------------------------------------------------------------------
 // Intersects a ray with a ray, return true if they intersect
 // t, s = parameters of closest approach (if not intersecting!)
 //-----------------------------------------------------------------------------
-function VS::IntersectRayWithRay( vecStart0, vecDelta0, vecStart1, vecDelta1/*, pT*/ )
+function VS::IntersectRayWithRay( vecStart0, vecDelta0, vecStart1, vecDelta1, pT )
 {
 	//
 	// r0 = p0 + v0t
@@ -5790,33 +5967,35 @@ function VS::IntersectRayWithRay( vecStart0, vecDelta0, vecStart1, vecDelta1/*, 
 
 	local v0xv1 = vecDelta0.Cross( vecDelta1 );
 	local lengthSq = v0xv1.LengthSqr();
-	if ( !lengthSq )
+	if ( lengthSq )
 	{
-		// pT[0] = pT[1] = 0.0;
+		local p1p0 = vecStart1 - vecStart0;
+
+		local AxC = p1p0.Cross( v0xv1 );
+		VectorNegate(AxC);
+		local detT = AxC.Dot( vecDelta1 );
+
+		AxC = p1p0.Cross( v0xv1 );
+		VectorNegate(AxC);
+		local detS = AxC.Dot( vecDelta0 );
+
+		local invL = 1.0 / lengthSq;
+		local t = detT * invL;
+		local s = detS * invL;
+		pT[0] = t;
+		pT[1] = s;
+
+		// intersection????
+		local i0 = vecStart0 + vecDelta0 * t;
+		local i1 = vecStart1 + vecDelta1 * s;
+
+		return ( i0.x == i1.x && i0.y == i1.y && i0.z == i1.z );
+	}
+	else
+	{
+		pT[0] = pT[1] = 0.0;
 		return false;		// parallel
 	};
-
-	local p1p0 = vecStart1 - vecStart0;
-
-	local AxC = p1p0.Cross( v0xv1 );
-	VectorNegate(AxC);
-	local detT = AxC.Dot( vecDelta1 );
-
-	AxC = p1p0.Cross( v0xv1 );
-	VectorNegate(AxC);
-	local detS = AxC.Dot( vecDelta0 );
-
-	local invL = 1.0 / lengthSq;
-	local t = detT * invL;
-	local s = detS * invL;
-	// pT[0] = t;
-	// pT[1] = s;
-
-	// intersection????
-	local i0 = vecStart0 + vecDelta0 * t;
-	local i1 = vecStart1 + vecDelta1 * s;
-
-	return ( i0.x == i1.x && i0.y == i1.y && i0.z == i1.z );
 }
 
 function VS::IntersectRayWithPlane( org, dir, normal, dist )
@@ -5828,7 +6007,7 @@ function VS::IntersectRayWithPlane( org, dir, normal, dist )
 }
 
 //-----------------------------------------------------------------------------
-// Intersects a ray against a box
+// Intersects a ray against a box, returns t1 and t2
 //-----------------------------------------------------------------------------
 function VS::IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, flTolerance, pTrace )
 {
@@ -5836,9 +6015,9 @@ function VS::IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, fl
 
 	local f, d1, d2;
 
-	local t1 = -1.0;
 	local t2 = 1.0;
-	// local hitside = -1;
+	local t1 = -t2;
+	local hitside = -1;
 
 	local startsolid = true;
 
@@ -5878,6 +6057,8 @@ function VS::IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, fl
 		{
 			// UNDONE: Have to revert this in case it's still set
 			// UNDONE: Refactor to have only 2 return points (true/false) from this function
+			if ( 2 in pTrace )
+				pTrace[2] = false;
 			// startsolid = false;
 			return false;
 		};
@@ -5899,7 +6080,7 @@ function VS::IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, fl
 			if (f > t1)
 			{
 				t1 = f;
-				// hitside = i;
+				hitside = i;
 			};
 		}
 		else
@@ -5915,15 +6096,104 @@ function VS::IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, fl
 
 	pTrace[0] = t1;
 	pTrace[1] = t2;
+	if ( 2 in pTrace )
+	{
+		pTrace[2] = startsolid;
+		pTrace[3] = hitside;
+	};
 
 	return startsolid || (t1 < t2 && t1 >= ZERO);
+}
+
+local IntersectRayWithBox = VS.IntersectRayWithBox;
+
+//-----------------------------------------------------------------------------
+// Intersects a ray against a box, returns trace_t info
+// IntersectRayWithBox
+//-----------------------------------------------------------------------------
+function VS::ClipRayToBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, flTolerance, pTrace ) : (IntersectRayWithBox)
+{
+	// Collision_ClearTrace( vecRayStart, vecRayDelta, pTrace );
+	pTrace.startpos = vecRayStart;
+	pTrace.endpos = vecRayStart + vecRayDelta;
+	pTrace.fraction = 1.0;
+	pTrace.startsolid = pTrace.allsolid = false;
+
+	local trace = [ 0.0, 0.0, 0, false ];
+
+	if ( IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, flTolerance, trace ) )
+	{
+		pTrace.startsolid = trace[2];
+		if (trace[0] < trace[1] && trace[0] >= 0.0)
+		{
+			pTrace.fraction = trace[0];
+			VectorMA( pTrace.startpos, trace[0], vecRayDelta, pTrace.endpos );
+			pTrace.plane.normal = Vector();
+			if ( trace[3] >= 3 )
+			{
+				local hitside = trace[3]-3;
+				pTrace.plane.type = hitside;
+				pTrace.plane.sindex = ('x'+hitside).tochar();
+				pTrace.plane.dist = boxMaxs[pTrace.plane.sindex];
+				pTrace.plane.normal[pTrace.plane.sindex] = 1.0;
+			}
+			else
+			{
+				local hitside = trace[3];
+				pTrace.plane.type = hitside;
+				pTrace.plane.sindex = ('x'+hitside).tochar();
+				pTrace.plane.dist = -boxMins[pTrace.plane.sindex];
+				pTrace.plane.normal[pTrace.plane.sindex] = -1.0;
+			};
+			return true;
+		};
+
+		if ( pTrace.startsolid )
+		{
+			pTrace.allsolid = (trace[1] <= 0.0) || (trace[1] >= 1.0);
+			pTrace.fraction = 0.0;
+			pTrace.fractionleftsolid = trace[1];
+			pTrace.endpos = pTrace.startpos * 1;
+			pTrace.plane.dist = pTrace.startpos.x;
+			pTrace.plane.normal = Vector( 1.0, 0.0, 0.0 );
+			pTrace.plane.type = 0;
+			pTrace.plane.sindex = "x";
+			pTrace.startpos = vecRayStart + vecRayDelta * trace[1];
+			return true;
+		};
+	};
+
+	return false;
+}
+
+local ClipRayToBox = VS.ClipRayToBox;
+
+//-----------------------------------------------------------------------------
+// Intersects a ray against a box, returns trace_t info
+// IntersectRayWithBox
+//-----------------------------------------------------------------------------
+function VS::ClipRayToBox2( ray, boxMins, boxMaxs, flTolerance, pTrace ) : (ClipRayToBox)
+{
+	if ( ray.m_IsRay )
+		return ClipRayToBox( ray.m_Start, ray.m_Delta, boxMins, boxMaxs, flTolerance, pTrace );
+
+	local ret = ClipRayToBox(
+		ray.m_Start,
+		ray.m_Delta,
+		boxMins - ray.m_Extents,
+		boxMaxs + ray.m_Extents,
+		flTolerance,
+		pTrace );
+	pTrace.startpos += ray.m_StartOffset;
+	pTrace.endpos += ray.m_StartOffset;
+	return ret;
 }
 
 //-----------------------------------------------------------------------------
 // Intersects a ray against an OBB, returns t1 and t2
 //-----------------------------------------------------------------------------
 function VS::IntersectRayWithOBB( vecRayStart, vecRayDelta, matOBBToWorld,
-	vecOBBMins, vecOBBMaxs, flTolerance, pTrace ) : (Vector, VectorITransform, VectorIRotate)
+	vecOBBMins, vecOBBMaxs, flTolerance, pTrace ) : (Vector, VectorITransform, VectorIRotate, IntersectRayWithBox)
 {
 	local start = Vector(), delta = Vector();
 	VectorITransform( vecRayStart, matOBBToWorld, start );
@@ -5931,9 +6201,19 @@ function VS::IntersectRayWithOBB( vecRayStart, vecRayDelta, matOBBToWorld,
 
 	return IntersectRayWithBox( start, delta, vecOBBMins, vecOBBMaxs, flTolerance, pTrace );
 }
-/*
+
+//-----------------------------------------------------------------------------
+// Intersects a ray against an OBB, returns trace_t info
+// IntersectRayWithOBB
+//-----------------------------------------------------------------------------
+function VS::ClipRayToOBB( vecRayStart, vecRayDelta, matOBBToWorld,
+	vecOBBMins, vecOBBMaxs, flTolerance, pTrace ) : ( fabs, Vector, ClipRayToBox )
 {
 	// Collision_ClearTrace( vecRayStart, vecRayDelta, pTrace );
+	pTrace.startpos = vecRayStart;
+	pTrace.endpos = vecRayStart + vecRayDelta;
+	pTrace.fraction = 1.0;
+	pTrace.startsolid = pTrace.allsolid = false;
 
 	// FIXME: Make it work with tolerance
 	// Assert( flTolerance == 0.0 );
@@ -5956,44 +6236,42 @@ function VS::IntersectRayWithOBB( vecRayStart, vecRayDelta, matOBBToWorld,
 	local extent = Vector(), uextent = Vector();
 	local segmentCenter = vecRayStart + vecRayDelta - vecBoxCenter;
 
+	local mat = matOBBToWorld[0];
+
 	// check box axes for separation
-	extent.x = vecRayDelta.x * matOBBToWorld[0][0] + vecRayDelta.y * matOBBToWorld[1][0] +	vecRayDelta.z * matOBBToWorld[2][0];
+	extent.x = vecRayDelta.x * mat[M_00] + vecRayDelta.y * mat[M_10] + vecRayDelta.z * mat[M_20];
 	uextent.x = fabs(extent.x);
-	local coord = segmentCenter.x * matOBBToWorld[0][0] + segmentCenter.y * matOBBToWorld[1][0] +	segmentCenter.z * matOBBToWorld[2][0];
+	local coord = segmentCenter.x * mat[M_00] + segmentCenter.y * mat[M_10] + segmentCenter.z * mat[M_20];
 
 	if ( fabs(coord) > (vecBoxExtents.x + uextent.x) )
 		return false;
 
-	extent.y = vecRayDelta.x * matOBBToWorld[0][1] + vecRayDelta.y * matOBBToWorld[1][1] +	vecRayDelta.z * matOBBToWorld[2][1];
+	extent.y = vecRayDelta.x * mat[M_01] + vecRayDelta.y * mat[M_11] + vecRayDelta.z * mat[M_21];
 	uextent.y = fabs(extent.y);
-	local coord = segmentCenter.x * matOBBToWorld[0][1] + segmentCenter.y * matOBBToWorld[1][1] +	segmentCenter.z * matOBBToWorld[2][1];
+	coord = segmentCenter.x * mat[M_01] + segmentCenter.y * mat[M_11] + segmentCenter.z * mat[M_21];
 
 	if ( fabs(coord) > (vecBoxExtents.y + uextent.y) )
 		return false;
 
-	extent.z = vecRayDelta.x * matOBBToWorld[0][2] + vecRayDelta.y * matOBBToWorld[1][2] +	vecRayDelta.z * matOBBToWorld[2][2];
+	extent.z = vecRayDelta.x * mat[M_02] + vecRayDelta.y * mat[M_12] + vecRayDelta.z * mat[M_22];
 	uextent.z = fabs(extent.z);
-	local coord = segmentCenter.x * matOBBToWorld[0][2] + segmentCenter.y * matOBBToWorld[1][2] +	segmentCenter.z * matOBBToWorld[2][2];
+	coord = segmentCenter.x * mat[M_02] + segmentCenter.y * mat[M_12] + segmentCenter.z * mat[M_22];
 
 	if ( fabs(coord) > (vecBoxExtents.z + uextent.z) )
 		return false;
 
 	// now check cross axes for separation
-	local tmp, cextent;
-	Vector cross = vecRayDelta.Cross( segmentCenter );
-	cextent = cross.x * matOBBToWorld[0][0] + cross.y * matOBBToWorld[1][0] + cross.z * matOBBToWorld[2][0];
-	tmp = vecBoxExtents.y*uextent.z + vecBoxExtents.z*uextent.y;
-	if ( fabs(cextent) > tmp )
+	local cross = vecRayDelta.Cross( segmentCenter );
+	local cextent = cross.x * mat[M_00] + cross.y * mat[M_10] + cross.z * mat[M_20];
+	if ( fabs(cextent) > (vecBoxExtents.y*uextent.z + vecBoxExtents.z*uextent.y) )
 		return false;
 
-	cextent = cross.x * matOBBToWorld[0][1] + cross.y * matOBBToWorld[1][1] + cross.z * matOBBToWorld[2][1];
-	tmp = vecBoxExtents.x*uextent.z + vecBoxExtents.z*uextent.x;
-	if ( fabs(cextent) > tmp )
+	cextent = cross.x * mat[M_01] + cross.y * mat[M_11] + cross.z * mat[M_21];
+	if ( fabs(cextent) > (vecBoxExtents.x*uextent.z + vecBoxExtents.z*uextent.x) )
 		return false;
 
-	cextent = cross.x * matOBBToWorld[0][2] + cross.y * matOBBToWorld[1][2] + cross.z * matOBBToWorld[2][2];
-	tmp = vecBoxExtents.x*uextent.y + vecBoxExtents.y*uextent.x;
-	if ( fabs(cextent) > tmp )
+	cextent = cross.x * mat[M_02] + cross.y * mat[M_12] + cross.z * mat[M_22];
+	if ( fabs(cextent) > (vecBoxExtents.x*uextent.y + vecBoxExtents.y*uextent.x) )
 		return false;
 
 	// !!! We hit this box !!! compute intersection point and return
@@ -6004,40 +6282,329 @@ function VS::IntersectRayWithOBB( vecRayStart, vecRayDelta, matOBBToWorld,
 	// extent is ray.m_Delta in bone space, recompute delta in bone space
 	extent *= 2.0;
 
-	// delta was prescaled by the current t, so no need to see if this intersection
-	// is closer
-	if ( !IntersectRayWithBox( start, extent, vecOBBMins, vecOBBMaxs, flTolerance, pTrace ) )
+	// delta was prescaled by the current t, so no need to see if this intersection is closer
+	if ( !ClipRayToBox( start, extent, vecOBBMins, vecOBBMaxs, flTolerance, pTrace ) )
 		return false;
 
 	// Fix up the start/end pos and fraction
-	local vecTemp = start;
-	VectorTransform( pTrace.endpos, matOBBToWorld, vecTemp );
-	pTrace.endpos = vecTemp;
+	VectorTransform( pTrace.endpos, matOBBToWorld, pTrace.endpos );
 
 	pTrace.startpos = vecRayStart;
 	pTrace.fraction *= 2.0;
 
 	// Fix up the plane information
-	local flSign = pTrace.plane.normal[ pTrace.plane.type ];
-	pTrace.plane.normal.x = flSign * matOBBToWorld[0][pTrace.plane.type];
-	pTrace.plane.normal.y = flSign * matOBBToWorld[1][pTrace.plane.type];
-	pTrace.plane.normal.z = flSign * matOBBToWorld[2][pTrace.plane.type];
-	pTrace.plane.dist = pTrace.endpos.Dot( pTrace.plane.normal );
-	pTrace.plane.type = 3;
+	local plane = pTrace.plane;
+	local normal = plane.normal;
+	local flSign = normal[ plane.sindex ];
+	normal.x = flSign * mat[    plane.type];
+	normal.y = flSign * mat[4 + plane.type];
+	normal.z = flSign * mat[8 + plane.type];
+	plane.dist = pTrace.endpos.Dot( normal );
+	plane.type = 3;
+	plane.sindex = "x";
 
 	return true;
 }
-*/
 
+// float[3], float[3], float[3], float[2]
+local ComputeSupportMap = function( vecDirection, vecBoxMins, vecBoxMaxs, pDist )
+{
+	local fl = vecDirection[0];
+	local nIndex = (fl > 0.0).tointeger();
+	pDist[nIndex] = vecBoxMaxs[0] * fl;
+	pDist[1 - nIndex] = vecBoxMins[0] * fl;
+
+	fl = vecDirection[1];
+	nIndex = (fl > 0.0).tointeger();
+	pDist[nIndex] += vecBoxMaxs[1] * fl;
+	pDist[1 - nIndex] += vecBoxMins[1] * fl;
+
+	fl = vecDirection[2];
+	nIndex = (fl > 0.0).tointeger();
+	pDist[nIndex] += vecBoxMaxs[2] * fl;
+	pDist[1 - nIndex] += vecBoxMins[2] * fl;
+}
+
+local ComputeSupportMap2 = function( vecDirection, i1, i2, vecBoxMins, vecBoxMaxs, pDist )
+{
+	// local ii = i1[0]-'x';
+	local nIndex = (vecDirection[i1] > 0.0).tointeger();
+	pDist[nIndex] = vecBoxMaxs[i1] * vecDirection[i1];
+	pDist[1 - nIndex] = vecBoxMins[i1] * vecDirection[i1];
+
+	// ii = i2[0]-'x';
+	nIndex = (vecDirection[i2] > 0.0).tointeger();
+	pDist[nIndex] += vecBoxMaxs[i2] * vecDirection[i2];
+	pDist[1 - nIndex] += vecBoxMins[i2] * vecDirection[i2];
+}
+
+// [3][2]
+local s_ExtIndices =
+[
+	2, 1,
+	0, 2,
+	0, 1,
+];
+
+// [3][2]
+local s_MatIndices =
+[
+	1*4, 2*4,
+	2*4, 0*4,
+	1*4, 0*4,
+];
+
+local ClipRayToOBB = VS.ClipRayToOBB;
+
+//-----------------------------------------------------------------------------
+// Intersects a ray against an OBB, returns trace_t info
+// IntersectRayWithOBB
+//-----------------------------------------------------------------------------
+function VS::ClipRayToOBB2( ray, matOBBToWorld, vecOBBMins, vecOBBMaxs, flTolerance, pTrace ) :
+	( ClipRayToOBB, ComputeSupportMap, ComputeSupportMap2, Vector, array, fabs, s_ExtIndices, s_MatIndices )
+{
+	if ( ray.m_IsRay )
+		return ClipRayToOBB( ray.m_Start, ray.m_Delta, matOBBToWorld,
+			vecOBBMins, vecOBBMaxs, flTolerance, pTrace );
+
+	// Collision_ClearTrace( ray.m_Start + ray.m_StartOffset, ray.m_Delta, pTrace );
+	pTrace.startpos = ray.m_Start + ray.m_StartOffset;
+	pTrace.endpos = pTrace.startpos + ray.m_Delta;
+	pTrace.fraction = 1.0;
+	pTrace.startsolid = pTrace.allsolid = false;
+{
+	// Compute a bounding sphere around the bloated OBB
+	local vecOBBCenter = (vecOBBMins + vecOBBMaxs) * 0.5;
+	vecOBBCenter.x += matOBBToWorld[0][M_03];
+	vecOBBCenter.y += matOBBToWorld[0][M_13];
+	vecOBBCenter.z += matOBBToWorld[0][M_23];
+
+	local vecOBBHalfDiagonal = (vecOBBMaxs - vecOBBMins) * 0.5;
+
+	local flRadius = vecOBBHalfDiagonal.Length() + ray.m_Extents.Length();
+	if ( !IsRayIntersectingSphere( ray.m_Start, ray.m_Delta, vecOBBCenter, flRadius, flTolerance ) )
+		return false;
+}
+	// Ok, we passed the trivial reject, so lets do the dirty deed.
+	// Basically we're going to do the GJK thing explicitly. We'll shrink the ray down
+	// to a point, and bloat the OBB by the ray's extents. This will generate facet
+	// planes which are perpendicular to all of the separating axes typically seen in
+	// a standard seperating axis implementation.
+
+	// We're going to create a number of planes through various vertices in the OBB
+	// which represent all of the separating planes. Then we're going to bloat the planes
+	// by the ray extents.
+
+	// We're going to do all work in OBB-space because it's easier to do the
+	// support-map in this case
+
+	// First, transform the ray into the space of the OBB
+	local vecLocalRayOrigin = Vector(), vecLocalRayDirection = Vector();
+	VectorITransform( ray.m_Start, matOBBToWorld, vecLocalRayOrigin );
+	VectorIRotate( ray.m_Delta, matOBBToWorld, vecLocalRayDirection );
+
+	// Next compute all separating planes
+	local pPlaneNormal = array(15);	// float[15][3]
+	local ppPlaneDist = array(15);	// float[15][2]
+
+	for ( local i = 15; i--; )
+	{
+		ppPlaneDist[i] = [ 0.0, 0.0 ];
+	}
+
+	for ( local i = 0,
+		rgflOBBMins = [ vecOBBMins.x, vecOBBMins.y, vecOBBMins.z ],
+		rgflOBBMaxs = [ vecOBBMaxs.x, vecOBBMaxs.y, vecOBBMaxs.z ],
+		rgflExtents = [ ray.m_Extents.x, ray.m_Extents.y, ray.m_Extents.z ],
+		mat = matOBBToWorld[0];
+		i < 3;
+		++i )
+	{
+		// Each plane needs to be bloated an amount = to the abs dot product of
+		// the ray extents with the plane normal
+		// For the OBB planes, do it in world space;
+		// and use the direction of the OBB (the ith column of matOBBToWorld) in world space vs extents
+		pPlaneNormal[i] = [ 0.0, 0.0, 0.0 ];
+		pPlaneNormal[i][i] = 1.0;
+
+		local flExtentDotNormal =
+			fabs( mat[  i] * rgflExtents[0] ) +
+			fabs( mat[4+i] * rgflExtents[1] ) +
+			fabs( mat[8+i] * rgflExtents[2] );
+
+		ppPlaneDist[i][0] = rgflOBBMins[i] - flExtentDotNormal;
+		ppPlaneDist[i][1] = rgflOBBMaxs[i] + flExtentDotNormal;
+
+		// For the ray-extents planes, they are bloated by the extents
+		// Use the support map to determine which
+		pPlaneNormal[i+3] = [ mat[i*4  ], mat[i*4+1], mat[i*4+2] ];
+
+		ComputeSupportMap( pPlaneNormal[i+3], rgflOBBMins, rgflOBBMaxs, ppPlaneDist[i+3] );
+		ppPlaneDist[i+3][0] -= rgflExtents[i];
+		ppPlaneDist[i+3][1] += rgflExtents[i];
+
+		// Now the edge cases... (take the cross product of x,y,z axis w/ ray extent axes
+		// given by the rows of the obb to world matrix.
+		// Compute the ray extent bloat in world space because it's easier...
+
+		// These are necessary to compute the world-space versions of
+		// the edges so we can compute the extent dot products
+		local flRayExtent0 = rgflExtents[s_ExtIndices[i*2  ]];
+		local flRayExtent1 = rgflExtents[s_ExtIndices[i*2+1]];
+		local iMatRow0 = s_MatIndices[i*2  ];
+		local iMatRow1 = s_MatIndices[i*2+1];
+
+		// x axis of the OBB + world ith axis
+		pPlaneNormal[i+6] = [ 0.0, -mat[i*4+2], mat[i*4+1] ];
+		ComputeSupportMap2( pPlaneNormal[i+6], 1, 2, rgflOBBMins, rgflOBBMaxs, ppPlaneDist[i+6] );
+		flExtentDotNormal =
+			fabs( mat[iMatRow0] ) * flRayExtent0 +
+			fabs( mat[iMatRow1] ) * flRayExtent1;
+		ppPlaneDist[i+6][0] -= flExtentDotNormal;
+		ppPlaneDist[i+6][1] += flExtentDotNormal;
+
+		// y axis of the OBB + world ith axis
+		pPlaneNormal[i+9] = [ mat[i*4+2], 0.0, -mat[i*4] ];
+		ComputeSupportMap2( pPlaneNormal[i+9], 0, 2, rgflOBBMins, rgflOBBMaxs, ppPlaneDist[i+9] );
+		flExtentDotNormal =
+			fabs( mat[iMatRow0+1] ) * flRayExtent0 +
+			fabs( mat[iMatRow1+1] ) * flRayExtent1;
+		ppPlaneDist[i+9][0] -= flExtentDotNormal;
+		ppPlaneDist[i+9][1] += flExtentDotNormal;
+
+		// z axis of the OBB + world ith axis
+		pPlaneNormal[i+12] = [ -mat[i*4+1], mat[i*4], 0.0 ];
+		ComputeSupportMap2( pPlaneNormal[i+12], 0, 1, rgflOBBMins, rgflOBBMaxs, ppPlaneDist[i+12] );
+		flExtentDotNormal =
+			fabs( mat[iMatRow0+2] ) * flRayExtent0 +
+			fabs( mat[iMatRow1+2] ) * flRayExtent1;
+		ppPlaneDist[i+12][0] -= flExtentDotNormal;
+		ppPlaneDist[i+12][1] += flExtentDotNormal;
+	}
+
+	pTrace.startsolid = true;
+
+	local hitplane = -1;
+	local hitside = -1;
+	local enterfrac = -1.0;
+	local leavefrac = 1.0;
+{
+	local d1 = [0.0, 0.0], d2 = [0.0, 0.0];
+	local f;
+
+	local vecLocalRayEnd = vecLocalRayOrigin + vecLocalRayDirection;
+
+	for ( local i = 0; i < 15; ++i )
+	{
+		local pNormal = pPlaneNormal[i];
+		local pDist = ppPlaneDist[i];
+
+		// FIXME: Not particularly optimal since there's a lot of 0's in the plane normals
+		local flStartDot = pNormal[0]*vecLocalRayOrigin.x + pNormal[1]*vecLocalRayOrigin.y + pNormal[2]*vecLocalRayOrigin.z;
+		local flEndDot = pNormal[0]*vecLocalRayEnd.x + pNormal[1]*vecLocalRayEnd.y + pNormal[2]*vecLocalRayEnd.z;
+
+		// NOTE: Negative here is because the plane normal + dist
+		// are defined in negative terms for the far plane (plane dist index 0)
+		d1[0] = -(flStartDot - pDist[0]);
+		d2[0] = -(flEndDot - pDist[0]);
+
+		d1[1] = flStartDot - pDist[1];
+		d2[1] = flEndDot - pDist[1];
+
+		for ( local j = 0; j < 2; ++j )
+		{
+			// if completely in front near plane or behind far plane no intersection
+			if (d1[j] > 0.0 && d2[j] > 0.0)
+				return false;
+
+			// completely inside, check next plane set
+			if (d1[j] <= 0.0 && d2[j] <= 0.0)
+				continue;
+
+			if (d1[j] > 0.0)
+				pTrace.startsolid = false;
+
+			// crosses face
+			local flDenom = 1.0 / (d1[j] - d2[j]);
+			if (d1[j] > d2[j])
+			{
+				f = d1[j] - flTolerance;
+
+				if ( f < 0.0 )
+					f = 0.0;
+
+				f *= flDenom;
+				if (f > enterfrac)
+				{
+					enterfrac = f;
+					hitplane = i;
+					hitside = j;
+				};
+			}
+			else
+			{
+				// leave
+				f = (d1[j] + flTolerance) * flDenom;
+
+				if (f < leavefrac)
+					leavefrac = f;
+			};
+		}
+	}
+}
+	if ( enterfrac < leavefrac && enterfrac >= 0.0 )
+	{
+		pTrace.fraction = enterfrac;
+		VectorMA( pTrace.startpos, enterfrac, ray.m_Delta, pTrace.endpos );
+
+		// Need to transform the plane into world space...
+		local pNormal = pPlaneNormal[hitplane];
+		local normal, dist;
+
+		if ( hitside == 0 )
+		{
+			normal = Vector( -pNormal[0], -pNormal[1], -pNormal[2] );
+			dist = -ppPlaneDist[hitplane][hitside];
+		}
+		else
+		{
+			normal = Vector( pNormal[0], pNormal[1], pNormal[2] );
+			dist = ppPlaneDist[hitplane][hitside];
+		};
+
+		local worldNormal = Vector();
+		pTrace.plane.normal = worldNormal;
+		pTrace.plane.type = 3;
+		pTrace.plane.sindex = "x";
+
+		// pTrace.plane.dist = MatrixTransformPlane( matOBBToWorld, normal, dist, pTrace.plane.normal );
+		VectorRotate( normal, matOBBToWorld, worldNormal );
+		pTrace.plane.dist = pTrace.endpos.Dot( worldNormal );
+		return true;
+	};
+
+	if ( pTrace.startsolid )
+	{
+		pTrace.allsolid = (leavefrac <= 0.0) || (leavefrac >= 1.0);
+		pTrace.fraction = 0.0;
+		pTrace.endpos = pTrace.startpos;
+		pTrace.plane.dist = pTrace.startpos.x;
+		pTrace.plane.normal = Vector( 1.0, 0.0, 0.0 );
+		pTrace.plane.type = 0;
+		pTrace.plane.sindex = "x";
+		return true;
+	};
+
+	return false;
+}
 
 //-----------------------------------------------------------------------------
 // Swept OBB test
-// Input  : localMins, localMaxs
 //-----------------------------------------------------------------------------
-function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs )
+function VS::IsRayIntersectingOBB( ray, org, ang, mins, maxs )
 	: ( matrix3x4_t, Vector, AngleIMatrix, VectorTransform, VectorRotate, IsBoxIntersectingRay, DotProductAbs )
 {
-	if ( VectorIsZero(angles) )
+	if ( !ang.x && !ang.y && !ang.z )
 		return IsBoxIntersectingRay( org + mins, org + maxs, ray.m_Start, ray.m_Delta );
 
 	if ( ray.m_IsRay )
@@ -6046,43 +6613,42 @@ function VS::IsRayIntersectingOBB( ray, org, angles, mins, maxs )
 		local rayStart = Vector();
 		local rayDelta = Vector();
 
-		AngleIMatrix( angles, org, worldToBox );
+		AngleIMatrix( ang, org, worldToBox );
 		VectorTransform( ray.m_Start, worldToBox, rayStart );
 		VectorRotate( ray.m_Delta, worldToBox, rayDelta );
 
 		return IsBoxIntersectingRay( mins, maxs, rayStart, rayDelta );
 	};
 
-//	if ( !ray.m_IsSwept )
-//	{
-//		return IsOBBIntersectingOBB( ray.m_Start, Vector(), ray.m_Extents * -1, ray.m_Extents,
-//			org, angles, mins, maxs, 0.0 );
-//	};
+	if ( !ray.m_IsSwept )
+		return IsOBBIntersectingOBB( ray.m_Start, Vector(), ray.m_Extents * -1, ray.m_Extents,
+			org, ang, mins, maxs, 0.0 );
 
 	// NOTE: See the comments in ComputeSeparatingPlane to understand this math
 
 	// First, compute the basis of box in the space of the ray
 	// NOTE: These basis place the origin at the centroid of each box!
-//	local worldToBox1 = matrix3x4_t();
 	local box2ToWorld = matrix3x4_t();
-	ComputeCenterMatrix( org, angles, mins, maxs, box2ToWorld );
+	ComputeCenterMatrix( org, ang, mins, maxs, box2ToWorld );
 
 	// Find the center + extents of an AABB surrounding the ray
-//	local vecRayCenter = VectorMA( ray.m_Start, 0.5, ray.m_Delta ) * -1.0;
-//
-//	SetIdentityMatrix( worldToBox1 );
-//	MatrixSetColumn( vecRayCenter, 3, worldToBox1 );
+	local vecRayCenter = VectorMA( ray.m_Start, 0.5, ray.m_Delta ) * -1.0;
 
-//	local box1Size = Vector( ray.m_Extents.x + fabs( ray.m_Delta.x ) * 0.5,
-//							ray.m_Extents.y + fabs( ray.m_Delta.y ) * 0.5,
-//							ray.m_Extents.z + fabs( ray.m_Delta.z ) * 0.5 );
+	local worldToBox1 = matrix3x4_t(
+		1.0, 0.0, 0.0, vecRayCenter.x,
+		0.0, 1.0, 0.0, vecRayCenter.y,
+		0.0, 0.0, 1.0, vecRayCenter.z );
+
+	local box1Size = Vector( ray.m_Extents.x + fabs( ray.m_Delta.x ) * 0.5,
+							ray.m_Extents.y + fabs( ray.m_Delta.y ) * 0.5,
+							ray.m_Extents.z + fabs( ray.m_Delta.z ) * 0.5 );
 
 	// Then compute the size of the box
 	local box2Size = (maxs - mins)*0.5;
 
-//	// Do an OBB test of the box with the AABB surrounding the ray
-//	if ( ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, 0.0 ) )
-//		return false;
+	// Do an OBB test of the box with the AABB surrounding the ray
+	if ( ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Size, 0.0 ) )
+		return false;
 
 	// Now deal with the planes which are the cross products of the ray sweep direction vs box edges
 	local vecRayDirection = ray.m_Delta * 1;
@@ -6204,7 +6770,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	// transformed into the space of box2.
 
 	// First side of box 1
-	boxProjectionSum = box1Size.x + MatrixRowDotProduct( absBox2ToBox1, 0, box2Size );
+	boxProjectionSum = MatrixRowDotProduct( absBox2ToBox1, 0, box2Size ) + box1Size.x;
 	originProjection = fabs( box2Origin.x ) + tolerance;
 	if ( originProjection > boxProjectionSum )
 	{
@@ -6215,7 +6781,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 
 	// Second side of box 1
-	boxProjectionSum = box1Size.y + MatrixRowDotProduct( absBox2ToBox1, 1, box2Size );
+	boxProjectionSum = MatrixRowDotProduct( absBox2ToBox1, 1, box2Size ) + box1Size.y;
 	originProjection = fabs( box2Origin.y ) + tolerance;
 	if ( originProjection > boxProjectionSum )
 	{
@@ -6226,7 +6792,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 
 	// Third side of box 1
-	boxProjectionSum = box1Size.z + MatrixRowDotProduct( absBox2ToBox1, 2, box2Size );
+	boxProjectionSum = MatrixRowDotProduct( absBox2ToBox1, 2, box2Size ) + box1Size.z;
 	originProjection = fabs( box2Origin.z ) + tolerance;
 	if ( originProjection > boxProjectionSum )
 	{
@@ -6246,7 +6812,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	// by projecting it onto a line parallel to box2's axis
 
 	// First side of box 2
-	boxProjectionSum = box2Size.x +	MatrixColumnDotProduct( absBox2ToBox1, 0, box1Size );
+	boxProjectionSum = MatrixColumnDotProduct( absBox2ToBox1, 0, box1Size ) + box2Size.x;
 	originProjection = fabs( MatrixColumnDotProduct( box2ToBox1, 0, box2Origin ) ) + tolerance;
 	if ( originProjection > boxProjectionSum )
 	{
@@ -6255,7 +6821,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 
 	// Second side of box 2
-	boxProjectionSum = box2Size.y +	MatrixColumnDotProduct( absBox2ToBox1, 1, box1Size );
+	boxProjectionSum = MatrixColumnDotProduct( absBox2ToBox1, 1, box1Size ) + box2Size.y;
 	originProjection = fabs( MatrixColumnDotProduct( box2ToBox1, 1, box2Origin ) ) + tolerance;
 	if ( originProjection > boxProjectionSum )
 	{
@@ -6264,7 +6830,7 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	};
 
 	// Third side of box 2
-	boxProjectionSum = box2Size.z +	MatrixColumnDotProduct( absBox2ToBox1, 2, box1Size );
+	boxProjectionSum = MatrixColumnDotProduct( absBox2ToBox1, 2, box1Size ) + box2Size.z;
 	originProjection = fabs( MatrixColumnDotProduct( box2ToBox1, 2, box2Origin ) ) + tolerance;
 	if ( originProjection > boxProjectionSum )
 	{
@@ -6495,7 +7061,6 @@ function VS::IsOBBIntersectingOBB( org1, ang1, min1, max1, org2, ang2, min2, max
 	ComputeCenterIMatrix( org1, ang1, min1, max1, worldToBox1 );
 	ComputeCenterMatrix( org2, ang2, min2, max2, box2ToWorld );
 
-	// Then compute the size of the two boxes
 	local box1Size = (max1 - min1) * 0.5;
 	local box2Size = (max2 - min2) * 0.5;
 
@@ -6505,11 +7070,16 @@ function VS::IsOBBIntersectingOBB( org1, ang1, min1, max1, org2, ang2, min2, max
 //=============================================================================
 //=============================================================================
 
-// NOTE: Change to VS.Quaternion for mapbase!
-::Quaternion <- Quaternion;
-::matrix3x4_t <- matrix3x4_t;
-::VMatrix <- VMatrix;
-::Ray_t <- Ray_t;
+// Place in VS if this is mapbase, in root if not.
+local v = getroottable();
+if ( "MAPBASE_VERSION" in getconsttable() )
+	v = VS;
+
+v.Quaternion <- Quaternion;
+v.matrix3x4_t <- matrix3x4_t;
+v.VMatrix <- VMatrix;
+v.Ray_t <- Ray_t;
+v.trace_t <- trace_t;
 
 //=============================================================================
 //=============================================================================

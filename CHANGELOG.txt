@@ -3,6 +3,14 @@
 
 --------------------------------
 
+2022-08-26 [v2.43.24]
+- Added VS.ClipRayToBox
+- Added VS.ClipRayToOBB
+- Fixed hull and non-swept trace in VS.IsRayIntersectingOBB
+- Fixed trace parameter of VS.IntersectRayWithRay
+- Fixed VS.CalcSqrDistanceToAABB
+- Fixed VS.CalcClosestPointOnAABB return value
+
 2022-08-07 [v2.43.23]
 - Added VS.IsOBBIntersectingOBB
 - Added VS.ComputeSeparatingPlane
