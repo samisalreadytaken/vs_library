@@ -1,7 +1,7 @@
 # VScript Library
 [![ver][]](CHANGELOG.txt)
 
-[ver]: https://img.shields.io/badge/vs__library-v2.43.24-informational
+[ver]: https://img.shields.io/badge/vs__library-v2.43.25-informational
 
 High-performance vscript libraries; written mainly for CS:GO, compatible with Portal 2.
 
@@ -9,7 +9,7 @@ High-performance vscript libraries; written mainly for CS:GO, compatible with Po
 See [Documentation.md](Documentation.md)
 
 ## Installation
-Download the library file you will be using, and place it in your vscripts directory `/csgo/scripts/vscripts/`
+Download the library file you will be using, and place it in your vscripts directory `/csgo/scripts/vscripts/` - the source files are not required
 - [`vs_math.nut`][vs_math]: Standalone math library. Game independent.
 - [`vs_events.nut`][vs_events]: Standalone lightweight game events library. CSGO only.
 - [`vs_library.nut`][vs_library]: All libraries. Includes unique utility functions in addition to the math and events libraries.
@@ -21,7 +21,7 @@ Download the library file you will be using, and place it in your vscripts direc
 [glow]: https://raw.githubusercontent.com/samisalreadytaken/vs_library/master/glow.nut
 
 ## Usage
-Include the library file at the beginning of your script: `IncludeScript("vs_library")`
+Include the particular library file at the beginning of your script: `IncludeScript("vs_library")`
 
 Done!
 
@@ -43,7 +43,7 @@ VS.EventQueue.CancelEventsByInput( fn2 );
 ```
 
 ### Extended player
-Use `ToExtendedPlayer()` to access some of the missing player functions in CSGO such as `EyeAngles()`, `GetPlayerName()` and `GetFOV()`. See the [documentation](/Documentation.md#f_ToExtendedPlayer) for details.
+Use `ToExtendedPlayer()` to access some of the missing player functions in CSGO such as `EyeAngles()`, `GetUserID()`, `GetPlayerName()` and `GetFOV()`/`SetFOV()`. See the [documentation](/Documentation.md#f_ToExtendedPlayer) for details.
 
 ```cs
 local player = ToExtendedPlayer( VS.GetPlayerByIndex(1) );
@@ -54,7 +54,7 @@ local aspectRatio = 16.0/9.0;
 
 VS.DrawViewFrustum( player.EyePosition(), player.EyeForward(), player.EyeRight(), player.EyeUp(),
 	VS.CalcFovX( player.GetFOV(), aspectRatio * (3.0/4.0) ), aspectRatio,
-	2.0, 16.0, 255, 0, 0, false, 5.0 );
+	7.0, 16.0, 255, 0, 0, false, 5.0 );
 
 DebugDrawBoxAngles( player.EyePosition(), Vector(2,-0.5,-0.5), Vector(16,0.5,0.5), player.EyeAngles(), 0, 255, 0, 16, 5.0 );
 ```

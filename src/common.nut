@@ -205,10 +205,12 @@ if ( !PORTAL2 )
 			gVS.rawset( k, v );
 		}
 
+		// Assign global(s)
+		::ToExtendedPlayer <- VS.ToExtendedPlayer.weakref();
+
 		print(format( "VS v%s [%Xh]\n", gVS.version, gVS[0] ));
 	}
 	// TODO: print message for changed functions
-	// TODO: globals?
 	else
 	{
 		local n = gVS[0] | VS[0];
@@ -229,6 +231,10 @@ if ( !PORTAL2 )
 
 				gVS.rawset( k, v );
 			}
+
+			// Reassign global(s)
+			// No need for others because they are never going to change
+			::ToExtendedPlayer <- VS.ToExtendedPlayer.weakref();
 		}
 		else
 		{

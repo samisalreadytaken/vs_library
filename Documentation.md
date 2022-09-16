@@ -34,12 +34,12 @@ ________________________________
 | `closure`, `function` | function                                                                            |
 | `handle`,`CBaseEntity`| Generic entity script handle                                                        |
 | `CBasePlayer`         | Player entity script handle                                                         |
-| `Vector`, `vec3_t`    | `Vector(x,y,z)`                                                                     |
+| `Vector`, `vec3_t`    | `Vector()`                                                                          |
 | `QAngle`              | `Vector(pitch, yaw, roll)` Euler angle. Vector, **not a different type**            |
-| `Quaternion`          | `Quaternion(0,1,2,3)`                                                               |
+| `Quaternion`          | `Quaternion()`                                                                      |
 | `matrix3x4_t`         | `matrix3x4_t()`                                                                     |
 | `VMatrix`             | `VMatrix()`                                                                         |
-| `trace_t`             | `VS.TraceLine()`                                                                    |
+| `trace_t`             | `trace_t()`, `VS.TraceLine()`                                                       |
 | `Ray_t`               | `Ray_t()`                                                                           |
 | `ANY`                 | Any type                                                                            |
 
@@ -390,10 +390,12 @@ class matrix3x4_t
 		m10, m11, m12, m13
 		m20, m21, m22, m23 );
 
+	void Init();
+
 	void Init(
-		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
-		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
-		m20 = 0.0, m21 = 0.0, m22 = 0.0, m23 = 0.0 );
+		m00, m01, m02, m03,
+		m10, m11, m12, m13,
+		m20, m21, m22, m23 );
 
 	// FLU
 	void InitXYZ( Vector xAxis, Vector yAxis, Vector zAxis, Vector vOrigin );
@@ -415,10 +417,12 @@ class VMatrix
 		m20, m21, m22, m23
 		m30, m31, m32, m33 );
 
+	void Init();
+
 	void Init(
-		m00 = 0.0, m01 = 0.0, m02 = 0.0, m03 = 0.0,
-		m10 = 0.0, m11 = 0.0, m12 = 0.0, m13 = 0.0,
-		m20 = 0.0, m21 = 0.0, m22 = 0.0, m23 = 0.0 );
+		m00, m01, m02, m03,
+		m10, m11, m12, m13,
+		m20, m21, m22, m23 );
 
 	void Identity();
 }
@@ -459,7 +463,7 @@ ________________________________
 ```cpp
 bool VS::IsLookingAt(Vector source, Vector target, Vector direction, float tolerance)
 ```
-See also [VS.IsBoxIntersectingRay](f_IsBoxIntersectingRay), [VS.IsRayIntersectingSphere](f_IsRayIntersectingSphere).
+See also [VS.IsBoxIntersectingRay](#f_IsBoxIntersectingRay), [VS.IsRayIntersectingSphere](#f_IsRayIntersectingSphere).
 
 <details><summary>Example</summary>
 
@@ -666,7 +670,7 @@ ________________________________
 
 <a name="f_VectorCopy"></a>
 ```cpp
-Vector VS::VectorCopy(Vector src, Vector& dst)
+void VS::VectorCopy(Vector src, Vector& dst)
 ```
 Copy source's values into destination
 ________________________________
@@ -687,14 +691,14 @@ ________________________________
 
 <a name="f_VectorAbs"></a>
 ```cpp
-Vector VS::VectorAbs(Vector& vec)
+void VS::VectorAbs(Vector& vec)
 ```
 
 ________________________________
 
 <a name="f_VectorAdd"></a>
 ```cpp
-Vector VS::VectorAdd(Vector a, Vector b, Vector& out )
+void VS::VectorAdd( Vector a, Vector b, Vector& out )
 ```
 Vector a + Vector b
 
@@ -702,14 +706,14 @@ ________________________________
 
 <a name="f_VectorSubtract"></a>
 ```cpp
-Vector VS::VectorSubtract(Vector a, Vector b, Vector& out )
+void VS::VectorSubtract( Vector a, Vector b, Vector& out )
 ```
 Vector a - Vector b
 ________________________________
 
 <a name="f_VectorScale"></a>
 ```cpp
-Vector VS::VectorScale(Vector a, float b, Vector& out )
+void VS::VectorScale( Vector a, float b, Vector& out )
 ```
 Vector a * b
 ________________________________
@@ -1271,7 +1275,7 @@ ________________________________
 
 <a name="f_MatrixGetColumn"></a>
 ```cpp
-Vector VS::MatrixGetColumn(matrix3x4_t in1, int column, Vector& out)
+Vector VS::MatrixGetColumn(matrix3x4_t in1, int column, Vector& out = _VEC)
 ```
 
 ________________________________
@@ -1364,7 +1368,7 @@ ________________________________
 ```cpp
 void VS::MatrixBuildRotation( matrix3x4_t& dst, Vector initialDirection, Vector finalDirection )
 ```
-Builds a rotation matrix that rotates one direction vector into another.
+Builds a rotation matrix that rotates one direction vector into another. No rotation if the angle between the 2 vectors is less than 0.000061 degrees (this threshold is 0.0573 degrees in the Source Engine)
 ________________________________
 
 <a name="f_VectorTransform"></a>
@@ -3350,7 +3354,7 @@ If `VS.Log.export` is true, then export the log file to the game directory. Retu
 
 If `VS.Log.export` is false, then print in the console.
 
-Do NOT call multiple times in a frame, or before the previous export is done.
+Multiple exports cannot be started at the same time.
 
 ```cs
 VS.Log.Clear();

@@ -894,7 +894,6 @@ function VS::QAngleNormalize( vAng )
 
 //-----------------------------------------------------------------------------
 // Snaps the input vector to the closest axis
-// input vector pointer [ normalised direction vector ]
 //-----------------------------------------------------------------------------
 function VS::SnapDirectionToAxis( vDirection, epsilon = 0.002 )
 {
@@ -3326,14 +3325,11 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection )
 	local angle = initialDirection.Dot( finalDirection );
 	// Assert( IsFinite(angle) );
 
-	local axis;
-
 	// No rotation required
-	if ( angle > 0.999 )
-		// parallel case
-		return SetIdentityMatrix(dst);
+	if ( angle > 0.99999 )
+		return SetIdentityMatrix(dst); // parallel case
 
-	if ( -0.999 > angle )
+	if ( -0.99999 > angle )
 	{
 		// antiparallel case, pick any axis in the plane
 		// perpendicular to the final direction. Choose the direction (x,y,z)
@@ -3346,7 +3342,7 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection )
 		if ( fabs(finalDirection.z) < fabs(finalDirection[idx]) )
 			idx = "z";
 
-		axis = Vector();
+		local axis = Vector();
 		axis[idx] = 1.0;
 
 		// VectorMA( axis, -axis.Dot( finalDirection ), finalDirection, axis );
@@ -3355,16 +3351,12 @@ function VS::MatrixBuildRotation( dst, initialDirection, finalDirection )
 		axis.y -= finalDirection.y * t;
 		axis.z -= finalDirection.z * t;
 		axis.Norm();
-		angle = 180.0;
-	}
-	else
-	{
-		axis = initialDirection.Cross( finalDirection );
-		axis.Norm();
-		angle = acos(angle) * RAD2DEG;
+		return MatrixBuildRotationAboutAxis( axis, 180.0, dst );
 	};
 
-	return MatrixBuildRotationAboutAxis( axis, angle, dst );
+	local axis = initialDirection.Cross( finalDirection );
+	axis.Norm();
+	return MatrixBuildRotationAboutAxis( axis, acos(angle) * RAD2DEG, dst );
 /*
 	local test = Vector();
 	VectorRotate( initialDirection, dst, test );
@@ -5776,13 +5768,11 @@ function VS::IntersectInfiniteRayWithSphere( vecRayOrigin, vecRayDelta, vecSpher
 		pT[0] = ( -flDiscrim - b ) * oo2a;
 		pT[1] = ( flDiscrim - b ) * oo2a;
 		return true;
-	}
-	// This would occur in the case of a zero-length ray
-	else
-	{
-		pT[0] = pT[1] = 0.0;
-		return vecSphereToRay.LengthSqr() <= flRadius * flRadius;
 	};
+
+	// This would occur in the case of a zero-length ray
+	pT[0] = pT[1] = 0.0;
+	return vecSphereToRay.LengthSqr() <= flRadius * flRadius;
 }
 /*
 //-----------------------------------------------------------------------------
@@ -5990,12 +5980,10 @@ function VS::IntersectRayWithRay( vecStart0, vecDelta0, vecStart1, vecDelta1, pT
 		local i1 = vecStart1 + vecDelta1 * s;
 
 		return ( i0.x == i1.x && i0.y == i1.y && i0.z == i1.z );
-	}
-	else
-	{
-		pT[0] = pT[1] = 0.0;
-		return false;		// parallel
 	};
+
+	pT[0] = pT[1] = 0.0;
+	return false;		// parallel
 }
 
 function VS::IntersectRayWithPlane( org, dir, normal, dist )
@@ -6123,27 +6111,30 @@ function VS::ClipRayToBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, flToleran
 
 	if ( IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, flTolerance, trace ) )
 	{
+		local plane = pTrace.plane;
 		pTrace.startsolid = trace[2];
 		if (trace[0] < trace[1] && trace[0] >= 0.0)
 		{
 			pTrace.fraction = trace[0];
 			VectorMA( pTrace.startpos, trace[0], vecRayDelta, pTrace.endpos );
-			pTrace.plane.normal = Vector();
+			plane.normal = Vector();
 			if ( trace[3] >= 3 )
 			{
 				local hitside = trace[3]-3;
-				pTrace.plane.type = hitside;
-				pTrace.plane.sindex = ('x'+hitside).tochar();
-				pTrace.plane.dist = boxMaxs[pTrace.plane.sindex];
-				pTrace.plane.normal[pTrace.plane.sindex] = 1.0;
+				local idx = ('x'+hitside).tochar();
+				plane.type = hitside;
+				plane.sindex = idx;
+				plane.dist = boxMaxs[idx];
+				plane.normal[idx] = 1.0;
 			}
 			else
 			{
 				local hitside = trace[3];
-				pTrace.plane.type = hitside;
-				pTrace.plane.sindex = ('x'+hitside).tochar();
-				pTrace.plane.dist = -boxMins[pTrace.plane.sindex];
-				pTrace.plane.normal[pTrace.plane.sindex] = -1.0;
+				local idx = ('x'+hitside).tochar();
+				plane.type = hitside;
+				plane.sindex = idx;
+				plane.dist = -boxMins[idx];
+				plane.normal[idx] = -1.0;
 			};
 			return true;
 		};
@@ -6154,10 +6145,10 @@ function VS::ClipRayToBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, flToleran
 			pTrace.fraction = 0.0;
 			pTrace.fractionleftsolid = trace[1];
 			pTrace.endpos = pTrace.startpos * 1;
-			pTrace.plane.dist = pTrace.startpos.x;
-			pTrace.plane.normal = Vector( 1.0, 0.0, 0.0 );
-			pTrace.plane.type = 0;
-			pTrace.plane.sindex = "x";
+			plane.dist = pTrace.startpos.x;
+			plane.normal = Vector( 1.0, 0.0, 0.0 );
+			plane.type = 0;
+			plane.sindex = "x";
 			pTrace.startpos = vecRayStart + vecRayDelta * trace[1];
 			return true;
 		};

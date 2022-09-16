@@ -26,7 +26,7 @@ if ( !("{F71A8D}" in ROOT) )
 local g_Players = ROOT["{F71A8D}"];
 
 // b/w compat
-VS.SetPlayerFOV <- function( hPlayer, iFOV, flSpeed = 0.0 )
+::SetPlayerFOV <- function( hPlayer, iFOV, flSpeed = 0.0 )
 {
 	if ( hPlayer = ToExtendedPlayer( hPlayer ) )
 		return hPlayer.SetFOV( iFOV, flSpeed );
@@ -326,9 +326,6 @@ VS.ToExtendedPlayer <- function( hPlayer )
 
 }.bindenv(::VS);
 
-
-::SetPlayerFOV <- VS.SetPlayerFOV.weakref();
-::ToExtendedPlayer <- VS.ToExtendedPlayer.weakref();
 
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
@@ -734,7 +731,7 @@ function VS::UniqueString():(DoUniqueString)
 function VS::DumpScope( input, bPrintAll = false, bDeepPrint = true, bPrintGuides = true, nDepth = 0 )
 {
 	// non-native variables
-	local _skip = ["Assert","Document","Documentation","PrintHelp","RetrieveNativeSignature","RegisterFunctionDocumentation","UniqueString","IncludeScript","Entities","CSimpleCallChainer","CCallChainer","LateBinder","__ReplaceClosures","__DumpScope","printl","VSquirrel_OnCreateScope","VSquirrel_OnReleaseScope","PrecacheCallChain","OnPostSpawnCallChain","DispatchOnPostSpawn","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn","EntFireByHandle","EntFire","RAND_MAX","_version_","_intsize_","PI","_charsize_","_floatsize_","self","__vname","__vrefs","{847D4B}","{F71A8D}","{E3D627}","{5E457F}","{D9154C}","ToExtendedPlayer","SetPlayerFOV","VS","Chat","ChatTeam","TextColor","PrecacheModel","PrecacheScriptSound","delay","VecToString","Ent","Entc","Quaternion","matrix3x4_t","VMatrix","Ray_t","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
+	local _skip = ["Assert","Document","Documentation","PrintHelp","RetrieveNativeSignature","RegisterFunctionDocumentation","UniqueString","IncludeScript","Entities","CSimpleCallChainer","CCallChainer","LateBinder","__ReplaceClosures","__DumpScope","printl","VSquirrel_OnCreateScope","VSquirrel_OnReleaseScope","PrecacheCallChain","OnPostSpawnCallChain","DispatchOnPostSpawn","DispatchPrecache","OnPostSpawn","PostSpawn","Precache","PreSpawnInstance","__EntityMakerResult","__FinishSpawn","__ExecutePreSpawn","EntFireByHandle","EntFire","RAND_MAX","_version_","_intsize_","PI","_charsize_","_floatsize_","__vname","__vrefs","{847D4B}","{F71A8D}","{E3D627}","{5E457F}","{D9154C}","ToExtendedPlayer","VS","PrecacheModel","PrecacheScriptSound","VecToString","Ent","Entc","Quaternion","matrix3x4_t","VMatrix","Ray_t","trace_t","max","min","clamp","MAX_COORD_FLOAT","MAX_TRACE_LENGTH","DEG2RAD","RAD2DEG","CONST"];
 	local indent = function(c) for( local i = c; i--; ) print("   ");
 	local SWorld = Entities.First().GetScriptScope();
 	if ( bPrintGuides ) print(" ------------------------------\n");
