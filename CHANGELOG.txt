@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2022-10-02 [v2.43.26]
+- Fixed Portal 2 CExtendedPlayer save/restore crash
+
 2022-09-16 [v2.43.25]
 - Increased precision of VS.MatrixBuildRotation to 0.000061 degrees from 0.0573 degrees
 - Fixed loading an old version of the library over a new one invalidating ::ToExtendedPlayer. Fix is applied post-2.43.5. Retroactive manual fix is to use VS.ToExtendedPlayer

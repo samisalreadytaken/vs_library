@@ -19,9 +19,11 @@
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
 
+{
+
 // unique entity pools
 if ( !("{F71A8D}" in ROOT) )
-	ROOT["{F71A8D}"] <- [];;
+	ROOT["{F71A8D}"] <- [];
 
 local g_Players = ROOT["{F71A8D}"];
 
@@ -34,13 +36,41 @@ local g_Players = ROOT["{F71A8D}"];
 
 
 // used for async name setting
-local SetNameSafe = function( ent, name )
+// NOTE: ignore in Portal 2 to let entities keep targetname references for game restore
+local SetNameSafe;
+
+// Portal 2 serialisation workaround
+local GetNatFn;
+
+if ( PORTAL2 )
 {
-	if ( ent && ent.IsValid() )
+	SetNameSafe = dummy;
+
+	GetNatFn = function( p, s )
 	{
-		ent.__KeyValueFromString( "targetname", name );
+		switch ( p[s].getinfos().paramscheck )
+		{
+			case 0:
+			case 1: return function() : (p, s) return p[s]();
+			case 2: return function(a) : (p, s) return p[s](a);
+			case 3: return function(a,b) : (p, s) return p[s](a,b);
+			case 4: return function(a,b,c) : (p, s) return p[s](a,b,c);
+			// default: throw "";
+		}
 	}
 }
+else
+{
+	SetNameSafe = function( ent, name )
+	{
+		if ( ent && ent.IsValid() )
+		{
+			ent.__KeyValueFromString( "targetname", name );
+		}
+	}
+
+	GetNatFn = function( p, s ) return p[s].bindenv(p);
+};
 
 local NullSort = function( a, b )
 {
@@ -67,7 +97,7 @@ local OwnerSort = function( a, b )
 }
 
 VS.ToExtendedPlayer <- function( hPlayer )
-	: ( g_Players, ROOT, NullSort, OwnerSort, AddEvent, SetNameSafe, FrameTime )
+	: ( g_Players, ROOT, NullSort, OwnerSort, AddEvent, SetNameSafe, FrameTime, GetNatFn )
 {
 	foreach( p in g_Players )
 		if ( p.self == hPlayer || p == hPlayer )
@@ -190,7 +220,7 @@ VS.ToExtendedPlayer <- function( hPlayer )
 	nid = sc.networkid;
 	pnm = sc.name;
 
-	class CExtendedPlayer__ //extends CBaseMultiplayerPlayer
+	local CExtendedPlayer__ = class
 	{
 		// static means const
 		static self = hPlayer;
@@ -213,10 +243,10 @@ VS.ToExtendedPlayer <- function( hPlayer )
 		// Lookup if not a bot, it can change
 		GetPlayerName = bot ? function() : (pnm) { return pnm; } : function() : (sc) { return sc.name; };
 
-		EyeAngles = eye.GetAngles.bindenv(eye);
-		EyeForward = eye.GetForwardVector.bindenv(eye);
-		EyeRight = eye.GetLeftVector.bindenv(eye);
-		EyeUp = eye.GetUpVector.bindenv(eye);
+		EyeAngles = GetNatFn( eye, "GetAngles" );
+		EyeForward = GetNatFn( eye, "GetForwardVector" );
+		EyeRight = GetNatFn( eye, "GetLeftVector" );
+		EyeUp = GetNatFn( eye, "GetUpVector" );
 
 		function SetName( sz )
 		{
@@ -250,8 +280,8 @@ VS.ToExtendedPlayer <- function( hPlayer )
 			return VS.SetInputCallback( this, szInput, fn, env );
 		}
 
-		_tostring = hPlayer.tostring.bindenv( hPlayer );
-		getclass = hPlayer.getclass.bindenv( hPlayer );
+		_tostring = GetNatFn( hPlayer, "tostring" );
+		getclass = GetNatFn( hPlayer, "getclass" );
 	}
 
 	//
@@ -259,7 +289,7 @@ VS.ToExtendedPlayer <- function( hPlayer )
 	// FOV could be set asynchronously in SetPlayerFOV, but it can't be got.
 	// Assigning a view entity for each player will ensure successful synchronous GetFOV calls.
 	//
-	CExtendedPlayer__.GetFOV <- CExtendedPlayer__.SetFOV <- function(...) : ( ROOT, NullSort, OwnerSort, AddEvent )
+	CExtendedPlayer__.GetFOV <- CExtendedPlayer__.SetFOV <- function(...) : ( ROOT, NullSort, OwnerSort, AddEvent, GetNatFn )
 	{
 		if ( !("{D9154C}" in ROOT) )
 			ROOT["{D9154C}"] <- [];
@@ -307,8 +337,8 @@ VS.ToExtendedPlayer <- function( hPlayer )
 		AddEvent( hView, "Disable", "", 0.0, null, null );
 
 		// CTriggerCamera
-		GetFOV = hView.GetFov.bindenv(hView);
-		SetFOV = hView.SetFov.bindenv(hView);
+		GetFOV = GetNatFn( hView, "GetFov" );
+		SetFOV = GetNatFn( hView, "SetFov" );
 
 		// The first call will be incorrect anyway, return the default value.
 		return 90.0;
@@ -318,7 +348,7 @@ VS.ToExtendedPlayer <- function( hPlayer )
 	// TODO: Check for parameter conflicts. Most likely to happen with SetParent -
 	// its parameters were taken from Source 2
 	foreach( k,v in hPlayer.getclass() ) // CBaseMultiplayerPlayer
-		CExtendedPlayer__[k] <- v.bindenv( hPlayer );
+		CExtendedPlayer__[k] <- GetNatFn( hPlayer, k );
 
 	local p = CExtendedPlayer__();
 	g_Players.append(p);
@@ -517,11 +547,12 @@ function VS::SetInputCallback( hPlayer, szInput, fn, env ) : ( AddEvent, ROOT, N
 	};
 }
 
-
+}
 
 //-----------------------------------------------------------------------
 // Ray tracing
 //-----------------------------------------------------------------------
+{
 local DoTrace1 = TraceLine;
 local DoTrace2;
 if ( !PORTAL2 )
@@ -662,6 +693,7 @@ function VS::TraceLine::GetNormal() : ( Vector, CTrace )
 	return up;
 }
 
+}
 
 // VECTOR_CONE_1DEGREES  = Vector( 0.00873, 0.00873, 0.00873 )
 // VECTOR_CONE_2DEGREES  = Vector( 0.01745, 0.01745, 0.01745 )
