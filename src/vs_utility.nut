@@ -36,16 +36,19 @@ local g_Players = ROOT["{F71A8D}"];
 
 
 // used for async name setting
-// NOTE: ignore in Portal 2 to let entities keep targetname references for game restore
-local SetNameSafe;
+local SetNameSafe = function( ent, name )
+{
+	if ( ent && ent.IsValid() )
+	{
+		ent.__KeyValueFromString( "targetname", name );
+	}
+}
 
 // Portal 2 serialisation workaround
 local GetNatFn;
 
 if ( PORTAL2 )
 {
-	SetNameSafe = dummy;
-
 	GetNatFn = function( p, s )
 	{
 		switch ( p[s].getinfos().paramscheck )
@@ -61,14 +64,6 @@ if ( PORTAL2 )
 }
 else
 {
-	SetNameSafe = function( ent, name )
-	{
-		if ( ent && ent.IsValid() )
-		{
-			ent.__KeyValueFromString( "targetname", name );
-		}
-	}
-
 	GetNatFn = function( p, s ) return p[s].bindenv(p);
 };
 
@@ -97,7 +92,7 @@ local OwnerSort = function( a, b )
 }
 
 VS.ToExtendedPlayer <- function( hPlayer )
-	: ( g_Players, ROOT, NullSort, OwnerSort, AddEvent, SetNameSafe, FrameTime, GetNatFn )
+	: ( g_Players, ROOT, NullSort, OwnerSort, AddEvent, SetNameSafe, FrameTime, GetNatFn, PORTAL2 )
 {
 	foreach( p in g_Players )
 		if ( p.self == hPlayer || p == hPlayer )
@@ -164,6 +159,22 @@ VS.ToExtendedPlayer <- function( hPlayer )
 		AddEvent( eye, "Enable", "" , 0.0, null, null );
 
 		g_Eyes.insert( 0, eye.weakref() );
+
+		if ( PORTAL2 )
+		{
+			// PostRestore
+			eye.__KeyValueFromString( "vscripts", " " );
+			eye.ValidateScriptScope();
+			eye.GetScriptScope().DispatchPrecache <- function() : (AddEvent, SetNameSafe)
+			{
+				local hPlayer = self.GetOwner();
+				local szOld = hPlayer.GetName();
+				local szNew = __vname;
+				hPlayer.__KeyValueFromString( "targetname", szNew );
+				AddEvent( self, "SetMeasureTarget", szNew, 0.0, null, null );
+				VS.EventQueue.AddEvent( SetNameSafe, FrameTime()+0.001, [ null, hPlayer, szOld ] );
+			}
+		}
 	};
 
 	{
