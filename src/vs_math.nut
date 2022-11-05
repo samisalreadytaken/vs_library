@@ -24,7 +24,7 @@ if ( "VectorRotate" in VS )
 if ( !("DebugDrawLine" in getroottable()) )
 {
 	if ( "debugoverlay" in getroottable() && "Line" in debugoverlay )
-		::DebugDrawLine <- debugoverlay.Line.bindenv(debugoverlay);
+		::DebugDrawLine <- function( v0, v1, r, g, b, z, t ) { return debugoverlay.Line( v0, v1, r, g, b, z, t ); }
 	else
 		::DebugDrawLine <- dummy;
 };
@@ -276,19 +276,22 @@ Quaternion._unm <- function() : (Quaternion) { return Quaternion( -x,-y,-z,-w ) 
 //		\[([0-3])\]\[([0-3])\]
 //		\[M_\1\2\]
 //
-local CArrayOpMan = class
+local CArrayOpMan;
 {
-	static CArrayOpManSub = class
+	local CArrayOpManSub = class
 	{
 		[0x7E] = 0;
 		[0x7F] = null;
-		constructor(p) { this[0x7F] = p.weakref(); }
+		constructor(p) { this[0x7F] = p; }
 		function _get(i) { return this[0x7F][this[0x7E]+i]; }
 		function _set(i,v) { this[0x7F][this[0x7E]+i] = v; }
 	};
+CArrayOpMan = class
+{
 	[0x7F] = null;
-	constructor(p) { this[0x7F] = CArrayOpManSub(p); }
+	constructor(p) : (CArrayOpManSub) { this[0x7F] = CArrayOpManSub(p); }
 	function _get(i) { local _ = this[0x7F]; _[0x7E] = 4*i; return _; } // column count : 4
+}
 }
 
 const M_00 = 0;;  const M_01 = 1;;  const M_02 = 2;;  const M_03 = 3;;
@@ -7060,10 +7063,10 @@ function VS::IsOBBIntersectingOBB( org1, ang1, min1, max1, org2, ang2, min2, max
 
 //=============================================================================
 //=============================================================================
-
+{
 // Place in VS if this is mapbase, in root if not.
 local v = getroottable();
-if ( "MAPBASE_VERSION" in getconsttable() )
+if ( "_versionnumber_" in v && v._versionnumber_ >= 300 )
 	v = VS;
 
 v.Quaternion <- Quaternion;
@@ -7071,6 +7074,6 @@ v.matrix3x4_t <- matrix3x4_t;
 v.VMatrix <- VMatrix;
 v.Ray_t <- Ray_t;
 v.trace_t <- trace_t;
-
+}
 //=============================================================================
 //=============================================================================
