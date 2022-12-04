@@ -124,6 +124,16 @@ It is not possible to get the Steam name and SteamIDs of human players that were
 
 This issue is fixed in listen servers, and players are guaranteed to have valid SteamIDs.
 
+---
+
+### Why is it minified?
+Minification lets me micro optimise the library further by reusing local variables and strings, getting rid of line info, reducing stack size and memory usage. Applying such changes to the source would make it unreadable.
+
+The code inside the minified files are otherwise identical to those inside the `src` directory.
+
+### Should I minify my scripts?
+No, this is completely unnecessary and give no noticable benefit whatsoever.
+
 ## Changelog
 See [CHANGELOG.txt](CHANGELOG.txt)
 

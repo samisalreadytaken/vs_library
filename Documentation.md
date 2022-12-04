@@ -32,8 +32,9 @@ ________________________________
 | `table`               | `{}`                                                                                |
 | `array`               | `[]`, `array()`                                                                     |
 | `closure`, `function` | function                                                                            |
-| `handle`,`CBaseEntity`| Generic entity script handle                                                        |
+| `CBaseEntity`         | Generic entity script handle                                                        |
 | `CBasePlayer`         | Player entity script handle                                                         |
+| `CTimerEntity`        | `logic_timer` entity script handle                                                  |
 | `Vector`, `vec3_t`    | `Vector()`                                                                          |
 | `QAngle`              | `Vector(pitch, yaw, roll)` Euler angle. Vector, **not a different type**            |
 | `Quaternion`          | `Quaternion()`                                                                      |
@@ -2305,7 +2306,7 @@ ________________________________
 
 <a name="f_Ent"></a>
 ```cpp
-handle Ent(string targetname, handle startEntity = null)
+CBaseEntity Ent(string targetname, CBaseEntity startEntity = null)
 ```
 Find entity by targetname (wrapper function). Meant for initial entity getting without the text getting lengthy and harder to read using `Entities.FindByName`
 
@@ -2324,7 +2325,7 @@ ________________________________
 
 <a name="f_Entc"></a>
 ```cpp
-handle Entc(string classname, handle startEntity = null)
+CBaseEntity Entc(string classname, CBaseEntity startEntity = null)
 ```
 Find entity by classname (wrapper function). Read above
 ________________________________
@@ -2551,6 +2552,10 @@ function OnForwardReleased( player )
 	printl("-forward " + player.GetPlayerName())
 }
 ```
+
+NOTE: This at the moment disables player movement prediction while the listener is on due to the usage of game_ui entity as the input listener.
+
+This can be retroactively fixed in the future without changing any old user code if necessary API is added to the game.
 ________________________________
 
 <a name="f_TraceLine"></a>
@@ -2568,7 +2573,7 @@ class VS::TraceLine
 ________________________________
 
 ```cpp
-trace_t VS::TraceLine( Vector start, Vector end, handle ignore = null, int mask = MASK_NPCWORLDSTATIC )
+trace_t VS::TraceLine( Vector start, Vector end, CBaseEntity ignore = null, int mask = MASK_NPCWORLDSTATIC )
 ```
 Mask parameter can take `MASK_NPCWORLDSTATIC` or `MASK_SOLID`
 ________________________________
@@ -2582,7 +2587,7 @@ ________________________________
 
 <a name="f_GetEnt"></a>
 ```cpp
-handle VS::TraceLine::GetEnt(float radius = 1.0)
+CBaseEntity VS::TraceLine::GetEnt(float radius = 1.0)
 ```
 Search for entity in radius and return entity handle, null if none.
 
@@ -2591,14 +2596,14 @@ ________________________________
 
 <a name="f_GetEntByName"></a>
 ```cpp
-handle VS::TraceLine::GetEntByName(string targetname, float radius = 1.0)
+CBaseEntity VS::TraceLine::GetEntByName(string targetname, float radius = 1.0)
 ```
 GetEnt, find by name
 ________________________________
 
 <a name="f_GetEntByClassname"></a>
 ```cpp
-handle VS::TraceLine::GetEntByClassname(string classname, float radius = 1.0)
+CBaseEntity VS::TraceLine::GetEntByClassname(string classname, float radius = 1.0)
 ```
 GetEnt, find by classname
 ________________________________
@@ -2657,7 +2662,7 @@ ________________________________
 
 <a name="f_TraceDir"></a>
 ```cpp
-trace_t VS::TraceDir(Vector start, Vector direction, float maxdist = MAX_TRACE_LENGTH, handle ignore = null, int mask = MASK_NPCWORLDSTATIC)
+trace_t VS::TraceDir(Vector start, Vector direction, float maxdist = MAX_TRACE_LENGTH, CBaseEntity ignore = null, int mask = MASK_NPCWORLDSTATIC)
 ```
 Trace from `start` to `start + direction * maxdist`.
 
@@ -2896,7 +2901,7 @@ ________________________________
 
 <a name="f_EntFireByHandle"></a>
 ```cpp
-void EntFireByHandle(handle target, string action, string value = "", float delay = 0.0, handle activator = null, handle caller = null)
+void EntFireByHandle(CBaseEntity target, string action, string value = "", float delay = 0.0, CBaseEntity activator = null, CBaseEntity caller = null)
 ```
 `EntFireByHandle(hEnt, "Use")`
 
@@ -2920,14 +2925,14 @@ ________________________________
 
 <a name="f_MakePersistent"></a>
 ```cpp
-void VS::MakePersistent(handle ent)
+void VS::MakePersistent(CBaseEntity ent)
 ```
 Prevent the entity from being released every round
 ________________________________
 
 <a name="f_SetParent"></a>
 ```cpp
-void VS::SetParent(handle child, handle parent)
+void VS::SetParent(CBaseEntity child, CBaseEntity parent)
 ```
 Set child's parent. if parent == null then unparent child
 ________________________________
@@ -3124,7 +3129,7 @@ ________________________________
 
 <a name="f_SetKeyValue"></a>
 ```cpp
-bool VS::SetKeyValue(handle ent, string key, float|int|bool|string|Vector val)
+bool VS::SetKeyValue(CBaseEntity ent, string key, float|int|bool|string|Vector val)
 ```
 `CBaseEntity::KeyValue`
 
@@ -3133,7 +3138,7 @@ ________________________________
 
 <a name="f_SetName"></a>
 ```cpp
-void VS::SetName(handle ent, string name)
+void VS::SetName(CBaseEntity ent, string name)
 ```
 Set targetname
 ________________________________
