@@ -645,11 +645,10 @@ function VS::AngleVectors( angle, forward = _VEC, right = null, up = null ) : (s
 //-----------------------------------------------------------------------
 function VS::VectorAngles( forward, vOut = _VEC ) : ( atan2 )
 {
-	local yaw, pitch;
+	local yaw = 0.0, pitch = yaw;
 
 	if ( !forward.y && !forward.x )
 	{
-		yaw = 0.0;
 		if ( forward.z > 0.0 )
 			pitch = 270.0;
 		else
@@ -2052,6 +2051,8 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, qt ) : (Quaternion, QuaternionS
 	//------------------------------------------------------------------
 	// XMQuaternionSquadSetup(*pA, *pB, *pC, Q0, Q1, Q2, Q3)
 		// QuaternionAlign( Q1, Q2 )
+		local SQ2 = Q2;
+		{
 			// LS12 = XMQuaternionLengthSq(XMVectorAdd(Q1, Q2));
 			local aQ12x = Q1.x + Q2.x;
 			local aQ12y = Q1.y + Q2.y;
@@ -2066,15 +2067,16 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, qt ) : (Quaternion, QuaternionS
 			local sQ12w = Q1.w - Q2.w;
 			local LD12 = sQ12x*sQ12x + sQ12y*sQ12y + sQ12z*sQ12z + sQ12w*sQ12w;
 
-			local SQ2 = Q2;
 			// Control1 = XMVectorLess(LS12, LD12);
 			// SQ2 = XMVectorSelect(Q2, XMVectorNegate(Q2), Control1);
 			if ( LS12 < LD12 )
 			{
 				SQ2 = Quaternion( -Q2.x, -Q2.y, -Q2.z, -Q2.w );
 			};
-
+		}
 		// QuaternionAlign( Q0, Q1 )
+		local SQ0 = Q0;
+		{
 			// LS01 = XMQuaternionLengthSq(XMVectorAdd(Q0, Q1));
 			local aQ01x = Q0.x + Q1.x;
 			local aQ01y = Q0.y + Q1.y;
@@ -2089,15 +2091,16 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, qt ) : (Quaternion, QuaternionS
 			local sQ01w = Q0.w - Q1.w;
 			local LD01 = sQ01x*sQ01x + sQ01y*sQ01y + sQ01z*sQ01z + sQ01w*sQ01w;
 
-			local SQ0 = Q0;
 			// Control0 = XMVectorLess(LS01, LD01);
 			// SQ0 = XMVectorSelect(Q0, XMVectorNegate(Q0), Control0);
 			if ( LS01 < LD01 )
 			{
 				SQ0 = Quaternion( -Q0.x, -Q0.y, -Q0.z, -Q0.w );
 			};
-
+		}
 		// QuaternionAlign( SQ2, Q3 )
+		local SQ3 = Q3;
+		{
 			// LS23 = XMQuaternionLengthSq(XMVectorAdd(SQ2, Q3));
 			local aQ23x = SQ2.x + Q3.x;
 			local aQ23y = SQ2.y + Q3.y;
@@ -2112,94 +2115,97 @@ function VS::QuaternionSquad( Q0, Q1, Q2, Q3, T, qt ) : (Quaternion, QuaternionS
 			local sQ23w = SQ2.w - Q3.w;
 			local LD23 = sQ23x*sQ23x + sQ23y*sQ23y + sQ23z*sQ23z + sQ23w*sQ23w;
 
-			local SQ3 = Q3;
 			// Control2 = XMVectorLess(LS23, LD23);
 			// SQ3 = XMVectorSelect(Q3, XMVectorNegate(Q3), Control2);
 			if ( LS23 < LD23 )
 			{
 				SQ3 = Quaternion( -Q3.x, -Q3.y, -Q3.z, -Q3.w );
 			};
+		}
 
-		// InvQ1 = XMQuaternionInverse(Q1);
-		// InvQ2 = XMQuaternionInverse(SQ2);
-		local InvQ1 = Quaternion();
-		local InvQ2 = Quaternion();
-		QuaternionInvert( Q1, InvQ1 );
-		QuaternionInvert( SQ2, InvQ2 );
-
-		// LnQ0 = XMQuaternionLn(XMQuaternionMultiply(InvQ1, SQ0));
-		local LnQ0 = Quaternion();
-			// QuaternionMultNoAlign(SQ0, InvQ1, LnQ0)
-			LnQ0.x = SQ0.w * InvQ1.x + SQ0.x * InvQ1.w + SQ0.y * InvQ1.z - SQ0.z * InvQ1.y;
-			LnQ0.y = SQ0.w * InvQ1.y - SQ0.x * InvQ1.z + SQ0.y * InvQ1.w + SQ0.z * InvQ1.x;
-			LnQ0.z = SQ0.w * InvQ1.z + SQ0.x * InvQ1.y - SQ0.y * InvQ1.x + SQ0.z * InvQ1.w;
-			LnQ0.w = SQ0.w * InvQ1.w - SQ0.x * InvQ1.x - SQ0.y * InvQ1.y - SQ0.z * InvQ1.z;
-			QuaternionLn(LnQ0, LnQ0);
-
-		// LnQ2 = XMQuaternionLn(XMQuaternionMultiply(InvQ1, SQ2));
-		local LnQ2 = Quaternion();
-			// QuaternionMultNoAlign(SQ2, InvQ1, LnQ2)
-			LnQ2.x = SQ2.w * InvQ1.x + SQ2.x * InvQ1.w + SQ2.y * InvQ1.z - SQ2.z * InvQ1.y;
-			LnQ2.y = SQ2.w * InvQ1.y - SQ2.x * InvQ1.z + SQ2.y * InvQ1.w + SQ2.z * InvQ1.x;
-			LnQ2.z = SQ2.w * InvQ1.z + SQ2.x * InvQ1.y - SQ2.y * InvQ1.x + SQ2.z * InvQ1.w;
-			LnQ2.w = SQ2.w * InvQ1.w - SQ2.x * InvQ1.x - SQ2.y * InvQ1.y - SQ2.z * InvQ1.z;
-			QuaternionLn(LnQ2, LnQ2);
-
-		// LnQ1 = XMQuaternionLn(XMQuaternionMultiply(InvQ2, Q1));
-		local LnQ1 = Quaternion();
-			// QuaternionMultNoAlign(Q1, InvQ2, LnQ1)
-			LnQ1.x = Q1.w * InvQ2.x + Q1.x * InvQ2.w + Q1.y * InvQ2.z - Q1.z * InvQ2.y;
-			LnQ1.y = Q1.w * InvQ2.y - Q1.x * InvQ2.z + Q1.y * InvQ2.w + Q1.z * InvQ2.x;
-			LnQ1.z = Q1.w * InvQ2.z + Q1.x * InvQ2.y - Q1.y * InvQ2.x + Q1.z * InvQ2.w;
-			LnQ1.w = Q1.w * InvQ2.w - Q1.x * InvQ2.x - Q1.y * InvQ2.y - Q1.z * InvQ2.z;
-			QuaternionLn(LnQ1, LnQ1);
-
-		// LnQ3 = XMQuaternionLn(XMQuaternionMultiply(InvQ2, SQ3));
-		local LnQ3 = Quaternion();
-			// QuaternionMultNoAlign(SQ3, InvQ2, LnQ3)
-			LnQ3.x = SQ3.w * InvQ2.x + SQ3.x * InvQ2.w + SQ3.y * InvQ2.z - SQ3.z * InvQ2.y;
-			LnQ3.y = SQ3.w * InvQ2.y - SQ3.x * InvQ2.z + SQ3.y * InvQ2.w + SQ3.z * InvQ2.x;
-			LnQ3.z = SQ3.w * InvQ2.z + SQ3.x * InvQ2.y - SQ3.y * InvQ2.x + SQ3.z * InvQ2.w;
-			LnQ3.w = SQ3.w * InvQ2.w - SQ3.x * InvQ2.x - SQ3.y * InvQ2.y - SQ3.z * InvQ2.z;
-			QuaternionLn(LnQ3, LnQ3);
-
-		// const NegativeOneQuarter = XMVectorSplatConstant(-1, 2);
-		// const NegativeOneQuarter = XMVectorReplicate(-0.25);
-
-		// ExpQ02 = XMVectorMultiply(XMVectorAdd(LnQ0, LnQ2), NegativeOneQuarter);
-		local ExpQ02 = Quaternion();
-		ExpQ02.x = -0.25 * (LnQ0.x + LnQ2.x);
-		ExpQ02.y = -0.25 * (LnQ0.y + LnQ2.y);
-		ExpQ02.z = -0.25 * (LnQ0.z + LnQ2.z);
-		ExpQ02.w = -0.25 * (LnQ0.w + LnQ2.w);
-		// ExpQ02 = XMQuaternionExp(ExpQ02);
-		QuaternionExp(ExpQ02, ExpQ02);
-
-		// ExpQ13 = XMVectorMultiply(XMVectorAdd(LnQ1, LnQ3), NegativeOneQuarter);
-		local ExpQ13 = Quaternion();
-		ExpQ13.x = -0.25 * (LnQ1.x + LnQ3.x);
-		ExpQ13.y = -0.25 * (LnQ1.y + LnQ3.y);
-		ExpQ13.z = -0.25 * (LnQ1.z + LnQ3.z);
-		ExpQ13.w = -0.25 * (LnQ1.w + LnQ3.w);
-		// ExpQ13 = XMQuaternionExp(ExpQ13);
-		QuaternionExp(ExpQ13, ExpQ13);
-
-		// pA = XMQuaternionMultiply(Q1, ExpQ02);
 		local pA = Quaternion();
-			// QuaternionMultNoAlign(ExpQ02, Q1, pA)
-			pA.x = ExpQ02.x * Q1.w + ExpQ02.y * Q1.z - ExpQ02.z * Q1.y + ExpQ02.w * Q1.x;
-			pA.y = ExpQ02.y * Q1.w + ExpQ02.z * Q1.x + ExpQ02.w * Q1.y - ExpQ02.x * Q1.z;
-			pA.z = ExpQ02.x * Q1.y - ExpQ02.y * Q1.x + ExpQ02.z * Q1.w + ExpQ02.w * Q1.z;
-			pA.w = ExpQ02.w * Q1.w - ExpQ02.x * Q1.x - ExpQ02.y * Q1.y - ExpQ02.z * Q1.z;
-
-		// pB = XMQuaternionMultiply(SQ2, ExpQ13);
 		local pB = Quaternion();
-			// QuaternionMultNoAlign(ExpQ13, SQ2, pB)
-			pB.x = ExpQ13.x * SQ2.w + ExpQ13.y * SQ2.z - ExpQ13.z * SQ2.y + ExpQ13.w * SQ2.x;
-			pB.y = ExpQ13.y * SQ2.w + ExpQ13.z * SQ2.x + ExpQ13.w * SQ2.y - ExpQ13.x * SQ2.z;
-			pB.z = ExpQ13.x * SQ2.y - ExpQ13.y * SQ2.x + ExpQ13.z * SQ2.w + ExpQ13.w * SQ2.z;
-			pB.w = ExpQ13.w * SQ2.w - ExpQ13.x * SQ2.x - ExpQ13.y * SQ2.y - ExpQ13.z * SQ2.z;
+		{
+			local LnQ0 = Quaternion();
+			local LnQ2 = Quaternion();
+			local LnQ1 = Quaternion();
+			local LnQ3 = Quaternion();
+			{
+				// InvQ1 = XMQuaternionInverse(Q1);
+				// InvQ2 = XMQuaternionInverse(SQ2);
+				local InvQ1 = Quaternion();
+				local InvQ2 = Quaternion();
+				QuaternionInvert( Q1, InvQ1 );
+				QuaternionInvert( SQ2, InvQ2 );
 
+				// LnQ0 = XMQuaternionLn(XMQuaternionMultiply(InvQ1, SQ0));
+					// QuaternionMultNoAlign(SQ0, InvQ1, LnQ0)
+					LnQ0.x = SQ0.w * InvQ1.x + SQ0.x * InvQ1.w + SQ0.y * InvQ1.z - SQ0.z * InvQ1.y;
+					LnQ0.y = SQ0.w * InvQ1.y - SQ0.x * InvQ1.z + SQ0.y * InvQ1.w + SQ0.z * InvQ1.x;
+					LnQ0.z = SQ0.w * InvQ1.z + SQ0.x * InvQ1.y - SQ0.y * InvQ1.x + SQ0.z * InvQ1.w;
+					LnQ0.w = SQ0.w * InvQ1.w - SQ0.x * InvQ1.x - SQ0.y * InvQ1.y - SQ0.z * InvQ1.z;
+					QuaternionLn(LnQ0, LnQ0);
+
+				// LnQ2 = XMQuaternionLn(XMQuaternionMultiply(InvQ1, SQ2));
+					// QuaternionMultNoAlign(SQ2, InvQ1, LnQ2)
+					LnQ2.x = SQ2.w * InvQ1.x + SQ2.x * InvQ1.w + SQ2.y * InvQ1.z - SQ2.z * InvQ1.y;
+					LnQ2.y = SQ2.w * InvQ1.y - SQ2.x * InvQ1.z + SQ2.y * InvQ1.w + SQ2.z * InvQ1.x;
+					LnQ2.z = SQ2.w * InvQ1.z + SQ2.x * InvQ1.y - SQ2.y * InvQ1.x + SQ2.z * InvQ1.w;
+					LnQ2.w = SQ2.w * InvQ1.w - SQ2.x * InvQ1.x - SQ2.y * InvQ1.y - SQ2.z * InvQ1.z;
+					QuaternionLn(LnQ2, LnQ2);
+
+				// LnQ1 = XMQuaternionLn(XMQuaternionMultiply(InvQ2, Q1));
+					// QuaternionMultNoAlign(Q1, InvQ2, LnQ1)
+					LnQ1.x = Q1.w * InvQ2.x + Q1.x * InvQ2.w + Q1.y * InvQ2.z - Q1.z * InvQ2.y;
+					LnQ1.y = Q1.w * InvQ2.y - Q1.x * InvQ2.z + Q1.y * InvQ2.w + Q1.z * InvQ2.x;
+					LnQ1.z = Q1.w * InvQ2.z + Q1.x * InvQ2.y - Q1.y * InvQ2.x + Q1.z * InvQ2.w;
+					LnQ1.w = Q1.w * InvQ2.w - Q1.x * InvQ2.x - Q1.y * InvQ2.y - Q1.z * InvQ2.z;
+					QuaternionLn(LnQ1, LnQ1);
+
+				// LnQ3 = XMQuaternionLn(XMQuaternionMultiply(InvQ2, SQ3));
+					// QuaternionMultNoAlign(SQ3, InvQ2, LnQ3)
+					LnQ3.x = SQ3.w * InvQ2.x + SQ3.x * InvQ2.w + SQ3.y * InvQ2.z - SQ3.z * InvQ2.y;
+					LnQ3.y = SQ3.w * InvQ2.y - SQ3.x * InvQ2.z + SQ3.y * InvQ2.w + SQ3.z * InvQ2.x;
+					LnQ3.z = SQ3.w * InvQ2.z + SQ3.x * InvQ2.y - SQ3.y * InvQ2.x + SQ3.z * InvQ2.w;
+					LnQ3.w = SQ3.w * InvQ2.w - SQ3.x * InvQ2.x - SQ3.y * InvQ2.y - SQ3.z * InvQ2.z;
+					QuaternionLn(LnQ3, LnQ3);
+			}
+
+			// const NegativeOneQuarter = XMVectorSplatConstant(-1, 2);
+			// const NegativeOneQuarter = XMVectorReplicate(-0.25);
+
+			// ExpQ02 = XMVectorMultiply(XMVectorAdd(LnQ0, LnQ2), NegativeOneQuarter);
+			local ExpQ02 = Quaternion();
+			local ExpQ13 = Quaternion();
+			ExpQ02.x = -0.25 * (LnQ0.x + LnQ2.x);
+			ExpQ02.y = -0.25 * (LnQ0.y + LnQ2.y);
+			ExpQ02.z = -0.25 * (LnQ0.z + LnQ2.z);
+			ExpQ02.w = -0.25 * (LnQ0.w + LnQ2.w);
+			// ExpQ02 = XMQuaternionExp(ExpQ02);
+			QuaternionExp(ExpQ02, ExpQ02);
+
+			// ExpQ13 = XMVectorMultiply(XMVectorAdd(LnQ1, LnQ3), NegativeOneQuarter);
+			ExpQ13.x = -0.25 * (LnQ1.x + LnQ3.x);
+			ExpQ13.y = -0.25 * (LnQ1.y + LnQ3.y);
+			ExpQ13.z = -0.25 * (LnQ1.z + LnQ3.z);
+			ExpQ13.w = -0.25 * (LnQ1.w + LnQ3.w);
+			// ExpQ13 = XMQuaternionExp(ExpQ13);
+			QuaternionExp(ExpQ13, ExpQ13);
+
+			// pA = XMQuaternionMultiply(Q1, ExpQ02);
+				// QuaternionMultNoAlign(ExpQ02, Q1, pA)
+				pA.x = ExpQ02.x * Q1.w + ExpQ02.y * Q1.z - ExpQ02.z * Q1.y + ExpQ02.w * Q1.x;
+				pA.y = ExpQ02.y * Q1.w + ExpQ02.z * Q1.x + ExpQ02.w * Q1.y - ExpQ02.x * Q1.z;
+				pA.z = ExpQ02.x * Q1.y - ExpQ02.y * Q1.x + ExpQ02.z * Q1.w + ExpQ02.w * Q1.z;
+				pA.w = ExpQ02.w * Q1.w - ExpQ02.x * Q1.x - ExpQ02.y * Q1.y - ExpQ02.z * Q1.z;
+
+			// pB = XMQuaternionMultiply(SQ2, ExpQ13);
+				// QuaternionMultNoAlign(ExpQ13, SQ2, pB)
+				pB.x = ExpQ13.x * SQ2.w + ExpQ13.y * SQ2.z - ExpQ13.z * SQ2.y + ExpQ13.w * SQ2.x;
+				pB.y = ExpQ13.y * SQ2.w + ExpQ13.z * SQ2.x + ExpQ13.w * SQ2.y - ExpQ13.x * SQ2.z;
+				pB.z = ExpQ13.x * SQ2.y - ExpQ13.y * SQ2.x + ExpQ13.z * SQ2.w + ExpQ13.w * SQ2.z;
+				pB.w = ExpQ13.w * SQ2.w - ExpQ13.x * SQ2.x - ExpQ13.y * SQ2.y - ExpQ13.z * SQ2.z;
+		}
 		// pC = SQ2;
 		local pC = SQ2;
 
