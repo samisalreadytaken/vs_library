@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2022-12-21 [v2.43.27]
+- Reduced stack size of VS.QuaternionSquad
+
 2022-10-02 [v2.43.26]
 - Fixed Portal 2 CExtendedPlayer save/restore crash
 

@@ -88,18 +88,10 @@ local AddEvent = ::DoEntFireByInstanceHandle;
 local Fmt = ::format;
 local TICK_INTERVAL = ::FrameTime();
 
-// FIXME:
-// The very first local server,
-// default to 64 tick for now.
-if ( TICK_INTERVAL == 0.0 )
-	TICK_INTERVAL = 0.015625;;
-
-
 local PORTAL2 =
 	"CPortal_Player" in ROOT &&
 	"TurnOnPotatos" in ::CPortal_Player &&
 	::CPortal_Player.TurnOnPotatos.getinfos().native;
-
 
 if ( !PORTAL2 )
 {
@@ -107,6 +99,12 @@ if ( !PORTAL2 )
 	VS.Entities <- Entities;
 };;
 
+
+// FIXME:
+// The very first local server,
+// default to 64 tick for now.
+if ( TICK_INTERVAL == 0.0 )
+	TICK_INTERVAL = 1.0 / (PORTAL2 ? 30.0 : 64.0);;
 
 // ------------------------------------------------
 // ------------------------------------------------
