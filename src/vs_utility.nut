@@ -386,7 +386,7 @@ function VS::SetInputCallback( hPlayer, szInput, fn, env ) : ( AddEvent, ROOT, N
 		ROOT["{5E457F}"] <- [];
 
 	local g_GameUIs = ROOT["{5E457F}"];
-	local hListener;
+	local hListener, bActive;
 
 	g_GameUIs.sort( NullSort );
 	g_GameUIs.sort( OwnerSort );
@@ -403,6 +403,7 @@ function VS::SetInputCallback( hPlayer, szInput, fn, env ) : ( AddEvent, ROOT, N
 		local owner = v.GetOwner();
 		if ( !owner || owner == hPlayer.self )
 		{
+			bActive = v.GetTeam();
 			v.SetTeam(0); // reset
 			hListener = v;
 			break;
@@ -429,7 +430,7 @@ function VS::SetInputCallback( hPlayer, szInput, fn, env ) : ( AddEvent, ROOT, N
 	// turn off
 	if ( !szInput )
 	{
-		if ( hListener.GetTeam() && hListener.GetOwner() )
+		if ( bActive && hListener.GetOwner() )
 		{
 			AddEvent( hListener, "Deactivate", "", 0.0, hPlayer.self, null );
 		};
