@@ -3,6 +3,9 @@
 
 --------------------------------
 
+2023-01-25 [v2.43.28]
+- Fixed disabling player input listener ( VS.SetInputCallback(player, null, null, null) )
+
 2022-12-21 [v2.43.27]
 - Reduced stack size of VS.QuaternionSquad
 
