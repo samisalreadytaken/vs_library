@@ -17,7 +17,8 @@ local Events = delegate ::VS :
 	s_hListener = null,
 	s_fnSynchronous = null,
 	__rem = null,
-	__tmp = null,
+	m_piszRem = null,
+	m_mapScriptId = null, // user id -> script id
 
 	m_DeferredReg = null,
 
@@ -28,19 +29,24 @@ VS.Events <- Events;
 
 
 if ( !("{847D4B}" in ROOT) )
-	ROOT["{847D4B}"] <- array(64);
+	ROOT["{847D4B}"] <- array(64); // 64 : max player count
 local gEventData = ROOT["{847D4B}"];
 
 //-----------------------------------------------------------------------
 // Input  : int userid
-// Output : player handle
+// Output : CBasePlayer player
 //-----------------------------------------------------------------------
 VS.GetPlayerByUserid <- function( userid ) : (Entities)
 {
 	// cache on lookup
 
 	if ( userid in m_Players )
-		return m_Players[userid];
+	{
+		local p = m_Players[userid];
+		if ( p && p.IsValid() )
+			return p;
+		return;
+	}
 
 	if ( !m_Players )
 		m_Players = {};
@@ -67,6 +73,7 @@ VS.GetPlayerByUserid <- function( userid ) : (Entities)
 	}
 }.bindenv( VS.Events );
 
+// Retrieve userID
 local OnPlayerConnect = function( event ) : ( gEventData, ROOT, SendToConsole )
 {
 	if ( event.networkid != "" )
@@ -166,6 +173,7 @@ local OnPlayerBan = function( event )
 
 }.bindenv( VS.Events );
 
+// Assign userID
 local OnPlayerSpawn = function( event ) : ( gEventData, Fmt, ROOT )
 {
 	foreach( i, data in gEventData )
@@ -213,43 +221,56 @@ local OnPlayerSpawn = function( event ) : ( gEventData, Fmt, ROOT )
 			// default sort puts null before instances, reverse it
 			gEventData.reverse();
 
+			//if ( !m_Players )
+			//	m_Players = {};
+			//m_Players[scope.userid] <- player.weakref();
+
+			if ( !m_mapScriptId )
+				m_mapScriptId = {};
+			m_mapScriptId[scope.userid] <- scope.__vname;
 			return;
 		};
 	}
 }.bindenv( VS.Events );
 
-local ValidateUserid = function( ent ) : ( AddEvent, Fmt, Entities )
+// Validate userID
+local OnPlayerActivate = function( event ) : ( AddEvent, Entities )
 {
-	if ( !ent || !ent.IsValid() || (ent.GetClassname() != "player") || !ent.ValidateScriptScope() )
-		return Msg(Fmt( "VS::ValidateUserid: invalid input: %s\n", ""+ent ));
-
-	if ( !m_SV )
-		m_SV = [];
-
-	local sc = ent.GetScriptScope();
-	local b = 1;
-	foreach( v in m_SV )
-		if ( v == sc )
-		{
-			b = 0;
-			break;
-		};
-
-	if (b)
-		m_SV.append( sc.weakref() );
-	// UNDONE: fail condition when the event queue is reset
-	// in the same frame this function is called
-
-	if ( !m_hProxy )
+	foreach( pl in GetAllPlayers() )
 	{
-		local h = Entities.CreateByClassname( "info_game_event_proxy" );
-		h.__KeyValueFromString( "event_name", "player_connect" );
-		MakePersistent( h );
-		m_hProxy = h.weakref();
-	};
+		pl.ValidateScriptScope();
+		local sc = pl.GetScriptScope();
+		if ( !("userid" in sc) || sc.userid == -1 )
+		{
+			if ( !Events.m_SV )
+				Events.m_SV = [];
 
-	return AddEvent( m_hProxy, "GenerateGameEvent", "", 0, ent, null );
-}.bindenv( VS.Events );
+			local b = 1;
+			foreach( v in Events.m_SV )
+				if ( v == sc )
+				{
+					b = 0;
+					break;
+				};
+
+			if (b)
+				Events.m_SV.append( sc.weakref() );
+			// UNDONE: fail condition when the event queue is reset
+			// in the same frame this function is called
+
+			local h = Events.m_hProxy;
+			if ( !h )
+			{
+				h = Entities.CreateByClassname( "info_game_event_proxy" );
+				h.__KeyValueFromString( "event_name", "player_connect" );
+				MakePersistent( h );
+				Events.m_hProxy = h.weakref();
+			};
+
+			AddEvent( h, "GenerateGameEvent", "", 0, pl, null );
+		}
+	}
+}.bindenv( ::VS );
 
 // gross hack
 local __RemovePooledString = function(sz)
@@ -308,9 +329,8 @@ local __FinishSpawn = function()
 
 local PostSpawn = function( pp )
 {
-	local ent = pp[""];
+	local ent = s_hListener = pp[""];
 
-		s_hListener = ent;
 		MakePersistent(ent);
 
 		ent.ValidateScriptScope();
@@ -360,10 +380,9 @@ local PostSpawn = function( pp )
 			ent.__KeyValueFromString( "OnEventFired", name+",CallScriptFunction," );
 			sc[""] <- null;
 		};
-
 }.bindenv( VS.Events );
 
-local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlayerSpawn, OnPlayerBan, ValidateUserid)
+local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlayerSpawn, OnPlayerBan, OnPlayerActivate)
 {
 	local VS = VS;
 
@@ -377,16 +396,18 @@ local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlaye
 		VS.ListenToGameEvent( "player_connect", OnPlayerConnect, "VS::Events" );
 		VS.ListenToGameEvent( "player_spawn", OnPlayerSpawn, "VS::Events" );
 		VS.ListenToGameEvent( "server_addban", OnPlayerBan, "VS::Events" );
+		VS.ListenToGameEvent( "player_activate", OnPlayerActivate, "VS::Events" );
 
-		VS.ListenToGameEvent( "player_activate", function(ev) : (ValidateUserid)
-		{
-			foreach( i, v in GetAllPlayers() )
-			{
-				local t = v.GetScriptScope();
-				if ( !("userid" in t) || t.userid == -1 )
-					ValidateUserid( v );
-			}
-		}.bindenv(VS), "VS::Events" );
+		// When the cache is not cleared on player disconnect, GetPlayerByUserid would
+		// return invalid instances if those players had CExtendedPlayer instances.
+		// An alternative to this would be checking validity in GetPlayerByUserid
+		//VS.ListenToGameEvent( "player_disconnect", function(ev)
+		//{
+		//	if ( m_Players )
+		//	{
+		//		m_Players.rawdelete( ev.userid );
+		//	}
+		//}.bindenv(VS.Events), "VS::Events" );
 
 		if ( VS.Events.m_DeferredReg )
 		{
@@ -396,7 +417,16 @@ local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlaye
 		};
 	};
 
-	// Clear the cache on round start
+	local m_mapScriptId = VS.Events.m_mapScriptId;
+	local m_piszRem = VS.Events.m_piszRem;
+	if ( !m_piszRem )
+		VS.Events.m_piszRem = m_piszRem = [];
+
+	// Clear player cache and script IDs on round start
+	//
+	// Theoretically there should never be any invalid players at this stage and
+	// GetPlayerByUserid should never return invalid players
+	// when the cache is cleared on player disconnect
 	local players = VS.Events.m_Players;
 	if ( players && players.len() )
 	{
@@ -407,12 +437,23 @@ local OnPostSpawn = function() : (__RemovePooledString, OnPlayerConnect, OnPlaye
 				t.append(k);
 
 		foreach ( v in t )
+		{
 			delete players[v];
+
+			// this is guaranteed to be valid, but check anyway in case it was messed up
+			if ( v in m_mapScriptId )
+				m_piszRem.append( delete m_mapScriptId[v] );
+		}
 	};
 
-	if ( VS.Events.__tmp )
-		__RemovePooledString( VS.Events.__tmp );
-	VS.Events.__tmp = __vname;
+	if ( 0 in m_piszRem )
+	{
+		foreach ( v in m_piszRem )
+			__RemovePooledString( v );
+		m_piszRem.clear();
+	};
+
+	m_piszRem.append( __vname );
 }
 
 VS.ListenToGameEvent <- function( szEventName, fnCallback, pContext, bSynchronous = 0 ) : (SpawnEntity)

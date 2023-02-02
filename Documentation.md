@@ -2481,6 +2481,8 @@ The following functions require event listener setup and do not work in Portal 2
 
 When a player disconnects, `CExtendedPlayer::IsValid()` returns false.
 
+NOTE: `GetFOV`/`SetFOV` functions require to be called once to be initialised, their initial calls will not return correct values. To ensure they are initialised, `player.GetFOV()` can be called on player_spawn game event.
+
 NOTE: Use the `player_spawn` game event to extend the player as early as possible. Using, for example, a think function on map spawn will set the userids of players who were connected to the server before map change to `-1` until the players are spawned, only then `CExtendedPlayer::GetUserID()` will return the correct ID.
 
 NOTE: The library keeps a strong ref to the player instance; neither `CExtendedPlayer` or `CBasePlayer` weak refs will ever be `null` after this is called. Always use `IsValid()` for player validity check.
@@ -2705,6 +2707,8 @@ EventQueuePrioritizedEvent_t VS::EventQueue::AddEvent( closure hFunc, float flDe
 Execute input function after time in seconds.
 
 `argv` can be a table as call environment (e.g. `this`), or an array of parameters to pass to the function call. The array parameter needs to have its first index as the call environment (e.g. `[this, "param1", "param2"]`).
+
+NOTE: All queued events are reset at the start of every round, events cannot be carried across rounds. This is because of the usage of the game's internal event queue.
 
 Examples:
 

@@ -3,6 +3,10 @@
 
 --------------------------------
 
+2023-02-02 [v2.43.29]
+- Fixed VS.GetPlayerByUserid returning invalid player instances on disconnected players who were extended with ToExtendedPlayer
+- Game string pool optimisation: disconnected player script IDs are removed on round start
+
 2023-01-25 [v2.43.28]
 - Fixed disabling player input listener ( VS.SetInputCallback(player, null, null, null) )
 

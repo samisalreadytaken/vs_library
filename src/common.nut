@@ -38,6 +38,7 @@ __DPrintf <- function( str, ... ) : ( print, Fmt, argv )
 #endif
 
 
+//local VERSIONNUM = _VERSIONNUM;
 local VERSION = _VERSION; // "#.#.#";
 local ROOT = getroottable();
 local CONST = getconsttable();
