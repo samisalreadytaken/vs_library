@@ -578,7 +578,7 @@ function VS::VectorVectors( forward, right, up ) : (Vector)
 	}
 	else
 	{
-		local r = forward.Cross( Vector(0.0, 0.0, 1.0) );
+		local r = Vector( forward.y, -forward.x );
 		r.Norm();
 		right.x = r.x; right.y = r.y; right.z = r.z;
 
@@ -645,7 +645,8 @@ function VS::AngleVectors( angle, forward = _VEC, right = null, up = null ) : (s
 //-----------------------------------------------------------------------
 function VS::VectorAngles( forward, vOut = _VEC ) : ( atan2 )
 {
-	local yaw = 0.0, pitch = yaw;
+	local yaw = 0.0;
+	local pitch = yaw;
 
 	if ( !forward.y && !forward.x )
 	{
@@ -1445,11 +1446,27 @@ function VS::VectorRotate( in1, in2, out = _VEC )
 local VectorRotate = VS.VectorRotate;
 
 // assume in2 is a rotation (QAngle) and rotate the input vector
-function VS::VectorRotateByAngle( in1, in2, out = _VEC ) : (matrix3x4_t, VectorRotate)
+function VS::VectorRotateByAngle( in1, in2, out = _VEC ) : (sin, cos)
 {
-	local matRotate = matrix3x4_t();
-	AngleMatrix( in2, null, matRotate );
-	return VectorRotate( in1, matRotate, out );
+	local x = in1.x, y = in1.y, z = in1.z,
+		ay = DEG2RAD*in2.y,
+		ax = DEG2RAD*in2.x,
+		az = DEG2RAD*in2.z;
+
+	local sy = sin(ay), cy = cos(ay),
+		sp = sin(ax), cp = cos(ax),
+		sr = sin(az), cr = cos(az);
+
+	local crcy = cr*cy,
+		crsy = cr*sy,
+		srcy = sr*cy,
+		srsy = sr*sy;
+
+	out.x = x*cp*cy + y*(sp*srcy-crsy) + z*(sp*crcy+srsy);
+	out.y = x*cp*sy + y*(sp*srsy+crcy) + z*(sp*crsy-srcy);
+	out.z = x*-sp + y*sr*cp + z*cr*cp;
+
+	return out;
 }
 
 // assume in2 is a rotation (Quaternion) and rotate the input vector
