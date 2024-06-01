@@ -95,7 +95,7 @@ const FLT_MAX			= 3.402823466e+38;;
 const FLT_MIN			= 1.175494351e-38;;
 
 const INT_MAX			= 0x7FFFFFFF;;
-CONST.INT_MIN			<- -0x7FFFFFFF-1;
+const INT_MIN			= -2147483648;;
 
 const DEG2RAD			= 0.017453293;;			// PI / 180 = 0.01745329251994329576
 const RAD2DEG			= 57.295779513;; 		// 180 / PI = 57.29577951308232087679
@@ -114,7 +114,8 @@ const RAD2DEG2			= 114.591559026;;
 const PI2				= 6.283185307;;			// 6.28318530717958647692
 const PIDIV2			= 1.570796327;;			// 1.57079632679489661923
 const FLT_MAX_N			= -3.402823466e+38;;
-/*
+const N_ONE				= -1;;
+
 if ( _floatsize_ == 8 )
 {
 	CONST.DBL_EPSILON <- 2.2204460492503131e-16;
@@ -127,12 +128,13 @@ if ( _intsize_ == 8 )
 	CONST.LLONG_MAX <- 9223372036854775807;
 	CONST.LLONG_MIN <- -9223372036854775808;
 };
-*/
+
 delete CONST.DEG2RADDIV2;
 delete CONST.RAD2DEG2;
 delete CONST.PI2;
 delete CONST.PIDIV2;
 delete CONST.FLT_MAX_N;
+delete CONST.N_ONE;
 
 
 // NOTE: Vector extensions will only be applied if these were run before creating an instance.
@@ -161,7 +163,7 @@ Vector.IsZero <- function()
 
 Vector._unm <- function()
 {
-	return this * 0xFFFFFFFF;
+	return this * N_ONE;
 }
 
 Vector._div <- function(f)
@@ -258,7 +260,7 @@ local Quaternion = class
 
 	function _tostring():(Fmt)
 	{
-		return Fmt("Quaternion(%.6g, %.6g, %.6g, %.6g)", x, y, z, w);
+		return Fmt("%.6g, %.6g, %.6g, %.6g", x, y, z, w);
 	}
 }
 
@@ -585,7 +587,7 @@ function VS::VectorVectors( forward, right, up ) : (Vector)
 	if ( !forward.x && !forward.y )
 	{
 		// pitch 90 degrees up/down from identity
-		right.y = 0xFFFFFFFF;
+		right.y = N_ONE;
 		up.x = -forward.z;
 		right.x = right.z = up.y = up.z = 0.0;
 	}
@@ -1262,7 +1264,7 @@ function VS::Bias( x, biasAmt ) : ( log, pow )
 {
 	// local lastAmt = -1.0;
 	local lastExponent = 0.0;
-	if ( -1.0 != biasAmt )
+	if ( N_ONE != biasAmt )
 		lastExponent = log(biasAmt) * -1.442695041; // (-1.442695041 = 1 / log(0.5))
 	return pow( x, lastExponent );
 }
@@ -2388,7 +2390,7 @@ function VS::RotationDeltaAxisAngle( srcAngles, destAngles, deltaAxis ) : (Quate
 
 	AngleQuaternion( srcAngles, srcQuat );
 	AngleQuaternion( destAngles, destQuat );
-	QuaternionScale( srcQuat, -1.0, srcQuat );
+	QuaternionScale( srcQuat, N_ONE, srcQuat );
 
 	local out = QuaternionMult( destQuat, srcQuat );
 	QuaternionNormalize( out );
@@ -2858,7 +2860,7 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array )
 	{
 		// Find the row with the largest element in this column.
 		local fLargest = 1.e-6;
-		local iLargest = 0xFFFFFFFF;
+		local iLargest = N_ONE;
 		for ( local iTest = iRow; iTest < 4; ++iTest )
 		{
 			local fTest = mat[rowMap[iTest]][iRow];
@@ -2873,7 +2875,7 @@ function VS::MatrixInverseGeneral( src, dst ) : ( array )
 		}
 
 		// They're all too small.. sorry.
-		if (iLargest == 0xFFFFFFFF)
+		if (iLargest == N_ONE)
 			return false;
 
 		// Swap the rows.
@@ -4239,7 +4241,7 @@ local initCapsule = function()
 		{
 			local i0 = g_capsuleLineIndices[i];
 			local i1 = g_capsuleLineIndices[++i];
-			if ( i1 == 0xFFFFFFFF )
+			if ( i1 == N_ONE )
 			{
 				++i;
 				continue;
@@ -4482,7 +4484,7 @@ function VS::GeneratePerspectiveFrustum( origin, forward, right, up, flZNear, fl
 {
 	local flIntercept = origin.Dot( forward );
 
-	frustum.SetPlane( FRUSTUM_FARZ, PLANE_ANYZ, forward * 0xFFFFFFFF, -flZFar - flIntercept );
+	frustum.SetPlane( FRUSTUM_FARZ, PLANE_ANYZ, forward * N_ONE, -flZFar - flIntercept );
 	frustum.SetPlane( FRUSTUM_NEARZ, PLANE_ANYZ, forward, flZNear + flIntercept );
 
 	local flTanX = tan( DEG2RADDIV2 * flFovX );
@@ -5488,7 +5490,7 @@ function VS::IntersectRayWithTriangle( ray, v1, v2, v3, oneSided ) : (ComputeBox
 	{
 		local normal = edge1.Cross( edge2 );
 		if ( normal.Dot( ray.m_Delta ) >= 0.0 )
-			return 0xFFFFFFFF;
+			return N_ONE;
 	};
 
 	// FIXME: This is inaccurate, but fast for boxes
@@ -5504,7 +5506,7 @@ function VS::IntersectRayWithTriangle( ray, v1, v2, v3, oneSided ) : (ComputeBox
 	//		| -Dz E1z E2z |
 	local denom = dirCrossEdge2.Dot( edge1 );
 	if ( denom < 1.e-6 && denom > -1.e-6 )
-		return 0xFFFFFFFF;
+		return N_ONE;
 	denom = 1.0 / denom;
 
 	// Compute u. It's gotta lie in the range of 0 to 1.
@@ -5514,14 +5516,14 @@ function VS::IntersectRayWithTriangle( ray, v1, v2, v3, oneSided ) : (ComputeBox
 	local org = ray.m_Start - v1;
 	local u = dirCrossEdge2.Dot( org ) * denom;
 	if ( (u < 0.0) || (u > 1.0) )
-		return 0xFFFFFFFF;
+		return N_ONE;
 
 	// Compute t and v the same way...
 	// In barycentric coords, u + v < 1
 	local orgCrossEdge1 = org.Cross( edge1 );
 	local v = orgCrossEdge1.Dot( ray.m_Delta ) * denom;
 	if ( (v < 0.0) || (v + u > 1.0) )
-		return 0xFFFFFFFF;
+		return N_ONE;
 
 	// Compute the distance along the ray direction that we need to fudge
 	// when using swept boxes
@@ -5530,7 +5532,7 @@ function VS::IntersectRayWithTriangle( ray, v1, v2, v3, oneSided ) : (ComputeBox
 		boxt = ComputeBoxOffset( ray );
 	local t = orgCrossEdge1.Dot( edge2 ) * denom;
 	if ( ( -boxt > t ) || ( t > 1.0 + boxt ) )
-		return 0xFFFFFFFF;
+		return N_ONE;
 
 	if ( t < 0.0 )
 		return 0.0;
@@ -6044,7 +6046,7 @@ function VS::IntersectRayWithBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, fl
 
 	local t2 = 1.0;
 	local t1 = -t2;
-	local hitside = -1;
+	local hitside = N_ONE;
 
 	local startsolid = true;
 
@@ -6514,8 +6516,8 @@ function VS::ClipRayToOBB2( ray, matOBBToWorld, vecOBBMins, vecOBBMaxs, flTolera
 
 	pTrace.startsolid = true;
 
-	local hitplane = -1;
-	local hitside = -1;
+	local hitplane = N_ONE;
+	local hitside = N_ONE;
 	local enterfrac = -1.0;
 	local leavefrac = 1.0;
 {
@@ -6651,7 +6653,7 @@ function VS::IsRayIntersectingOBB( ray, org, ang, mins, maxs )
 	};
 
 	if ( !ray.m_IsSwept )
-		return IsOBBIntersectingOBB( ray.m_Start, Vector(), ray.m_Extents * -1, ray.m_Extents,
+		return IsOBBIntersectingOBB( ray.m_Start, Vector(), ray.m_Extents * N_ONE, ray.m_Extents,
 			org, ang, mins, maxs, 0.0 );
 
 	// NOTE: See the comments in ComputeSeparatingPlane to understand this math
@@ -6662,7 +6664,7 @@ function VS::IsRayIntersectingOBB( ray, org, ang, mins, maxs )
 	ComputeCenterMatrix( org, ang, mins, maxs, box2ToWorld );
 
 	// Find the center + extents of an AABB surrounding the ray
-	local vecRayCenter = VectorMA( ray.m_Start, 0.5, ray.m_Delta ) * -1.0;
+	local vecRayCenter = VectorMA( ray.m_Start, 0.5, ray.m_Delta ) * N_ONE;
 
 	local worldToBox1 = matrix3x4_t(
 		1.0, 0.0, 0.0, vecRayCenter.x,
