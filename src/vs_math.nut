@@ -6140,7 +6140,8 @@ local IntersectRayWithBox = VS.IntersectRayWithBox;
 // Intersects a ray against a box, returns trace_t info
 // IntersectRayWithBox
 //-----------------------------------------------------------------------------
-function VS::ClipRayToBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, flTolerance, pTrace ) : (IntersectRayWithBox)
+function VS::ClipRayToBox( vecRayStart, vecRayDelta, boxMins, boxMaxs, flTolerance, pTrace ) :
+	(IntersectRayWithBox, Vector)
 {
 	// Collision_ClearTrace( vecRayStart, vecRayDelta, pTrace );
 	pTrace.startpos = vecRayStart;
@@ -6251,12 +6252,12 @@ function VS::ClipRayToOBB( vecRayStart, vecRayDelta, matOBBToWorld,
 	// Assert( flTolerance == 0.0 );
 
 	// OPTIMIZE: Store this in the box instead of computing it here
+
 	// compute center in local space
 	local vecBoxExtents = (vecOBBMins + vecOBBMaxs) * 0.5;
-	local vecBoxCenter = Vector();
 
 	// transform to world space
-	VectorTransform( vecBoxExtents, matOBBToWorld, vecBoxCenter );
+	local vecBoxCenter = VectorTransform( vecBoxExtents, matOBBToWorld );
 
 	// calc extents from local center
 	vecBoxExtents = vecOBBMaxs - vecBoxExtents;
@@ -6407,13 +6408,11 @@ function VS::ClipRayToOBB2( ray, matOBBToWorld, vecOBBMins, vecOBBMaxs, flTolera
 {
 	// Compute a bounding sphere around the bloated OBB
 	local vecOBBCenter = (vecOBBMins + vecOBBMaxs) * 0.5;
-	vecOBBCenter.x += matOBBToWorld[0][M_03];
-	vecOBBCenter.y += matOBBToWorld[0][M_13];
-	vecOBBCenter.z += matOBBToWorld[0][M_23];
+	VectorTransform( vecOBBCenter, matOBBToWorld, vecOBBCenter );
 
 	local vecOBBHalfDiagonal = (vecOBBMaxs - vecOBBMins) * 0.5;
-
 	local flRadius = vecOBBHalfDiagonal.Length() + ray.m_Extents.Length();
+
 	if ( !IsRayIntersectingSphere( ray.m_Start, ray.m_Delta, vecOBBCenter, flRadius, flTolerance ) )
 		return false;
 }
@@ -6591,17 +6590,17 @@ function VS::ClipRayToOBB2( ray, matOBBToWorld, vecOBBMins, vecOBBMaxs, flTolera
 
 		// Need to transform the plane into world space...
 		local pNormal = pPlaneNormal[hitplane];
-		local normal, dist;
+		local normal;
 
 		if ( hitside == 0 )
 		{
 			normal = Vector( -pNormal[0], -pNormal[1], -pNormal[2] );
-			dist = -ppPlaneDist[hitplane][hitside];
+			//dist = -ppPlaneDist[hitplane][hitside];
 		}
 		else
 		{
 			normal = Vector( pNormal[0], pNormal[1], pNormal[2] );
-			dist = ppPlaneDist[hitplane][hitside];
+			//dist = ppPlaneDist[hitplane][hitside];
 		};
 
 		local worldNormal = Vector();
@@ -6719,14 +6718,12 @@ function VS::IsRayIntersectingOBB( ray, org, ang, mins, maxs )
 	// Therefore all we need to do is project the ray extents onto this line also:
 	// AbsDot( ray.m_Extents, l1 ) = abs( -dz * ray.m_Extents.y ) + abs( dy * ray.m_Extents.z )
 
-	local vecPlaneNormal, flBoxProjectionSum, flCenterDeltaProjection;
-
 	// box x x ray delta
-	vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[M_00], box2ToWorld[M_10], box2ToWorld[M_20] ) );
-	flCenterDeltaProjection = vecPlaneNormal.Dot(vecCenterDelta);
+	local vecPlaneNormal = vecRayDirection.Cross( Vector( box2ToWorld[M_00], box2ToWorld[M_10], box2ToWorld[M_20] ) );
+	local flCenterDeltaProjection = vecPlaneNormal.Dot(vecCenterDelta);
 	if ( 0.0 > flCenterDeltaProjection )
 		flCenterDeltaProjection = -flCenterDeltaProjection;
-	flBoxProjectionSum =
+	local flBoxProjectionSum =
 		vecAbsRayDirBox2.z * box2Size.y + vecAbsRayDirBox2.y * box2Size.z +
 		DotProductAbs( vecPlaneNormal, ray.m_Extents );
 	if ( flCenterDeltaProjection > flBoxProjectionSum )
@@ -6795,15 +6792,13 @@ function VS::ComputeSeparatingPlane( worldToBox1, box2ToWorld, box1Size, box2Siz
 	// onto the line, and add them up. We compare the sum with the projection
 	// of the relative center of box2 onto the same line.
 
-	local boxProjectionSum, originProjection;
-
 	// NOTE: For these guys, we're taking advantage of the fact that the ith
 	// row of the box2ToBox1 is the direction of the box1 (x,y,z)-axis
 	// transformed into the space of box2.
 
 	// First side of box 1
-	boxProjectionSum = MatrixRowDotProduct( absBox2ToBox1, 0, box2Size ) + box1Size.x;
-	originProjection = fabs( box2Origin.x ) + tolerance;
+	local boxProjectionSum = MatrixRowDotProduct( absBox2ToBox1, 0, box2Size ) + box1Size.x;
+	local originProjection = fabs( box2Origin.x ) + tolerance;
 	if ( originProjection > boxProjectionSum )
 	{
 		pNormalOut.x = worldToBox1[M_00];
