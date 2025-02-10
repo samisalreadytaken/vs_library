@@ -1088,13 +1088,18 @@ function VS::RandomVector( minVal = -RAND_MAX, maxVal = RAND_MAX ) : ( Vector, R
 	return Vector( RandomFloat( minVal, maxVal ), RandomFloat( minVal, maxVal ), RandomFloat( minVal, maxVal ) );
 }
 
-// Guarantee uniform random distribution within a sphere
-function VS::RandomVectorInUnitSphere( out ) : ( rand, sin, cos, acos, pow )
 {
-	// local rd = 2.0 / RAND_MAX; // 0.00006103702
-	local phi = acos( 1.0 - rand() * 0.00006103702 );
-	local theta = rand() * 0.00019175345; // rd * PI
-	local r = pow( rand() * 0.00003051851, 0.333333 );
+// RAND_MAX differs between linux and windows
+local ONEDIVRANDMAX = 1.0 / RAND_MAX,
+	TWODIVRANDMAX = 2.0 / RAND_MAX,
+	TWOPIDIVRANDMAX = ( 2.0 / RAND_MAX ) * PI;
+
+// Guarantee uniform random distribution within a sphere
+function VS::RandomVectorInUnitSphere( out ) : (rand, sin, cos, acos, pow)
+{
+	local phi = acos( 1.0 - rand() * TWODIVRANDMAX );
+	local theta = rand() * TWOPIDIVRANDMAX;
+	local r = pow( rand() * ONEDIVRANDMAX, 0.333333 );
 	local sp = sin( phi ) * r;
 
 	//if ( !out )
@@ -1107,11 +1112,10 @@ function VS::RandomVectorInUnitSphere( out ) : ( rand, sin, cos, acos, pow )
 }
 
 // Guarantee uniform random distribution on a sphere
-function VS::RandomVectorOnUnitSphere( out ) : ( rand, sin, cos, acos )
+function VS::RandomVectorOnUnitSphere( out ) : (rand, sin, cos, acos)
 {
-	// local rd = 2.0 / RAND_MAX; // 0.00006103702
-	local phi = acos( 1.0 - rand() * 0.00006103702 );
-	local theta = rand() * 0.00019175345; // rd * PI
+	local phi = acos( 1.0 - rand() * TWODIVRANDMAX );
+	local theta = rand() * TWOPIDIVRANDMAX;
 	// r = 1
 	local sp = sin( phi );
 
@@ -1121,6 +1125,7 @@ function VS::RandomVectorOnUnitSphere( out ) : ( rand, sin, cos, acos )
 	out.x = cos( theta ) * sp;
 	out.y = sin( theta ) * sp;
 	out.z = cos( phi );
+}
 }
 
 // decayTo is factor the value should decay to in decayTime
